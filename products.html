@@ -51,7 +51,13 @@ input{
   text-align:center;
   font-size:14px;
   color:gold;
-  padding:8px;
+  padding:5px;
+}
+
+.card p{
+  text-align:center;
+  margin:0;
+  color:#fff;
 }
 
 a,button{
@@ -104,10 +110,10 @@ projectId: "zahraa-store-f4c90"
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const grid = document.getElementById("grid");
-
 let products = [];
 let cart = JSON.parse(localStorage.getItem("cart") || "[]");
+
+const grid = document.getElementById("grid");
 
 /* LOAD */
 async function load(){
@@ -132,12 +138,16 @@ function render(list){
 
     const img = p.images?.[0] || "";
 
-    const wa = encodeURIComponent("عايز المنتج: " + p.name);
+    const wa = encodeURIComponent(
+`عايز المنتج: ${p.name}
+💰 السعر: ${p.price} جنيه`
+    );
 
     grid.innerHTML += `
       <div class="card">
         <img loading="lazy" src="${img}">
         <h3>${p.name}</h3>
+        <p>💰 ${p.price} جنيه</p>
 
         <a href="https://wa.me/201204194540?text=${wa}" target="_blank">
           اطلب واتساب
@@ -167,20 +177,29 @@ window.addCart = (id)=>{
 
   const p = products.find(x=>x.id===id);
 
-  cart.push(p);
+  cart.push({
+    name:p.name,
+    price:p.price
+  });
 
   localStorage.setItem("cart", JSON.stringify(cart));
 
   alert("تمت الإضافة 🛒");
 };
 
+/* SHOW CART */
 window.showCart = ()=>{
 
+  let total = 0;
   let text = "🛒 السلة:\n\n";
 
   cart.forEach(p=>{
-    text += "- " + p.name + "\n";
+    text += `- ${p.name} | ${p.price} جنيه\n`;
+    total += Number(p.price);
   });
+
+  text += "\n-----------------\n";
+  text += "💰 الإجمالي: " + total + " جنيه";
 
   alert(text);
 };
