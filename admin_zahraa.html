@@ -178,18 +178,27 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-/* 🔥 MESSAGING */
-import { getMessaging, getToken, onMessage } 
-from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
-
+/* 🔥 MESSAGING (محمي عشان ميبوظش الموقع) */
 let messaging = null;
 
-if ('serviceWorker' in navigator) {
-  try {
-    messaging = getMessaging(app);
-  } catch (e) {
-    console.log("Messaging not supported", e);
-  }
+try{
+const mod = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js");
+messaging = mod.getMessaging(app);
+
+mod.onMessage(messaging,(payload)=>{
+const toast = document.getElementById("toast");
+toast.innerText = payload.notification?.title || "🛒 طلب جديد وصل!";
+toast.style.display = "block";
+
+setTimeout(()=>{
+toast.style.display = "none";
+},3000);
+
+new Audio("https://www.soundjay.com/buttons/sounds/button-3.mp3").play();
+});
+
+}catch(e){
+console.log("Messaging disabled:", e);
 }
 
 /* CLOUD */
@@ -234,7 +243,40 @@ const res = await fetch(
 return (await res.json()).secure_url;
 }
 
-/* PRODUCTS */
+/* ADD PRODUCT 🔥 (ده اللي كان ناقص) */
+document.getElementById("addBtn").onclick = async ()=>{
+
+const name = document.getElementById("name").value;
+const price = document.getElementById("price").value;
+const files = document.getElementById("images").files;
+
+if(!name || !price || files.length === 0){
+alert("املأ البيانات");
+return;
+}
+
+let images = [];
+
+for(let f of files){
+const url = await upload(f);
+images.push(url);
+}
+
+await addDoc(collection(db,"products"),{
+name,
+price,
+images,
+createdAt:Date.now()
+});
+
+document.getElementById("name").value="";
+document.getElementById("price").value="";
+document.getElementById("images").value="";
+
+load();
+};
+
+/* LOAD PRODUCTS */
 async function load(){
 const list = document.getElementById("list");
 list.innerHTML="";
@@ -267,25 +309,6 @@ await updateDoc(doc(db,"products",id),{name,price});
 load();
 };
 
-/* DASHBOARD */
-function updateDashboard(orders){
-
-let totalOrders = orders.length;
-let revenue = 0;
-let pending = 0;
-
-orders.forEach(o=>{
-const total = o.totalPrice || (o.cart?.reduce((s,i)=>s + Number(i.price),0)) || 0;
-revenue += total;
-
-if(o.status === "pending") pending++;
-});
-
-document.getElementById("totalOrders").innerText = totalOrders;
-document.getElementById("totalRevenue").innerText = revenue;
-document.getElementById("pendingOrders").innerText = pending;
-}
-
 /* ORDERS */
 function loadOrders(){
 
@@ -296,98 +319,37 @@ const q = query(collection(db,"orders"), orderBy("createdAt","desc"));
 onSnapshot(q,(snap)=>{
 
 box.innerHTML="";
-let orders = [];
 
 snap.forEach(d=>{
-
 const o = d.data();
-const total = o.totalPrice || (o.cart?.reduce((s,i)=>s + Number(i.price),0)) || 0;
-orders.push(o);
 
-let colorClass = "status-"+o.status;
-
-box.innerHTML += `
-<div class="card">
-
+box.innerHTML += `<div class="card">
 <h3>🆔 ${o.orderId || d.id}</h3>
-
 <p>${o.name}</p>
-<p>📞 ${o.phone}</p>
-<p>📍 ${o.address}</p>
-
-<p>🛒 ${o.cart?.length || 0} منتجات</p>
-
-<p>💰 ${total} جنيه</p>
-
-<p class="${colorClass}">📦 ${o.status}</p>
-
-<select onchange="updateStatus('${d.id}',this.value)">
-<option value="pending" ${o.status==="pending"?"selected":""}>pending</option>
-<option value="processing" ${o.status==="processing"?"selected":""}>processing</option>
-<option value="shipped" ${o.status==="shipped"?"selected":""}>shipped</option>
-<option value="delivered" ${o.status==="delivered"?"selected":""}>delivered</option>
-<option value="canceled" ${o.status==="canceled"?"selected":""}>canceled</option>
-</select>
-
-</div>
-`;
+</div>`;
 });
-
-updateDashboard(orders);
-showNotification(snap.size);
 
 });
 }
 
-/* STATUS */
-window.updateStatus = async (id,status)=>{
-await updateDoc(doc(db,"orders",id),{status});
-};
-
-/* 🔥 NOTIFICATIONS */
+/* NOTIFICATIONS */
 async function initNotifications(){
-
 if(!messaging) return;
 
 try{
-
 const permission = await Notification.requestPermission();
 if(permission !== "granted") return;
 
-const token = await getToken(messaging,{
+const mod = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js");
+
+const token = await mod.getToken(messaging,{
 vapidKey:"BAtzdb2RIhljdg2H8zNOtPimm8CVEtSpAUnwkF2qa5x7j3ejf1MYSKRkR1AeCJpvuKlBm9j3UOo7GoidLMFNm1Y"
 });
 
 console.log("FCM TOKEN:",token);
 
 }catch(e){
-console.log("Notification error:", e);
-}
-
-}
-
-/* IN APP NOTIFICATION */
-if(messaging){
-onMessage(messaging,(payload)=>{
-
-const toast = document.getElementById("toast");
-toast.innerText = payload.notification?.title || "🛒 طلب جديد وصل!";
-toast.style.display = "block";
-
-setTimeout(()=>{
-toast.style.display = "none";
-},3000);
-
-let audio = new Audio("https://www.soundjay.com/buttons/sounds/button-3.mp3");
-audio.play();
-
-});
-}
-
-function showNotification(count){
-if(count > 0){
-document.getElementById("toast").style.display="block";
-setTimeout(()=>document.getElementById("toast").style.display="none",2000);
+console.log(e);
 }
 }
 
