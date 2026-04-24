@@ -3,193 +3,151 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ZAHRAA STUDIO</title>
+<title>Zahraa Studio</title>
 
 <style>
-body {
-  margin: 0;
-  font-family: 'Cairo', sans-serif;
-  background: #0d0d0d;
-  color: white;
+body{
+  margin:0;
+  font-family:Cairo;
+  background:#0d0d0d;
+  color:white;
 }
 
-/* عنوان */
-h2 {
-  text-align: center;
-  margin-top: 20px;
-  color: #d4af37;
+h2{
+  text-align:center;
+  color:#d4af37;
+  margin:20px 0;
 }
 
-/* الجريد */
-.products-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 20px;
-  padding: 20px;
+/* grid */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
+  gap:20px;
+  padding:20px;
 }
 
-/* الكارت */
-.product-card {
-  background: #111;
-  border-radius: 15px;
-  overflow: hidden;
-  box-shadow: 0 0 10px rgba(212,175,55,0.2);
-  transition: 0.4s;
-  position: relative;
+/* card */
+.card{
+  background:#111;
+  border-radius:15px;
+  overflow:hidden;
+  box-shadow:0 0 15px rgba(212,175,55,0.2);
+  transition:0.4s;
+  cursor:pointer;
 }
 
-.product-card:hover {
-  transform: translateY(-10px) scale(1.02);
-  box-shadow: 0 0 25px rgba(212,175,55,0.6);
+.card:hover{
+  transform:translateY(-10px);
+  box-shadow:0 0 25px rgba(212,175,55,0.6);
 }
 
-/* الصور */
-.slider {
-  position: relative;
+/* images */
+.slider img{
+  width:100%;
+  height:220px;
+  object-fit:cover;
+  display:none;
 }
 
-.slider img {
-  width: 100%;
-  height: 220px;
-  object-fit: cover;
-  display: none;
+.slider img.active{
+  display:block;
 }
 
-.slider img.active {
-  display: block;
+/* info */
+.info{
+  padding:15px;
+  text-align:center;
 }
 
-/* أزرار السلايدر */
-.nav-btn {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  background: rgba(0,0,0,0.6);
-  border: none;
-  color: gold;
-  font-size: 18px;
-  padding: 5px 10px;
-  cursor: pointer;
+.info h3{
+  color:#d4af37;
+  margin:10px 0;
 }
 
-.prev { right: 10px; }
-.next { left: 10px; }
-
-/* النص */
-.product-info {
-  padding: 15px;
-  text-align: center;
-}
-
-.product-info h4 {
-  color: #d4af37;
-  margin: 10px 0;
-}
-
-/* زر واتساب */
-.whatsapp-btn {
-  display: inline-block;
-  margin-top: 10px;
-  background: linear-gradient(45deg, #d4af37, #ffd700);
-  color: black;
-  padding: 8px 15px;
-  border-radius: 20px;
-  text-decoration: none;
-  transition: 0.3s;
-}
-
-.whatsapp-btn:hover {
-  transform: scale(1.1);
-}
-
-/* انيميشن دخول */
-.product-card {
-  opacity: 0;
-  transform: translateY(30px);
-  animation: fadeUp 0.6s forwards;
-}
-
-@keyframes fadeUp {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* button */
+.btn{
+  display:inline-block;
+  margin-top:10px;
+  padding:8px 15px;
+  background:linear-gradient(45deg,#d4af37,#ffd700);
+  color:black;
+  border-radius:20px;
+  text-decoration:none;
+  font-weight:bold;
 }
 </style>
 </head>
 
 <body>
 
-<h2>منتجاتنا</h2>
-<div class="products-container" id="productsGrid"></div>
+<h2>🔥 منتجاتنا</h2>
 
-<script>
-const productsGrid = document.getElementById("productsGrid");
+<div class="grid" id="grid"></div>
 
-// جايب المنتجات (دلوقتي localStorage لحد ما نربط Firebase)
-const products = JSON.parse(localStorage.getItem("products") || "[]");
+<script type="module">
 
-products.forEach((p, index) => {
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  const images = Array.isArray(p.images) ? p.images : [p.image];
+const firebaseConfig = {
+  apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
+  authDomain: "zahraa-store-f4c90.firebaseapp.com",
+  projectId: "zahraa-store-f4c90"
+};
 
-  const card = document.createElement("div");
-  card.className = "product-card";
-  card.style.animationDelay = (index * 0.1) + "s";
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-  let imgsHTML = "";
-  images.forEach((img, i) => {
-    imgsHTML += `<img src="${img}" class="${i === 0 ? "active" : ""}">`;
+const grid = document.getElementById("grid");
+
+async function loadProducts(){
+
+  const snap = await getDocs(collection(db,"products"));
+
+  snap.forEach(doc => {
+
+    const p = doc.data();
+
+    const card = document.createElement("div");
+    card.className = "card";
+
+    let imgs = "";
+    p.images.forEach((img,i)=>{
+      imgs += `<img src="${img}" class="${i===0?'active':''}">`;
+    });
+
+    card.innerHTML = `
+      <div class="slider">${imgs}</div>
+
+      <div class="info">
+        <h3>${p.name}</h3>
+
+        <a class="btn"
+        href="https://wa.me/201204194540?text=${encodeURIComponent("عايز المنتج: " + p.name)}"
+        target="_blank">
+        واتساب
+        </a>
+      </div>
+    `;
+
+    grid.appendChild(card);
+
+    /* slider */
+    const images = card.querySelectorAll("img");
+    let i = 0;
+
+    setInterval(()=>{
+      images.forEach(img=>img.classList.remove("active"));
+      i = (i+1)%images.length;
+      images[i].classList.add("active");
+    },2500);
+
   });
+}
 
-  card.innerHTML = `
-    <div class="slider">
-      ${imgsHTML}
-      ${images.length > 1 ? `
-        <button class="nav-btn prev">›</button>
-        <button class="nav-btn next">‹</button>
-      ` : ""}
-    </div>
+loadProducts();
 
-    <div class="product-info">
-      <h4>${p.name}</h4>
-      <a class="whatsapp-btn"
-         href="https://wa.me/201204194540?text=${encodeURIComponent("عايز المنتج: " + p.name)}"
-         target="_blank">
-         اطلب دلوقتي
-      </a>
-    </div>
-  `;
-
-  productsGrid.appendChild(card);
-
-  // تشغيل السلايدر
-  const slider = card.querySelector(".slider");
-  const imgs = slider.querySelectorAll("img");
-  let current = 0;
-
-  const showImage = (i) => {
-    imgs.forEach(img => img.classList.remove("active"));
-    imgs[i].classList.add("active");
-  };
-
-  const next = slider.querySelector(".next");
-  const prev = slider.querySelector(".prev");
-
-  if (next) {
-    next.onclick = () => {
-      current = (current + 1) % imgs.length;
-      showImage(current);
-    };
-  }
-
-  if (prev) {
-    prev.onclick = () => {
-      current = (current - 1 + imgs.length) % imgs.length;
-      showImage(current);
-    };
-  }
-});
 </script>
 
 </body>
