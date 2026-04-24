@@ -93,6 +93,7 @@ button{
 <input id="search" placeholder="ابحث عن منتج...">
 
 <button onclick="showCart()">🛒 السلة</button>
+<button onclick="goCheckout()">💳 إنهاء الطلب</button>
 
 <div class="grid" id="grid"></div>
 
@@ -163,13 +164,8 @@ function render(list){
 
 /* SEARCH */
 document.getElementById("search").addEventListener("input",(e)=>{
-
   const val = e.target.value.toLowerCase();
-
-  render(products.filter(p =>
-    p.name.toLowerCase().includes(val)
-  ));
-
+  render(products.filter(p => p.name.toLowerCase().includes(val)));
 });
 
 /* CART */
@@ -183,7 +179,6 @@ window.addCart = (id)=>{
   });
 
   localStorage.setItem("cart", JSON.stringify(cart));
-
   alert("تمت الإضافة 🛒");
 };
 
@@ -202,6 +197,11 @@ window.showCart = ()=>{
   text += "💰 الإجمالي: " + total + " جنيه";
 
   alert(text);
+};
+
+/* GO CHECKOUT */
+window.goCheckout = ()=>{
+  window.location.href = "checkout.html";
 };
 
 load();
