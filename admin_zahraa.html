@@ -182,7 +182,15 @@ const db = getFirestore(app);
 import { getMessaging, getToken, onMessage } 
 from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
 
-const messaging = getMessaging(app);
+let messaging = null;
+
+if ('serviceWorker' in navigator) {
+  try {
+    messaging = getMessaging(app);
+  } catch (e) {
+    console.log("Messaging not supported", e);
+  }
+}
 
 /* CLOUD */
 const cloudName = "dxlxwe55b";
@@ -339,6 +347,10 @@ await updateDoc(doc(db,"orders",id),{status});
 /* 🔥 NOTIFICATIONS */
 async function initNotifications(){
 
+if(!messaging) return;
+
+try{
+
 const permission = await Notification.requestPermission();
 if(permission !== "granted") return;
 
@@ -347,9 +359,15 @@ vapidKey:"BAtzdb2RIhljdg2H8zNOtPimm8CVEtSpAUnwkF2qa5x7j3ejf1MYSKRkR1AeCJpvuKlBm9
 });
 
 console.log("FCM TOKEN:",token);
+
+}catch(e){
+console.log("Notification error:", e);
+}
+
 }
 
 /* IN APP NOTIFICATION */
+if(messaging){
 onMessage(messaging,(payload)=>{
 
 const toast = document.getElementById("toast");
@@ -364,6 +382,7 @@ let audio = new Audio("https://www.soundjay.com/buttons/sounds/button-3.mp3");
 audio.play();
 
 });
+}
 
 function showNotification(count){
 if(count > 0){
