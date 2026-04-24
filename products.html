@@ -52,76 +52,33 @@ input{
 
 .slides{
   display:flex;
-  overflow-x:auto;
-  scroll-snap-type:x mandatory;
-  scroll-behavior:smooth;
-  -webkit-overflow-scrolling:touch;
-}
-
-.slides::-webkit-scrollbar{
-  display:none;
+  transition:0.3s;
 }
 
 .slides img{
-  min-width:100%;
+  width:100%;
   height:150px;
   object-fit:cover;
-  scroll-snap-align:start;
-}
-
-/* DOTS */
-.dots{
-  position:absolute;
-  bottom:5px;
-  width:100%;
-  text-align:center;
-}
-
-.dot{
-  height:6px;
-  width:6px;
-  background:#666;
-  display:inline-block;
-  border-radius:50%;
-  margin:2px;
-}
-
-.dot.active{
-  background:gold;
+  flex-shrink:0;
 }
 
 /* FULLSCREEN */
 .fullscreen{
   position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
+  top:0;left:0;
+  width:100%;height:100%;
   background:black;
   display:none;
   align-items:center;
   justify-content:center;
   z-index:9999;
 }
-
 .fullscreen img{
   max-width:100%;
   max-height:100%;
 }
 
-.card h3{
-  text-align:center;
-  font-size:14px;
-  color:gold;
-  padding:5px;
-}
-
-.card p{
-  text-align:center;
-  margin:0;
-  color:#fff;
-}
-
+/* BUTTONS */
 button,a{
   display:block;
   margin:8px auto;
@@ -146,14 +103,11 @@ button{
   font-weight:bold;
 }
 
-/* ===================== */
-/* 🛒 CART DRAWER SHOPIFY */
-/* ===================== */
+/* ================= CART SHOPIFY ================= */
 
 #overlay{
   position:fixed;
-  top:0;left:0;
-  width:100%;height:100%;
+  inset:0;
   background:rgba(0,0,0,0.6);
   display:none;
   z-index:999;
@@ -164,13 +118,13 @@ button{
   top:0;
   right:-100%;
   width:85%;
-  max-width:360px;
+  max-width:380px;
   height:100%;
   background:#111;
   z-index:1000;
-  transition:0.3s;
+  transition:0.35s;
   padding:10px;
-  overflow:auto;
+  overflow-y:auto;
 }
 
 #cartDrawer h3{
@@ -181,13 +135,17 @@ button{
 .cart-item{
   background:#1a1a1a;
   padding:10px;
-  margin:10px 0;
   border-radius:10px;
+  margin:10px 0;
 }
 
-.cart-item h4{
-  margin:0;
-  font-size:14px;
+.remove{
+  background:red;
+  color:white;
+  border:none;
+  width:100%;
+  padding:5px;
+  border-radius:8px;
 }
 
 .cart-footer{
@@ -196,15 +154,6 @@ button{
   background:#111;
   padding:10px;
   border-top:1px solid #333;
-}
-
-.remove{
-  background:red;
-  color:white;
-  padding:5px;
-  border-radius:8px;
-  width:100%;
-  margin-top:5px;
 }
 </style>
 </head>
@@ -225,7 +174,7 @@ button{
   <img id="fullImg">
 </div>
 
-<!-- CART -->
+<!-- CART DRAWER -->
 <div id="overlay" onclick="closeCart()"></div>
 
 <div id="cartDrawer">
@@ -233,7 +182,7 @@ button{
   <div id="cartItems"></div>
 
   <div class="cart-footer">
-    <h4 id="total">الإجمالي: 0</h4>
+    <h4 id="total">الإجمالي: 0 جنيه</h4>
   </div>
 </div>
 
@@ -279,51 +228,22 @@ window.closeFull = ()=>{
 };
 
 /* SLIDER */
-function createSlider(images, id){
-
-  if(!images || images.length === 0){
-    return `<div class="slider"></div>`;
-  }
+function createSlider(images){
+  if(!images || images.length===0) return "";
 
   return `
   <div class="slider">
-
     <div class="slides">
       ${images.map(img=>`
         <img src="${img}" onclick="openFull('${img}')">
       `).join("")}
     </div>
-
-    <div class="dots">
-      ${images.map(()=>`<span class="dot"></span>`).join("")}
-    </div>
-
   </div>`;
-}
-
-/* AUTO SLIDE */
-function autoSlide(){
-  document.querySelectorAll(".slider").forEach(slider=>{
-
-    const slides = slider.querySelector(".slides");
-    const imgs = slider.querySelectorAll("img");
-
-    if(imgs.length <= 1) return;
-
-    let i = 0;
-
-    setInterval(()=>{
-      i = (i + 1) % imgs.length;
-      slides.scrollTo({left:i*slides.clientWidth, behavior:"smooth"});
-    },3000);
-
-  });
 }
 
 /* RENDER */
 function render(list){
-
-  grid.innerHTML = "";
+  grid.innerHTML="";
 
   list.forEach(p=>{
 
@@ -332,7 +252,7 @@ function render(list){
     grid.innerHTML += `
       <div class="card">
 
-        ${createSlider(p.images,p.id)}
+        ${createSlider(p.images)}
 
         <h3>${p.name}</h3>
         <p>${p.price} جنيه</p>
@@ -343,15 +263,16 @@ function render(list){
       </div>
     `;
   });
-
-  autoSlide();
 }
 
 /* CART */
 window.addCart = (id)=>{
   const p = products.find(x=>x.id===id);
+
   cart.push({name:p.name, price:Number(p.price)});
+
   localStorage.setItem("cart", JSON.stringify(cart));
+
   openCart();
   renderCart();
 };
@@ -368,13 +289,13 @@ window.closeCart = ()=>{
   document.getElementById("cartDrawer").style.right="-100%";
 };
 
-/* RENDER CART */
+/* CART UI */
 function renderCart(){
 
   let box = document.getElementById("cartItems");
-  box.innerHTML = "";
+  box.innerHTML="";
 
-  let total = 0;
+  let total=0;
 
   cart.forEach((p,i)=>{
     total += p.price;
@@ -399,16 +320,15 @@ window.removeItem = (i)=>{
   renderCart();
 };
 
-/* SEARCH */
-document.getElementById("search").addEventListener("input",(e)=>{
-  const val = e.target.value.toLowerCase();
-  render(products.filter(p=>p.name.toLowerCase().includes(val)));
-});
-
 /* CHECKOUT */
 window.goCheckout = ()=>{
   window.location.href="checkout.html";
 };
+
+/* SEARCH */
+document.getElementById("search").addEventListener("input",(e)=>{
+  render(products.filter(p=>p.name.toLowerCase().includes(e.target.value.toLowerCase())));
+});
 
 load();
 
