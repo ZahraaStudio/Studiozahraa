@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product</title>
+
+<style>
+body{
+  margin:0;
+  background:#0d0d0d;
+  color:white;
+  font-family:Cairo;
+}
+
+/* container */
+.container{
+  max-width:500px;
+  margin:auto;
+}
+
+/* slider */
+.slider{
+  position:relative;
+  overflow:hidden;
+  height:300px;
+  background:#111;
+}
+
+.slider img{
+  width:100%;
+  height:300px;
+  object-fit:cover;
+  display:none;
+}
+
+/* dots */
+.dots{
+  position:absolute;
+  bottom:10px;
+  width:100%;
+  text-align:center;
+}
+
+.dot{
+  width:8px;
+  height:8px;
+  background:#777;
+  display:inline-block;
+  border-radius:50%;
+  margin:3px;
+}
+
+.dot.active{
+  background:gold;
+}
+
+/* info */
+h2{
+  text-align:center;
+  color:gold;
+}
+
+p{
+  text-align:center;
+}
+
+/* buttons */
+button,a{
+  display:block;
+  width:90%;
+  margin:10px auto;
+  padding:10px;
+  border:none;
+  border-radius:20px;
+  cursor:pointer;
+  text-align:center;
+}
+
+button{
+  background:gold;
+  color:black;
+}
+
+a{
+  background:#25D366;
+  color:white;
+  text-decoration:none;
+}
+
+/* fullscreen */
+#full{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:black;
+  display:none;
+  align-items:center;
+  justify-content:center;
+}
+
+#full img{
+  max-width:100%;
+  max-height:100%;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <div class="slider" id="slider"></div>
+
+  <h2 id="name"></h2>
+  <p id="price"></p>
+
+  <button onclick="addCart()">🛒 أضف للسلة</button>
+
+  <a id="wa">اطلب واتساب</a>
+
+</div>
+
+<div id="full" onclick="this.style.display='none'">
+  <img id="fullImg">
+</div>
+
+<script>
+let product = {};
+let index = 0;
+
+/* GET DATA */
+const data = JSON.parse(localStorage.getItem("product"));
+
+product = data;
+
+/* SET */
+document.getElementById("name").innerText = product.name;
+document.getElementById("price").innerText = product.price + " جنيه";
+
+/* WHATSAPP */
+document.getElementById("wa").href =
+"https://wa.me/201204194540?text=" +
+encodeURIComponent("عايز المنتج: " + product.name);
+
+/* SLIDER */
+const slider = document.getElementById("slider");
+
+function render(){
+
+  const imgs = product.images;
+
+  slider.innerHTML = imgs.map((img,i)=>`
+    <img src="${img}" 
+      style="display:${i===index?'block':'none'}"
+      onclick="openFull('${img}')"
+    >
+  `).join("")
+  +
+  `<div class="dots">
+    ${imgs.map((_,i)=>`
+      <span class="dot ${i===index?'active':''}"></span>
+    `).join("")}
+  </div>`;
+}
+
+render();
+
+/* swipe */
+let startX=0;
+
+slider.addEventListener("touchstart",e=>{
+  startX = e.touches[0].clientX;
+});
+
+slider.addEventListener("touchend",e=>{
+  let endX = e.changedTouches[0].clientX;
+
+  if(startX - endX > 50) next();
+  if(endX - startX > 50) prev();
+});
+
+function next(){
+  index++;
+  if(index >= product.images.length) index=0;
+  render();
+}
+
+function prev(){
+  index--;
+  if(index < 0) index = product.images.length-1;
+  render();
+}
+
+/* fullscreen */
+window.openFull = (img)=>{
+  document.getElementById("full").style.display="flex";
+  document.getElementById("fullImg").src = img;
+};
+
+/* CART */
+window.addCart = ()=>{
+
+  let cart = JSON.parse(localStorage.getItem("cart")||"[]");
+
+  cart.push(product);
+
+  localStorage.setItem("cart", JSON.stringify(cart));
+
+  alert("تمت الإضافة 🛒");
+};
+
+</script>
+
+</body>
+</html>
