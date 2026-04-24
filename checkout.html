@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>Checkout</title>
+
+<style>
+body{background:#0d0d0d;color:white;font-family:Cairo;text-align:center}
+input{width:90%;padding:10px;margin:8px;border-radius:10px;border:none}
+button{padding:10px;width:90%;border:none;border-radius:20px;background:gold}
+</style>
+</head>
+
+<body>
+
+<h2>💳 إنهاء الطلب</h2>
+
+<input id="name" placeholder="اسمك">
+<input id="phone" placeholder="رقمك">
+<input id="address" placeholder="العنوان">
+
+<button onclick="order()">تأكيد الطلب</button>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const app = initializeApp({
+apiKey:"AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
+projectId:"zahraa-store-f4c90"
+});
+
+const db = getFirestore(app);
+
+window.order = async ()=>{
+
+  const name = document.getElementById("name").value;
+  const phone = document.getElementById("phone").value;
+  const address = document.getElementById("address").value;
+
+  let cart = JSON.parse(localStorage.getItem("cart") || "[]");
+
+  if(!name || !phone || !address){
+    alert("املأ البيانات");
+    return;
+  }
+
+  await addDoc(collection(db,"orders"),{
+    name,
+    phone,
+    address,
+    cart,
+    status:"pending",
+    createdAt:Date.now()
+  });
+
+  alert("تم الطلب 🔥");
+
+  localStorage.removeItem("cart");
+  location.href = "products.html";
+};
+
+</script>
+
+</body>
+</html>
