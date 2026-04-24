@@ -201,6 +201,30 @@ document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
 document.getElementById(tab).classList.add("active");
 };
 
+/* 🔥 FIX ADD PRODUCT */
+document.getElementById("addBtn").onclick = async ()=>{
+
+const name = document.getElementById("name").value;
+const price = document.getElementById("price").value;
+
+if(!name || !price){
+alert("اكتب اسم وسعر المنتج");
+return;
+}
+
+await addDoc(collection(db,"products"),{
+name:name,
+price:price,
+images:[],
+createdAt:Date.now()
+});
+
+document.getElementById("name").value="";
+document.getElementById("price").value="";
+
+load();
+};
+
 /* PRODUCTS */
 async function load(){
 const list = document.getElementById("list");
@@ -234,7 +258,7 @@ await updateDoc(doc(db,"products",id),{name,price});
 load();
 };
 
-/* DASHBOARD FIXED */
+/* DASHBOARD */
 function updateDashboard(orders){
 
 let totalOrders = orders.length;
@@ -242,21 +266,10 @@ let revenue = 0;
 let pending = 0;
 
 orders.forEach(o=>{
-
-let total = 0;
-
-if(Array.isArray(o.cart)){
-total = o.cart.reduce((s,i)=>{
-return s + (Number(i.price) || 0);
-},0);
-}else{
-total = Number(o.totalPrice) || 0;
-}
-
+const total = o.totalPrice || (o.cart?.reduce((s,i)=>s + Number(i.price),0)) || 0;
 revenue += total;
 
 if(o.status === "pending") pending++;
-
 });
 
 document.getElementById("totalOrders").innerText = totalOrders;
@@ -264,7 +277,7 @@ document.getElementById("totalRevenue").innerText = revenue;
 document.getElementById("pendingOrders").innerText = pending;
 }
 
-/* ORDERS FIXED */
+/* ORDERS */
 function loadOrders(){
 
 const box = document.getElementById("ordersList");
@@ -279,15 +292,7 @@ let orders = [];
 snap.forEach(d=>{
 
 const o = d.data();
-
-let total = 0;
-
-if(Array.isArray(o.cart)){
-total = o.cart.reduce((s,i)=>s + (Number(i.price) || 0),0);
-}else{
-total = Number(o.totalPrice) || 0;
-}
-
+const total = o.totalPrice || (o.cart?.reduce((s,i)=>s + Number(i.price),0)) || 0;
 orders.push(o);
 
 let colorClass = "status-"+o.status;
@@ -301,7 +306,7 @@ box.innerHTML += `
 <p>📞 ${o.phone}</p>
 <p>📍 ${o.address}</p>
 
-<p>🛒 ${Array.isArray(o.cart) ? o.cart.length : 0} منتجات</p>
+<p>🛒 ${o.cart?.length || 0} منتجات</p>
 
 <p>💰 ${total} جنيه</p>
 
@@ -320,6 +325,7 @@ box.innerHTML += `
 });
 
 updateDashboard(orders);
+
 });
 
 }
