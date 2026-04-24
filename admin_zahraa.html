@@ -2,55 +2,31 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Admin - Zahraa</title>
+<title>Admin</title>
 
 <style>
-body{
-  font-family:Cairo;
-  background:#111;
-  color:white;
-  text-align:center;
-  padding:20px;
-}
-
-input,button{
-  padding:10px;
-  margin:10px;
-  border-radius:10px;
-  border:none;
-}
-
-button{
-  background:gold;
-  color:black;
-  font-weight:bold;
-  cursor:pointer;
-}
-
-.preview img{
-  width:100px;
-  margin:5px;
-  border-radius:10px;
-}
+body{background:#111;color:white;font-family:Cairo;text-align:center;padding:20px}
+input,button{padding:10px;margin:10px;border-radius:10px;border:none}
+button{background:gold;color:black;font-weight:bold}
+img{width:100px;margin:5px;border-radius:10px}
 </style>
 </head>
 
 <body>
 
-<h2>🔥 لوحة الأدمن</h2>
+<h2>🔥 Admin</h2>
 
-<input type="password" id="pass" placeholder="كلمة المرور"><br>
-<button id="loginBtn">دخول</button>
+<input type="password" id="pass" placeholder="password"><br>
+<button onclick="login()">دخول</button>
 
 <div id="panel" style="display:none">
 
-  <input type="text" id="name" placeholder="اسم المنتج"><br>
-  <input type="file" id="images" multiple><br>
+<input type="text" id="name" placeholder="اسم المنتج"><br>
+<input type="file" id="img" multiple><br>
 
-  <div class="preview" id="preview"></div>
+<div id="preview"></div>
 
-  <button id="addBtn">إضافة المنتج</button>
+<button onclick="addProduct()">إضافة</button>
 
 </div>
 
@@ -59,7 +35,6 @@ button{
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* 🔥 Firebase */
 const firebaseConfig = {
   apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
   authDomain: "zahraa-store-f4c90.firebaseapp.com",
@@ -69,53 +44,37 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/* Cloudinary */
-const cloudName = "dxlxwe55b";
-const uploadPreset = "zahraa_upload";
-
-/* login */
 const password = "zahraa2025";
 
-document.getElementById("loginBtn").onclick = () => {
+window.login = function(){
   if(document.getElementById("pass").value === password){
-    document.getElementById("panel").style.display = "block";
-  } else {
-    alert("كلمة المرور غلط");
-  }
-};
-
-/* رفع صورة */
-async function uploadImage(file){
-
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("upload_preset", uploadPreset);
-
-  const res = await fetch(
-    `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-    { method:"POST", body:formData }
-  );
-
-  const data = await res.json();
-  return data.secure_url;
+    document.getElementById("panel").style.display="block";
+  }else alert("غلط");
 }
 
-/* إضافة منتج */
-document.getElementById("addBtn").onclick = async () => {
+function toBase64(file){
+  return new Promise(resolve=>{
+    const r = new FileReader();
+    r.onload = e=>resolve(e.target.result);
+    r.readAsDataURL(file);
+  });
+}
+
+window.addProduct = async function(){
 
   const name = document.getElementById("name").value;
-  const files = document.getElementById("images").files;
+  const files = document.getElementById("img").files;
 
-  if(!name || files.length === 0){
+  if(!name || files.length===0){
     alert("املأ البيانات");
     return;
   }
 
-  let images = [];
+  let images=[];
 
   for(let f of files){
-    const url = await uploadImage(f);
-    images.push(url);
+    const base64 = await toBase64(f);
+    images.push(base64);
   }
 
   await addDoc(collection(db,"products"),{
@@ -124,25 +83,18 @@ document.getElementById("addBtn").onclick = async () => {
     createdAt: Date.now()
   });
 
-  alert("تم رفع المنتج 🔥");
+  alert("تم الإضافة 🔥");
+}
 
-  document.getElementById("name").value = "";
-  document.getElementById("images").value = "";
-  document.getElementById("preview").innerHTML = "";
-};
-
-/* preview */
-document.getElementById("images").onchange = function(){
-
-  const preview = document.getElementById("preview");
-  preview.innerHTML = "";
-
+document.getElementById("img").onchange = function(){
+  const p=document.getElementById("preview");
+  p.innerHTML="";
   for(let f of this.files){
-    const img = document.createElement("img");
-    img.src = URL.createObjectURL(f);
-    preview.appendChild(img);
+    const i=document.createElement("img");
+    i.src=URL.createObjectURL(f);
+    p.appendChild(i);
   }
-};
+}
 
 </script>
 
