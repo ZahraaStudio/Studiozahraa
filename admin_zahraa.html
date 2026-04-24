@@ -1,127 +1,187 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>لوحة تحكم المنتجات</title>
-  <style>
-    body {
-      font-family: 'Cairo', sans-serif;
-      background-color: #111;
-      color: #fff;
-      text-align: center;
-      padding: 20px;
-    }
-    input, button {
-      padding: 10px;
-      margin: 10px;
-      border-radius: 10px;
-      border: none;
-      font-size: 1rem;
-    }
-    .hidden {
-      display: none;
-    }
-    .preview {
-      margin-top: 10px;
-      max-width: 200px;
-      border-radius: 10px;
-    }
-    .product-item {
-      background: #222;
-      margin: 10px auto;
-      padding: 10px;
-      border-radius: 10px;
-      max-width: 300px;
-    }
-    .product-item img {
-      max-width: 100%;
-      border-radius: 10px;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>لوحة تحكم المنتجات</title>
+
+<style>
+body {
+  font-family: 'Cairo', sans-serif;
+  background-color: #111;
+  color: #fff;
+  text-align: center;
+  padding: 20px;
+}
+input, button {
+  padding: 10px;
+  margin: 10px;
+  border-radius: 10px;
+  border: none;
+  font-size: 1rem;
+}
+.hidden { display: none; }
+.preview img {
+  width: 120px;
+  margin: 5px;
+  border-radius: 10px;
+}
+.product-item {
+  background: #222;
+  margin: 10px auto;
+  padding: 10px;
+  border-radius: 10px;
+  max-width: 300px;
+}
+.product-item img {
+  max-width: 100%;
+  border-radius: 10px;
+}
+</style>
 </head>
+
 <body>
-  <h2>لوحة التحكم - إضافة منتج</h2>
-  <div id="login-section">
-    <p>ادخل كلمة المرور:</p>
-    <input type="password" id="password" placeholder="••••••••" />
-    <button onclick="checkPassword()">دخول</button>
-  </div>
 
-  <div id="admin-section" class="hidden">
-    <input type="text" id="productName" placeholder="اسم المنتج" />
-    <input type="file" id="productImage" accept="image/*" />
-    <br>
-    <img id="preview" class="preview hidden" />
-    <br>
-    <button onclick="addProduct()">إضافة المنتج</button>
-    <h3>المنتجات الحالية:</h3>
-    <div id="productList"></div>
-  </div>
+<h2>🔥 لوحة التحكم - إضافة منتج</h2>
 
-  <script>
-    const correctPassword = "zahraa2025";
+<!-- تسجيل الدخول -->
+<div id="login-section">
+  <p>ادخل كلمة المرور:</p>
+  <input type="password" id="password" placeholder="••••••••" />
+  <button onclick="checkPassword()">دخول</button>
+</div>
 
-    function checkPassword() {
-      const pass = document.getElementById("password").value;
-      if (pass === correctPassword) {
-        document.getElementById("login-section").style.display = "none";
-        document.getElementById("admin-section").classList.remove("hidden");
-        loadProducts();
-      } else {
-        alert("كلمة المرور غير صحيحة");
-      }
-    }
+<!-- لوحة الأدمن -->
+<div id="admin-section" class="hidden">
 
-    function addProduct() {
-      const name = document.getElementById("productName").value;
-      const file = document.getElementById("productImage").files[0];
-      if (!name || !file) {
-        alert("من فضلك املأ البيانات كاملة");
-        return;
-      }
+  <input type="text" id="productName" placeholder="اسم المنتج" /><br>
+  <input type="file" id="productImage" multiple accept="image/*" /><br>
 
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const imageData = e.target.result;
-        const newProduct = { name, image: imageData };
-        let products = JSON.parse(localStorage.getItem("products") || "[]");
-        products.push(newProduct);
-        localStorage.setItem("products", JSON.stringify(products));
-        loadProducts();
-        document.getElementById("productName").value = "";
-        document.getElementById("productImage").value = "";
-        document.getElementById("preview").classList.add("hidden");
-      };
-      reader.readAsDataURL(file);
-    }
+  <div class="preview" id="preview"></div>
 
-    function loadProducts() {
-      const productList = document.getElementById("productList");
-      productList.innerHTML = "";
-      const products = JSON.parse(localStorage.getItem("products") || "[]");
-      products.forEach((p, i) => {
-        productList.innerHTML += `
-          <div class="product-item">
-            <p><strong>${p.name}</strong></p>
-            <img src="${p.image}" />
-          </div>`;
-      });
-    }
+  <button onclick="addProduct()">إضافة المنتج</button>
 
-    document.getElementById("productImage").addEventListener("change", function() {
-      const file = this.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          const img = document.getElementById("preview");
-          img.src = e.target.result;
-          img.classList.remove("hidden");
-        };
-        reader.readAsDataURL(file);
-      }
-    });
-  </script>
+  <h3>المنتجات الحالية:</h3>
+  <div id="productList"></div>
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+/* 🔥 Firebase config */
+const firebaseConfig = {
+  apiKey: "PUT-YOUR-API-KEY",
+  authDomain: "PUT-YOUR-AUTH",
+  projectId: "PUT-YOUR-ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+/* Cloudinary */
+const cloudName = "dxlxwe55b";
+const uploadPreset = "zahraa_upload";
+
+/* password */
+const correctPassword = "zahraa2025";
+
+window.checkPassword = function () {
+  const pass = document.getElementById("password").value;
+  if (pass === correctPassword) {
+    document.getElementById("login-section").style.display = "none";
+    document.getElementById("admin-section").classList.remove("hidden");
+    loadProducts();
+  } else {
+    alert("كلمة المرور غير صحيحة");
+  }
+}
+
+/* رفع الصور لـ Cloudinary */
+async function uploadToCloudinary(file){
+
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", uploadPreset);
+
+  const res = await fetch(
+    `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+    { method:"POST", body:formData }
+  );
+
+  const data = await res.json();
+  return data.secure_url;
+}
+
+/* إضافة منتج */
+window.addProduct = async function(){
+
+  const name = document.getElementById("productName").value;
+  const files = document.getElementById("productImage").files;
+
+  if(!name || files.length === 0){
+    alert("من فضلك املأ البيانات كاملة");
+    return;
+  }
+
+  let images = [];
+
+  for(let file of files){
+    let url = await uploadToCloudinary(file);
+    images.push(url);
+  }
+
+  await addDoc(collection(db,"products"),{
+    name,
+    images,
+    createdAt: Date.now()
+  });
+
+  alert("تم رفع المنتج 🔥");
+
+  document.getElementById("productName").value = "";
+  document.getElementById("productImage").value = "";
+  document.getElementById("preview").innerHTML = "";
+
+  loadProducts();
+}
+
+/* عرض المنتجات */
+async function loadProducts(){
+
+  const productList = document.getElementById("productList");
+  productList.innerHTML = "";
+
+  const snap = await getDocs(collection(db,"products"));
+
+  snap.forEach(doc => {
+
+    const p = doc.data();
+
+    productList.innerHTML += `
+      <div class="product-item">
+        <p><strong>${p.name}</strong></p>
+        <img src="${p.images[0]}" />
+      </div>
+    `;
+  });
+}
+
+/* preview images */
+document.getElementById("productImage").addEventListener("change", function(){
+
+  const preview = document.getElementById("preview");
+  preview.innerHTML = "";
+
+  for(let file of this.files){
+    const img = document.createElement("img");
+    img.src = URL.createObjectURL(file);
+    preview.appendChild(img);
+  }
+});
+
+</script>
+
 </body>
 </html>
