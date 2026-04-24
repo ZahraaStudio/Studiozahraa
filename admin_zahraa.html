@@ -202,7 +202,7 @@ document.getElementById("loginBox").style.display="none";
 document.getElementById("panel").style.display="block";
 load();
 loadOrders();
-initNotifications(); // 🔥 NEW
+initNotifications();
 }
 });
 
@@ -315,10 +315,10 @@ box.innerHTML += `
 
 <select onchange="updateStatus('${d.id}',this.value)">
 <option value="pending" ${o.status==="pending"?"selected":""}>pending</option>
-<option value="processing">processing</option>
-<option value="shipped">shipped</option>
-<option value="delivered">delivered</option>
-<option value="canceled">canceled</option>
+<option value="processing" ${o.status==="processing"?"selected":""}>processing</option>
+<option value="shipped" ${o.status==="shipped"?"selected":""}>shipped</option>
+<option value="delivered" ${o.status==="delivered"?"selected":""}>delivered</option>
+<option value="canceled" ${o.status==="canceled"?"selected":""}>canceled</option>
 </select>
 
 </div>
@@ -343,7 +343,7 @@ const permission = await Notification.requestPermission();
 if(permission !== "granted") return;
 
 const token = await getToken(messaging,{
-vapidKey:"PUT_YOUR_VAPID_KEY_HERE"
+vapidKey:"BAtzdb2RIhljdg2H8zNOtPimm8CVEtSpAUnwkF2qa5x7j3ejf1MYSKRkR1AeCJpvuKlBm9j3UOo7GoidLMFNm1Y"
 });
 
 console.log("FCM TOKEN:",token);
