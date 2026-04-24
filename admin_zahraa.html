@@ -6,17 +6,18 @@
 
 <style>
 body{background:#111;color:white;font-family:Cairo;text-align:center;padding:20px}
-input,button{padding:10px;margin:10px;border-radius:10px;border:none}
-button{background:gold;color:black;font-weight:bold}
-img{width:100px;margin:5px;border-radius:10px}
+input,button{padding:10px;margin:8px;border-radius:10px;border:none}
+button{cursor:pointer;font-weight:bold}
+.card{background:#222;padding:10px;margin:10px;border-radius:10px}
+img{width:80px;border-radius:10px}
 </style>
 </head>
 
 <body>
 
-<h2>🔥 Admin</h2>
+<h2>🔥 لوحة الأدمن</h2>
 
-<input type="password" id="pass" placeholder="password"><br>
+<input type="password" id="pass" placeholder="password">
 <button onclick="login()">دخول</button>
 
 <div id="panel" style="display:none">
@@ -24,16 +25,25 @@ img{width:100px;margin:5px;border-radius:10px}
 <input type="text" id="name" placeholder="اسم المنتج"><br>
 <input type="file" id="img" multiple><br>
 
-<div id="preview"></div>
-
 <button onclick="addProduct()">إضافة</button>
+
+<h3>المنتجات</h3>
+<div id="list"></div>
 
 </div>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  getDocs,
+  deleteDoc,
+  doc,
+  updateDoc
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
@@ -44,28 +54,29 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const password = "zahraa2025";
+const password="zahraa2025";
 
-window.login = function(){
-  if(document.getElementById("pass").value === password){
-    document.getElementById("panel").style.display="block";
+window.login=()=>{
+  if(pass.value===password){
+    panel.style.display="block";
+    load();
   }else alert("غلط");
 }
 
 function toBase64(file){
-  return new Promise(resolve=>{
-    const r = new FileReader();
-    r.onload = e=>resolve(e.target.result);
+  return new Promise(res=>{
+    const r=new FileReader();
+    r.onload=e=>res(e.target.result);
     r.readAsDataURL(file);
   });
 }
 
-window.addProduct = async function(){
+window.addProduct=async()=>{
 
-  const name = document.getElementById("name").value;
-  const files = document.getElementById("img").files;
+  const name=document.getElementById("name").value;
+  const files=document.getElementById("img").files;
 
-  if(!name || files.length===0){
+  if(!name||files.length===0){
     alert("املأ البيانات");
     return;
   }
@@ -73,27 +84,55 @@ window.addProduct = async function(){
   let images=[];
 
   for(let f of files){
-    const base64 = await toBase64(f);
-    images.push(base64);
+    images.push(await toBase64(f));
   }
 
   await addDoc(collection(db,"products"),{
     name,
     images,
-    createdAt: Date.now()
+    createdAt:Date.now()
   });
 
-  alert("تم الإضافة 🔥");
+  alert("تمت الإضافة 🔥");
+  load();
 }
 
-document.getElementById("img").onchange = function(){
-  const p=document.getElementById("preview");
-  p.innerHTML="";
-  for(let f of this.files){
-    const i=document.createElement("img");
-    i.src=URL.createObjectURL(f);
-    p.appendChild(i);
-  }
+/* تحميل المنتجات */
+async function load(){
+
+  const list=document.getElementById("list");
+  list.innerHTML="";
+
+  const snap=await getDocs(collection(db,"products"));
+
+  snap.forEach(d=>{
+
+    const p=d.data();
+
+    list.innerHTML+=`
+      <div class="card">
+        <img src="${p.images[0]}"><br>
+        <input value="${p.name}" id="n-${d.id}">
+        <br>
+
+        <button onclick="edit('${d.id}')">تعديل</button>
+        <button onclick="del('${d.id}')">حذف</button>
+      </div>
+    `;
+  });
+}
+
+window.del=async(id)=>{
+  await deleteDoc(doc(db,"products",id));
+  load();
+}
+
+window.edit=async(id)=>{
+  const newName=document.getElementById("n-"+id).value;
+  await updateDoc(doc(db,"products",id),{
+    name:newName
+  });
+  load();
 }
 
 </script>
