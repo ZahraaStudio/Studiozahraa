@@ -50,8 +50,8 @@ img{
 
 .menu button{flex:1}
 
-.section{display:none}
-.active{display:block}
+.section{display:none;}
+.active{display:block;}
 
 select{
   width:100%;
@@ -61,6 +61,44 @@ select{
   background:#111;
   color:white;
   border:1px solid #333;
+}
+
+/* DASHBOARD */
+#dashboard{
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:15px;
+}
+
+.box{
+  background:#111;
+  padding:10px;
+  border-radius:10px;
+  min-width:120px;
+  border:1px solid #333;
+}
+
+/* STATUS COLORS */
+.status-pending{color:gray;}
+.status-processing{color:deepskyblue;}
+.status-shipped{color:orange;}
+.status-delivered{color:lime;}
+.status-canceled{color:red;}
+
+/* TOAST */
+#toast{
+  position:fixed;
+  bottom:20px;
+  left:50%;
+  transform:translateX(-50%);
+  background:gold;
+  color:black;
+  padding:10px 20px;
+  border-radius:20px;
+  display:none;
+  font-weight:bold;
 }
 </style>
 </head>
@@ -82,6 +120,14 @@ select{
   <button onclick="showTab('orders')">📦 الطلبات</button>
 </div>
 
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <div class="box">📦 <span id="totalOrders">0</span></div>
+  <div class="box">💰 <span id="totalRevenue">0</span></div>
+  <div class="box">⏳ <span id="pendingOrders">0</span></div>
+</div>
+
+<!-- PRODUCTS -->
 <div id="products" class="section active">
 
 <input type="text" id="name" placeholder="اسم المنتج"><br>
@@ -95,6 +141,7 @@ select{
 
 </div>
 
+<!-- ORDERS -->
 <div id="orders" class="section">
 
 <h3>📦 الطلبات</h3>
@@ -103,6 +150,8 @@ select{
 </div>
 
 </div>
+
+<div id="toast">🛒 طلب جديد وصل!</div>
 
 <script type="module">
 
@@ -141,10 +190,8 @@ const uploadPreset = "zahraa_upload";
 
 /* LOGIN */
 document.getElementById("loginBtn").onclick = async ()=>{
-
   const email = document.getElementById("email").value;
   const pass = document.getElementById("pass").value;
-
   await signInWithEmailAndPassword(auth, email, pass);
 };
 
@@ -178,40 +225,10 @@ async function upload(file){
   return (await res.json()).secure_url;
 }
 
-/* ADD PRODUCT */
-document.getElementById("addBtn").onclick = async ()=>{
-
-  const name = document.getElementById("name").value;
-  const price = document.getElementById("price").value;
-  const files = document.getElementById("images").files;
-
-  if(!name || !price || files.length===0){
-    alert("املأ البيانات");
-    return;
-  }
-
-  let images=[];
-
-  for(let f of files){
-    images.push(await upload(f));
-  }
-
-  await addDoc(collection(db,"products"),{
-    name,
-    price,
-    images,
-    createdAt:Date.now()
-  });
-
-  load();
-};
-
 /* PRODUCTS */
 async function load(){
-
   const list = document.getElementById("list");
   list.innerHTML="";
-
   const snap = await getDocs(collection(db,"products"));
 
   snap.forEach(d=>{
@@ -222,7 +239,6 @@ async function load(){
         <input id="n-${d.id}" value="${p.name}">
         <input id="p-${d.id}" value="${p.price}">
         <img src="${p.images?.[0] || ''}">
-
         <button onclick="edit('${d.id}')">تعديل</button>
         <button onclick="del('${d.id}')">حذف</button>
       </div>
@@ -238,28 +254,61 @@ window.del = async (id)=>{
 window.edit = async (id)=>{
   const name = document.getElementById("n-"+id).value;
   const price = document.getElementById("p-"+id).value;
-
   await updateDoc(doc(db,"products",id),{name,price});
   load();
 };
 
-/* 🔥 REALTIME ORDERS (LEVEL 6 UPGRADE) */
+/* TOAST CONTROL (LEVEL 7 FIX) */
+let lastOrderCount = 0;
+
+function notify(){
+  const t = document.getElementById("toast");
+  t.style.display="block";
+  setTimeout(()=>t.style.display="none",2000);
+}
+
+/* DASHBOARD FIX */
+function updateDashboard(orders){
+
+  let totalOrders = orders.length;
+  let revenue = 0;
+  let pending = 0;
+
+  orders.forEach(o=>{
+    const total = o.totalPrice || (o.cart?.reduce((s,i)=>s + Number(i.price),0)) || 0;
+    revenue += total;
+
+    if(o.status === "pending") pending++;
+  });
+
+  document.getElementById("totalOrders").innerText = totalOrders;
+  document.getElementById("totalRevenue").innerText = revenue;
+  document.getElementById("pendingOrders").innerText = pending;
+}
+
+/* ORDERS LIVE (LEVEL 7 PRO) */
 function loadOrders(){
 
   const box = document.getElementById("ordersList");
-  box.innerHTML = "";
 
   const q = query(collection(db,"orders"), orderBy("createdAt","desc"));
 
   onSnapshot(q,(snap)=>{
 
-    box.innerHTML = "";
+    box.innerHTML="";
+
+    let orders = [];
 
     snap.forEach(d=>{
 
       const o = d.data();
 
-      let total = o.totalPrice || 0;
+      const total = o.totalPrice || (o.cart?.reduce((s,i)=>s + Number(i.price),0)) || 0;
+      o.totalPrice = total;
+
+      orders.push(o);
+
+      let colorClass = "status-"+o.status;
 
       box.innerHTML += `
         <div class="card">
@@ -270,9 +319,11 @@ function loadOrders(){
           <p>📞 ${o.phone}</p>
           <p>📍 ${o.address}</p>
 
+          <p>🛒 ${o.cart?.length || 0} منتجات</p>
+
           <p>💰 ${total} جنيه</p>
 
-          <p>📦 الحالة: ${o.status}</p>
+          <p class="${colorClass}">📦 ${o.status}</p>
 
           <select onchange="updateStatus('${d.id}',this.value)">
             <option value="pending" ${o.status==="pending"?"selected":""}>pending</option>
@@ -285,6 +336,14 @@ function loadOrders(){
         </div>
       `;
     });
+
+    updateDashboard(orders);
+
+    // 🔥 notify only new orders
+    if(snap.size > lastOrderCount){
+      notify();
+    }
+    lastOrderCount = snap.size;
 
   });
 }
