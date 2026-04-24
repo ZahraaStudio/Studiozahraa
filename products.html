@@ -52,14 +52,21 @@ input{
 
 .slides{
   display:flex;
-  transition:transform 0.4s ease;
+  overflow-x:auto;
+  scroll-snap-type:x mandatory;
+  scroll-behavior:smooth;
+  -webkit-overflow-scrolling:touch;
+}
+
+.slides::-webkit-scrollbar{
+  display:none;
 }
 
 .slides img{
-  width:100%;
+  min-width:100%;
   height:150px;
   object-fit:cover;
-  flex-shrink:0;
+  scroll-snap-align:start;
 }
 
 /* DOTS */
@@ -100,8 +107,6 @@ input{
 .fullscreen img{
   max-width:100%;
   max-height:100%;
-  transform:scale(1);
-  transition:transform 0.3s;
 }
 
 .card h3{
@@ -140,6 +145,67 @@ button{
   color:black;
   font-weight:bold;
 }
+
+/* ===================== */
+/* 🛒 CART DRAWER SHOPIFY */
+/* ===================== */
+
+#overlay{
+  position:fixed;
+  top:0;left:0;
+  width:100%;height:100%;
+  background:rgba(0,0,0,0.6);
+  display:none;
+  z-index:999;
+}
+
+#cartDrawer{
+  position:fixed;
+  top:0;
+  right:-100%;
+  width:85%;
+  max-width:360px;
+  height:100%;
+  background:#111;
+  z-index:1000;
+  transition:0.3s;
+  padding:10px;
+  overflow:auto;
+}
+
+#cartDrawer h3{
+  text-align:center;
+  color:gold;
+}
+
+.cart-item{
+  background:#1a1a1a;
+  padding:10px;
+  margin:10px 0;
+  border-radius:10px;
+}
+
+.cart-item h4{
+  margin:0;
+  font-size:14px;
+}
+
+.cart-footer{
+  position:sticky;
+  bottom:0;
+  background:#111;
+  padding:10px;
+  border-top:1px solid #333;
+}
+
+.remove{
+  background:red;
+  color:white;
+  padding:5px;
+  border-radius:8px;
+  width:100%;
+  margin-top:5px;
+}
 </style>
 </head>
 
@@ -149,13 +215,26 @@ button{
 
 <input id="search" placeholder="ابحث عن منتج...">
 
-<button onclick="showCart()">🛒 السلة</button>
+<button onclick="openCart()">🛒 السلة</button>
 <button onclick="goCheckout()">💳 إنهاء الطلب</button>
 
 <div class="grid" id="grid"></div>
 
+<!-- FULLSCREEN -->
 <div class="fullscreen" id="full" onclick="closeFull()">
   <img id="fullImg">
+</div>
+
+<!-- CART -->
+<div id="overlay" onclick="closeCart()"></div>
+
+<div id="cartDrawer">
+  <h3>🛒 السلة</h3>
+  <div id="cartItems"></div>
+
+  <div class="cart-footer">
+    <h4 id="total">الإجمالي: 0</h4>
+  </div>
 </div>
 
 <script type="module">
@@ -199,7 +278,7 @@ window.closeFull = ()=>{
   document.getElementById("full").style.display="none";
 };
 
-/* SLIDER (FIXED VERSION) */
+/* SLIDER */
 function createSlider(images, id){
 
   if(!images || images.length === 0){
@@ -207,7 +286,7 @@ function createSlider(images, id){
   }
 
   return `
-  <div class="slider" id="s-${id}">
+  <div class="slider">
 
     <div class="slides">
       ${images.map(img=>`
@@ -216,37 +295,27 @@ function createSlider(images, id){
     </div>
 
     <div class="dots">
-      ${images.map((_,i)=>`
-        <span class="dot ${i===0?'active':''}"></span>
-      `).join("")}
+      ${images.map(()=>`<span class="dot"></span>`).join("")}
     </div>
 
   </div>`;
 }
 
-/* SAFE SLIDER ENGINE */
+/* AUTO SLIDE */
 function autoSlide(){
-
   document.querySelectorAll(".slider").forEach(slider=>{
 
-    let slides = slider.querySelector(".slides");
-    let imgs = slider.querySelectorAll("img");
-    let dots = slider.querySelectorAll(".dot");
+    const slides = slider.querySelector(".slides");
+    const imgs = slider.querySelectorAll("img");
 
     if(imgs.length <= 1) return;
 
-    let index = 0;
+    let i = 0;
 
     setInterval(()=>{
-
-      index = (index + 1) % imgs.length;
-
-      slides.style.transform = `translateX(-${index * 100}%)`;
-
-      dots.forEach(d=>d.classList.remove("active"));
-      if(dots[index]) dots[index].classList.add("active");
-
-    },3500);
+      i = (i + 1) % imgs.length;
+      slides.scrollTo({left:i*slides.clientWidth, behavior:"smooth"});
+    },3000);
 
   });
 }
@@ -258,28 +327,19 @@ function render(list){
 
   list.forEach(p=>{
 
-    const imgs = p.images || [];
-
-    const wa = encodeURIComponent(
-`عايز المنتج: ${p.name}
-💰 السعر: ${p.price} جنيه`
-    );
+    const wa = encodeURIComponent(`عايز المنتج: ${p.name}`);
 
     grid.innerHTML += `
       <div class="card">
 
-        ${createSlider(imgs,p.id)}
+        ${createSlider(p.images,p.id)}
 
         <h3>${p.name}</h3>
-        <p>💰 ${p.price} جنيه</p>
+        <p>${p.price} جنيه</p>
 
-        <a href="https://wa.me/201204194540?text=${wa}" target="_blank">
-          اطلب واتساب
-        </a>
+        <a href="https://wa.me/201204194540?text=${wa}" target="_blank">اطلب واتساب</a>
 
-        <button onclick="addCart('${p.id}')">
-          أضف للسلة
-        </button>
+        <button onclick="addCart('${p.id}')">أضف للسلة</button>
       </div>
     `;
   });
@@ -287,39 +347,65 @@ function render(list){
   autoSlide();
 }
 
+/* CART */
+window.addCart = (id)=>{
+  const p = products.find(x=>x.id===id);
+  cart.push({name:p.name, price:Number(p.price)});
+  localStorage.setItem("cart", JSON.stringify(cart));
+  openCart();
+  renderCart();
+};
+
+/* OPEN CART */
+window.openCart = ()=>{
+  document.getElementById("overlay").style.display="block";
+  document.getElementById("cartDrawer").style.right="0";
+  renderCart();
+};
+
+window.closeCart = ()=>{
+  document.getElementById("overlay").style.display="none";
+  document.getElementById("cartDrawer").style.right="-100%";
+};
+
+/* RENDER CART */
+function renderCart(){
+
+  let box = document.getElementById("cartItems");
+  box.innerHTML = "";
+
+  let total = 0;
+
+  cart.forEach((p,i)=>{
+    total += p.price;
+
+    box.innerHTML += `
+      <div class="cart-item">
+        <h4>${p.name}</h4>
+        <p>${p.price} جنيه</p>
+        <button class="remove" onclick="removeItem(${i})">حذف</button>
+      </div>
+    `;
+  });
+
+  document.getElementById("total").innerText =
+    "الإجمالي: " + total + " جنيه";
+}
+
+/* REMOVE */
+window.removeItem = (i)=>{
+  cart.splice(i,1);
+  localStorage.setItem("cart", JSON.stringify(cart));
+  renderCart();
+};
+
 /* SEARCH */
 document.getElementById("search").addEventListener("input",(e)=>{
   const val = e.target.value.toLowerCase();
   render(products.filter(p=>p.name.toLowerCase().includes(val)));
 });
 
-/* CART */
-window.addCart = (id)=>{
-  const p = products.find(x=>x.id===id);
-
-  cart.push({name:p.name, price:Number(p.price)});
-
-  localStorage.setItem("cart", JSON.stringify(cart));
-
-  alert("تمت الإضافة 🛒");
-};
-
-/* CART */
-window.showCart = ()=>{
-
-  let total=0;
-  let text="🛒 السلة:\n\n";
-
-  cart.forEach(p=>{
-    text += `- ${p.name} | ${p.price} جنيه\n`;
-    total += Number(p.price);
-  });
-
-  text += "\n💰 الإجمالي: "+total;
-
-  alert(text);
-};
-
+/* CHECKOUT */
 window.goCheckout = ()=>{
   window.location.href="checkout.html";
 };
