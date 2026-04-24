@@ -1,134 +1,89 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>لوحة تحكم المنتجات</title>
+<title>Admin</title>
 
 <style>
-body {
-  font-family: 'Cairo', sans-serif;
-  background-color: #111;
-  color: #fff;
-  text-align: center;
-  padding: 20px;
+body{
+  font-family:Cairo;
+  background:#111;
+  color:white;
+  text-align:center;
+  padding:20px;
 }
 
-input, button {
-  padding: 10px;
-  margin: 10px;
-  border-radius: 10px;
-  border: none;
-  font-size: 1rem;
+input,button{
+  padding:10px;
+  margin:10px;
+  border-radius:10px;
+  border:none;
 }
 
 button{
-  background: gold;
-  color: black;
-  cursor: pointer;
-  font-weight: bold;
+  background:gold;
+  color:black;
+  font-weight:bold;
+  cursor:pointer;
 }
-
-.hidden { display: none; }
 
 .preview img{
-  width: 120px;
-  margin: 5px;
-  border-radius: 10px;
-}
-
-.product-item{
-  background:#222;
-  margin:10px auto;
-  padding:10px;
+  width:120px;
+  margin:5px;
   border-radius:10px;
-  max-width:300px;
 }
 </style>
 </head>
 
 <body>
 
-<h2>🔥 لوحة التحكم - إضافة منتج</h2>
+<h2>🔥 لوحة الأدمن</h2>
 
-<div id="login-section">
-  <p>ادخل كلمة المرور:</p>
-  <input type="password" id="password" placeholder="••••••••">
-  <button id="loginBtn">دخول</button>
-</div>
+<input type="password" id="pass" placeholder="كلمة المرور"><br>
+<button id="loginBtn">دخول</button>
 
-<div id="admin-section" class="hidden">
+<div id="panel" style="display:none">
 
-  <input type="text" id="productName" placeholder="اسم المنتج"><br>
-
-  <input type="file" id="productImage" multiple accept="image/*"><br>
+  <input type="text" id="name" placeholder="اسم المنتج"><br>
+  <input type="file" id="images" multiple><br>
 
   <div class="preview" id="preview"></div>
 
   <button id="addBtn">إضافة المنتج</button>
-
-  <h3>المنتجات الحالية:</h3>
-  <div id="productList"></div>
 
 </div>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* 🔥 Firebase */
 const firebaseConfig = {
-  apiKey: "PUT-API-KEY",
-  authDomain: "PUT-AUTH",
-  projectId: "PUT-ID"
+  apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
+  authDomain: "zahraa-store-f4c90.firebaseapp.com",
+  projectId: "zahraa-store-f4c90"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/* Cloudinary */
-const cloudName = "dxlxwe55b";
-const uploadPreset = "zahraa_upload";
+const password = "zahraa2025";
 
-/* password */
-const correctPassword = "zahraa2025";
-
-/* ================= LOGIN ================= */
-document.getElementById("loginBtn").addEventListener("click", () => {
-
-  const pass = document.getElementById("password").value;
-
-  if(pass === correctPassword){
-    document.getElementById("login-section").style.display = "none";
-    document.getElementById("admin-section").classList.remove("hidden");
-    loadProducts();
+/* login */
+document.getElementById("loginBtn").onclick = () => {
+  if(document.getElementById("pass").value === password){
+    document.getElementById("panel").style.display = "block";
   } else {
     alert("كلمة المرور غلط");
   }
-});
+};
 
-/* ================= UPLOAD IMAGE ================= */
-async function uploadToCloudinary(file){
+/* add product */
+document.getElementById("addBtn").onclick = async () => {
 
-  const form = new FormData();
-  form.append("file", file);
-  form.append("upload_preset", uploadPreset);
-
-  const res = await fetch(
-    `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-    { method:"POST", body:form }
-  );
-
-  const data = await res.json();
-  return data.secure_url;
-}
-
-/* ================= ADD PRODUCT ================= */
-async function addProduct(){
-
-  const name = document.getElementById("productName").value;
-  const files = document.getElementById("productImage").files;
+  const name = document.getElementById("name").value;
+  const files = document.getElementById("images").files;
 
   if(!name || files.length === 0){
     alert("املأ البيانات");
@@ -137,9 +92,8 @@ async function addProduct(){
 
   let images = [];
 
-  for(let file of files){
-    const url = await uploadToCloudinary(file);
-    images.push(url);
+  for(let f of files){
+    images.push(URL.createObjectURL(f));
   }
 
   await addDoc(collection(db,"products"),{
@@ -148,51 +102,19 @@ async function addProduct(){
     createdAt: Date.now()
   });
 
-  alert("تم رفع المنتج 🔥");
+  alert("تمت الإضافة 🔥");
+};
 
-  document.getElementById("productName").value = "";
-  document.getElementById("productImage").value = "";
-  document.getElementById("preview").innerHTML = "";
-
-  loadProducts();
-}
-
-/* ================= LOAD PRODUCTS ================= */
-async function loadProducts(){
-
-  const productList = document.getElementById("productList");
-  productList.innerHTML = "";
-
-  const snap = await getDocs(collection(db,"products"));
-
-  snap.forEach(doc => {
-
-    const p = doc.data();
-
-    productList.innerHTML += `
-      <div class="product-item">
-        <p><strong>${p.name}</strong></p>
-        <img src="${p.images[0]}" style="width:100%;border-radius:10px;">
-      </div>
-    `;
-  });
-}
-
-/* ================= BUTTON ================= */
-document.getElementById("addBtn").addEventListener("click", addProduct);
-
-/* ================= PREVIEW ================= */
-document.getElementById("productImage").addEventListener("change", function(){
-
+document.getElementById("images").onchange = function(){
   const preview = document.getElementById("preview");
   preview.innerHTML = "";
 
-  for(let file of this.files){
-    const img = document.createElement("img");
-    img.src = URL.createObjectURL(file);
+  for(let f of this.files){
+    let img = document.createElement("img");
+    img.src = URL.createObjectURL(f);
     preview.appendChild(img);
   }
-});
+};
 
 </script>
 
