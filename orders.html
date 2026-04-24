@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>Orders</title>
+
+<style>
+body{background:#0d0d0d;color:white;font-family:Cairo;text-align:center}
+.card{background:#1a1a1a;margin:10px;padding:10px;border-radius:10px}
+button{padding:8px;margin:5px;border:none;border-radius:10px}
+</style>
+</head>
+
+<body>
+
+<h2>📦 الطلبات</h2>
+<div id="list"></div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import {
+getFirestore,
+collection,
+getDocs,
+doc,
+updateDoc
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const app = initializeApp({
+apiKey:"AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
+projectId:"zahraa-store-f4c90"
+});
+
+const db = getFirestore(app);
+
+const list = document.getElementById("list");
+
+async function load(){
+
+  const snap = await getDocs(collection(db,"orders"));
+
+  list.innerHTML="";
+
+  snap.forEach(d=>{
+
+    const o = d.data();
+
+    list.innerHTML += `
+      <div class="card">
+        <h3>${o.name}</h3>
+        <p>${o.phone}</p>
+        <p>${o.address}</p>
+        <p>الحالة: ${o.status}</p>
+
+        <button onclick="ship('${d.id}')">🚚 تم الشحن</button>
+        <button onclick="done('${d.id}')">✅ تم التنفيذ</button>
+      </div>
+    `;
+  });
+}
+
+window.ship = async (id)=>{
+  await updateDoc(doc(db,"orders",id),{status:"shipped"});
+  load();
+};
+
+window.done = async (id)=>{
+  await updateDoc(doc(db,"orders",id),{status:"done"});
+  load();
+};
+
+load();
+
+</script>
+
+</body>
+</html>
