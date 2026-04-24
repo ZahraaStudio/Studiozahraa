@@ -2,20 +2,49 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>Admin</title>
+<title>Admin PRO</title>
 
 <style>
-body{background:#0d0d0d;color:white;font-family:Cairo;text-align:center;padding:20px}
-input,button{padding:10px;margin:8px;border-radius:10px;border:none}
-button{background:gold;color:black;font-weight:bold;cursor:pointer}
-.card{background:#1a1a1a;padding:10px;margin:10px auto;border-radius:12px;max-width:350px}
-img{width:100%;border-radius:10px}
+body{
+  background:#0d0d0d;
+  color:white;
+  font-family:Cairo;
+  text-align:center;
+  padding:20px;
+}
+
+input,button{
+  padding:10px;
+  margin:8px;
+  border-radius:10px;
+  border:none;
+}
+
+button{
+  background:gold;
+  color:black;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.card{
+  background:#1a1a1a;
+  padding:10px;
+  margin:10px auto;
+  border-radius:12px;
+  max-width:350px;
+}
+
+img{
+  width:100%;
+  border-radius:10px;
+}
 </style>
 </head>
 
 <body>
 
-<h2>🔥 الأدمن</h2>
+<h2>🔥 Admin PRO</h2>
 
 <input type="password" id="pass" placeholder="password">
 <button id="loginBtn">دخول</button>
@@ -55,35 +84,40 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 const PASSWORD = "zahraa2025";
+const cloudName = "dxlxwe55b";
+const uploadPreset = "zahraa_upload";
 
 /* LOGIN */
-document.getElementById("loginBtn").addEventListener("click", () => {
-  const v = document.getElementById("pass").value;
-
-  if (v.trim() === PASSWORD) {
+document.getElementById("loginBtn").onclick = ()=>{
+  if(document.getElementById("pass").value === PASSWORD){
     document.getElementById("panel").style.display = "block";
     load();
-  } else {
-    alert("غلط");
-  }
-});
+  } else alert("غلط");
+};
 
-/* IMAGE */
-function toBase64(file){
-  return new Promise(res=>{
-    const r = new FileReader();
-    r.onload = e => res(e.target.result);
-    r.readAsDataURL(file);
-  });
+/* UPLOAD CLOUDINARY */
+async function upload(file){
+
+  const form = new FormData();
+  form.append("file", file);
+  form.append("upload_preset", uploadPreset);
+
+  const res = await fetch(
+    `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+    { method:"POST", body:form }
+  );
+
+  const data = await res.json();
+  return data.secure_url;
 }
 
 /* ADD */
-document.getElementById("addBtn").addEventListener("click", async ()=>{
+document.getElementById("addBtn").onclick = async ()=>{
 
   const name = document.getElementById("name").value;
   const files = document.getElementById("images").files;
 
-  if(!name || files.length === 0){
+  if(!name || files.length===0){
     alert("املأ البيانات");
     return;
   }
@@ -91,22 +125,20 @@ document.getElementById("addBtn").addEventListener("click", async ()=>{
   let images = [];
 
   for(let f of files){
-    if(f.type.startsWith("image/")){
-      images.push(await toBase64(f));
-    }
+    images.push(await upload(f));
   }
 
   await addDoc(collection(db,"products"),{
     name,
     images,
-    createdAt: Date.now()
+    createdAt:Date.now()
   });
 
-  document.getElementById("name").value = "";
-  document.getElementById("images").value = "";
+  document.getElementById("name").value="";
+  document.getElementById("images").value="";
 
   load();
-});
+};
 
 /* LOAD */
 async function load(){
@@ -132,22 +164,16 @@ async function load(){
   });
 }
 
-/* DELETE */
 window.del = async (id)=>{
   await deleteDoc(doc(db,"products",id));
   load();
-}
+};
 
-/* EDIT */
 window.edit = async (id)=>{
-  const newName = document.getElementById("n-"+id).value;
-
-  await updateDoc(doc(db,"products",id),{
-    name:newName
-  });
-
+  const v = document.getElementById("n-"+id).value;
+  await updateDoc(doc(db,"products",id),{name:v});
   load();
-}
+};
 
 </script>
 
