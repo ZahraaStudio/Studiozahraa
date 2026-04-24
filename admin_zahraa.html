@@ -1,3 +1,153 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>Admin PRO</title>
+
+<style>
+body{
+  background:#0d0d0d;
+  color:white;
+  font-family:Cairo;
+  text-align:center;
+  padding:20px;
+}
+
+input,button{
+  padding:10px;
+  margin:8px;
+  border-radius:10px;
+  border:none;
+}
+
+button{
+  background:gold;
+  color:black;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.card{
+  background:#1a1a1a;
+  padding:12px;
+  margin:10px auto;
+  border-radius:12px;
+  max-width:400px;
+  text-align:right;
+}
+
+img{
+  width:100%;
+  border-radius:10px;
+}
+
+.menu{
+  display:flex;
+  gap:10px;
+  justify-content:center;
+  margin:15px 0;
+}
+
+.menu button{flex:1}
+
+.section{display:none;}
+.active{display:block;}
+
+select{
+  width:100%;
+  padding:8px;
+  border-radius:8px;
+  margin-top:5px;
+  background:#111;
+  color:white;
+  border:1px solid #333;
+}
+
+/* DASHBOARD */
+#dashboard{
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:15px;
+}
+
+.box{
+  background:#111;
+  padding:10px;
+  border-radius:10px;
+  min-width:120px;
+  border:1px solid #333;
+}
+
+/* STATUS COLORS */
+.status-pending{color:gray;}
+.status-processing{color:deepskyblue;}
+.status-shipped{color:orange;}
+.status-delivered{color:lime;}
+.status-canceled{color:red;}
+
+/* TOAST */
+#toast{
+  position:fixed;
+  bottom:20px;
+  left:50%;
+  transform:translateX(-50%);
+  background:gold;
+  color:black;
+  padding:10px 20px;
+  border-radius:20px;
+  display:none;
+  font-weight:bold;
+}
+</style>
+</head>
+
+<body>
+
+<h2>🔥 Admin PRO</h2>
+
+<div id="loginBox">
+<input type="email" id="email" placeholder="email"><br>
+<input type="password" id="pass" placeholder="password"><br>
+<button id="loginBtn">دخول</button>
+</div>
+
+<div id="panel" style="display:none">
+
+<div class="menu">
+  <button onclick="showTab('products')">🛒 المنتجات</button>
+  <button onclick="showTab('orders')">📦 الطلبات</button>
+</div>
+
+<div id="dashboard">
+  <div class="box">📦 <span id="totalOrders">0</span></div>
+  <div class="box">💰 <span id="totalRevenue">0</span></div>
+  <div class="box">⏳ <span id="pendingOrders">0</span></div>
+</div>
+
+<div id="products" class="section active">
+
+<input type="text" id="name" placeholder="اسم المنتج"><br>
+<input type="number" id="price" placeholder="سعر المنتج"><br>
+<input type="file" id="images" multiple><br>
+
+<button id="addBtn">إضافة منتج</button>
+
+<h3>المنتجات</h3>
+<div id="list"></div>
+
+</div>
+
+<div id="orders" class="section">
+<h3>📦 الطلبات</h3>
+<div id="ordersList"></div>
+</div>
+
+</div>
+
+<div id="toast">🛒 طلب جديد وصل!</div>
+
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -20,6 +170,7 @@ query,
 orderBy
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+/* FIREBASE */
 const firebaseConfig = {
 apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
 authDomain: "zahraa-store-f4c90.firebaseapp.com",
@@ -30,162 +181,200 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+/* CLOUDINARY */
 const cloudName = "dxlxwe55b";
 const uploadPreset = "zahraa_upload";
 
 /* LOGIN */
 document.getElementById("loginBtn").onclick = async ()=>{
-  const email = document.getElementById("email").value;
-  const pass = document.getElementById("pass").value;
-  await signInWithEmailAndPassword(auth, email, pass);
+const email = document.getElementById("email").value;
+const pass = document.getElementById("pass").value;
+await signInWithEmailAndPassword(auth, email, pass);
 };
 
 /* PANEL */
 onAuthStateChanged(auth,(user)=>{
-  if(user){
-    document.getElementById("loginBox").style.display="none";
-    document.getElementById("panel").style.display="block";
-    load();
-    loadOrders();
-  }
+if(user){
+document.getElementById("loginBox").style.display="none";
+document.getElementById("panel").style.display="block";
+load();
+loadOrders();
+}
 });
 
 /* TAB */
 window.showTab = (tab)=>{
-  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
-  document.getElementById(tab).classList.add("active");
+document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+document.getElementById(tab).classList.add("active");
 };
 
 /* UPLOAD */
 async function upload(file){
-  const form = new FormData();
-  form.append("file", file);
-  form.append("upload_preset", uploadPreset);
+const form = new FormData();
+form.append("file", file);
+form.append("upload_preset", uploadPreset);
 
-  const res = await fetch(
-    `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-    {method:"POST", body:form}
-  );
+const res = await fetch(
+`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+{method:"POST", body:form}
+);
 
-  return (await res.json()).secure_url;
+const data = await res.json();
+return data.secure_url;
 }
 
-/* ✅ FIX 1: ADD PRODUCT */
+/* ADD PRODUCT */
 document.getElementById("addBtn").onclick = async ()=>{
 
-  const name = document.getElementById("name").value;
-  const price = document.getElementById("price").value;
-  const files = document.getElementById("images").files;
+const name = document.getElementById("name").value;
+const price = document.getElementById("price").value;
+const files = document.getElementById("images").files;
 
-  if(!name || !price || files.length===0){
-    alert("املأ البيانات");
-    return;
-  }
+if(!name || !price || files.length === 0){
+alert("املأ البيانات");
+return;
+}
 
-  let images = [];
+let images = [];
 
-  for(let f of files){
-    const url = await upload(f);
-    images.push(url);
-  }
+for(let f of files){
+const url = await upload(f);
+images.push(url);
+}
 
-  await addDoc(collection(db,"products"),{
-    name,
-    price,
-    images,
-    createdAt:Date.now()
-  });
+await addDoc(collection(db,"products"),{
+name,
+price,
+images,
+createdAt:Date.now()
+});
 
-  document.getElementById("name").value="";
-  document.getElementById("price").value="";
-  document.getElementById("images").value="";
+document.getElementById("name").value="";
+document.getElementById("price").value="";
+document.getElementById("images").value="";
 
-  load(); // refresh
+load();
 };
 
-/* PRODUCTS */
+/* LOAD PRODUCTS */
 async function load(){
-  const list = document.getElementById("list");
-  list.innerHTML="";
-  const snap = await getDocs(collection(db,"products"));
+const list = document.getElementById("list");
+list.innerHTML="";
+const snap = await getDocs(collection(db,"products"));
 
-  snap.forEach(d=>{
-    const p = d.data();
+snap.forEach(d=>{
+const p = d.data();
 
-    list.innerHTML += `
-      <div class="card">
-        <input id="n-${d.id}" value="${p.name}">
-        <input id="p-${d.id}" value="${p.price}">
-        <img src="${p.images?.[0] || ''}">
-        <button onclick="edit('${d.id}')">تعديل</button>
-        <button onclick="del('${d.id}')">حذف</button>
-      </div>
-    `;
-  });
+list.innerHTML += `
+<div class="card">
+<input id="n-${d.id}" value="${p.name}">
+<input id="p-${d.id}" value="${p.price}">
+<img src="${p.images?.[0] || ''}">
+<button onclick="edit('${d.id}')">تعديل</button>
+<button onclick="del('${d.id}')">حذف</button>
+</div>
+`;
+});
 }
 
 window.del = async (id)=>{
-  await deleteDoc(doc(db,"products",id));
-  load();
+await deleteDoc(doc(db,"products",id));
+load();
 };
 
 window.edit = async (id)=>{
-  const name = document.getElementById("n-"+id).value;
-  const price = document.getElementById("p-"+id).value;
-  await updateDoc(doc(db,"products",id),{name,price});
-  load();
+const name = document.getElementById("n-"+id).value;
+const price = document.getElementById("p-"+id).value;
+await updateDoc(doc(db,"products",id),{name,price});
+load();
 };
 
-/* ORDERS */
+/* DASHBOARD */
+function updateDashboard(orders){
+
+let totalOrders = orders.length;
+let revenue = 0;
+let pending = 0;
+
+orders.forEach(o=>{
+const total = o.totalPrice || (o.cart?.reduce((s,i)=>s + Number(i.price),0)) || 0;
+revenue += total;
+
+if(o.status === "pending") pending++;
+});
+
+document.getElementById("totalOrders").innerText = totalOrders;
+document.getElementById("totalRevenue").innerText = revenue;
+document.getElementById("pendingOrders").innerText = pending;
+}
+
+/* ORDERS REALTIME */
 function loadOrders(){
 
-  const box = document.getElementById("ordersList");
+const box = document.getElementById("ordersList");
 
-  const q = query(collection(db,"orders"), orderBy("createdAt","desc"));
+const q = query(collection(db,"orders"), orderBy("createdAt","desc"));
 
-  onSnapshot(q,(snap)=>{
+onSnapshot(q,(snap)=>{
 
-    box.innerHTML="";
+box.innerHTML="";
 
-    let orders = [];
+let orders = [];
 
-    snap.forEach(d=>{
-      const o = d.data();
-      orders.push(o);
+snap.forEach(d=>{
 
-      const total = o.totalPrice || (o.cart?.reduce((s,i)=>s + Number(i.price),0)) || 0;
+const o = d.data();
 
-      box.innerHTML += `
-        <div class="card">
+const total = o.totalPrice || (o.cart?.reduce((s,i)=>s + Number(i.price),0)) || 0;
 
-          <h3>🆔 ${d.id}</h3>
+orders.push(o);
 
-          <p>${o.name}</p>
-          <p>📞 ${o.phone}</p>
-          <p>📍 ${o.address}</p>
+let colorClass = "status-"+o.status;
 
-          <p>💰 ${total} جنيه</p>
+box.innerHTML += `
+<div class="card">
 
-          <p>📦 ${o.status}</p>
+<h3>🆔 ${o.orderId || d.id}</h3>
 
-          <select onchange="updateStatus('${d.id}',this.value)">
-            <option value="pending" ${o.status==="pending"?"selected":""}>pending</option>
-            <option value="processing" ${o.status==="processing"?"selected":""}>processing</option>
-            <option value="shipped" ${o.status==="shipped"?"selected":""}>shipped</option>
-            <option value="delivered" ${o.status==="delivered"?"selected":""}>delivered</option>
-            <option value="canceled" ${o.status==="canceled"?"selected":""}>canceled</option>
-          </select>
+<p>${o.name}</p>
+<p>📞 ${o.phone}</p>
+<p>📍 ${o.address}</p>
 
-        </div>
-      `;
-    });
+<p>🛒 ${o.cart?.length || 0} منتجات</p>
 
-  });
+<p>💰 ${total} جنيه</p>
+
+<p class="${colorClass}">📦 ${o.status}</p>
+
+<select onchange="updateStatus('${d.id}',this.value)">
+<option value="pending" ${o.status==="pending"?"selected":""}>pending</option>
+<option value="processing" ${o.status==="processing"?"selected":""}>processing</option>
+<option value="shipped" ${o.status==="shipped"?"selected":""}>shipped</option>
+<option value="delivered" ${o.status==="delivered"?"selected":""}>delivered</option>
+<option value="canceled" ${o.status==="canceled"?"selected":""}>canceled</option>
+</select>
+
+</div>
+`;
+});
+
+updateDashboard(orders);
+
+if(snap.size > 0){
+document.getElementById("toast").style.display="block";
+setTimeout(()=>document.getElementById("toast").style.display="none",2000);
+}
+
+});
+
 }
 
 /* STATUS */
 window.updateStatus = async (id,status)=>{
-  await updateDoc(doc(db,"orders",id),{status});
+await updateDoc(doc(db,"orders",id),{status});
 };
 
 </script>
+
+</body>
+</html>
