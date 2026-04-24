@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Admin</title>
+<title>Admin - Zahraa</title>
 
 <style>
 body{
@@ -29,7 +29,7 @@ button{
 }
 
 .preview img{
-  width:120px;
+  width:100px;
   margin:5px;
   border-radius:10px;
 }
@@ -59,6 +59,7 @@ button{
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+/* 🔥 Firebase */
 const firebaseConfig = {
   apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
   authDomain: "zahraa-store-f4c90.firebaseapp.com",
@@ -68,9 +69,13 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const password = "zahraa2025";
+/* Cloudinary */
+const cloudName = "dxlxwe55b";
+const uploadPreset = "zahraa_upload";
 
 /* login */
+const password = "zahraa2025";
+
 document.getElementById("loginBtn").onclick = () => {
   if(document.getElementById("pass").value === password){
     document.getElementById("panel").style.display = "block";
@@ -79,7 +84,23 @@ document.getElementById("loginBtn").onclick = () => {
   }
 };
 
-/* add product */
+/* رفع صورة */
+async function uploadImage(file){
+
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", uploadPreset);
+
+  const res = await fetch(
+    `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+    { method:"POST", body:formData }
+  );
+
+  const data = await res.json();
+  return data.secure_url;
+}
+
+/* إضافة منتج */
 document.getElementById("addBtn").onclick = async () => {
 
   const name = document.getElementById("name").value;
@@ -93,7 +114,8 @@ document.getElementById("addBtn").onclick = async () => {
   let images = [];
 
   for(let f of files){
-    images.push(URL.createObjectURL(f));
+    const url = await uploadImage(f);
+    images.push(url);
   }
 
   await addDoc(collection(db,"products"),{
@@ -102,15 +124,21 @@ document.getElementById("addBtn").onclick = async () => {
     createdAt: Date.now()
   });
 
-  alert("تمت الإضافة 🔥");
+  alert("تم رفع المنتج 🔥");
+
+  document.getElementById("name").value = "";
+  document.getElementById("images").value = "";
+  document.getElementById("preview").innerHTML = "";
 };
 
+/* preview */
 document.getElementById("images").onchange = function(){
+
   const preview = document.getElementById("preview");
   preview.innerHTML = "";
 
   for(let f of this.files){
-    let img = document.createElement("img");
+    const img = document.createElement("img");
     img.src = URL.createObjectURL(f);
     preview.appendChild(img);
   }
