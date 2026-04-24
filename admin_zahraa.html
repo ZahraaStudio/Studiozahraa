@@ -66,6 +66,10 @@ img{
 <h3>المنتجات</h3>
 <div id="list"></div>
 
+<!-- ✅ الطلبات (مضاف بدون تغيير القديم) -->
+<h3>📦 الطلبات</h3>
+<div id="orders"></div>
+
 </div>
 
 <script type="module">
@@ -115,6 +119,7 @@ onAuthStateChanged(auth,(user)=>{
     document.getElementById("loginBox").style.display="none";
     document.getElementById("panel").style.display="block";
     load();
+    loadOrders(); // ✅ جديد
   }
 });
 
@@ -165,7 +170,7 @@ document.getElementById("addBtn").onclick = async ()=>{
   load();
 };
 
-/* LOAD */
+/* LOAD PRODUCTS */
 async function load(){
 
   const list = document.getElementById("list");
@@ -206,6 +211,47 @@ window.edit = async (id)=>{
   });
 
   load();
+};
+
+/* ================= الطلبات ================= */
+
+async function loadOrders(){
+
+  const box = document.getElementById("orders");
+  box.innerHTML = "";
+
+  const snap = await getDocs(collection(db,"orders"));
+
+  snap.forEach(d=>{
+
+    const o = d.data();
+
+    let total = 0;
+    o.cart.forEach(i=> total += Number(i.price));
+
+    box.innerHTML += `
+      <div class="card">
+        <h3>${o.name}</h3>
+        <p>📞 ${o.phone}</p>
+        <p>📍 ${o.address}</p>
+        <p>💰 ${total} جنيه</p>
+        <p>📦 الحالة: ${o.status}</p>
+
+        <button onclick="ship('${d.id}')">🚚 تم الشحن</button>
+        <button onclick="done('${d.id}')">✅ تم التنفيذ</button>
+      </div>
+    `;
+  });
+}
+
+window.ship = async (id)=>{
+  await updateDoc(doc(db,"orders",id),{status:"shipped"});
+  loadOrders();
+};
+
+window.done = async (id)=>{
+  await updateDoc(doc(db,"orders",id),{status:"done"});
+  loadOrders();
 };
 
 </script>
