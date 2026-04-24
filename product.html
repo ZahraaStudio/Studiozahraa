@@ -13,25 +13,31 @@ body{
   font-family:Cairo;
 }
 
-/* container */
 .container{
   max-width:500px;
   margin:auto;
 }
 
-/* slider */
+/* ===== SLIDER (SHOPIFY LEVEL) ===== */
 .slider{
   position:relative;
   overflow:hidden;
   height:300px;
   background:#111;
+  touch-action:pan-y;
 }
 
-.slider img{
+.track{
+  display:flex;
+  transition:transform 0.4s ease;
+}
+
+.track img{
   width:100%;
   height:300px;
   object-fit:cover;
-  display:none;
+  flex-shrink:0;
+  cursor:zoom-in;
 }
 
 /* dots */
@@ -88,22 +94,23 @@ a{
   text-decoration:none;
 }
 
-/* fullscreen */
+/* FULLSCREEN */
 #full{
   position:fixed;
-  top:0;
-  left:0;
+  top:0;left:0;
   width:100%;
   height:100%;
   background:black;
   display:none;
   align-items:center;
   justify-content:center;
+  z-index:9999;
 }
 
 #full img{
   max-width:100%;
   max-height:100%;
+  transition:transform 0.3s;
 }
 </style>
 </head>
@@ -112,7 +119,11 @@ a{
 
 <div class="container">
 
-  <div class="slider" id="slider"></div>
+  <div class="slider" id="slider">
+    <div class="track" id="track"></div>
+
+    <div class="dots" id="dots"></div>
+  </div>
 
   <h2 id="name"></h2>
   <p id="price"></p>
@@ -127,55 +138,58 @@ a{
   <img id="fullImg">
 </div>
 
+<!-- Toast -->
+<div id="toast" style="
+position:fixed;
+bottom:20px;
+left:50%;
+transform:translateX(-50%);
+background:#25D366;
+padding:10px 20px;
+border-radius:20px;
+display:none;
+">
+تمت الإضافة 🛒
+</div>
+
 <script>
-let product = {};
+let product = JSON.parse(localStorage.getItem("product"));
 let index = 0;
 
-/* GET DATA */
-const data = JSON.parse(localStorage.getItem("product"));
-
-product = data;
-
-/* SET */
 document.getElementById("name").innerText = product.name;
 document.getElementById("price").innerText = product.price + " جنيه";
 
-/* WHATSAPP */
 document.getElementById("wa").href =
 "https://wa.me/201204194540?text=" +
 encodeURIComponent("عايز المنتج: " + product.name);
 
-/* SLIDER */
-const slider = document.getElementById("slider");
+/* ===== SLIDER ===== */
+const track = document.getElementById("track");
+const dots = document.getElementById("dots");
 
 function render(){
 
-  const imgs = product.images;
+  track.style.transform = `translateX(-${index*100}%)`;
 
-  slider.innerHTML = imgs.map((img,i)=>`
-    <img src="${img}" 
-      style="display:${i===index?'block':'none'}"
-      onclick="openFull('${img}')"
-    >
-  `).join("")
-  +
-  `<div class="dots">
-    ${imgs.map((_,i)=>`
-      <span class="dot ${i===index?'active':''}"></span>
-    `).join("")}
-  </div>`;
+  track.innerHTML = product.images.map(img=>`
+    <img src="${img}" onclick="openFull('${img}')">
+  `).join("");
+
+  dots.innerHTML = product.images.map((_,i)=>`
+    <span class="dot ${i===index?'active':''}"></span>
+  `).join("");
 }
 
 render();
 
-/* swipe */
+/* SWIPE */
 let startX=0;
 
-slider.addEventListener("touchstart",e=>{
+track.addEventListener("touchstart",e=>{
   startX = e.touches[0].clientX;
 });
 
-slider.addEventListener("touchend",e=>{
+track.addEventListener("touchend",e=>{
   let endX = e.changedTouches[0].clientX;
 
   if(startX - endX > 50) next();
@@ -183,18 +197,22 @@ slider.addEventListener("touchend",e=>{
 });
 
 function next(){
-  index++;
-  if(index >= product.images.length) index=0;
+  index = (index + 1) % product.images.length;
   render();
 }
 
 function prev(){
   index--;
-  if(index < 0) index = product.images.length-1;
+  if(index < 0) index = product.images.length - 1;
   render();
 }
 
-/* fullscreen */
+/* AUTO PLAY */
+setInterval(()=>{
+  next();
+},4000);
+
+/* FULLSCREEN */
 window.openFull = (img)=>{
   document.getElementById("full").style.display="flex";
   document.getElementById("fullImg").src = img;
@@ -209,9 +227,15 @@ window.addCart = ()=>{
 
   localStorage.setItem("cart", JSON.stringify(cart));
 
-  alert("تمت الإضافة 🛒");
+  showToast();
 };
 
+/* TOAST */
+function showToast(){
+  const t = document.getElementById("toast");
+  t.style.display="block";
+  setTimeout(()=>t.style.display="none",1500);
+}
 </script>
 
 </body>
