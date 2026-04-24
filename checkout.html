@@ -180,14 +180,14 @@ window.order = async ()=>{
   document.getElementById("success").style.display="flex";
 
   await addDoc(collection(db,"orders"),{
-    name,
-    phone,
-    address,
-    cart,
-    status:"pending",
-    createdAt:Date.now()
-  });
-
+  name,
+  phone,
+  address,
+  cart,
+  status:"pending",
+  step:1,
+  createdAt:Date.now()
+});
   setTimeout(()=>{
     localStorage.removeItem("cart");
     location.href="products.html";
