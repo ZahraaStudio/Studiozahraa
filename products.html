@@ -52,7 +52,7 @@ input{
 
 .slides{
   display:flex;
-  transition:transform 0.3s ease;
+  transition:transform 0.4s ease;
 }
 
 .slides img{
@@ -154,7 +154,6 @@ button{
 
 <div class="grid" id="grid"></div>
 
-<!-- FULLSCREEN -->
 <div class="fullscreen" id="full" onclick="closeFull()">
   <img id="fullImg">
 </div>
@@ -190,7 +189,7 @@ async function load(){
   render(products);
 }
 
-/* OPEN FULLSCREEN */
+/* FULLSCREEN */
 window.openFull = (src)=>{
   document.getElementById("full").style.display="flex";
   document.getElementById("fullImg").src = src;
@@ -200,15 +199,17 @@ window.closeFull = ()=>{
   document.getElementById("full").style.display="none";
 };
 
-/* SLIDER LOGIC */
+/* SLIDER (FIXED VERSION) */
 function createSlider(images, id){
 
-  let index = 0;
+  if(!images || images.length === 0){
+    return `<div class="slider"></div>`;
+  }
 
   return `
   <div class="slider" id="s-${id}">
 
-    <div class="slides" style="transform:translateX(0%)">
+    <div class="slides">
       ${images.map(img=>`
         <img src="${img}" onclick="openFull('${img}')">
       `).join("")}
@@ -223,7 +224,7 @@ function createSlider(images, id){
   </div>`;
 }
 
-/* AUTO SLIDE */
+/* SAFE SLIDER ENGINE */
 function autoSlide(){
 
   document.querySelectorAll(".slider").forEach(slider=>{
@@ -232,19 +233,20 @@ function autoSlide(){
     let imgs = slider.querySelectorAll("img");
     let dots = slider.querySelectorAll(".dot");
 
+    if(imgs.length <= 1) return;
+
     let index = 0;
 
     setInterval(()=>{
 
-      index++;
-      if(index >= imgs.length) index = 0;
+      index = (index + 1) % imgs.length;
 
-      slides.style.transform = `translateX(-${index*100}%)`;
+      slides.style.transform = `translateX(-${index * 100}%)`;
 
       dots.forEach(d=>d.classList.remove("active"));
-      dots[index].classList.add("active");
+      if(dots[index]) dots[index].classList.add("active");
 
-    },3000);
+    },3500);
 
   });
 }
@@ -293,10 +295,9 @@ document.getElementById("search").addEventListener("input",(e)=>{
 
 /* CART */
 window.addCart = (id)=>{
-
   const p = products.find(x=>x.id===id);
 
-  cart.push({name:p.name, price:p.price});
+  cart.push({name:p.name, price:Number(p.price)});
 
   localStorage.setItem("cart", JSON.stringify(cart));
 
@@ -311,7 +312,7 @@ window.showCart = ()=>{
 
   cart.forEach(p=>{
     text += `- ${p.name} | ${p.price} جنيه\n`;
-    total+=Number(p.price);
+    total += Number(p.price);
   });
 
   text += "\n💰 الإجمالي: "+total;
