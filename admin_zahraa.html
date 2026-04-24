@@ -39,6 +39,26 @@ img{
   width:100%;
   border-radius:10px;
 }
+
+/* 🔥 NEW MENU */
+.menu{
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  margin:15px 0;
+}
+
+.menu button{
+  flex:1;
+}
+
+/* hide sections */
+.section{
+  display:none;
+}
+.active{
+  display:block;
+}
 </style>
 </head>
 
@@ -57,6 +77,15 @@ img{
 
 <div id="panel" style="display:none">
 
+<!-- 🔥 MENU -->
+<div class="menu">
+  <button onclick="showTab('products')">🛒 المنتجات</button>
+  <button onclick="showTab('orders')">📦 الطلبات</button>
+</div>
+
+<!-- 🛒 PRODUCTS -->
+<div id="products" class="section active">
+
 <input type="text" id="name" placeholder="اسم المنتج"><br>
 <input type="number" id="price" placeholder="سعر المنتج"><br>
 <input type="file" id="images" multiple><br>
@@ -66,9 +95,15 @@ img{
 <h3>المنتجات</h3>
 <div id="list"></div>
 
-<!-- ✅ الطلبات (مضاف بدون تغيير القديم) -->
+</div>
+
+<!-- 📦 ORDERS -->
+<div id="orders" class="section">
+
 <h3>📦 الطلبات</h3>
-<div id="orders"></div>
+<div id="ordersList"></div>
+
+</div>
 
 </div>
 
@@ -119,11 +154,21 @@ onAuthStateChanged(auth,(user)=>{
     document.getElementById("loginBox").style.display="none";
     document.getElementById("panel").style.display="block";
     load();
-    loadOrders(); // ✅ جديد
+    loadOrders();
   }
 });
 
-/* UPLOAD IMAGE */
+/* TAB SWITCH */
+window.showTab = (tab)=>{
+
+  document.querySelectorAll(".section").forEach(s=>{
+    s.classList.remove("active");
+  });
+
+  document.getElementById(tab).classList.add("active");
+};
+
+/* UPLOAD */
 async function upload(file){
 
   const form = new FormData();
@@ -163,14 +208,10 @@ document.getElementById("addBtn").onclick = async ()=>{
     createdAt:Date.now()
   });
 
-  document.getElementById("name").value="";
-  document.getElementById("price").value="";
-  document.getElementById("images").value="";
-
   load();
 };
 
-/* LOAD PRODUCTS */
+/* PRODUCTS */
 async function load(){
 
   const list = document.getElementById("list");
@@ -213,11 +254,10 @@ window.edit = async (id)=>{
   load();
 };
 
-/* ================= الطلبات ================= */
-
+/* ORDERS */
 async function loadOrders(){
 
-  const box = document.getElementById("orders");
+  const box = document.getElementById("ordersList");
   box.innerHTML = "";
 
   const snap = await getDocs(collection(db,"orders"));
@@ -235,10 +275,10 @@ async function loadOrders(){
         <p>📞 ${o.phone}</p>
         <p>📍 ${o.address}</p>
         <p>💰 ${total} جنيه</p>
-        <p>📦 الحالة: ${o.status}</p>
+        <p>📦 ${o.status}</p>
 
-        <button onclick="ship('${d.id}')">🚚 تم الشحن</button>
-        <button onclick="done('${d.id}')">✅ تم التنفيذ</button>
+        <button onclick="ship('${d.id}')">🚚 شحن</button>
+        <button onclick="done('${d.id}')">✅ تنفيذ</button>
       </div>
     `;
   });
