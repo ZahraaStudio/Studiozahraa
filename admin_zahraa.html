@@ -46,7 +46,6 @@ img{
 
 <h2>🔥 Admin PRO</h2>
 
-<!-- LOGIN UI -->
 <div id="loginBox">
 
 <input type="email" id="email" placeholder="email"><br>
@@ -59,6 +58,7 @@ img{
 <div id="panel" style="display:none">
 
 <input type="text" id="name" placeholder="اسم المنتج"><br>
+<input type="number" id="price" placeholder="سعر المنتج"><br>
 <input type="file" id="images" multiple><br>
 
 <button id="addBtn">إضافة منتج</button>
@@ -70,16 +70,13 @@ img{
 
 <script type="module">
 
-/* ================= FIREBASE AUTH ================= */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
 getAuth,
 onAuthStateChanged,
-signInWithEmailAndPassword,
-signOut
+signInWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-/* ================= FIRESTORE ================= */
 import {
 getFirestore,
 collection,
@@ -100,40 +97,28 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-/* ================= CLOUDINARY ================= */
 const cloudName = "dxlxwe55b";
 const uploadPreset = "zahraa_upload";
 
-/* ================= PROTECTION ================= */
-onAuthStateChanged(auth, (user)=>{
-
-  if(user){
-    document.getElementById("loginBox").style.display = "none";
-    document.getElementById("panel").style.display = "block";
-    load();
-  } else {
-    document.getElementById("loginBox").style.display = "block";
-    document.getElementById("panel").style.display = "none";
-  }
-
-});
-
-/* ================= LOGIN ================= */
+/* LOGIN */
 document.getElementById("loginBtn").onclick = async ()=>{
 
   const email = document.getElementById("email").value;
   const pass = document.getElementById("pass").value;
 
-  try{
-    await signInWithEmailAndPassword(auth, email, pass);
-    alert("تم الدخول 🔥");
-  } catch(e){
-    alert("غلط في البيانات");
-  }
-
+  await signInWithEmailAndPassword(auth, email, pass);
 };
 
-/* ================= UPLOAD ================= */
+/* SHOW PANEL */
+onAuthStateChanged(auth,(user)=>{
+  if(user){
+    document.getElementById("loginBox").style.display="none";
+    document.getElementById("panel").style.display="block";
+    load();
+  }
+});
+
+/* UPLOAD IMAGE */
 async function upload(file){
 
   const form = new FormData();
@@ -145,17 +130,17 @@ async function upload(file){
     { method:"POST", body:form }
   );
 
-  const data = await res.json();
-  return data.secure_url;
+  return (await res.json()).secure_url;
 }
 
-/* ================= ADD ================= */
+/* ADD PRODUCT */
 document.getElementById("addBtn").onclick = async ()=>{
 
   const name = document.getElementById("name").value;
+  const price = document.getElementById("price").value;
   const files = document.getElementById("images").files;
 
-  if(!name || files.length===0){
+  if(!name || !price || files.length===0){
     alert("املأ البيانات");
     return;
   }
@@ -168,21 +153,23 @@ document.getElementById("addBtn").onclick = async ()=>{
 
   await addDoc(collection(db,"products"),{
     name,
+    price,
     images,
     createdAt:Date.now()
   });
 
   document.getElementById("name").value="";
+  document.getElementById("price").value="";
   document.getElementById("images").value="";
 
   load();
 };
 
-/* ================= LOAD ================= */
+/* LOAD */
 async function load(){
 
   const list = document.getElementById("list");
-  list.innerHTML = "";
+  list.innerHTML="";
 
   const snap = await getDocs(collection(db,"products"));
 
@@ -193,6 +180,7 @@ async function load(){
     list.innerHTML += `
       <div class="card">
         <input id="n-${d.id}" value="${p.name}">
+        <input id="p-${d.id}" value="${p.price}">
         <img src="${p.images?.[0] || ''}">
 
         <button onclick="edit('${d.id}')">تعديل</button>
@@ -202,16 +190,21 @@ async function load(){
   });
 }
 
-/* ================= DELETE ================= */
 window.del = async (id)=>{
   await deleteDoc(doc(db,"products",id));
   load();
 };
 
-/* ================= EDIT ================= */
 window.edit = async (id)=>{
-  const v = document.getElementById("n-"+id).value;
-  await updateDoc(doc(db,"products",id),{name:v});
+
+  const name = document.getElementById("n-"+id).value;
+  const price = document.getElementById("p-"+id).value;
+
+  await updateDoc(doc(db,"products",id),{
+    name,
+    price
+  });
+
   load();
 };
 
