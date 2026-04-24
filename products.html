@@ -2,108 +2,59 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Product</title>
+<title>Store</title>
 
 <style>
-body{
-  margin:0;
-  font-family:Cairo;
-  background:#0d0d0d;
-  color:white;
+body{background:#0d0d0d;color:white;font-family:Cairo}
+h2{text-align:center;color:gold}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+  gap:10px;
+  padding:10px;
 }
 
-.container{
-  max-width:600px;
-  margin:auto;
-  padding:15px;
-}
-
-h2{
-  color:gold;
-  text-align:center;
-}
-
-.main{
-  width:100%;
-  height:300px;
-  object-fit:cover;
+.card{
+  background:#111;
   border-radius:15px;
-  cursor:pointer;
-}
-
-.thumbs{
-  display:flex;
-  gap:5px;
-  margin-top:10px;
-  justify-content:center;
-}
-
-.thumbs img{
-  width:60px;
-  height:60px;
-  object-fit:cover;
-  border-radius:10px;
-  opacity:0.5;
-  cursor:pointer;
-}
-
-.thumbs img.active{
-  opacity:1;
-  border:2px solid gold;
-}
-
-.btn{
-  display:block;
+  overflow:hidden;
   text-align:center;
-  padding:12px;
-  background:gold;
-  color:black;
-  margin-top:20px;
+}
+
+img{
+  width:100%;
+  height:160px;
+  object-fit:cover;
+}
+
+h3{
+  color:gold;
+  font-size:14px;
+}
+
+a{
+  display:block;
+  background:#25D366;
+  color:white;
+  padding:8px;
+  margin:10px;
   border-radius:20px;
   text-decoration:none;
-  font-weight:bold;
-}
-
-/* zoom */
-.zoom{
-  display:none;
-  position:fixed;
-  top:0;left:0;
-  width:100%;height:100%;
-  background:black;
-  justify-content:center;
-  align-items:center;
-}
-
-.zoom img{
-  max-width:90%;
 }
 </style>
 </head>
 
 <body>
 
-<div class="container">
+<h2>🔥 منتجاتنا</h2>
 
-<h2 id="name">Loading...</h2>
-
-<img id="main" class="main" onclick="zoomOpen()">
-
-<div class="thumbs" id="thumbs"></div>
-
-<a id="wa" class="btn">اطلب واتساب</a>
-
-</div>
-
-<div class="zoom" id="zoom" onclick="zoomClose()">
-  <img id="zoomImg">
-</div>
+<div class="grid" id="grid"></div>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
 apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
@@ -114,61 +65,30 @@ projectId: "zahraa-store-f4c90"
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const id = new URLSearchParams(location.search).get("id");
-
-let images = [];
-let index = 0;
+const grid = document.getElementById("grid");
 
 async function load(){
 
-  const snap = await getDoc(doc(db,"products",id));
-  const p = snap.data();
+  const snap = await getDocs(collection(db,"products"));
 
-  document.getElementById("name").innerText = p.name;
+  snap.forEach(d=>{
 
-  images = p.images;
+    const p = d.data();
 
-  update();
+    const name = p.name || "منتج";
 
-  renderThumbs();
+    const waText = encodeURIComponent("عايز المنتج: " + name);
 
-  document.getElementById("wa").href =
-  "https://wa.me/201204194540?text=" + encodeURIComponent("عايز المنتج: " + p.name);
-}
+    const waLink = `https://wa.me/201204194540?text=${waText}`;
 
-function update(){
-  main.src = images[index];
-  zoomImg.src = images[index];
-}
-
-function renderThumbs(){
-
-  const box = document.getElementById("thumbs");
-  box.innerHTML = "";
-
-  images.forEach((img,i)=>{
-
-    const el = document.createElement("img");
-    el.src = img;
-
-    if(i===index) el.classList.add("active");
-
-    el.onclick = ()=>{
-      index = i;
-      update();
-      renderThumbs();
-    };
-
-    box.appendChild(el);
+    grid.innerHTML += `
+      <div class="card">
+        <img src="${p.images?.[0] || ''}">
+        <h3>${name}</h3>
+        <a href="${waLink}" target="_blank">اطلب واتساب</a>
+      </div>
+    `;
   });
-}
-
-window.zoomOpen = ()=>{
-  zoom.style.display="flex";
-}
-
-window.zoomClose = ()=>{
-  zoom.style.display="none";
 }
 
 load();
