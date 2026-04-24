@@ -2,30 +2,61 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>Admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel</title>
 
 <style>
-body{background:#111;color:white;font-family:Cairo;text-align:center;padding:20px}
-input,button{padding:10px;margin:10px;border-radius:10px;border:none}
-button{background:gold;color:black;font-weight:bold;cursor:pointer}
-.card{background:#222;margin:10px;padding:10px;border-radius:10px}
-img{width:80px;border-radius:10px}
+body{
+  background:#0d0d0d;
+  color:white;
+  font-family:Cairo;
+  text-align:center;
+  padding:20px;
+}
+
+input,button{
+  padding:10px;
+  margin:10px;
+  border-radius:10px;
+  border:none;
+}
+
+button{
+  background:gold;
+  color:black;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.card{
+  background:#1a1a1a;
+  padding:10px;
+  margin:10px auto;
+  border-radius:12px;
+  max-width:350px;
+}
+
+img{
+  width:100%;
+  border-radius:10px;
+  margin-top:5px;
+}
 </style>
 </head>
 
 <body>
 
-<h2>🔥 الأدمن</h2>
+<h2>🔥 لوحة الأدمن</h2>
 
-<input type="password" id="pass" placeholder="password"><br>
+<input type="password" id="pass" placeholder="كلمة المرور">
 <button id="loginBtn">دخول</button>
 
 <div id="panel" style="display:none">
 
 <input type="text" id="name" placeholder="اسم المنتج"><br>
-<input type="file" id="img" multiple><br>
+<input type="file" id="images" multiple><br>
 
-<button id="addBtn">إضافة المنتج</button>
+<button id="addBtn">إضافة منتج</button>
 
 <h3>المنتجات</h3>
 <div id="list"></div>
@@ -34,117 +65,4 @@ img{width:80px;border-radius:10px}
 
 <script type="module">
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import {
-getFirestore,
-collection,
-addDoc,
-getDocs,
-deleteDoc,
-doc,
-updateDoc
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-const firebaseConfig = {
-apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
-authDomain: "zahraa-store-f4c90.firebaseapp.com",
-projectId: "zahraa-store-f4c90"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-const password="zahraa2025";
-
-/* LOGIN */
-document.getElementById("loginBtn").addEventListener("click",()=>{
-if(document.getElementById("pass").value===password){
-document.getElementById("panel").style.display="block";
-load();
-}else{
-alert("غلط");
-}
-});
-
-/* تحويل صورة */
-function toBase64(file){
-return new Promise(res=>{
-const r=new FileReader();
-r.onload=e=>res(e.target.result);
-r.readAsDataURL(file);
-});
-}
-
-/* ADD PRODUCT */
-document.getElementById("addBtn").addEventListener("click",async()=>{
-
-const name=document.getElementById("name").value;
-const files=document.getElementById("img").files;
-
-if(!name||files.length===0){
-alert("املأ البيانات");
-return;
-}
-
-let images=[];
-
-for(let f of files){
-images.push(await toBase64(f));
-}
-
-await addDoc(collection(db,"products"),{
-name,
-images,
-createdAt:Date.now()
-});
-
-alert("تمت الإضافة 🔥");
-
-load();
-
-});
-
-/* LOAD */
-async function load(){
-
-const list=document.getElementById("list");
-list.innerHTML="";
-
-const snap=await getDocs(collection(db,"products"));
-
-snap.forEach(d=>{
-
-const p=d.data();
-
-list.innerHTML+=`
-<div class="card">
-<img src="${p.images[0]}"><br>
-<input value="${p.name}" id="n-${d.id}">
-<br>
-<button onclick="edit('${d.id}')">تعديل</button>
-<button onclick="del('${d.id}')">حذف</button>
-</div>
-`;
-
-});
-}
-
-/* DELETE */
-window.del=async(id)=>{
-await deleteDoc(doc(db,"products",id));
-load();
-}
-
-/* EDIT */
-window.edit=async(id)=>{
-const newName=document.getElementById("n-"+id).value;
-await updateDoc(doc(db,"products",id),{
-name:newName
-});
-load();
-}
-
-</script>
-
-</body>
-</html>
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1
