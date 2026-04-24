@@ -27,7 +27,6 @@ button{
   cursor:pointer;
 }
 
-/* CARD */
 .card{
   background:#1a1a1a;
   padding:12px;
@@ -42,7 +41,6 @@ img{
   border-radius:10px;
 }
 
-/* MENU */
 .menu{
   display:flex;
   gap:10px;
@@ -50,15 +48,11 @@ img{
   margin:15px 0;
 }
 
-.menu button{
-  flex:1;
-}
+.menu button{flex:1}
 
-/* SECTIONS */
-.section{display:none;}
-.active{display:block;}
+.section{display:none}
+.active{display:block}
 
-/* STATUS */
 select{
   width:100%;
   padding:8px;
@@ -76,12 +70,9 @@ select{
 <h2>🔥 Admin PRO</h2>
 
 <div id="loginBox">
-
 <input type="email" id="email" placeholder="email"><br>
 <input type="password" id="pass" placeholder="password"><br>
-
 <button id="loginBtn">دخول</button>
-
 </div>
 
 <div id="panel" style="display:none">
@@ -91,7 +82,6 @@ select{
   <button onclick="showTab('orders')">📦 الطلبات</button>
 </div>
 
-<!-- PRODUCTS -->
 <div id="products" class="section active">
 
 <input type="text" id="name" placeholder="اسم المنتج"><br>
@@ -105,7 +95,6 @@ select{
 
 </div>
 
-<!-- ORDERS -->
 <div id="orders" class="section">
 
 <h3>📦 الطلبات</h3>
@@ -131,7 +120,10 @@ addDoc,
 getDocs,
 deleteDoc,
 doc,
-updateDoc
+updateDoc,
+onSnapshot,
+query,
+orderBy
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -251,46 +243,55 @@ window.edit = async (id)=>{
   load();
 };
 
-/* ORDERS */
-async function loadOrders(){
+/* 🔥 REALTIME ORDERS (LEVEL 6 UPGRADE) */
+function loadOrders(){
 
   const box = document.getElementById("ordersList");
-  box.innerHTML="";
+  box.innerHTML = "";
 
-  const snap = await getDocs(collection(db,"orders"));
+  const q = query(collection(db,"orders"), orderBy("createdAt","desc"));
 
-  snap.forEach(d=>{
+  onSnapshot(q,(snap)=>{
 
-    const o = d.data();
+    box.innerHTML = "";
 
-    let total=0;
-    o.cart.forEach(i=> total += Number(i.price));
+    snap.forEach(d=>{
 
-    box.innerHTML += `
-      <div class="card">
-        <h3>${o.name}</h3>
-        <p>📞 ${o.phone}</p>
-        <p>📍 ${o.address}</p>
-        <p>💰 ${total} جنيه</p>
+      const o = d.data();
 
-        <p>📦 الحالة: ${o.status}</p>
+      let total = o.totalPrice || 0;
 
-        <select onchange="updateStatus('${d.id}',this.value)">
-          <option value="pending">pending</option>
-          <option value="processing">processing</option>
-          <option value="shipped">shipped</option>
-          <option value="delivered">delivered</option>
-          <option value="canceled">canceled</option>
-        </select>
-      </div>
-    `;
+      box.innerHTML += `
+        <div class="card">
+
+          <h3>🆔 ${o.orderId || d.id}</h3>
+
+          <p>${o.name}</p>
+          <p>📞 ${o.phone}</p>
+          <p>📍 ${o.address}</p>
+
+          <p>💰 ${total} جنيه</p>
+
+          <p>📦 الحالة: ${o.status}</p>
+
+          <select onchange="updateStatus('${d.id}',this.value)">
+            <option value="pending" ${o.status==="pending"?"selected":""}>pending</option>
+            <option value="processing" ${o.status==="processing"?"selected":""}>processing</option>
+            <option value="shipped" ${o.status==="shipped"?"selected":""}>shipped</option>
+            <option value="delivered" ${o.status==="delivered"?"selected":""}>delivered</option>
+            <option value="canceled" ${o.status==="canceled"?"selected":""}>canceled</option>
+          </select>
+
+        </div>
+      `;
+    });
+
   });
 }
 
-/* UPDATE STATUS */
+/* STATUS UPDATE */
 window.updateStatus = async (id,status)=>{
   await updateDoc(doc(db,"orders",id),{status});
-  loadOrders();
 };
 
 </script>
