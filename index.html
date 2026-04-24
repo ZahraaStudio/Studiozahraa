@@ -6,7 +6,7 @@
   <title>ZAHRAA STUDIO</title>
 
   <!-- PWA -->
-  <link rel="manifest" href="manifest.json">
+  <link rel="manifest" href="./manifest.json">
   <meta name="theme-color" content="#000000">
 
   <link href="https://fonts.googleapis.com/css2?family=Cairo&display=swap" rel="stylesheet">
@@ -216,23 +216,32 @@
     });
   </script>
 
-  <!-- 🔥 PWA AUTO UPDATE (IMPORTANT) -->
+  <!-- 🔥 FIXED PWA SERVICE WORKER -->
   <script>
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("service-worker.js").then(reg => {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./service-worker.js")
+        .then(reg => {
 
-        setInterval(() => reg.update(), 5000);
+          console.log("SW Registered");
 
-        reg.addEventListener("updatefound", () => {
-          const newWorker = reg.installing;
+          reg.addEventListener("updatefound", () => {
+            const newWorker = reg.installing;
 
-          newWorker.addEventListener("statechange", () => {
-            if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-              window.location.reload();
-            }
+            if (!newWorker) return;
+
+            newWorker.addEventListener("statechange", () => {
+              if (
+                newWorker.state === "installed" &&
+                navigator.serviceWorker.controller
+              ) {
+                console.log("New update available");
+              }
+            });
           });
-        });
 
+        })
+        .catch(err => console.log("SW Error:", err));
       });
     }
   </script>
