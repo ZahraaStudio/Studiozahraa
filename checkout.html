@@ -14,12 +14,8 @@ body{
   text-align:center;
 }
 
-h2{
-  color:gold;
-  margin:15px;
-}
+h2{color:gold;margin:15px}
 
-/* FORM */
 input{
   width:90%;
   padding:12px;
@@ -31,7 +27,6 @@ input{
   color:white;
 }
 
-/* BUTTON */
 button{
   width:90%;
   padding:12px;
@@ -42,7 +37,6 @@ button{
   cursor:pointer;
 }
 
-/* CART BOX */
 .cartBox{
   background:#111;
   margin:10px auto;
@@ -63,7 +57,6 @@ button{
   margin-top:10px;
 }
 
-/* SUCCESS SCREEN */
 .success{
   display:none;
   position:fixed;
@@ -74,10 +67,6 @@ button{
   align-items:center;
   justify-content:center;
   flex-direction:column;
-}
-
-.success h1{
-  color:lime;
 }
 
 .loader{
@@ -100,17 +89,14 @@ button{
 
 <h2>💳 Checkout</h2>
 
-<!-- CART SUMMARY -->
 <div class="cartBox" id="cartBox"></div>
 
-<!-- FORM -->
 <input id="name" placeholder="اسمك">
 <input id="phone" placeholder="رقمك">
 <input id="address" placeholder="العنوان">
 
 <button onclick="order()">تأكيد الطلب</button>
 
-<!-- SUCCESS -->
 <div class="success" id="success">
   <div class="loader"></div>
   <h1>جاري تأكيد الطلب...</h1>
@@ -130,6 +116,14 @@ const db = getFirestore(app);
 
 let cart = JSON.parse(localStorage.getItem("cart") || "[]");
 
+/* SESSION ID (NEW - Shopify Style) */
+let sessionId = localStorage.getItem("sessionId");
+
+if(!sessionId){
+  sessionId = "S-" + Date.now();
+  localStorage.setItem("sessionId", sessionId);
+}
+
 /* SHOW CART */
 function showCart(){
 
@@ -138,13 +132,13 @@ function showCart(){
 
   let total = 0;
 
-  if(cart.length === 0){
+  if(!cart || cart.length === 0){
     box.innerHTML += "<p>السلة فاضية</p>";
     return;
   }
 
   cart.forEach(p=>{
-    total += Number(p.price);
+    total += Number(p.price || 0);
 
     box.innerHTML += `
       <div class="item">
@@ -172,22 +166,34 @@ window.order = async ()=>{
     return;
   }
 
-  if(cart.length === 0){
+  if(!cart || cart.length === 0){
     alert("السلة فاضية");
     return;
   }
 
   document.getElementById("success").style.display="flex";
 
+  let total = 0;
+  cart.forEach(p=>{
+    total += Number(p.price || 0);
+  });
+
+  let orderId = "ORD-" + Date.now();
+
   await addDoc(collection(db,"orders"),{
-  name,
-  phone,
-  address,
-  cart,
-  status:"pending",
-  step:1,
-  createdAt:Date.now()
-});
+    orderId,
+    sessionId,     // 🔥 Level 6 tracking
+    name,
+    phone,
+    address,
+    cart,
+    status:"pending",
+    step:1,
+    totalPrice: total,
+    itemsCount: cart.length,
+    createdAt:Date.now()
+  });
+
   setTimeout(()=>{
     localStorage.removeItem("cart");
     location.href="products.html";
