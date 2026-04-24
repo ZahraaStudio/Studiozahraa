@@ -13,91 +13,71 @@ body{
   color:white;
 }
 
-/* container */
 .container{
   max-width:600px;
   margin:auto;
   padding:15px;
 }
 
-/* title */
 h2{
+  color:gold;
   text-align:center;
-  color:#d4af37;
 }
 
-/* main image */
-.main-img{
+.main{
   width:100%;
   height:300px;
   object-fit:cover;
   border-radius:15px;
   cursor:pointer;
-  box-shadow:0 0 15px rgba(212,175,55,0.2);
 }
 
-/* slider */
-.slider{
+.thumbs{
   display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:10px;
+  gap:5px;
   margin-top:10px;
+  justify-content:center;
 }
 
-.thumb{
+.thumbs img{
   width:60px;
   height:60px;
   object-fit:cover;
   border-radius:10px;
   opacity:0.5;
   cursor:pointer;
-  border:2px solid transparent;
 }
 
-.thumb.active{
+.thumbs img.active{
   opacity:1;
-  border:2px solid #d4af37;
+  border:2px solid gold;
 }
 
-/* arrows */
-.arrow{
-  background:#222;
-  border:none;
-  color:white;
-  padding:10px;
-  border-radius:50%;
-  cursor:pointer;
-}
-
-/* whatsapp */
 .btn{
   display:block;
   text-align:center;
-  margin-top:20px;
   padding:12px;
-  background:linear-gradient(45deg,#d4af37,#ffd700);
+  background:gold;
   color:black;
-  border-radius:25px;
+  margin-top:20px;
+  border-radius:20px;
   text-decoration:none;
   font-weight:bold;
 }
 
-/* zoom modal */
-.modal{
+/* zoom */
+.zoom{
   display:none;
   position:fixed;
   top:0;left:0;
   width:100%;height:100%;
-  background:rgba(0,0,0,0.9);
+  background:black;
   justify-content:center;
   align-items:center;
 }
 
-.modal img{
+.zoom img{
   max-width:90%;
-  max-height:80%;
-  border-radius:10px;
 }
 </style>
 </head>
@@ -106,26 +86,17 @@ h2{
 
 <div class="container">
 
-<h2 id="name">تحميل...</h2>
+<h2 id="name">Loading...</h2>
 
-<img id="mainImg" class="main-img" onclick="openZoom()">
+<img id="main" class="main" onclick="zoomOpen()">
 
-<div class="slider">
+<div class="thumbs" id="thumbs"></div>
 
-<button class="arrow" onclick="prev()">‹</button>
-
-<div id="thumbs" style="display:flex;gap:5px"></div>
-
-<button class="arrow" onclick="next()">›</button>
+<a id="wa" class="btn">اطلب واتساب</a>
 
 </div>
 
-<a id="wa" class="btn" target="_blank">اطلب واتساب</a>
-
-</div>
-
-<!-- Zoom -->
-<div class="modal" id="modal" onclick="closeZoom()">
+<div class="zoom" id="zoom" onclick="zoomClose()">
   <img id="zoomImg">
 </div>
 
@@ -135,16 +106,15 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
-  authDomain: "zahraa-store-f4c90.firebaseapp.com",
-  projectId: "zahraa-store-f4c90"
+apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
+authDomain: "zahraa-store-f4c90.firebaseapp.com",
+projectId: "zahraa-store-f4c90"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const params = new URLSearchParams(location.search);
-const id = params.get("id");
+const id = new URLSearchParams(location.search).get("id");
 
 let images = [];
 let index = 0;
@@ -158,7 +128,7 @@ async function load(){
 
   images = p.images;
 
-  updateImage();
+  update();
 
   renderThumbs();
 
@@ -166,9 +136,9 @@ async function load(){
   "https://wa.me/201204194540?text=" + encodeURIComponent("عايز المنتج: " + p.name);
 }
 
-function updateImage(){
-  document.getElementById("mainImg").src = images[index];
-  document.getElementById("zoomImg").src = images[index];
+function update(){
+  main.src = images[index];
+  zoomImg.src = images[index];
 }
 
 function renderThumbs(){
@@ -178,40 +148,27 @@ function renderThumbs(){
 
   images.forEach((img,i)=>{
 
-    const t = document.createElement("img");
-    t.src = img;
-    t.className = "thumb" + (i===index ? " active":"");
+    const el = document.createElement("img");
+    el.src = img;
 
-    t.onclick = ()=>{
+    if(i===index) el.classList.add("active");
+
+    el.onclick = ()=>{
       index = i;
-      updateImage();
+      update();
       renderThumbs();
     };
 
-    box.appendChild(t);
+    box.appendChild(el);
   });
 }
 
-/* arrows */
-window.next = ()=>{
-  index = (index + 1) % images.length;
-  updateImage();
-  renderThumbs();
+window.zoomOpen = ()=>{
+  zoom.style.display="flex";
 }
 
-window.prev = ()=>{
-  index = (index - 1 + images.length) % images.length;
-  updateImage();
-  renderThumbs();
-}
-
-/* zoom */
-window.openZoom = ()=>{
-  document.getElementById("modal").style.display="flex";
-}
-
-window.closeZoom = ()=>{
-  document.getElementById("modal").style.display="none";
+window.zoomClose = ()=>{
+  zoom.style.display="none";
 }
 
 load();
