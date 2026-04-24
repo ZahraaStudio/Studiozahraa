@@ -2,56 +2,24 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Panel</title>
+<title>Admin</title>
 
 <style>
-body{
-  background:#0d0d0d;
-  color:white;
-  font-family:Cairo;
-  text-align:center;
-  padding:20px;
-}
-
-input,button{
-  padding:10px;
-  margin:10px;
-  border-radius:10px;
-  border:none;
-}
-
-button{
-  background:gold;
-  color:black;
-  font-weight:bold;
-  cursor:pointer;
-}
-
-.card{
-  background:#1a1a1a;
-  padding:10px;
-  margin:10px auto;
-  border-radius:12px;
-  max-width:350px;
-}
-
-img{
-  width:100%;
-  border-radius:10px;
-}
+body{background:#0d0d0d;color:white;font-family:Cairo;text-align:center;padding:20px}
+input,button{padding:10px;margin:8px;border-radius:10px;border:none}
+button{background:gold;color:black;font-weight:bold;cursor:pointer}
+.card{background:#1a1a1a;padding:10px;margin:10px auto;border-radius:12px;max-width:350px}
+img{width:100%;border-radius:10px}
 </style>
 </head>
 
 <body>
 
-<h2>🔥 لوحة الأدمن</h2>
+<h2>🔥 الأدمن</h2>
 
-<!-- LOGIN -->
-<input type="password" id="pass" placeholder="كلمة المرور">
+<input type="password" id="pass" placeholder="password">
 <button id="loginBtn">دخول</button>
 
-<!-- PANEL -->
 <div id="panel" style="display:none">
 
 <input type="text" id="name" placeholder="اسم المنتج"><br>
@@ -77,7 +45,6 @@ doc,
 updateDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* Firebase */
 const firebaseConfig = {
 apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
 authDomain: "zahraa-store-f4c90.firebaseapp.com",
@@ -87,52 +54,49 @@ projectId: "zahraa-store-f4c90"
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/* PASSWORD */
 const PASSWORD = "zahraa2025";
 
-/* ================= LOGIN ================= */
+/* LOGIN */
 document.getElementById("loginBtn").addEventListener("click", () => {
+  const v = document.getElementById("pass").value;
 
-  const input = document.getElementById("pass").value;
-
-  if (input.trim() === PASSWORD) {
-
+  if (v.trim() === PASSWORD) {
     document.getElementById("panel").style.display = "block";
-    loadProducts();
-
+    load();
   } else {
-    alert("كلمة المرور غلط");
+    alert("غلط");
   }
-
 });
 
-/* ================= IMAGE TO BASE64 ================= */
+/* IMAGE */
 function toBase64(file){
-  return new Promise(resolve=>{
-    const reader = new FileReader();
-    reader.onload = e => resolve(e.target.result);
-    reader.readAsDataURL(file);
+  return new Promise(res=>{
+    const r = new FileReader();
+    r.onload = e => res(e.target.result);
+    r.readAsDataURL(file);
   });
 }
 
-/* ================= ADD PRODUCT ================= */
-document.getElementById("addBtn").addEventListener("click", async () => {
+/* ADD */
+document.getElementById("addBtn").addEventListener("click", async ()=>{
 
   const name = document.getElementById("name").value;
   const files = document.getElementById("images").files;
 
-  if (!name || files.length === 0) {
+  if(!name || files.length === 0){
     alert("املأ البيانات");
     return;
   }
 
   let images = [];
 
-  for (let f of files) {
-    images.push(await toBase64(f));
+  for(let f of files){
+    if(f.type.startsWith("image/")){
+      images.push(await toBase64(f));
+    }
   }
 
-  await addDoc(collection(db,"products"), {
+  await addDoc(collection(db,"products"),{
     name,
     images,
     createdAt: Date.now()
@@ -141,25 +105,25 @@ document.getElementById("addBtn").addEventListener("click", async () => {
   document.getElementById("name").value = "";
   document.getElementById("images").value = "";
 
-  loadProducts();
+  load();
 });
 
-/* ================= LOAD PRODUCTS ================= */
-async function loadProducts(){
+/* LOAD */
+async function load(){
 
   const list = document.getElementById("list");
   list.innerHTML = "";
 
   const snap = await getDocs(collection(db,"products"));
 
-  snap.forEach(d => {
+  snap.forEach(d=>{
 
     const p = d.data();
 
     list.innerHTML += `
       <div class="card">
         <input id="n-${d.id}" value="${p.name}">
-        <img src="${p.images[0]}">
+        <img src="${p.images?.[0] || ''}">
 
         <button onclick="edit('${d.id}')">تعديل</button>
         <button onclick="del('${d.id}')">حذف</button>
@@ -168,21 +132,21 @@ async function loadProducts(){
   });
 }
 
-/* ================= DELETE ================= */
-window.del = async (id) => {
+/* DELETE */
+window.del = async (id)=>{
   await deleteDoc(doc(db,"products",id));
-  loadProducts();
+  load();
 }
 
-/* ================= EDIT ================= */
-window.edit = async (id) => {
+/* EDIT */
+window.edit = async (id)=>{
   const newName = document.getElementById("n-"+id).value;
 
-  await updateDoc(doc(db,"products",id), {
-    name: newName
+  await updateDoc(doc(db,"products",id),{
+    name:newName
   });
 
-  loadProducts();
+  load();
 }
 
 </script>
