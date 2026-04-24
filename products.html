@@ -52,7 +52,6 @@ input{
 
 .slides{
   display:flex;
-  transition:0.3s;
 }
 
 .slides img{
@@ -65,14 +64,14 @@ input{
 /* FULLSCREEN */
 .fullscreen{
   position:fixed;
-  top:0;left:0;
-  width:100%;height:100%;
+  inset:0;
   background:black;
   display:none;
   align-items:center;
   justify-content:center;
   z-index:9999;
 }
+
 .fullscreen img{
   max-width:100%;
   max-height:100%;
@@ -94,7 +93,6 @@ a{
   background:#25D366;
   color:white;
   text-decoration:none;
-  font-weight:bold;
 }
 
 button{
@@ -103,7 +101,7 @@ button{
   font-weight:bold;
 }
 
-/* ================= CART SHOPIFY ================= */
+/* ================= SHOPIFY CART PRO ================= */
 
 #overlay{
   position:fixed;
@@ -127,6 +125,10 @@ button{
   overflow-y:auto;
 }
 
+#cartDrawer.open{
+  right:0;
+}
+
 #cartDrawer h3{
   text-align:center;
   color:gold;
@@ -139,13 +141,24 @@ button{
   margin:10px 0;
 }
 
+.qty{
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  margin-top:5px;
+}
+
+.qty button{
+  width:30px;
+  height:30px;
+  border-radius:50%;
+}
+
 .remove{
   background:red;
   color:white;
-  border:none;
   width:100%;
-  padding:5px;
-  border-radius:8px;
+  margin-top:5px;
 }
 
 .cart-footer{
@@ -154,6 +167,18 @@ button{
   background:#111;
   padding:10px;
   border-top:1px solid #333;
+}
+
+/* TOAST */
+#toast{
+  position:fixed;
+  bottom:20px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#25D366;
+  padding:10px 20px;
+  border-radius:20px;
+  display:none;
 }
 </style>
 </head>
@@ -169,12 +194,11 @@ button{
 
 <div class="grid" id="grid"></div>
 
-<!-- FULLSCREEN -->
 <div class="fullscreen" id="full" onclick="closeFull()">
   <img id="fullImg">
 </div>
 
-<!-- CART DRAWER -->
+<!-- CART -->
 <div id="overlay" onclick="closeCart()"></div>
 
 <div id="cartDrawer">
@@ -185,6 +209,8 @@ button{
     <h4 id="total">الإجمالي: 0 جنيه</h4>
   </div>
 </div>
+
+<div id="toast">تمت الإضافة 🛒</div>
 
 <script type="module">
 
@@ -229,7 +255,7 @@ window.closeFull = ()=>{
 
 /* SLIDER */
 function createSlider(images){
-  if(!images || images.length===0) return "";
+  if(!images) return "";
 
   return `
   <div class="slider">
@@ -243,6 +269,7 @@ function createSlider(images){
 
 /* RENDER */
 function render(list){
+
   grid.innerHTML="";
 
   list.forEach(p=>{
@@ -265,31 +292,36 @@ function render(list){
   });
 }
 
-/* CART */
+/* CART ADD */
 window.addCart = (id)=>{
   const p = products.find(x=>x.id===id);
 
-  cart.push({name:p.name, price:Number(p.price)});
+  const existing = cart.find(x=>x.id===id);
 
-  localStorage.setItem("cart", JSON.stringify(cart));
+  if(existing){
+    existing.qty += 1;
+  } else {
+    cart.push({id:p.id,name:p.name,price:Number(p.price),qty:1});
+  }
 
-  openCart();
+  save();
+  showToast();
   renderCart();
 };
 
-/* OPEN CART */
+/* CART UI */
 window.openCart = ()=>{
   document.getElementById("overlay").style.display="block";
-  document.getElementById("cartDrawer").style.right="0";
+  document.getElementById("cartDrawer").classList.add("open");
   renderCart();
 };
 
 window.closeCart = ()=>{
   document.getElementById("overlay").style.display="none";
-  document.getElementById("cartDrawer").style.right="-100%";
+  document.getElementById("cartDrawer").classList.remove("open");
 };
 
-/* CART UI */
+/* RENDER CART */
 function renderCart(){
 
   let box = document.getElementById("cartItems");
@@ -298,27 +330,58 @@ function renderCart(){
   let total=0;
 
   cart.forEach((p,i)=>{
-    total += p.price;
+
+    total += p.price * p.qty;
 
     box.innerHTML += `
       <div class="cart-item">
         <h4>${p.name}</h4>
-        <p>${p.price} جنيه</p>
+        <p>${p.price} × ${p.qty}</p>
+
+        <div class="qty">
+          <button onclick="minus(${i})">-</button>
+          <button onclick="plus(${i})">+</button>
+        </div>
+
         <button class="remove" onclick="removeItem(${i})">حذف</button>
       </div>
     `;
   });
 
   document.getElementById("total").innerText =
-    "الإجمالي: " + total + " جنيه";
+  "الإجمالي: " + total + " جنيه";
 }
 
-/* REMOVE */
-window.removeItem = (i)=>{
-  cart.splice(i,1);
-  localStorage.setItem("cart", JSON.stringify(cart));
+/* QTY */
+window.plus = (i)=>{
+  cart[i].qty++;
+  save();
   renderCart();
 };
+
+window.minus = (i)=>{
+  cart[i].qty--;
+  if(cart[i].qty<=0) cart.splice(i,1);
+  save();
+  renderCart();
+};
+
+window.removeItem = (i)=>{
+  cart.splice(i,1);
+  save();
+  renderCart();
+};
+
+function save(){
+  localStorage.setItem("cart",JSON.stringify(cart));
+}
+
+/* TOAST */
+function showToast(){
+  const t = document.getElementById("toast");
+  t.style.display="block";
+  setTimeout(()=>t.style.display="none",1500);
+}
 
 /* CHECKOUT */
 window.goCheckout = ()=>{
