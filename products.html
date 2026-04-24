@@ -28,6 +28,7 @@ input{
   border:none;
 }
 
+/* GRID */
 .grid{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(170px,1fr));
@@ -41,10 +42,66 @@ input{
   overflow:hidden;
 }
 
-.card img{
+/* SLIDER */
+.slider{
+  position:relative;
+  width:100%;
+  height:150px;
+  overflow:hidden;
+}
+
+.slides{
+  display:flex;
+  transition:transform 0.3s ease;
+}
+
+.slides img{
   width:100%;
   height:150px;
   object-fit:cover;
+  flex-shrink:0;
+}
+
+/* DOTS */
+.dots{
+  position:absolute;
+  bottom:5px;
+  width:100%;
+  text-align:center;
+}
+
+.dot{
+  height:6px;
+  width:6px;
+  background:#666;
+  display:inline-block;
+  border-radius:50%;
+  margin:2px;
+}
+
+.dot.active{
+  background:gold;
+}
+
+/* FULLSCREEN */
+.fullscreen{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:black;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+}
+
+.fullscreen img{
+  max-width:100%;
+  max-height:100%;
+  transform:scale(1);
+  transition:transform 0.3s;
 }
 
 .card h3{
@@ -60,7 +117,7 @@ input{
   color:#fff;
 }
 
-a,button{
+button,a{
   display:block;
   margin:8px auto;
   padding:8px;
@@ -97,6 +154,11 @@ button{
 
 <div class="grid" id="grid"></div>
 
+<!-- FULLSCREEN -->
+<div class="fullscreen" id="full" onclick="closeFull()">
+  <img id="fullImg">
+</div>
+
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -118,16 +180,73 @@ const grid = document.getElementById("grid");
 
 /* LOAD */
 async function load(){
-
   const snap = await getDocs(collection(db,"products"));
 
   products = [];
-
   snap.forEach(d=>{
     products.push({id:d.id, ...d.data()});
   });
 
   render(products);
+}
+
+/* OPEN FULLSCREEN */
+window.openFull = (src)=>{
+  document.getElementById("full").style.display="flex";
+  document.getElementById("fullImg").src = src;
+};
+
+window.closeFull = ()=>{
+  document.getElementById("full").style.display="none";
+};
+
+/* SLIDER LOGIC */
+function createSlider(images, id){
+
+  let index = 0;
+
+  return `
+  <div class="slider" id="s-${id}">
+
+    <div class="slides" style="transform:translateX(0%)">
+      ${images.map(img=>`
+        <img src="${img}" onclick="openFull('${img}')">
+      `).join("")}
+    </div>
+
+    <div class="dots">
+      ${images.map((_,i)=>`
+        <span class="dot ${i===0?'active':''}"></span>
+      `).join("")}
+    </div>
+
+  </div>`;
+}
+
+/* AUTO SLIDE */
+function autoSlide(){
+
+  document.querySelectorAll(".slider").forEach(slider=>{
+
+    let slides = slider.querySelector(".slides");
+    let imgs = slider.querySelectorAll("img");
+    let dots = slider.querySelectorAll(".dot");
+
+    let index = 0;
+
+    setInterval(()=>{
+
+      index++;
+      if(index >= imgs.length) index = 0;
+
+      slides.style.transform = `translateX(-${index*100}%)`;
+
+      dots.forEach(d=>d.classList.remove("active"));
+      dots[index].classList.add("active");
+
+    },3000);
+
+  });
 }
 
 /* RENDER */
@@ -137,7 +256,7 @@ function render(list){
 
   list.forEach(p=>{
 
-    const img = p.images?.[0] || "";
+    const imgs = p.images || [];
 
     const wa = encodeURIComponent(
 `عايز المنتج: ${p.name}
@@ -146,7 +265,9 @@ function render(list){
 
     grid.innerHTML += `
       <div class="card">
-        <img loading="lazy" src="${img}">
+
+        ${createSlider(imgs,p.id)}
+
         <h3>${p.name}</h3>
         <p>💰 ${p.price} جنيه</p>
 
@@ -160,12 +281,14 @@ function render(list){
       </div>
     `;
   });
+
+  autoSlide();
 }
 
 /* SEARCH */
 document.getElementById("search").addEventListener("input",(e)=>{
   const val = e.target.value.toLowerCase();
-  render(products.filter(p => p.name.toLowerCase().includes(val)));
+  render(products.filter(p=>p.name.toLowerCase().includes(val)));
 });
 
 /* CART */
@@ -173,35 +296,31 @@ window.addCart = (id)=>{
 
   const p = products.find(x=>x.id===id);
 
-  cart.push({
-    name:p.name,
-    price:p.price
-  });
+  cart.push({name:p.name, price:p.price});
 
   localStorage.setItem("cart", JSON.stringify(cart));
+
   alert("تمت الإضافة 🛒");
 };
 
-/* SHOW CART */
+/* CART */
 window.showCart = ()=>{
 
-  let total = 0;
-  let text = "🛒 السلة:\n\n";
+  let total=0;
+  let text="🛒 السلة:\n\n";
 
   cart.forEach(p=>{
     text += `- ${p.name} | ${p.price} جنيه\n`;
-    total += Number(p.price);
+    total+=Number(p.price);
   });
 
-  text += "\n-----------------\n";
-  text += "💰 الإجمالي: " + total + " جنيه";
+  text += "\n💰 الإجمالي: "+total;
 
   alert(text);
 };
 
-/* GO CHECKOUT */
 window.goCheckout = ()=>{
-  window.location.href = "checkout.html";
+  window.location.href="checkout.html";
 };
 
 load();
