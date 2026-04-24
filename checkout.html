@@ -2,24 +2,119 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Checkout</title>
 
 <style>
-body{background:#0d0d0d;color:white;font-family:Cairo;text-align:center}
-input{width:90%;padding:10px;margin:8px;border-radius:10px;border:none}
-button{padding:10px;width:90%;border:none;border-radius:20px;background:gold}
+body{
+  margin:0;
+  background:#0d0d0d;
+  color:white;
+  font-family:Cairo;
+  text-align:center;
+}
+
+h2{
+  color:gold;
+  margin:15px;
+}
+
+/* FORM */
+input{
+  width:90%;
+  padding:12px;
+  margin:8px;
+  border-radius:10px;
+  border:none;
+  outline:none;
+  background:#1a1a1a;
+  color:white;
+}
+
+/* BUTTON */
+button{
+  width:90%;
+  padding:12px;
+  border:none;
+  border-radius:25px;
+  background:gold;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+/* CART BOX */
+.cartBox{
+  background:#111;
+  margin:10px auto;
+  width:90%;
+  border-radius:15px;
+  padding:10px;
+  text-align:right;
+}
+
+.item{
+  padding:5px 0;
+  border-bottom:1px solid #222;
+}
+
+.total{
+  color:gold;
+  font-weight:bold;
+  margin-top:10px;
+}
+
+/* SUCCESS SCREEN */
+.success{
+  display:none;
+  position:fixed;
+  top:0;left:0;
+  width:100%;
+  height:100%;
+  background:#0d0d0d;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+}
+
+.success h1{
+  color:lime;
+}
+
+.loader{
+  border:4px solid #333;
+  border-top:4px solid gold;
+  border-radius:50%;
+  width:40px;
+  height:40px;
+  animation:spin 1s linear infinite;
+  margin:20px auto;
+}
+
+@keyframes spin{
+  100%{transform:rotate(360deg);}
+}
 </style>
 </head>
 
 <body>
 
-<h2>💳 إنهاء الطلب</h2>
+<h2>💳 Checkout</h2>
 
+<!-- CART SUMMARY -->
+<div class="cartBox" id="cartBox"></div>
+
+<!-- FORM -->
 <input id="name" placeholder="اسمك">
 <input id="phone" placeholder="رقمك">
 <input id="address" placeholder="العنوان">
 
 <button onclick="order()">تأكيد الطلب</button>
+
+<!-- SUCCESS -->
+<div class="success" id="success">
+  <div class="loader"></div>
+  <h1>جاري تأكيد الطلب...</h1>
+</div>
 
 <script type="module">
 
@@ -33,18 +128,56 @@ projectId:"zahraa-store-f4c90"
 
 const db = getFirestore(app);
 
+let cart = JSON.parse(localStorage.getItem("cart") || "[]");
+
+/* SHOW CART */
+function showCart(){
+
+  let box = document.getElementById("cartBox");
+  box.innerHTML = "<h3>🛒 ملخص الطلب</h3>";
+
+  let total = 0;
+
+  if(cart.length === 0){
+    box.innerHTML += "<p>السلة فاضية</p>";
+    return;
+  }
+
+  cart.forEach(p=>{
+    total += Number(p.price);
+
+    box.innerHTML += `
+      <div class="item">
+        ${p.name} - ${p.price} جنيه
+      </div>
+    `;
+  });
+
+  box.innerHTML += `
+    <div class="total">الإجمالي: ${total} جنيه</div>
+  `;
+}
+
+showCart();
+
+/* ORDER */
 window.order = async ()=>{
 
   const name = document.getElementById("name").value;
   const phone = document.getElementById("phone").value;
   const address = document.getElementById("address").value;
 
-  let cart = JSON.parse(localStorage.getItem("cart") || "[]");
-
   if(!name || !phone || !address){
     alert("املأ البيانات");
     return;
   }
+
+  if(cart.length === 0){
+    alert("السلة فاضية");
+    return;
+  }
+
+  document.getElementById("success").style.display="flex";
 
   await addDoc(collection(db,"orders"),{
     name,
@@ -55,10 +188,10 @@ window.order = async ()=>{
     createdAt:Date.now()
   });
 
-  alert("تم الطلب 🔥");
-
-  localStorage.removeItem("cart");
-  location.href = "products.html";
+  setTimeout(()=>{
+    localStorage.removeItem("cart");
+    location.href="products.html";
+  },2000);
 };
 
 </script>
