@@ -212,9 +212,10 @@ alert("اكتب اسم وسعر المنتج");
 return;
 }
 
+try{
 await addDoc(collection(db,"products"),{
 name:name,
-price:price,
+price:Number(price),
 images:[],
 createdAt:Date.now()
 });
@@ -223,12 +224,20 @@ document.getElementById("name").value="";
 document.getElementById("price").value="";
 
 load();
+
+}catch(err){
+console.log("ERROR:",err);
+alert("حصل خطأ في الإضافة");
+}
+
 };
 
 /* PRODUCTS */
 async function load(){
 const list = document.getElementById("list");
 list.innerHTML="";
+
+try{
 const snap = await getDocs(collection(db,"products"));
 
 snap.forEach(d=>{
@@ -244,6 +253,10 @@ list.innerHTML += `
 </div>
 `;
 });
+}catch(e){
+console.log("LOAD ERROR:",e);
+}
+
 }
 
 window.del = async (id)=>{
@@ -266,10 +279,19 @@ let revenue = 0;
 let pending = 0;
 
 orders.forEach(o=>{
-const total = o.totalPrice || (o.cart?.reduce((s,i)=>s + Number(i.price),0)) || 0;
+
+let total = 0;
+
+if(Array.isArray(o.cart)){
+total = o.cart.reduce((s,i)=>s + (Number(i.price)||0),0);
+}else{
+total = Number(o.totalPrice)||0;
+}
+
 revenue += total;
 
-if(o.status === "pending") pending++;
+if(o.status==="pending") pending++;
+
 });
 
 document.getElementById("totalOrders").innerText = totalOrders;
@@ -287,26 +309,34 @@ const q = query(collection(db,"orders"), orderBy("createdAt","desc"));
 onSnapshot(q,(snap)=>{
 
 box.innerHTML="";
-let orders = [];
+let orders=[];
 
 snap.forEach(d=>{
 
 const o = d.data();
-const total = o.totalPrice || (o.cart?.reduce((s,i)=>s + Number(i.price),0)) || 0;
+
+let total=0;
+
+if(Array.isArray(o.cart)){
+total=o.cart.reduce((s,i)=>s+(Number(i.price)||0),0);
+}else{
+total=Number(o.totalPrice)||0;
+}
+
 orders.push(o);
 
-let colorClass = "status-"+o.status;
+let colorClass="status-"+o.status;
 
-box.innerHTML += `
+box.innerHTML+=`
 <div class="card">
 
-<h3>🆔 ${o.orderId || d.id}</h3>
+<h3>🆔 ${o.orderId||d.id}</h3>
 
 <p>${o.name}</p>
 <p>📞 ${o.phone}</p>
 <p>📍 ${o.address}</p>
 
-<p>🛒 ${o.cart?.length || 0} منتجات</p>
+<p>🛒 ${Array.isArray(o.cart)?o.cart.length:0} منتجات</p>
 
 <p>💰 ${total} جنيه</p>
 
