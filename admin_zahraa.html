@@ -46,8 +46,15 @@ img{
 
 <h2>🔥 Admin PRO</h2>
 
-<input type="password" id="pass" placeholder="password">
+<!-- LOGIN UI -->
+<div id="loginBox">
+
+<input type="email" id="email" placeholder="email"><br>
+<input type="password" id="pass" placeholder="password"><br>
+
 <button id="loginBtn">دخول</button>
+
+</div>
 
 <div id="panel" style="display:none">
 
@@ -63,7 +70,16 @@ img{
 
 <script type="module">
 
+/* ================= FIREBASE AUTH ================= */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import {
+getAuth,
+onAuthStateChanged,
+signInWithEmailAndPassword,
+signOut
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+/* ================= FIRESTORE ================= */
 import {
 getFirestore,
 collection,
@@ -81,21 +97,43 @@ projectId: "zahraa-store-f4c90"
 };
 
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const db = getFirestore(app);
 
-const PASSWORD = "zahraa2025";
+/* ================= CLOUDINARY ================= */
 const cloudName = "dxlxwe55b";
 const uploadPreset = "zahraa_upload";
 
-/* LOGIN */
-document.getElementById("loginBtn").onclick = ()=>{
-  if(document.getElementById("pass").value === PASSWORD){
+/* ================= PROTECTION ================= */
+onAuthStateChanged(auth, (user)=>{
+
+  if(user){
+    document.getElementById("loginBox").style.display = "none";
     document.getElementById("panel").style.display = "block";
     load();
-  } else alert("غلط");
+  } else {
+    document.getElementById("loginBox").style.display = "block";
+    document.getElementById("panel").style.display = "none";
+  }
+
+});
+
+/* ================= LOGIN ================= */
+document.getElementById("loginBtn").onclick = async ()=>{
+
+  const email = document.getElementById("email").value;
+  const pass = document.getElementById("pass").value;
+
+  try{
+    await signInWithEmailAndPassword(auth, email, pass);
+    alert("تم الدخول 🔥");
+  } catch(e){
+    alert("غلط في البيانات");
+  }
+
 };
 
-/* UPLOAD CLOUDINARY */
+/* ================= UPLOAD ================= */
 async function upload(file){
 
   const form = new FormData();
@@ -111,7 +149,7 @@ async function upload(file){
   return data.secure_url;
 }
 
-/* ADD */
+/* ================= ADD ================= */
 document.getElementById("addBtn").onclick = async ()=>{
 
   const name = document.getElementById("name").value;
@@ -140,7 +178,7 @@ document.getElementById("addBtn").onclick = async ()=>{
   load();
 };
 
-/* LOAD */
+/* ================= LOAD ================= */
 async function load(){
 
   const list = document.getElementById("list");
@@ -164,11 +202,13 @@ async function load(){
   });
 }
 
+/* ================= DELETE ================= */
 window.del = async (id)=>{
   await deleteDoc(doc(db,"products",id));
   load();
 };
 
+/* ================= EDIT ================= */
 window.edit = async (id)=>{
   const v = document.getElementById("n-"+id).value;
   await updateDoc(doc(db,"products",id),{name:v});
