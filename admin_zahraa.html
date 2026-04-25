@@ -49,7 +49,6 @@ img{
   height:220px;
   overflow:hidden;
   border-radius:10px;
-  margin-bottom:10px;
   background:#222;
 }
 
@@ -224,23 +223,50 @@ document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
 document.getElementById(tab).classList.add("active");
 };
 
+/* 🔥 رفع الصور */
+async function uploadImage(file){
+const form = new FormData();
+form.append("file", file);
+form.append("upload_preset", "zahraa_upload");
+
+const res = await fetch(
+"https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload",
+{ method:"POST", body:form }
+);
+
+const data = await res.json();
+return data.secure_url;
+}
+
 /* ADD PRODUCT */
 document.getElementById("addBtn").onclick = async ()=>{
 
 const name = document.getElementById("name").value;
 const price = document.getElementById("price").value;
+const files = document.getElementById("images").files;
 
 if(!name || !price){
 alert("اكتب اسم وسعر المنتج");
 return;
 }
 
+let images = [];
+
+for(let i=0;i<files.length;i++){
+const url = await uploadImage(files[i]);
+images.push(url);
+}
+
 await addDoc(collection(db,"products"),{
 name:name,
 price:Number(price),
-images:[],
+images:images,
 createdAt:Date.now()
 });
+
+document.getElementById("name").value="";
+document.getElementById("price").value="";
+document.getElementById("images").value="";
 
 load();
 };
@@ -312,9 +338,8 @@ await updateDoc(doc(db,"products",id),{name,price});
 load();
 };
 
-/* ORDERS SAFE */
+/* ORDERS */
 function loadOrders(){
-
 const box=document.getElementById("ordersList");
 
 const q=query(collection(db,"orders"),orderBy("createdAt","desc"));
@@ -326,9 +351,9 @@ box.innerHTML="";
 snap.forEach(d=>{
 const o=d.data();
 
-let cart = Array.isArray(o.cart)?o.cart:[];
+let cart=Array.isArray(o.cart)?o.cart:[];
 
-let total = cart.reduce((s,i)=>s+(Number(i.price)||0),0);
+let total=cart.reduce((s,i)=>s+(Number(i.price)||0),0);
 
 box.innerHTML+=`
 <div class="card">
