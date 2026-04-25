@@ -52,6 +52,7 @@ input{
 
 .slides{
   display:flex;
+  transition:0.3s;
 }
 
 .slides img{
@@ -61,20 +62,69 @@ input{
   flex-shrink:0;
 }
 
-/* FULLSCREEN */
+/* arrows */
+.arrow{
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  background:rgba(0,0,0,0.5);
+  border:none;
+  color:white;
+  font-size:20px;
+  padding:5px 10px;
+  cursor:pointer;
+}
+
+.prev{right:5px;}
+.next{left:5px;}
+
+/* dots */
+.dots{
+  position:absolute;
+  bottom:5px;
+  width:100%;
+  text-align:center;
+}
+
+.dot{
+  display:inline-block;
+  width:6px;
+  height:6px;
+  background:#999;
+  border-radius:50%;
+  margin:2px;
+}
+
+.dot.active{
+  background:gold;
+}
+
+/* FULLSCREEN PRO */
 .fullscreen{
   position:fixed;
   inset:0;
-  background:black;
+  background:rgba(0,0,0,0.95);
   display:none;
   align-items:center;
   justify-content:center;
   z-index:9999;
+  flex-direction:column;
 }
 
 .fullscreen img{
-  max-width:100%;
-  max-height:100%;
+  max-width:95%;
+  max-height:80%;
+  border-radius:10px;
+  transition:0.3s;
+}
+
+.closeFull{
+  position:absolute;
+  top:20px;
+  left:20px;
+  font-size:25px;
+  color:white;
+  cursor:pointer;
 }
 
 /* BUTTONS */
@@ -101,8 +151,7 @@ button{
   font-weight:bold;
 }
 
-/* ================= CART SHOPIFY PRO ================= */
-
+/* CART */
 #overlay{
   position:fixed;
   inset:0;
@@ -125,14 +174,7 @@ button{
   overflow-y:auto;
 }
 
-#cartDrawer.open{
-  right:0;
-}
-
-#cartDrawer h3{
-  text-align:center;
-  color:gold;
-}
+#cartDrawer.open{right:0;}
 
 .cart-item{
   background:#1a1a1a;
@@ -145,7 +187,6 @@ button{
   display:flex;
   justify-content:center;
   gap:10px;
-  margin-top:5px;
 }
 
 .qty button{
@@ -157,19 +198,8 @@ button{
 .remove{
   background:red;
   color:white;
-  width:100%;
-  margin-top:5px;
 }
 
-.cart-footer{
-  position:sticky;
-  bottom:0;
-  background:#111;
-  padding:10px;
-  border-top:1px solid #333;
-}
-
-/* TOAST PRO */
 #toast{
   position:fixed;
   bottom:-100px;
@@ -180,9 +210,8 @@ button{
   border-radius:20px;
   transition:0.3s;
 }
-#toast.show{
-  bottom:20px;
-}
+#toast.show{bottom:20px;}
+
 </style>
 </head>
 
@@ -197,20 +226,17 @@ button{
 
 <div class="grid" id="grid"></div>
 
-<div class="fullscreen" id="full" onclick="closeFull()">
+<div class="fullscreen" id="full">
+  <span class="closeFull" onclick="closeFull()">✕</span>
   <img id="fullImg">
 </div>
 
-<!-- CART -->
 <div id="overlay" onclick="closeCart()"></div>
 
 <div id="cartDrawer">
   <h3>🛒 السلة</h3>
   <div id="cartItems"></div>
-
-  <div class="cart-footer">
-    <h4 id="total">الإجمالي: 0 جنيه</h4>
-  </div>
+  <h4 id="total">الإجمالي: 0 جنيه</h4>
 </div>
 
 <div id="toast">تمت الإضافة 🛒</div>
@@ -234,6 +260,59 @@ let cart = JSON.parse(localStorage.getItem("cart") || "[]");
 
 const grid = document.getElementById("grid");
 
+/* FULLSCREEN */
+window.openFull = (src)=>{
+  document.getElementById("full").style.display="flex";
+  document.getElementById("fullImg").src = src;
+};
+window.closeFull = ()=>{
+  document.getElementById("full").style.display="none";
+};
+
+/* SLIDER */
+let sliders = {};
+
+function createSlider(id,images){
+
+  if(!images || !images.length) return "";
+
+  sliders[id]=0;
+
+  return `
+  <div class="slider">
+
+    <div class="slides" id="slides-${id}">
+      ${images.map(img=>`
+        <img src="${img}" onclick="openFull('${img}')">
+      `).join("")}
+    </div>
+
+    <button class="arrow prev" onclick="move('${id}',-1)">›</button>
+    <button class="arrow next" onclick="move('${id}',1)">‹</button>
+
+    <div class="dots">
+      ${images.map((_,i)=>`
+        <span class="dot ${i==0?'active':''}" id="dot-${id}-${i}"></span>
+      `).join("")}
+    </div>
+
+  </div>`;
+}
+
+window.move = (id,step)=>{
+  const slider = document.getElementById("slides-"+id);
+  const imgs = slider.children.length;
+
+  sliders[id]=(sliders[id]+step+imgs)%imgs;
+
+  slider.style.transform = `translateX(-${sliders[id]*100}%)`;
+
+  for(let i=0;i<imgs;i++){
+    document.getElementById(`dot-${id}-${i}`).classList.remove("active");
+  }
+  document.getElementById(`dot-${id}-${sliders[id]}`).classList.add("active");
+};
+
 /* LOAD */
 async function load(){
   const snap = await getDocs(collection(db,"products"));
@@ -244,30 +323,6 @@ async function load(){
   });
 
   render(products);
-}
-
-/* FULLSCREEN */
-window.openFull = (src)=>{
-  document.getElementById("full").style.display="flex";
-  document.getElementById("fullImg").src = src;
-};
-
-window.closeFull = ()=>{
-  document.getElementById("full").style.display="none";
-};
-
-/* SLIDER */
-function createSlider(images){
-  if(!images) return "";
-
-  return `
-  <div class="slider">
-    <div class="slides">
-      ${images.map(img=>`
-        <img src="${img}" onclick="openFull('${img}')">
-      `).join("")}
-    </div>
-  </div>`;
 }
 
 /* RENDER */
@@ -282,7 +337,7 @@ function render(list){
     grid.innerHTML += `
       <div class="card">
 
-        ${createSlider(p.images)}
+        ${createSlider(p.id,p.images)}
 
         <h3>${p.name}</h3>
         <p>${p.price} جنيه</p>
@@ -295,109 +350,27 @@ function render(list){
   });
 }
 
-/* CART ADD PRO */
+/* CART */
 window.addCart = (id)=>{
   const p = products.find(x=>x.id===id);
 
   let item = cart.find(x=>x.id===id);
 
   if(item){
-    item.qty += 1;
+    item.qty++;
   }else{
-    cart.push({
-      id:p.id,
-      name:p.name,
-      price:Number(p.price),
-      qty:1
-    });
+    cart.push({id:p.id,name:p.name,price:Number(p.price),qty:1});
   }
 
-  save();
-  toast();
-  renderCart();
-};
-
-/* OPEN CART */
-window.openCart = ()=>{
-  document.getElementById("overlay").style.display="block";
-  document.getElementById("cartDrawer").classList.add("open");
-  renderCart();
-};
-
-window.closeCart = ()=>{
-  document.getElementById("overlay").style.display="none";
-  document.getElementById("cartDrawer").classList.remove("open");
-};
-
-/* CART */
-function renderCart(){
-
-  let box = document.getElementById("cartItems");
-  box.innerHTML="";
-
-  let total=0;
-
-  cart.forEach((p,i)=>{
-
-    total += p.price * p.qty;
-
-    box.innerHTML += `
-      <div class="cart-item">
-        <h4>${p.name}</h4>
-        <p>${p.price} × ${p.qty}</p>
-
-        <div class="qty">
-          <button onclick="minus(${i})">-</button>
-          <button onclick="plus(${i})">+</button>
-        </div>
-
-        <button class="remove" onclick="removeItem(${i})">حذف</button>
-      </div>
-    `;
-  });
-
-  document.getElementById("total").innerText =
-  "الإجمالي: " + total + " جنيه";
-}
-
-/* QTY */
-window.plus = (i)=>{
-  cart[i].qty++;
-  save();
-  renderCart();
-};
-
-window.minus = (i)=>{
-  cart[i].qty--;
-  if(cart[i].qty<=0) cart.splice(i,1);
-  save();
-  renderCart();
-};
-
-window.removeItem = (i)=>{
-  cart.splice(i,1);
-  save();
-  renderCart();
-};
-
-function save(){
   localStorage.setItem("cart",JSON.stringify(cart));
-}
-
-/* TOAST PRO */
-function toast(){
-  const t = document.getElementById("toast");
-  t.classList.add("show");
-
-  setTimeout(()=>{
-    t.classList.remove("show");
-  },1200);
-}
-
-/* CHECKOUT */
-window.goCheckout = ()=>{
-  window.location.href="checkout.html";
+  toast();
 };
+
+function toast(){
+  const t=document.getElementById("toast");
+  t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),1200);
+}
 
 /* SEARCH */
 document.getElementById("search").addEventListener("input",(e)=>{
