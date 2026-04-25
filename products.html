@@ -28,7 +28,6 @@ input{
   border:none;
 }
 
-/* GRID */
 .grid{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(170px,1fr));
@@ -60,19 +59,21 @@ input{
   height:150px;
   object-fit:cover;
   flex-shrink:0;
+  background:#222;
 }
 
-/* arrows */
+/* arrows FIXED */
 .arrow{
   position:absolute;
   top:50%;
   transform:translateY(-50%);
-  background:rgba(0,0,0,0.5);
+  background:rgba(0,0,0,0.4);
   border:none;
   color:white;
-  font-size:20px;
-  padding:5px 10px;
+  font-size:14px;
+  padding:4px 8px;
   cursor:pointer;
+  border-radius:6px;
 }
 
 .prev{right:5px;}
@@ -90,7 +91,7 @@ input{
   display:inline-block;
   width:6px;
   height:6px;
-  background:#999;
+  background:#777;
   border-radius:50%;
   margin:2px;
 }
@@ -107,27 +108,44 @@ input{
   display:none;
   align-items:center;
   justify-content:center;
-  z-index:9999;
   flex-direction:column;
+  z-index:9999;
 }
 
 .fullscreen img{
   max-width:95%;
-  max-height:80%;
+  max-height:75%;
   border-radius:10px;
-  transition:0.3s;
+}
+
+.full-name{
+  margin-top:10px;
+  color:gold;
+  font-size:18px;
 }
 
 .closeFull{
   position:absolute;
   top:20px;
   left:20px;
-  font-size:25px;
-  color:white;
+  font-size:22px;
   cursor:pointer;
 }
 
-/* BUTTONS */
+/* FULLSCREEN arrows */
+.full-arrow{
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  font-size:25px;
+  background:rgba(0,0,0,0.4);
+  padding:5px 10px;
+  cursor:pointer;
+}
+
+.full-prev{right:10px;}
+.full-next{left:10px;}
+
 button,a{
   display:block;
   margin:8px auto;
@@ -151,55 +169,6 @@ button{
   font-weight:bold;
 }
 
-/* CART */
-#overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,0.6);
-  display:none;
-  z-index:999;
-}
-
-#cartDrawer{
-  position:fixed;
-  top:0;
-  right:-100%;
-  width:85%;
-  max-width:380px;
-  height:100%;
-  background:#111;
-  z-index:1000;
-  transition:0.35s;
-  padding:10px;
-  overflow-y:auto;
-}
-
-#cartDrawer.open{right:0;}
-
-.cart-item{
-  background:#1a1a1a;
-  padding:10px;
-  border-radius:10px;
-  margin:10px 0;
-}
-
-.qty{
-  display:flex;
-  justify-content:center;
-  gap:10px;
-}
-
-.qty button{
-  width:30px;
-  height:30px;
-  border-radius:50%;
-}
-
-.remove{
-  background:red;
-  color:white;
-}
-
 #toast{
   position:fixed;
   bottom:-100px;
@@ -221,22 +190,16 @@ button{
 
 <input id="search" placeholder="ابحث عن منتج...">
 
-<button onclick="openCart()">🛒 السلة</button>
-<button onclick="goCheckout()">💳 إنهاء الطلب</button>
-
 <div class="grid" id="grid"></div>
 
 <div class="fullscreen" id="full">
   <span class="closeFull" onclick="closeFull()">✕</span>
+
+  <span class="full-arrow full-prev" onclick="moveFull(-1)">›</span>
+  <span class="full-arrow full-next" onclick="moveFull(1)">‹</span>
+
   <img id="fullImg">
-</div>
-
-<div id="overlay" onclick="closeCart()"></div>
-
-<div id="cartDrawer">
-  <h3>🛒 السلة</h3>
-  <div id="cartItems"></div>
-  <h4 id="total">الإجمالي: 0 جنيه</h4>
+  <div class="full-name" id="fullName"></div>
 </div>
 
 <div id="toast">تمت الإضافة 🛒</div>
@@ -256,23 +219,31 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 let products = [];
-let cart = JSON.parse(localStorage.getItem("cart") || "[]");
-
-const grid = document.getElementById("grid");
+let sliders = {};
+let fullImages = [];
+let fullIndex = 0;
 
 /* FULLSCREEN */
-window.openFull = (src)=>{
+window.openFull = (images,index,name)=>{
+  fullImages = images;
+  fullIndex = index;
+
   document.getElementById("full").style.display="flex";
-  document.getElementById("fullImg").src = src;
+  document.getElementById("fullImg").src = images[index];
+  document.getElementById("fullName").innerText = name;
 };
+
 window.closeFull = ()=>{
   document.getElementById("full").style.display="none";
 };
 
-/* SLIDER */
-let sliders = {};
+window.moveFull = (step)=>{
+  fullIndex = (fullIndex + step + fullImages.length) % fullImages.length;
+  document.getElementById("fullImg").src = fullImages[fullIndex];
+};
 
-function createSlider(id,images){
+/* SLIDER */
+function createSlider(id,images,name){
 
   if(!images || !images.length) return "";
 
@@ -282,8 +253,8 @@ function createSlider(id,images){
   <div class="slider">
 
     <div class="slides" id="slides-${id}">
-      ${images.map(img=>`
-        <img src="${img}" onclick="openFull('${img}')">
+      ${images.map((img,i)=>`
+        <img src="${img}" onclick="openFull(${JSON.stringify(images)},${i},'${name}')">
       `).join("")}
     </div>
 
@@ -328,48 +299,20 @@ async function load(){
 /* RENDER */
 function render(list){
 
-  grid.innerHTML="";
+  document.getElementById("grid").innerHTML="";
 
   list.forEach(p=>{
-
-    const wa = encodeURIComponent(`عايز المنتج: ${p.name}`);
-
-    grid.innerHTML += `
+    document.getElementById("grid").innerHTML += `
       <div class="card">
 
-        ${createSlider(p.id,p.images)}
+        ${createSlider(p.id,p.images,p.name)}
 
         <h3>${p.name}</h3>
         <p>${p.price} جنيه</p>
 
-        <a href="https://wa.me/201204194540?text=${wa}" target="_blank">اطلب واتساب</a>
-
-        <button onclick="addCart('${p.id}')">أضف للسلة</button>
       </div>
     `;
   });
-}
-
-/* CART */
-window.addCart = (id)=>{
-  const p = products.find(x=>x.id===id);
-
-  let item = cart.find(x=>x.id===id);
-
-  if(item){
-    item.qty++;
-  }else{
-    cart.push({id:p.id,name:p.name,price:Number(p.price),qty:1});
-  }
-
-  localStorage.setItem("cart",JSON.stringify(cart));
-  toast();
-};
-
-function toast(){
-  const t=document.getElementById("toast");
-  t.classList.add("show");
-  setTimeout(()=>t.classList.remove("show"),1200);
 }
 
 /* SEARCH */
