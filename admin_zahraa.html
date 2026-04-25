@@ -2,84 +2,89 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>Admin PRO</title>
+<title>Zahraa Admin Pro</title>
 
 <style>
 body{
-  background:#0d0d0d;
-  color:white;
-  font-family:Cairo;
-  text-align:center;
-  padding:20px;
+margin:0;
+font-family:Cairo;
+background:#0d0d0d;
+color:white;
+display:flex;
 }
 
-input,button{
-  padding:10px;
-  margin:6px;
-  border-radius:10px;
-  border:none;
+/* SIDEBAR */
+.sidebar{
+width:220px;
+background:#111;
+height:100vh;
+padding:15px;
+position:fixed;
+right:0;
+top:0;
 }
 
-button{
-  background:gold;
-  color:black;
-  font-weight:bold;
-  cursor:pointer;
+.sidebar h2{
+color:gold;
+text-align:center;
+}
+
+.sidebar button{
+width:100%;
+margin:10px 0;
+padding:10px;
+border:none;
+border-radius:8px;
+background:#222;
+color:white;
+cursor:pointer;
+}
+
+/* CONTENT */
+.main{
+margin-right:220px;
+padding:20px;
+width:100%;
 }
 
 .card{
-  background:#1a1a1a;
-  padding:12px;
-  margin:10px auto;
-  border-radius:12px;
-  max-width:420px;
-  text-align:right;
+background:#1a1a1a;
+padding:15px;
+border-radius:12px;
+margin:10px 0;
 }
 
-.slider{
-  position:relative;
-  width:100%;
-  height:220px;
-  overflow:hidden;
-  border-radius:10px;
-  background:#222;
+/* DASHBOARD */
+.stats{
+display:flex;
+gap:10px;
+flex-wrap:wrap;
 }
 
-.slides{
-  display:flex;
-  transition:transform 0.4s ease;
+.box{
+background:#111;
+padding:15px;
+border-radius:10px;
+min-width:120px;
+text-align:center;
 }
 
-.slides img{
-  width:100%;
-  height:220px;
-  object-fit:cover;
-  flex-shrink:0;
+/* PRODUCTS */
+.product{
+background:#1a1a1a;
+padding:10px;
+border-radius:10px;
+margin:10px 0;
 }
 
-.navBtn{
-  position:absolute;
-  top:50%;
-  transform:translateY(-50%);
-  background:rgba(0,0,0,0.6);
-  color:white;
-  border:none;
-  width:35px;
-  height:35px;
-  border-radius:50%;
+img{
+width:100%;
+height:200px;
+object-fit:cover;
+border-radius:10px;
 }
 
-.prev{left:5px;}
-.next{right:5px;}
-
-.smallBtn{
-  background:#333;
-  color:white;
-  font-size:12px;
-  padding:5px;
-  margin-top:5px;
-}
-
+/* HIDDEN */
 .section{display:none;}
 .active{display:block;}
 
@@ -88,17 +93,53 @@ button{
 
 <body>
 
-<h2>🔥 Admin PRO</h2>
+<!-- SIDEBAR -->
+<div class="sidebar">
+<h2>🔥 Zahraa</h2>
 
-<div id="panel">
+<button onclick="show('dashboard')">📊 Dashboard</button>
+<button onclick="show('products')">🛒 المنتجات</button>
+<button onclick="show('orders')">📦 الطلبات</button>
 
-<input type="text" id="name" placeholder="اسم المنتج">
-<input type="number" id="price" placeholder="السعر">
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="section active">
+<h2>📊 Dashboard</h2>
+
+<div class="stats">
+<div class="box">📦 <br><span id="totalOrders">0</span></div>
+<div class="box">💰 <br><span id="totalRevenue">0</span></div>
+<div class="box">⏳ <br><span id="pendingOrders">0</span></div>
+</div>
+
+</div>
+
+<!-- PRODUCTS -->
+<div id="products" class="section">
+
+<h2>🛒 المنتجات</h2>
+
+<input id="name" placeholder="اسم المنتج">
+<input id="price" placeholder="السعر">
 <input type="file" id="images" multiple>
-<button id="addBtn">إضافة منتج</button>
 
-<h3>المنتجات</h3>
+<button id="addBtn">إضافة</button>
+
 <div id="list"></div>
+
+</div>
+
+<!-- ORDERS -->
+<div id="orders" class="section">
+
+<h2>📦 الطلبات</h2>
+<div id="ordersList"></div>
+
+</div>
 
 </div>
 
@@ -112,9 +153,13 @@ addDoc,
 getDocs,
 updateDoc,
 doc,
-deleteDoc
+deleteDoc,
+onSnapshot,
+query,
+orderBy
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+/* FIREBASE */
 const firebaseConfig = {
 apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
 authDomain: "zahraa-store-f4c90.firebaseapp.com",
@@ -124,6 +169,12 @@ projectId: "zahraa-store-f4c90"
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+/* NAV */
+window.show = (id)=>{
+document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+document.getElementById(id).classList.add("active");
+};
+
 /* رفع صورة */
 async function uploadImage(file){
 const form = new FormData();
@@ -132,7 +183,7 @@ form.append("upload_preset", "zahraa_upload");
 
 const res = await fetch(
 "https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload",
-{ method:"POST", body:form }
+{method:"POST",body:form}
 );
 
 const data = await res.json();
@@ -142,153 +193,103 @@ return data.secure_url;
 /* إضافة منتج */
 document.getElementById("addBtn").onclick = async ()=>{
 
-const name = document.getElementById("name").value;
-const price = document.getElementById("price").value;
-const files = document.getElementById("images").files;
+const name=document.getElementById("name").value;
+const price=document.getElementById("price").value;
+const files=document.getElementById("images").files;
 
-let images=[];
+let imgs=[];
 
 for(let i=0;i<files.length;i++){
-images.push(await uploadImage(files[i]));
+imgs.push(await uploadImage(files[i]));
 }
 
 await addDoc(collection(db,"products"),{
 name,
 price:Number(price),
-images,
-index:0
+images:imgs,
+createdAt:Date.now()
 });
 
-load();
+loadProducts();
 };
 
-/* تحميل المنتجات */
-async function load(){
-const list=document.getElementById("list");
-list.innerHTML="";
+/* تحميل منتجات */
+async function loadProducts(){
+const box=document.getElementById("list");
+box.innerHTML="";
 
 const snap=await getDocs(collection(db,"products"));
 
 snap.forEach(d=>{
 const p=d.data();
 
-let imgs = Array.isArray(p.images)?p.images:[];
+box.innerHTML+=`
+<div class="product">
 
-list.innerHTML+=`
-<div class="card">
+<img src="${p.images?.[0]||''}">
 
-<div class="slider" id="slider-${d.id}">
-  <div class="slides">
-    ${imgs.map(img=>`
-      <div style="position:relative;width:100%;">
-        <img src="${img}">
-        <button class="smallBtn" onclick="removeImg('${d.id}','${img}')">🗑 حذف</button>
-      </div>
-    `).join("")}
-  </div>
+<p>${p.name}</p>
+<p>${p.price} جنيه</p>
 
-  ${imgs.length>1?`
-  <button class="navBtn prev" onclick="move('${d.id}',-1)">‹</button>
-  <button class="navBtn next" onclick="move('${d.id}',1)">›</button>
-  `:""}
-</div>
-
-<input id="n-${d.id}" value="${p.name}">
-<input id="p-${d.id}" value="${p.price}">
-
-<input type="file" id="add-${d.id}">
-<button onclick="addImg('${d.id}')">➕ إضافة صورة</button>
-
-<button onclick="update('${d.id}')">تعديل</button>
-<button onclick="del('${d.id}')">حذف المنتج</button>
+<button onclick="del('${d.id}')">حذف</button>
 
 </div>
 `;
 });
 }
 
-/* سلايدر */
-let indexMap={};
-
-window.move=(id,dir)=>{
-const slider=document.querySelector(`#slider-${id} .slides`);
-const imgs=slider.querySelectorAll("img");
-
-if(!indexMap[id]) indexMap[id]=0;
-
-indexMap[id]+=dir;
-
-if(indexMap[id]<0) indexMap[id]=imgs.length-1;
-if(indexMap[id]>=imgs.length) indexMap[id]=0;
-
-slider.style.transform=`translateX(-${indexMap[id]*100}%)`;
-};
-
-/* حذف صورة */
-window.removeImg=async(id,img)=>{
-
-const snap=await getDocs(collection(db,"products"));
-
-snap.forEach(async d=>{
-if(d.id===id){
-let data=d.data();
-
-let newImgs=data.images.filter(i=>i!==img);
-
-await updateDoc(doc(db,"products",id),{
-images:newImgs
-});
-
-load();
-}
-});
-};
-
-/* إضافة صورة */
-window.addImg=async(id)=>{
-
-const file=document.getElementById("add-"+id).files[0];
-if(!file) return;
-
-const url=await uploadImage(file);
-
-const snap=await getDocs(collection(db,"products"));
-
-snap.forEach(async d=>{
-if(d.id===id){
-let data=d.data();
-
-let newImgs=[...data.images,url];
-
-await updateDoc(doc(db,"products",id),{
-images:newImgs
-});
-
-load();
-}
-});
-};
-
-/* تعديل */
-window.update=async(id)=>{
-const name=document.getElementById("n-"+id).value;
-const price=document.getElementById("p-"+id).value;
-
-await updateDoc(doc(db,"products",id),{
-name,
-price:Number(price)
-});
-
-load();
-};
-
-/* حذف منتج */
+/* حذف */
 window.del=async(id)=>{
 await deleteDoc(doc(db,"products",id));
-load();
+loadProducts();
 };
 
-load();
+/* طلبات */
+function loadOrders(){
+
+const box=document.getElementById("ordersList");
+
+const q=query(collection(db,"orders"),orderBy("createdAt","desc"));
+
+onSnapshot(q,(snap)=>{
+
+box.innerHTML="";
+
+let totalOrders=0;
+let revenue=0;
+let pending=0;
+
+snap.forEach(d=>{
+const o=d.data();
+
+totalOrders++;
+
+let total=o.cart?.reduce((s,i)=>s+Number(i.price),0)||0;
+revenue+=total;
+
+if(o.status==="pending") pending++;
+
+box.innerHTML+=`
+<div class="card">
+
+<p>${o.name}</p>
+<p>${o.phone}</p>
+<p>${o.address}</p>
+<p>💰 ${total}</p>
+
+</div>
+`;
+});
+
+document.getElementById("totalOrders").innerText=totalOrders;
+document.getElementById("totalRevenue").innerText=revenue;
+document.getElementById("pendingOrders").innerText=pending;
+
+});
+}
+
+loadProducts();
+loadOrders();
 
 </script>
 
