@@ -1,13 +1,14 @@
 const CACHE_NAME = "zahraa-store-v2";
+
 const urlsToCache = [
   "./",
   "./index.html",
   "./manifest.json"
 ];
 
-// 🔥 Install
+/* 🔥 INSTALL */
 self.addEventListener("install", event => {
-  self.skipWaiting(); // يجبر التفعيل فورًا
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       return cache.addAll(urlsToCache);
@@ -15,7 +16,7 @@ self.addEventListener("install", event => {
   );
 });
 
-// 🔥 Activate (يمسح القديم فورًا)
+/* 🔥 ACTIVATE */
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys().then(keys => {
@@ -31,16 +32,36 @@ self.addEventListener("activate", event => {
   self.clients.claim();
 });
 
-// 🔥 Fetch (ما يعتمدش على الكاش القديم)
+/* 🔥 FETCH (FIX مهم) */
 self.addEventListener("fetch", event => {
+
+  // تجاهل requests الخاصة بـ Firebase أو Cloudinary
+  if (
+    event.request.url.includes("firebase") ||
+    event.request.url.includes("gstatic") ||
+    event.request.url.includes("cloudinary")
+  ) {
+    return;
+  }
+
   event.respondWith(
-    fetch(event.request)
-      .then(res => {
-        return caches.open(CACHE_NAME).then(cache => {
-          cache.put(event.request, res.clone());
-          return res;
-        });
-      })
-      .catch(() => caches.match(event.request))
+    caches.match(event.request).then(cached => {
+
+      const fetchPromise = fetch(event.request)
+        .then(networkRes => {
+
+          // خزّن النسخة الجديدة
+          return caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, networkRes.clone());
+            return networkRes;
+          });
+
+        })
+        .catch(() => cached);
+
+      // رجّع الكاش فورًا + حدّث في الخلفية
+      return cached || fetchPromise;
+    })
   );
+
 });
