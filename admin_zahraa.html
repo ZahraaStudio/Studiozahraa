@@ -77,11 +77,39 @@ border-radius:10px;
 margin:10px 0;
 }
 
-img{
+.slider{
+position:relative;
+}
+
+.slider img{
 width:100%;
 height:200px;
 object-fit:cover;
 border-radius:10px;
+}
+
+.slider button{
+position:absolute;
+top:50%;
+transform:translateY(-50%);
+background:rgba(0,0,0,0.5);
+border:none;
+color:white;
+font-size:20px;
+cursor:pointer;
+padding:5px 10px;
+}
+
+.prev{right:5px;}
+.next{left:5px;}
+
+input{
+display:block;
+width:100%;
+margin:5px 0;
+padding:8px;
+border-radius:8px;
+border:none;
 }
 
 /* HIDDEN */
@@ -93,20 +121,16 @@ border-radius:10px;
 
 <body>
 
-<!-- SIDEBAR -->
 <div class="sidebar">
 <h2>🔥 Zahraa</h2>
 
 <button onclick="show('dashboard')">📊 Dashboard</button>
 <button onclick="show('products')">🛒 المنتجات</button>
 <button onclick="show('orders')">📦 الطلبات</button>
-
 </div>
 
-<!-- MAIN -->
 <div class="main">
 
-<!-- DASHBOARD -->
 <div id="dashboard" class="section active">
 <h2>📊 Dashboard</h2>
 
@@ -115,12 +139,9 @@ border-radius:10px;
 <div class="box">💰 <br><span id="totalRevenue">0</span></div>
 <div class="box">⏳ <br><span id="pendingOrders">0</span></div>
 </div>
-
 </div>
 
-<!-- PRODUCTS -->
 <div id="products" class="section">
-
 <h2>🛒 المنتجات</h2>
 
 <input id="name" placeholder="اسم المنتج">
@@ -130,15 +151,11 @@ border-radius:10px;
 <button id="addBtn">إضافة</button>
 
 <div id="list"></div>
-
 </div>
 
-<!-- ORDERS -->
 <div id="orders" class="section">
-
 <h2>📦 الطلبات</h2>
 <div id="ordersList"></div>
-
 </div>
 
 </div>
@@ -159,7 +176,6 @@ query,
 orderBy
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* FIREBASE */
 const firebaseConfig = {
 apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
 authDomain: "zahraa-store-f4c90.firebaseapp.com",
@@ -197,6 +213,11 @@ const name=document.getElementById("name").value;
 const price=document.getElementById("price").value;
 const files=document.getElementById("images").files;
 
+if(!name || !price){
+alert("اكتب اسم وسعر");
+return;
+}
+
 let imgs=[];
 
 for(let i=0;i<files.length;i++){
@@ -210,7 +231,42 @@ images:imgs,
 createdAt:Date.now()
 });
 
+document.getElementById("name").value="";
+document.getElementById("price").value="";
+document.getElementById("images").value="";
+
 loadProducts();
+};
+
+/* سلايدر */
+function sliderHTML(images,id){
+
+if(!images || images.length===0){
+return `<img src="" style="background:#000">`;
+}
+
+return `
+<div class="slider">
+<img id="img-${id}" src="${images[0]}">
+
+<button class="prev" onclick="prevImg('${id}',${JSON.stringify(images).replace(/"/g,'&quot;')})">‹</button>
+<button class="next" onclick="nextImg('${id}',${JSON.stringify(images).replace(/"/g,'&quot;')})">›</button>
+</div>
+`;
+}
+
+let indexes={};
+
+window.prevImg=(id,imgs)=>{
+indexes[id]=(indexes[id]||0)-1;
+if(indexes[id]<0) indexes[id]=imgs.length-1;
+document.getElementById("img-"+id).src=imgs[indexes[id]];
+};
+
+window.nextImg=(id,imgs)=>{
+indexes[id]=(indexes[id]||0)+1;
+if(indexes[id]>=imgs.length) indexes[id]=0;
+document.getElementById("img-"+id).src=imgs[indexes[id]];
 };
 
 /* تحميل منتجات */
@@ -226,17 +282,63 @@ const p=d.data();
 box.innerHTML+=`
 <div class="product">
 
-<img src="${p.images?.[0]||''}">
+${sliderHTML(p.images,d.id)}
 
-<p>${p.name}</p>
-<p>${p.price} جنيه</p>
+<input id="n-${d.id}" value="${p.name}">
+<input id="p-${d.id}" value="${p.price}">
 
-<button onclick="del('${d.id}')">حذف</button>
+<input type="file" id="newimg-${d.id}" multiple>
+
+<button onclick="updateProduct('${d.id}')">💾 تعديل</button>
+<button onclick="addImage('${d.id}')">➕ صورة</button>
+<button onclick="removeImage('${d.id}')">❌ حذف صورة</button>
+<button onclick="del('${d.id}')">🗑 حذف المنتج</button>
 
 </div>
 `;
 });
 }
+
+/* تعديل */
+window.updateProduct=async(id)=>{
+const name=document.getElementById("n-"+id).value;
+const price=document.getElementById("p-"+id).value;
+
+await updateDoc(doc(db,"products",id),{
+name,
+price:Number(price)
+});
+
+loadProducts();
+};
+
+/* إضافة صورة */
+window.addImage=async(id)=>{
+const file=document.getElementById("newimg-"+id).files[0];
+if(!file) return;
+
+const url=await uploadImage(file);
+
+const ref=doc(db,"products",id);
+const snap=await getDocs(collection(db,"products"));
+
+await updateDoc(ref,{
+images:[url]
+});
+
+loadProducts();
+};
+
+/* حذف صورة */
+window.removeImage=async(id)=>{
+const ref=doc(db,"products",id);
+
+await updateDoc(ref,{
+images:[]
+});
+
+loadProducts();
+};
 
 /* حذف */
 window.del=async(id)=>{
@@ -271,12 +373,10 @@ if(o.status==="pending") pending++;
 
 box.innerHTML+=`
 <div class="card">
-
 <p>${o.name}</p>
 <p>${o.phone}</p>
 <p>${o.address}</p>
 <p>💰 ${total}</p>
-
 </div>
 `;
 });
