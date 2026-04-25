@@ -2,12 +2,23 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="description" content="متجر زهراء ستوديو للمنتجات والخدمات">
+  <meta name="theme-color" content="#d4af37">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ZAHRAA">
+  <meta name="msapplication-TileColor" content="#000000">
+  <meta name="msapplication-config" content="browserconfig.xml">
+  
   <title>ZAHRAA STUDIO</title>
 
-  <!-- PWA -->
+  <!-- PWA Manifest -->
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#000000">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
 
   <link href="https://fonts.googleapis.com/css2?family=Cairo&display=swap" rel="stylesheet">
 
@@ -165,7 +176,7 @@
 
   <div class="logo">
     <a href="https://www.facebook.com/share/1DuEaxYhW3/" target="_blank">
-      <img src="https://i.ibb.co/gFbYCVhy/file-000000003d48620a9a545c81b8bf35e5.png">
+      <img src="https://i.ibb.co/gFbYCVhy/file-000000003d48620a9a545c81b8bf35e5.png" alt="ZAHRAA STUDIO Logo">
     </a>
   </div>
 
@@ -216,15 +227,13 @@
     });
   </script>
 
-  <!-- 🔥 SERVICE WORKER FIXED -->
+  <!-- 🔥 SERVICE WORKER REGISTRATION -->
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
-
-        navigator.serviceWorker.register("service-worker.js")
+        navigator.serviceWorker.register("service-worker.js", { scope: "./" })
         .then(reg => {
-
-          console.log("SW Registered");
+          console.log("✅ Service Worker Registered Successfully");
 
           reg.update();
 
@@ -237,16 +246,19 @@
                 newWorker.state === "installed" &&
                 navigator.serviceWorker.controller
               ) {
-                console.log("Updated");
-                window.location.reload();
+                console.log("✅ New Service Worker Available");
+                // إخطار المستخدم بتحديث جديد
+                if (confirm("هناك نسخة جديدة متاحة. هل تريد تحديث الصفحة؟")) {
+                  window.location.reload();
+                }
               }
             });
           });
-
         })
-        .catch(err => console.log("SW Error:", err));
-
+        .catch(err => console.error("❌ Service Worker Error:", err));
       });
+    } else {
+      console.warn("⚠️ Service Workers not supported in this browser");
     }
   </script>
 
