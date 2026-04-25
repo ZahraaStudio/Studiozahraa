@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zahraa Admin Pro</title>
+
+<style>
+body{
+margin:0;
+font-family:Cairo;
+background:#0d0d0d;
+color:white;
+display:flex;
+flex-wrap:wrap;
+}
+
+.sidebar{
+width:220px;
+background:#111;
+height:100vh;
+padding:15px;
+position:fixed;
+right:0;
+top:0;
+}
+
+.sidebar h2{color:gold;text-align:center;}
+
+.sidebar button{
+width:100%;
+margin:10px 0;
+padding:10px;
+border:none;
+border-radius:8px;
+background:#222;
+color:white;
+cursor:pointer;
+}
+
+.main{
+margin-right:220px;
+padding:20px;
+width:100%;
+}
+
+@media(max-width:768px){
+.sidebar{
+width:100%;
+height:auto;
+position:relative;
+}
+.main{
+margin-right:0;
+}
+}
+
+.product{
+background:#1a1a1a;
+padding:15px;
+border-radius:10px;
+margin:15px 0;
+border: 1px solid #333;
+}
+
+.slider{
+position:relative;
+margin-bottom: 10px;
+}
+
+.slider img{
+width:100%;
+height:200px;
+object-fit:cover;
+border-radius:10px;
+}
+
+.slider button{
+position:absolute;
+top:50%;
+transform:translateY(-50%);
+background:rgba(0,0,0,0.5);
+border:none;
+color:white;
+font-size:20px;
+cursor:pointer;
+padding:5px 10px;
+}
+
+.prev{right:5px;}
+.next{left:5px;}
+
+.thumb{
+width:60px;
+height:60px;
+object-fit:cover;
+border-radius:6px;
+margin:3px;
+cursor:pointer;
+border:2px solid transparent;
+}
+
+.thumb.active{
+border-color:gold;
+}
+
+input, textarea{
+width:100%;
+margin:5px 0;
+padding:10px;
+border-radius:8px;
+border:1px solid #333;
+background: #222;
+color: white;
+font-family: Cairo;
+}
+
+textarea {
+  height: 80px;
+  resize: vertical;
+}
+
+button{
+padding:10px 15px;
+margin:5px 0;
+border:none;
+border-radius:8px;
+background:gold;
+cursor:pointer;
+font-weight:bold;
+}
+
+.section{display:none;}
+.active{display:block;}
+
+.btn-danger { background: #ff4444; color: white; }
+.btn-success { background: #25D366; color: white; }
+
+</style>
+</head>
+
+<body>
+
+<div class="sidebar">
+<h2>🔥 Zahraa</h2>
+<button onclick="show('dashboard')">📊 Dashboard</button>
+<button onclick="show('products')">🛒 المنتجات</button>
+<button onclick="show('orders')">📦 الطلبات</button>
+</div>
+
+<div class="main">
+
+<div id="dashboard" class="section active">
+<h2>📊 Dashboard</h2>
+<div>📦 <span id="totalOrders">0</span></div>
+<div>💰 <span id="totalRevenue">0</span></div>
+<div>⏳ <span id="pendingOrders">0</span></div>
+</div>
+
+<div id="products" class="section">
+<h2>🛒 المنتجات</h2>
+
+<div style="background: #111; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+  <h3>إضافة منتج جديد</h3>
+  <input id="name" placeholder="اسم المنتج">
+  <input id="price" placeholder="السعر">
+  <textarea id="description" placeholder="وصف المنتج"></textarea>
+  <input type="file" id="images" multiple>
+  <button id="addBtn" class="btn-success">إضافة المنتج</button>
+</div>
+
+<div id="list"></div>
+</div>
+
+<div id="orders" class="section">
+<h2>📦 الطلبات</h2>
+<div id="ordersList"></div>
+</div>
+
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import {
+getFirestore,
+collection,
+addDoc,
+getDocs,
+updateDoc,
+doc,
+deleteDoc,
+onSnapshot,
+query,
+orderBy,
+getDoc
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
+authDomain: "zahraa-store-f4c90.firebaseapp.com",
+projectId: "zahraa-store-f4c90"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+/* NAV */
+window.show = (id)=>{
+document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+document.getElementById(id).classList.add("active");
+};
+
+/* رفع صورة */
+async function uploadImage(file){
+const form = new FormData();
+form.append("file", file);
+form.append("upload_preset", "zahraa_upload");
+
+const res = await fetch("https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload",
+{method:"POST",body:form});
+
+const data = await res.json();
+return data.secure_url;
+}
+
+/* إضافة منتج */
+document.getElementById("addBtn").onclick = async ()=>{
+const btn = document.getElementById("addBtn");
+btn.innerText = "جاري الرفع...";
+btn.disabled = true;
+
+const name=document.getElementById("name").value;
+const price=document.getElementById("price").value;
+const description=document.getElementById("description").value;
+const files=document.getElementById("images").files;
+
+let imgs=[];
+
+for(let i=0;i<files.length;i++){
+imgs.push(await uploadImage(files[i]));
+}
+
+await addDoc(collection(db,"products"),{
+name,
+price:Number(price),
+description: description,
+images:imgs,
+createdAt:Date.now()
+});
+
+btn.innerText = "إضافة المنتج";
+btn.disabled = false;
+document.getElementById("name").value = "";
+document.getElementById("price").value = "";
+document.getElementById("description").value = "";
+document.getElementById("images").value = "";
+
+loadProducts();
+};
+
+/* سلايدر */
+let currentIndex={};
+
+function renderSlider(id,images){
+
+if(!images || images.length === 0){
+return `<img src="" style="background:#000;height:200px;">`;
+}
+
+currentIndex[id]=currentIndex[id]||0;
+
+return `
+<div class="slider">
+<img id="img-${id}" src="${images[currentIndex[id]]}">
+
+<button class="prev" onclick="changeImg('${id}',-1,${JSON.stringify(images).replace(/"/g,'&quot;')})">‹</button>
+<button class="next" onclick="changeImg('${id}',1,${JSON.stringify(images).replace(/"/g,'&quot;')})">›</button>
+
+<div style="margin-top: 5px;">
+${images.map((img,i)=>`
+<img src="${img}" class="thumb ${i===currentIndex[id]?'active':''}"
+onclick="selectImg('${id}',${i},${JSON.stringify(images).replace(/"/g,'&quot;')})">
+`).join('')}
+</div>
+
+</div>
+`;
+}
+
+window.changeImg=(id,step,imgs)=>{
+if(!imgs.length) return;
+currentIndex[id]=(currentIndex[id]+step+imgs.length)%imgs.length;
+document.getElementById("img-"+id).src=imgs[currentIndex[id]];
+// Update thumbs
+const thumbs = document.querySelectorAll(`#img-${id} + button + button + div img`);
+thumbs.forEach((t, i) => {
+  if(i === currentIndex[id]) t.classList.add('active');
+  else t.classList.remove('active');
+});
+};
+
+window.selectImg=(id,i,imgs)=>{
+currentIndex[id]=i;
+document.getElementById("img-"+id).src=imgs[i];
+const thumbs = document.querySelectorAll(`#img-${id} + button + button + div img`);
+thumbs.forEach((t, idx) => {
+  if(idx === i) t.classList.add('active');
+  else t.classList.remove('active');
+});
+};
+
+/* تحميل منتجات */
+async function loadProducts(){
+const box=document.getElementById("list");
+box.innerHTML="جاري التحميل...";
+
+const snap=await getDocs(collection(db,"products"));
+box.innerHTML="";
+
+snap.forEach(d=>{
+const p=d.data();
+
+box.innerHTML+=`
+<div class="product">
+
+${renderSlider(d.id,p.images)}
+
+<label>الاسم:</label>
+<input id="n-${d.id}" value="${p.name}">
+<label>السعر:</label>
+<input id="p-${d.id}" value="${p.price}">
+<label>الوصف:</label>
+<textarea id="d-${d.id}">${p.description || ''}</textarea>
+
+<div style="margin-top: 10px; border-top: 1px solid #333; padding-top: 10px;">
+  <input type="file" id="new-${d.id}">
+  <button onclick="addImage('${d.id}')">➕ إضافة صورة</button>
+  
+  <div style="margin-top: 5px;">
+    <input type="number" id="delIndex-${d.id}" placeholder="رقم الصورة للحذف (0, 1, 2...)" style="width: 150px;">
+    <button onclick="deleteImage('${d.id}')" class="btn-danger">❌ حذف صورة</button>
+  </div>
+</div>
+
+<div style="margin-top: 15px; display: flex; gap: 10px;">
+  <button onclick="updateProduct('${d.id}')" style="flex: 1;">💾 حفظ التعديلات</button>
+  <button onclick="del('${d.id}')" class="btn-danger" style="flex: 1;">🗑 حذف المنتج</button>
+</div>
+
+</div>
+`;
+});
+}
+
+/* تعديل */
+window.updateProduct=async(id)=>{
+const name=document.getElementById("n-"+id).value;
+const price=document.getElementById("p-"+id).value;
+const description=document.getElementById("d-"+id).value;
+
+await updateDoc(doc(db,"products",id),{
+name,
+price:Number(price),
+description: description
+});
+
+alert("تم التعديل بنجاح");
+loadProducts();
+};
+
+/* إضافة صورة */
+window.addImage=async(id)=>{
+const file=document.getElementById("new-"+id).files[0];
+if(!file) return;
+
+const url=await uploadImage(file);
+
+const ref=doc(db,"products",id);
+const snap=await getDoc(ref);
+
+let data=snap.data();
+let images=data.images||[];
+
+images.push(url);
+
+await updateDoc(ref,{images});
+
+loadProducts();
+};
+
+/* حذف صورة */
+window.deleteImage=async(id)=>{
+const index=parseInt(document.getElementById("delIndex-"+id).value);
+
+const ref=doc(db,"products",id);
+const snap=await getDoc(ref);
+
+let data=snap.data();
+let images=data.images||[];
+
+if(index>=0 && index<images.length){
+images.splice(index,1);
+await updateDoc(ref,{images});
+}
+
+loadProducts();
+};
+
+/* حذف */
+window.del=async(id)=>{
+if(confirm("هل أنت متأكد من حذف هذا المنتج؟")){
+  await deleteDoc(doc(db,"products",id));
+  loadProducts();
+}
+};
+
+/* الطلبات */
+function loadOrders(){
+const box=document.getElementById("ordersList");
+
+const q=query(collection(db,"orders"),orderBy("createdAt","desc"));
+
+onSnapshot(q,(snap)=>{
+
+box.innerHTML="";
+
+let totalOrders=0;
+let revenue=0;
+let pending=0;
+
+snap.forEach(d=>{
+const o=d.data();
+
+totalOrders++;
+
+let total=o.cart?.reduce((s,i)=>s+Number(i.price),0)||0;
+revenue+=total;
+
+if(o.status==="pending") pending++;
+
+box.innerHTML+=`
+<div class="product">
+<p><b>الاسم:</b> ${o.name}</p>
+<p><b>الهاتف:</b> ${o.phone}</p>
+<p><b>العنوان:</b> ${o.address}</p>
+<p><b>💰 الإجمالي:</b> ${total} جنيه</p>
+<p><b>الحالة:</b> ${o.status}</p>
+</div>
+`;
+});
+
+document.getElementById("totalOrders").innerText=totalOrders;
+document.getElementById("totalRevenue").innerText=revenue;
+document.getElementById("pendingOrders").innerText=pending;
+
+});
+}
+
+loadProducts();
+loadOrders();
+
+</script>
+
+</body>
+</html>
