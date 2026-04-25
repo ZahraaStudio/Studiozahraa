@@ -2,6 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Zahraa Admin Pro</title>
 
 <style>
@@ -11,6 +12,7 @@ font-family:Cairo;
 background:#0d0d0d;
 color:white;
 display:flex;
+flex-wrap:wrap;
 }
 
 /* SIDEBAR */
@@ -24,10 +26,7 @@ right:0;
 top:0;
 }
 
-.sidebar h2{
-color:gold;
-text-align:center;
-}
+.sidebar h2{color:gold;text-align:center;}
 
 .sidebar button{
 width:100%;
@@ -47,29 +46,19 @@ padding:20px;
 width:100%;
 }
 
-.card{
-background:#1a1a1a;
-padding:15px;
-border-radius:12px;
-margin:10px 0;
+/* MOBILE */
+@media(max-width:768px){
+.sidebar{
+width:100%;
+height:auto;
+position:relative;
+}
+.main{
+margin-right:0;
+}
 }
 
-/* DASHBOARD */
-.stats{
-display:flex;
-gap:10px;
-flex-wrap:wrap;
-}
-
-.box{
-background:#111;
-padding:15px;
-border-radius:10px;
-min-width:120px;
-text-align:center;
-}
-
-/* PRODUCTS */
+/* CARDS */
 .product{
 background:#1a1a1a;
 padding:10px;
@@ -77,6 +66,7 @@ border-radius:10px;
 margin:10px 0;
 }
 
+/* SLIDER */
 .slider{
 position:relative;
 }
@@ -103,8 +93,22 @@ padding:5px 10px;
 .prev{right:5px;}
 .next{left:5px;}
 
+.thumb{
+width:60px;
+height:60px;
+object-fit:cover;
+border-radius:6px;
+margin:3px;
+cursor:pointer;
+border:2px solid transparent;
+}
+
+.thumb.active{
+border-color:gold;
+}
+
+/* INPUT */
 input{
-display:block;
 width:100%;
 margin:5px 0;
 padding:8px;
@@ -112,7 +116,18 @@ border-radius:8px;
 border:none;
 }
 
-/* HIDDEN */
+/* BUTTON */
+button{
+padding:8px;
+margin:5px 0;
+border:none;
+border-radius:8px;
+background:gold;
+cursor:pointer;
+font-weight:bold;
+}
+
+/* SECTION */
 .section{display:none;}
 .active{display:block;}
 
@@ -123,7 +138,6 @@ border:none;
 
 <div class="sidebar">
 <h2>🔥 Zahraa</h2>
-
 <button onclick="show('dashboard')">📊 Dashboard</button>
 <button onclick="show('products')">🛒 المنتجات</button>
 <button onclick="show('orders')">📦 الطلبات</button>
@@ -133,12 +147,9 @@ border:none;
 
 <div id="dashboard" class="section active">
 <h2>📊 Dashboard</h2>
-
-<div class="stats">
-<div class="box">📦 <br><span id="totalOrders">0</span></div>
-<div class="box">💰 <br><span id="totalRevenue">0</span></div>
-<div class="box">⏳ <br><span id="pendingOrders">0</span></div>
-</div>
+<div>📦 <span id="totalOrders">0</span></div>
+<div>💰 <span id="totalRevenue">0</span></div>
+<div>⏳ <span id="pendingOrders">0</span></div>
 </div>
 
 <div id="products" class="section">
@@ -147,7 +158,6 @@ border:none;
 <input id="name" placeholder="اسم المنتج">
 <input id="price" placeholder="السعر">
 <input type="file" id="images" multiple>
-
 <button id="addBtn">إضافة</button>
 
 <div id="list"></div>
@@ -197,13 +207,10 @@ const form = new FormData();
 form.append("file", file);
 form.append("upload_preset", "zahraa_upload");
 
-const res = await fetch(
-"https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload",
-{method:"POST",body:form}
-);
+const res = await fetch("https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload",
+{method:"POST",body:form});
 
-const data = await res.json();
-return data.secure_url;
+return (await res.json()).secure_url;
 }
 
 /* إضافة منتج */
@@ -212,11 +219,6 @@ document.getElementById("addBtn").onclick = async ()=>{
 const name=document.getElementById("name").value;
 const price=document.getElementById("price").value;
 const files=document.getElementById("images").files;
-
-if(!name || !price){
-alert("اكتب اسم وسعر");
-return;
-}
 
 let imgs=[];
 
@@ -231,42 +233,42 @@ images:imgs,
 createdAt:Date.now()
 });
 
-document.getElementById("name").value="";
-document.getElementById("price").value="";
-document.getElementById("images").value="";
-
 loadProducts();
 };
 
 /* سلايدر */
-function sliderHTML(images,id){
+let currentIndex={};
 
-if(!images || images.length===0){
-return `<img src="" style="background:#000">`;
-}
+function renderSlider(id,images){
+
+currentIndex[id]=currentIndex[id]||0;
 
 return `
 <div class="slider">
-<img id="img-${id}" src="${images[0]}">
+<img id="img-${id}" src="${images[currentIndex[id]] || ''}">
 
-<button class="prev" onclick="prevImg('${id}',${JSON.stringify(images).replace(/"/g,'&quot;')})">‹</button>
-<button class="next" onclick="nextImg('${id}',${JSON.stringify(images).replace(/"/g,'&quot;')})">›</button>
+<button class="prev" onclick="changeImg('${id}',-1,${JSON.stringify(images).replace(/"/g,'&quot;')})">‹</button>
+<button class="next" onclick="changeImg('${id}',1,${JSON.stringify(images).replace(/"/g,'&quot;')})">›</button>
+
+<div>
+${images.map((img,i)=>`
+<img src="${img}" class="thumb ${i===0?'active':''}"
+onclick="selectImg('${id}',${i},${JSON.stringify(images).replace(/"/g,'&quot;')})">
+`).join('')}
+</div>
+
 </div>
 `;
 }
 
-let indexes={};
-
-window.prevImg=(id,imgs)=>{
-indexes[id]=(indexes[id]||0)-1;
-if(indexes[id]<0) indexes[id]=imgs.length-1;
-document.getElementById("img-"+id).src=imgs[indexes[id]];
+window.changeImg=(id,step,imgs)=>{
+currentIndex[id]=(currentIndex[id]+step+imgs.length)%imgs.length;
+document.getElementById("img-"+id).src=imgs[currentIndex[id]];
 };
 
-window.nextImg=(id,imgs)=>{
-indexes[id]=(indexes[id]||0)+1;
-if(indexes[id]>=imgs.length) indexes[id]=0;
-document.getElementById("img-"+id).src=imgs[indexes[id]];
+window.selectImg=(id,i,imgs)=>{
+currentIndex[id]=i;
+document.getElementById("img-"+id).src=imgs[i];
 };
 
 /* تحميل منتجات */
@@ -282,16 +284,18 @@ const p=d.data();
 box.innerHTML+=`
 <div class="product">
 
-${sliderHTML(p.images,d.id)}
+${renderSlider(d.id,p.images||[])}
 
 <input id="n-${d.id}" value="${p.name}">
 <input id="p-${d.id}" value="${p.price}">
 
-<input type="file" id="newimg-${d.id}" multiple>
+<input type="file" id="new-${d.id}">
+<button onclick="addImage('${d.id}')">➕ إضافة صورة</button>
 
-<button onclick="updateProduct('${d.id}')">💾 تعديل</button>
-<button onclick="addImage('${d.id}')">➕ صورة</button>
-<button onclick="removeImage('${d.id}')">❌ حذف صورة</button>
+<input type="number" id="delIndex-${d.id}" placeholder="رقم الصورة للحذف">
+<button onclick="deleteImage('${d.id}')">❌ حذف صورة</button>
+
+<button onclick="updateProduct('${d.id}')">💾 حفظ التعديل</button>
 <button onclick="del('${d.id}')">🗑 حذف المنتج</button>
 
 </div>
@@ -314,7 +318,7 @@ loadProducts();
 
 /* إضافة صورة */
 window.addImage=async(id)=>{
-const file=document.getElementById("newimg-"+id).files[0];
+const file=document.getElementById("new-"+id).files[0];
 if(!file) return;
 
 const url=await uploadImage(file);
@@ -322,20 +326,38 @@ const url=await uploadImage(file);
 const ref=doc(db,"products",id);
 const snap=await getDocs(collection(db,"products"));
 
-await updateDoc(ref,{
-images:[url]
+let product;
+
+snap.forEach(d=>{
+if(d.id===id) product=d.data();
 });
+
+let images=product.images||[];
+images.push(url);
+
+await updateDoc(ref,{images});
 
 loadProducts();
 };
 
 /* حذف صورة */
-window.removeImage=async(id)=>{
-const ref=doc(db,"products",id);
+window.deleteImage=async(id)=>{
+const index=parseInt(document.getElementById("delIndex-"+id).value);
 
-await updateDoc(ref,{
-images:[]
+const ref=doc(db,"products",id);
+const snap=await getDocs(collection(db,"products"));
+
+let product;
+
+snap.forEach(d=>{
+if(d.id===id) product=d.data();
 });
+
+let images=product.images||[];
+
+images.splice(index,1);
+
+await updateDoc(ref,{images});
 
 loadProducts();
 };
@@ -346,9 +368,8 @@ await deleteDoc(doc(db,"products",id));
 loadProducts();
 };
 
-/* طلبات */
+/* الطلبات */
 function loadOrders(){
-
 const box=document.getElementById("ordersList");
 
 const q=query(collection(db,"orders"),orderBy("createdAt","desc"));
@@ -372,7 +393,7 @@ revenue+=total;
 if(o.status==="pending") pending++;
 
 box.innerHTML+=`
-<div class="card">
+<div class="product">
 <p>${o.name}</p>
 <p>${o.phone}</p>
 <p>${o.address}</p>
