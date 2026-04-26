@@ -45,7 +45,7 @@ self.addEventListener("fetch", (event) => {
   if (
     event.request.url.includes("firebase") ||
     event.request.url.includes("gstatic") ||
-    event.request.url.includes("googleapis")
+    event.request.url.includes("googleapis") || event.request.url.includes("firestore") || event.request.url.includes("cloudinary")
   ) {
     return;
   }
