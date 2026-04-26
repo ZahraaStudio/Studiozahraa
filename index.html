@@ -289,12 +289,17 @@
           }
         }
 
-        // Get Order Number
+        // Get Order Number (Improved)
         const statsRef = db.collection('settings').doc('stats');
-        const stats = await statsRef.get();
         let orderNum = 1001;
-        if(stats.exists) orderNum = (stats.data().lastOrderNum || 1000) + 1;
-        await statsRef.set({ lastOrderNum: orderNum }, { merge: true });
+        
+        await db.runTransaction(async (transaction) => {
+          const statsDoc = await transaction.get(statsRef);
+          if (statsDoc.exists()) {
+            orderNum = (statsDoc.data().lastOrderNum || 1000) + 1;
+          }
+          transaction.set(statsRef, { lastOrderNum: orderNum }, { merge: true });
+        });
 
         const order = {
           orderNumber: orderNum,

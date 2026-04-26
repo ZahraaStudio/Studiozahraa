@@ -221,8 +221,12 @@
             const snapshot = await getDocs(query(collection(db, "orders"), orderBy("createdAt", "desc")));
             list.innerHTML = '';
             let count = 0;
-            snapshot.forEach(docData => {
-                count++; const o = docData.data(); const id = docData.id;
+            let ordersArr = [];
+            snapshot.forEach(docData => ordersArr.push({id: docData.id, ...docData.data()}));
+            
+            ordersArr.forEach((o, index) => {
+                const id = o.id;
+                count++;
                 const itemsStr = o.items.map(i => `${i.name} ${i.variant ? '('+i.variant+')' : ''} × ${i.qty}`).join(' - ');
                 const imagesHtml = (o.customerImages || []).map(img => `<a href="${img}" target="_blank" class="block"><img src="${img}" class="w-16 h-16 object-cover rounded border border-zinc-700"></a>`).join('');
                 
@@ -230,7 +234,7 @@
                     <div class="bg-black p-5 rounded-xl border border-zinc-800 space-y-3">
                         <div class="flex justify-between items-start">
                             <div>
-                                <h4 class="font-bold text-md gold-text">#${o.orderNumber || 'بدون رقم'} - ${o.customerName}</h4>
+                                <h4 class="font-bold text-md gold-text">#${o.orderNumber || (index + 1001)} - ${o.customerName}</h4>
                                 <p class="text-[10px] text-zinc-400">${o.customerPhone} | ${o.customerAddress}</p>
                             </div>
                             <div class="flex flex-col items-end gap-2">
