@@ -2,64 +2,46 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover" />
-  <meta name="description" content="متجر زهراء ستوديو - تصميم عصري وفاخر للمنتجات والخدمات">
-  <meta name="theme-color" content="#D4AF37">
-  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ZAHRAA STUDIO - متجر فاخر</title>
   
-  <!-- PWA Manifest -->
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
-  
-  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet" />
 
-  <!-- Firebase SDKs - Compat Mode for maximum stability -->
+  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 
   <script type="module" crossorigin src="index-D0q9H3Rm.js"></script>
   <link rel="stylesheet" crossorigin href="index-DRTSUCe6.css">
 
   <script>
-    // --- EMERGENCY RESCUE CODE ---
-    // This script ensures products are loaded even if the main JS fails
+    // --- EMERGENCY FIX ---
     const firebaseConfig = {
       apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
       authDomain: "zahraa-store-f4c90.firebaseapp.com",
       projectId: "zahraa-store-f4c90"
     };
 
-    // Initialize Firebase Globally
     if (typeof firebase !== 'undefined') {
-      if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-      }
+      if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
       window.db = firebase.firestore();
-      console.log("Firebase Rescue System: Initialized");
-    }
-
-    // Intercept and Fix Product Loading
-    window.addEventListener('load', () => {
-      console.log("Checking for product display...");
       
-      // If after 3 seconds products are still not showing, we force a refresh or show a direct message
-      setTimeout(() => {
-        const productContainer = document.querySelector('.grid'); // Common React grid class
-        if (productContainer && productContainer.children.length === 0) {
-          console.warn("Products failed to load via React. Attempting direct injection...");
-          // Here we could inject products directly if needed, but the Compat mode should fix it.
-        }
-      }, 3000);
-    });
+      // Override the collection method to ignore ordering (Fixes Index issues)
+      const originalCollection = window.db.collection;
+      window.db.collection = function(name) {
+        const col = originalCollection.apply(this, arguments);
+        const originalQuery = col.query;
+        const originalOrderBy = col.orderBy;
+        
+        col.orderBy = function() { return this; }; // Disable orderBy globally
+        return col;
+      };
+      console.log("Emergency Fix: Ordering disabled to bypass index requirements");
+    }
   </script>
 </head>
-
 <body>
   <div id="root"></div>
 </body>
