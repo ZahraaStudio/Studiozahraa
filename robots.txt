@@ -1,5 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /admin_zahraa.html
-
-Sitemap: https://zahraastudio.github.io/Studiozahraa/sitemap.xml
