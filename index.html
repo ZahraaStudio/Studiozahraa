@@ -38,8 +38,24 @@
     .image-group-item { position: relative; overflow: hidden; border-radius: 12px; }
     .image-group-item:hover .delete-btn { opacity: 1; }
     .delete-btn { position: absolute; top: 5px; right: 5px; background: rgba(255,0,0,0.8); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; transition: opacity 0.3s; font-size: 14px; }
-    .logo-container { width: 120px; height: 120px; margin: 0 auto 20px; }
-    .logo-img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.5)); }
+    
+    /* Logo Animation */
+    .logo-frame { 
+      width: 160px; height: 160px; margin: 0 auto 20px; 
+      border: 3px solid #d4af37; border-radius: 20px; 
+      padding: 10px; background: rgba(212, 175, 55, 0.05);
+      display: flex; align-items: center; justify-content: center;
+      animation: logoFloat 3s ease-in-out infinite;
+      box-shadow: 0 0 30px rgba(212, 175, 55, 0.3), inset 0 0 20px rgba(212, 175, 55, 0.1);
+    }
+    .logo-img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.6)); }
+    @keyframes logoFloat { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-15px); } }
+    
+    /* Cart quantity controls */
+    .qty-control { display: flex; align-items: center; gap: 8px; background: #1a1a1a; border-radius: 8px; padding: 4px; }
+    .qty-btn { width: 24px; height: 24px; border: none; background: #d4af37; color: black; border-radius: 4px; cursor: pointer; font-weight: bold; transition: all 0.2s; }
+    .qty-btn:hover { background: #f9e29c; transform: scale(1.1); }
+    .qty-display { min-width: 30px; text-align: center; font-weight: bold; }
   </style>
 </head>
 <body class="overflow-x-hidden">
@@ -94,8 +110,8 @@
     </div>
     
     <div class="container mx-auto px-4 text-center z-10">
-        <div class="logo-container">
-            <img src="icon-512.png" alt="ZAHRAA STUDIO Logo" class="logo-img">
+        <div class="logo-frame">
+            <img src="https://i.ibb.co/gFbYCVhy/file-000000003d48620a9a545c81b8bf35e5.png" alt="ZAHRAA STUDIO Logo" class="logo-img">
         </div>
         <h1 class="text-5xl md:text-7xl font-bold mb-4 tracking-tighter">
             <span class="gradient-text">استوديو الزهراء</span>
@@ -185,7 +201,7 @@
 
       <!-- Image Groups Upload Section -->
       <div class="border-2 border-dashed border-zinc-800 p-4 rounded-xl">
-        <p class="text-sm font-bold mb-3 text-gold-text">مجموعات الصور للطباعة</p>
+        <p class="text-sm font-bold mb-3 text-gold-text">مجموعات الصور للطباعة (اختياري)</p>
         <p class="text-xs text-zinc-500 mb-3">أضف مجموعات صور لمنتجات مختلفة (مثل تابلوهات بمقاسات مختلفة)</p>
         
         <div id="image-groups-container" class="space-y-4 mb-4"></div>
@@ -246,7 +262,7 @@
             <div class="grid grid-cols-3 gap-2 mb-3" id="group-images-${idx}">
               ${group.images.map((img, imgIdx) => `
                 <div class="image-group-item bg-zinc-800 h-20 relative">
-                  <img src="${img}" class="w-full h-full object-cover rounded-lg cursor-pointer" onclick="openImageViewer('${img}')">
+                  <img src="${img}" class="w-full h-full object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity" onclick="openImageViewer('${img}')">
                   <div class="delete-btn" onclick="removeImageFromGroup(${idx}, ${imgIdx})">✕</div>
                 </div>
               `).join('')}
@@ -382,7 +398,6 @@
       if(item) item.qty++;
       else cart.push({ ...p, cartId, selectedVariant, qty: 1, price: selectedVariant ? selectedVariant.price : p.price });
       updateCartUI(); showToast('تمت إضافة المنتج للسلة ✓');
-      // لا نغلق المودال للسماح باختيار أنواع أخرى
     }
 
     function updateCartUI() {
@@ -398,15 +413,22 @@
             <div class="flex-1">
               <h4 class="text-sm font-bold">${item.name}</h4>
               <p class="text-[10px] text-zinc-500">${item.selectedVariant ? item.selectedVariant.name : ''}</p>
-              <p class="text-xs gold-text">${item.price} ج × ${item.qty}</p>
+              <p class="text-xs gold-text">${item.price} ج</p>
             </div>
-            <button onclick="removeFromCart(${i})" class="text-red-500 text-xs hover:text-red-400 transition-colors">حذف</button>
+            <div class="qty-control">
+              <button class="qty-btn" onclick="decreaseQty(${i})">−</button>
+              <span class="qty-display">${item.qty}</span>
+              <button class="qty-btn" onclick="increaseQty(${i})">+</button>
+              <button class="text-red-500 text-xs ml-2 hover:text-red-400 transition-colors" onclick="removeFromCart(${i})">✕</button>
+            </div>
           </div>
         `;
       });
       document.getElementById('cart-total').innerText = total + ' جنيه';
     }
 
+    function increaseQty(i) { cart[i].qty++; updateCartUI(); }
+    function decreaseQty(i) { if(cart[i].qty > 1) cart[i].qty--; else removeFromCart(i); updateCartUI(); }
     function removeFromCart(i) { cart.splice(i, 1); updateCartUI(); showToast('تمت إزالة المنتج من السلة'); }
     function toggleCart() { document.getElementById('cart-sidebar').classList.toggle('-translate-x-full'); }
     function closeModal() { document.getElementById('product-modal').classList.add('hidden'); }
@@ -415,17 +437,19 @@
 
     async function submitOrder() {
       const now = Date.now();
-      if(now - lastOrderTime < 30000) return alert('يرجى الانتظار قليلاً قبل إرسال طلب آخر');
+      if(now - lastOrderTime < 5000) return alert('يرجى الانتظار قليلاً قبل إرسال طلب آخر');
 
       const btn = document.getElementById('submit-order-btn');
-      const name = document.getElementById('cust-name').value;
-      const phone = document.getElementById('cust-phone').value;
-      const address = document.getElementById('cust-address').value;
+      const name = document.getElementById('cust-name').value.trim();
+      const phone = document.getElementById('cust-phone').value.trim();
+      const address = document.getElementById('cust-address').value.trim();
 
-      if(!name || !phone || !address) return alert('يرجى ملء كافة البيانات');
+      if(!name || !phone || !address) return alert('يرجى ملء كافة البيانات المطلوبة');
       if(!/^01[0125][0-9]{8}$/.test(phone)) return alert('يرجى إدخال رقم هاتف مصري صحيح (11 رقم)');
+      if(cart.length === 0) return alert('السلة فارغة');
 
-      btn.disabled = true; btn.innerText = 'جاري المعالجة...';
+      btn.disabled = true; 
+      btn.innerText = 'جاري المعالجة...';
 
       try {
         let uploadedGroups = [];
@@ -433,22 +457,33 @@
           if(group.images.length > 0) {
             let urls = [];
             for(let imgData of group.images) {
-              const fd = new FormData(); fd.append('file', imgData); fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-              const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: fd });
-              const data = await res.json();
-              if(data.secure_url) urls.push(data.secure_url);
+              try {
+                const fd = new FormData(); 
+                fd.append('file', imgData); 
+                fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: fd });
+                const data = await res.json();
+                if(data.secure_url) urls.push(data.secure_url);
+              } catch(imgErr) {
+                console.warn('Image upload error:', imgErr);
+              }
             }
-            uploadedGroups.push({ name: group.name || 'بدون اسم', images: urls });
+            if(urls.length > 0) uploadedGroups.push({ name: group.name || 'بدون اسم', images: urls });
           }
         }
 
-        const statsRef = db.collection('settings').doc('stats');
+        // Get next order number
         let orderNum = 1001;
-        await db.runTransaction(async (transaction) => {
-          const statsDoc = await transaction.get(statsRef);
-          if (statsDoc.exists()) orderNum = (statsDoc.data().lastOrderNum || 1000) + 1;
-          transaction.set(statsRef, { lastOrderNum: orderNum }, { merge: true });
-        });
+        try {
+          const statsDoc = await db.collection('settings').doc('stats').get();
+          if (statsDoc.exists()) {
+            orderNum = (statsDoc.data().lastOrderNum || 1000) + 1;
+          }
+          await db.collection('settings').doc('stats').set({ lastOrderNum: orderNum }, { merge: true });
+        } catch(statsErr) {
+          console.warn('Stats update error:', statsErr);
+          orderNum = 1001 + Math.floor(Math.random() * 9000);
+        }
 
         const order = {
           orderNumber: orderNum,
@@ -456,7 +491,12 @@
           customerPhone: phone,
           customerAddress: address,
           imageGroups: uploadedGroups,
-          items: cart.map(i => ({ name: i.name, qty: i.qty, price: i.price, variant: i.selectedVariant?.name || '' })),
+          items: cart.map(i => ({ 
+            name: i.name, 
+            qty: i.qty, 
+            price: i.price, 
+            variant: i.selectedVariant?.name || '' 
+          })),
           totalPrice: cart.reduce((a, b) => a + (b.price * b.qty), 0),
           status: 'قيد المراجعة',
           createdAt: now
@@ -464,14 +504,28 @@
 
         await db.collection("orders").add(order);
         lastOrderTime = now;
-        alert(`تم استلام طلبك بنجاح! رقم طلبك هو: #${orderNum}`);
-        cart = []; imageGroups = []; updateCartUI(); closeCheckout();
+        
+        alert(`✅ تم استلام طلبك بنجاح!\n\nرقم طلبك: #${orderNum}\n\nشكراً لتعاملك معنا 🎉`);
+        
+        // Clear cart and close modals
+        cart = []; 
+        imageGroups = []; 
+        updateCartUI(); 
+        closeCheckout();
+        toggleCart();
+        
+        // Clear form
+        document.getElementById('cust-name').value = '';
+        document.getElementById('cust-phone').value = '';
+        document.getElementById('cust-address').value = '';
+        
         if(!document.getElementById('product-modal').classList.contains('hidden')) closeModal();
       } catch (e) {
         console.error("Order error:", e);
-        alert('حدث خطأ أثناء إرسال الطلب، يرجى المحاولة مرة أخرى أو التواصل معنا عبر الواتساب');
+        alert('❌ حدث خطأ أثناء إرسال الطلب\n\nيرجى المحاولة مرة أخرى أو التواصل معنا عبر الواتساب:\n📱 +20 120 419 4540');
       } finally {
-        btn.disabled = false; btn.innerText = 'تأكيد الطلب الآن';
+        btn.disabled = false; 
+        btn.innerText = 'تأكيد الطلب الآن';
       }
     }
 
