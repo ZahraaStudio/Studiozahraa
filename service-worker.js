@@ -1,10 +1,9 @@
-const CACHE_NAME = "zahraa-studio-v1";
+const CACHE_VERSION = 2;
+const CACHE_NAME = "zahraa-studio-v" + CACHE_VERSION;
 const URLS_TO_CACHE = [
-  "/",
-  "/index.html",
-  "/manifest.json",
-  "/icon-192.png",
-  "/icon-512.png",
+  "./",
+  "./index.html",
+  "./manifest.json",
 ];
 
 // Install event

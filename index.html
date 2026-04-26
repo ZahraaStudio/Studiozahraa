@@ -14,10 +14,10 @@
   <title>ZAHRAA STUDIO - متجر فاخر</title>
   
   <!-- PWA Manifest -->
-  <link rel="manifest" href="/manifest.json">
-  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
-  <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
-  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
   
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -89,13 +89,13 @@ Error generating stack: `+l.message+`
 </script>
 
   <div id="root"></div>
-  <script defer src="%VITE_ANALYTICS_ENDPOINT%/umami" data-website-id="%VITE_ANALYTICS_WEBSITE_ID%"></script>
+
   
   <!-- Service Worker Registration -->
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/service-worker.js", { scope: "/" })
+        navigator.serviceWorker.register("service-worker.js", { scope: "." })
           .then(reg => console.log("✅ Service Worker Registered"))
           .catch(err => console.error("❌ Service Worker Error:", err));
       });
