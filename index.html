@@ -22,67 +22,110 @@
       -webkit-text-fill-color: transparent;
     }
     .hero-bg {
-      background: linear-gradient(to bottom, rgba(20,20,20,0.8), rgba(10,10,10,1)), 
+      background: linear-gradient(to bottom, rgba(10,10,10,0.9), rgba(10,10,10,1)), 
                   url('https://i.ibb.co/gFbYCVhy/file-000000003d48620a9a545c81b8bf35e5.png');
-      background-size: contain;
+      background-size: cover;
       background-position: center;
-      background-repeat: no-repeat;
     }
-    .product-card { background: #151515; border-radius: 20px; overflow: hidden; transition: all 0.3s ease; border: 1px solid #222; }
+    .product-card { background: #151515; border-radius: 20px; overflow: hidden; transition: all 0.3s ease; border: 1px solid #222; cursor: pointer; }
     .product-card:hover { transform: translateY(-10px); border-color: #d4af37; box-shadow: 0 10px 30px rgba(212,175,55,0.1); }
+    .modal { backdrop-filter: blur(10px); background: rgba(0,0,0,0.8); }
     .loader { border: 3px solid #1a1a1a; border-top: 3px solid #d4af37; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     .animate-float { animation: float 6s ease-in-out infinite; }
     @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
   </style>
 </head>
 <body>
 
-  <!-- Hero Section (الصفحة الرئيسية) -->
+  <!-- Navigation -->
+  <nav class="fixed w-full z-50 bg-black/50 backdrop-blur-md border-b border-zinc-900">
+    <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+      <h1 class="text-xl font-bold gradient-text">ZAHRAA STUDIO</h1>
+      <div class="flex gap-4">
+        <a href="https://www.facebook.com/share/1DuEaxYhW3/" target="_blank" class="text-zinc-400 hover:text-blue-500 transition-colors">فيسبوك</a>
+        <a href="#products" class="gold-text font-bold">المتجر</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
   <section class="relative min-h-screen flex items-center justify-center overflow-hidden hero-bg">
-    <div class="container mx-auto px-6 relative z-10 text-center">
-      <img src="https://i.ibb.co/gFbYCVhy/file-000000003d48620a9a545c81b8bf35e5.png" alt="Logo" class="w-48 h-auto mx-auto mb-8 animate-float drop-shadow-[0_0_20px_rgba(212,175,55,0.3)]">
+    <div class="container mx-auto px-6 relative z-10 text-center pt-20">
+      <img src="https://i.ibb.co/gFbYCVhy/file-000000003d48620a9a545c81b8bf35e5.png" alt="Logo" class="w-40 h-auto mx-auto mb-8 animate-float drop-shadow-[0_0_20px_rgba(212,175,55,0.3)]">
       <h1 class="text-5xl md:text-7xl font-bold mb-4"><span class="gradient-text">ZAHRAA</span> STUDIO</h1>
       <p class="text-zinc-400 text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
-        متجر فاخر يقدم أرقى المنتجات والخدمات المختارة بعناية لتلبية أذواقك الراقية.
+        أرقى المنتجات والخدمات المختارة بعناية لتلبية أذواقك الراقية.
       </p>
       <div class="flex flex-wrap justify-center gap-4">
-        <a href="#products" class="gold-bg text-black font-bold px-10 py-4 rounded-full text-lg hover:scale-105 transition-transform">تصفح المتجر</a>
-        <a href="https://wa.me/201204194540" target="_blank" class="border border-zinc-700 hover:border-gold-text px-10 py-4 rounded-full text-lg transition-all">تواصل معنا</a>
+        <a href="#products" class="gold-bg text-black font-bold px-10 py-4 rounded-full text-lg hover:scale-105 transition-transform">ابدأ التسوق</a>
+        <div class="flex gap-2">
+          <a href="https://wa.me/201204194540" target="_blank" class="bg-green-600/20 text-green-500 border border-green-600/50 px-6 py-4 rounded-full hover:bg-green-600 hover:text-white transition-all">واتساب 1</a>
+          <a href="https://wa.me/201286815625" target="_blank" class="bg-green-600/20 text-green-500 border border-green-600/50 px-6 py-4 rounded-full hover:bg-green-600 hover:text-white transition-all">واتساب 2</a>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- Products Section (المتجر) -->
+  <!-- Products Section -->
   <section id="products" class="py-24 bg-[#0a0a0a]">
     <div class="container mx-auto px-6">
-      <div class="flex flex-col md:flex-row justify-between items-end mb-16 gap-4">
-        <div>
-          <h2 class="text-4xl font-bold mb-2">مجموعتنا <span class="gold-text">المختارة</span></h2>
-          <p class="text-zinc-500">اكتشف أحدث المنتجات المتوفرة حالياً</p>
-        </div>
-        <div class="h-1 w-32 gold-bg rounded-full"></div>
-      </div>
-
+      <h2 class="text-4xl font-bold mb-16 text-center">اكتشف <span class="gold-text">منتجاتنا</span></h2>
+      
       <div id="loading-spinner" class="flex flex-col items-center justify-center py-20">
         <div class="loader mb-4"></div>
-        <p class="text-zinc-500">جاري جلب المنتجات...</p>
+        <p class="text-zinc-500">جاري تحميل المتجر...</p>
       </div>
 
       <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 hidden">
         <!-- Products will be injected here -->
       </div>
-
-      <div id="error-message" class="text-center py-20 hidden">
-        <p class="text-red-500 text-xl">لا توجد منتجات متوفرة حالياً.</p>
-        <button onclick="location.reload()" class="mt-4 text-zinc-500 underline">إعادة المحاولة</button>
-      </div>
     </div>
   </section>
 
-  <!-- Footer -->
-  <footer class="py-12 border-t border-zinc-900 text-center">
-    <p class="text-zinc-600 text-sm">© 2024 ZAHRAA STUDIO. جميع الحقوق محفوظة.</p>
+  <!-- Product Modal (التفاصيل) -->
+  <div id="product-modal" class="modal fixed inset-0 z-[100] flex items-center justify-center p-4 hidden">
+    <div class="bg-zinc-900 w-full max-w-4xl max-h-[90vh] rounded-3xl overflow-hidden relative flex flex-col md:flex-row">
+      <button onclick="closeModal()" class="absolute top-4 right-4 z-50 bg-black/50 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors">✕</button>
+      
+      <!-- Image Gallery -->
+      <div class="w-full md:w-1/2 bg-black h-80 md:h-auto relative group">
+        <div id="modal-images" class="flex h-full overflow-x-auto snap-x snap-mandatory no-scrollbar">
+          <!-- Images injected here -->
+        </div>
+        <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2" id="image-dots"></div>
+      </div>
+
+      <!-- Details -->
+      <div class="w-full md:w-1/2 p-8 overflow-y-auto">
+        <h2 id="modal-title" class="text-3xl font-bold mb-4 gold-text"></h2>
+        <div class="flex items-center gap-4 mb-6">
+          <span id="modal-price" class="text-2xl font-bold"></span>
+          <span id="modal-status" class="px-3 py-1 rounded-full text-xs font-bold"></span>
+        </div>
+        <p id="modal-desc" class="text-zinc-400 leading-relaxed mb-8 whitespace-pre-line"></p>
+        
+        <div class="space-y-4">
+          <p class="font-bold text-sm text-zinc-500">اطلب الآن عبر:</p>
+          <div class="grid grid-cols-1 gap-3">
+            <a id="order-wa-1" target="_blank" class="flex items-center justify-center gap-3 bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-bold transition-all">
+              واتساب 1 (الأساسي)
+            </a>
+            <a id="order-wa-2" target="_blank" class="flex items-center justify-center gap-3 bg-green-600/80 hover:bg-green-700 text-white py-4 rounded-xl font-bold transition-all">
+              واتساب 2 (للطوارئ)
+            </a>
+            <a href="https://www.facebook.com/share/1DuEaxYhW3/" target="_blank" class="flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold transition-all">
+              فيسبوك
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="py-12 border-t border-zinc-900 text-center text-zinc-600 text-sm">
+    © 2024 ZAHRAA STUDIO. جميع الحقوق محفوظة.
   </footer>
 
   <script>
@@ -94,62 +137,78 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    let allProducts = [];
 
     async function loadProducts() {
-      const grid = document.getElementById('products-grid');
-      const loader = document.getElementById('loading-spinner');
-      const errorMsg = document.getElementById('error-message');
-
       try {
-        const snapshot = await db.collection("products").orderBy("updatedAt", "desc").get().catch(async () => {
-          // Fallback if index is not ready
-          return await db.collection("products").get();
-        });
-
-        loader.classList.add('hidden');
-
-        if (snapshot.empty) {
-          errorMsg.classList.remove('hidden');
-          return;
-        }
-
+        const snapshot = await db.collection("products").orderBy("updatedAt", "desc").get().catch(() => db.collection("products").get());
+        document.getElementById('loading-spinner').classList.add('hidden');
+        const grid = document.getElementById('products-grid');
         grid.classList.remove('hidden');
         grid.innerHTML = '';
 
         snapshot.forEach(doc => {
-          const p = doc.data();
-          const img = (p.images && p.images.length > 0) ? p.images[0] : 'https://via.placeholder.com/400x400/151515/d4af37?text=ZAHRAA+STUDIO';
-          const whatsappMsg = encodeURIComponent(`مرحباً زهراء ستوديو، أود الاستفسار عن منتج: ${p.name}\nالسعر: ${p.price} جنيه`);
+          const p = { id: doc.id, ...doc.data() };
+          allProducts.push(p);
+          const mainImg = (p.images && p.images.length > 0) ? p.images[0] : 'https://via.placeholder.com/400';
           
           grid.innerHTML += `
-            <div class="product-card group">
-              <div class="relative overflow-hidden h-72">
-                <img src="${img}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="${p.name}">
-                ${p.status === 'out_of_stock' ? '<div class="absolute top-4 left-4 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full">نفذت الكمية</div>' : ''}
+            <div onclick="openModal('${p.id}')" class="product-card group">
+              <div class="relative h-80 overflow-hidden">
+                <img src="${mainImg}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <span class="bg-white text-black px-6 py-2 rounded-full font-bold">عرض التفاصيل</span>
+                </div>
               </div>
               <div class="p-6">
-                <h3 class="text-xl font-bold mb-2 group-hover:gold-text transition-colors">${p.name}</h3>
-                <p class="text-zinc-500 text-sm mb-6 line-clamp-2 h-10">${p.description || 'لا يوجد وصف متاح'}</p>
+                <h3 class="text-xl font-bold mb-2">${p.name}</h3>
                 <div class="flex justify-between items-center">
-                  <div class="flex flex-col">
-                    <span class="text-zinc-500 text-xs">السعر</span>
-                    <span class="gold-text font-bold text-xl">${p.price} جنيه</span>
-                  </div>
-                  <a href="https://wa.me/201204194540?text=${whatsappMsg}" target="_blank" 
-                     class="gold-bg text-black px-6 py-3 rounded-xl font-bold text-sm hover:opacity-90 transition-all flex items-center gap-2">
-                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
-                     طلب عبر واتساب
-                  </a>
+                  <span class="gold-text font-bold text-xl">${p.price} جنيه</span>
+                  <span class="text-zinc-500 text-xs">${p.images ? p.images.length : 0} صور</span>
                 </div>
               </div>
             </div>
           `;
         });
-      } catch (err) {
-        console.error(err);
-        loader.classList.add('hidden');
-        errorMsg.classList.remove('hidden');
-      }
+      } catch (err) { console.error(err); }
+    }
+
+    function openModal(id) {
+      const p = allProducts.find(x => x.id === id);
+      if(!p) return;
+
+      document.getElementById('modal-title').innerText = p.name;
+      document.getElementById('modal-price').innerText = p.price + ' جنيه';
+      document.getElementById('modal-desc').innerText = p.description || 'لا يوجد وصف متاح لهذا المنتج.';
+      
+      const statusEl = document.getElementById('modal-status');
+      statusEl.innerText = p.status === 'available' ? 'متوفر' : 'نفذت الكمية';
+      statusEl.className = p.status === 'available' ? 'bg-green-900/50 text-green-400 px-3 py-1 rounded-full text-xs font-bold' : 'bg-red-900/50 text-red-400 px-3 py-1 rounded-full text-xs font-bold';
+
+      // Images
+      const imgContainer = document.getElementById('modal-images');
+      const dotsContainer = document.getElementById('image-dots');
+      imgContainer.innerHTML = '';
+      dotsContainer.innerHTML = '';
+      
+      const images = p.images && p.images.length > 0 ? p.images : ['https://via.placeholder.com/800'];
+      images.forEach((url, i) => {
+        imgContainer.innerHTML += `<img src="${url}" class="w-full h-full object-contain flex-shrink-0 snap-center">`;
+        dotsContainer.innerHTML += `<div class="w-2 h-2 rounded-full bg-white/30"></div>`;
+      });
+
+      // WhatsApp Links
+      const msg = encodeURIComponent(`مرحباً، أريد طلب: ${p.name}\nالسعر: ${p.price} جنيه\nالرابط: ${window.location.href}`);
+      document.getElementById('order-wa-1').href = `https://wa.me/201204194540?text=${msg}`;
+      document.getElementById('order-wa-2').href = `https://wa.me/201286815625?text=${msg}`;
+
+      document.getElementById('product-modal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+      document.getElementById('product-modal').classList.add('hidden');
+      document.body.style.overflow = 'auto';
     }
 
     window.onload = loadProducts;
