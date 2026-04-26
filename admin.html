@@ -259,11 +259,15 @@
                                     <option value="تم التوصيل" ${o.status==='تم التوصيل'?'selected':''}>تم التوصيل</option>
                                     <option value="ملغي" ${o.status==='ملغي'?'selected':''}>ملغي</option>
                                 </select>
+                                <div class="flex gap-1.5">
+                                    <a href="https://wa.me/${o.customerPhone}?text=${encodeURIComponent('السلام عليكم\nرقم طلبك: #' + o.orderNumber + '\nالحالة: ' + o.status)}" target="_blank" class="text-[9px] bg-green-600/20 text-green-500 px-2 py-1 rounded hover:bg-green-600/40 transition-colors">💬 واتساب</a>
+                                    <a href="tel:${o.customerPhone}" class="text-[9px] bg-blue-600/20 text-blue-500 px-2 py-1 rounded hover:bg-blue-600/40 transition-colors">📞 اتصال</a>
+                                </div>
                                 <button onclick="window.copyOrder('${o.orderNumber}', '${o.customerName}', '${o.customerPhone}', '${itemsStr}', '${o.totalPrice}')" class="text-[9px] text-zinc-500 underline">نسخ الفاتورة للواتساب</button>
                             </div>
                         </div>
                         <div class="bg-zinc-900/50 p-2 rounded text-[11px] text-zinc-300"><b>الطلبات:</b> ${itemsStr}</div>
-                        ${groupsHtml ? `<div class="space-y-1"><b>مجموعات الصور:</b>${groupsHtml}</div>` : ''}
+                        ${groupsHtml ? `<div class="space-y-1"><b>مجموعات الصور:</b>${groupsHtml}<button onclick="window.downloadImageGroup('${o.orderNumber}', ${JSON.stringify(o.imageGroups).replace(/'/g, '\\"')})" class="mt-2 text-[9px] bg-gold-bg text-black px-3 py-1 rounded font-bold hover:opacity-80 transition-opacity">⬇️ تحميل المجموعة</button></div>` : ''}
                         <div class="flex justify-between items-center pt-2 border-t border-zinc-900">
                             <button onclick="window.delOrder('${id}')" class="text-red-500 text-[10px]">حذف الطلب</button>
                             <b class="text-gold-text text-sm">${o.totalPrice} جنيه</b>
@@ -295,3 +299,48 @@
     </script>
 </body>
 </html>
+
+        window.downloadImageGroup = (orderNum, imageGroups) => {
+            if(!imageGroups || imageGroups.length === 0) return alert('لا توجد صور لتحميلها');
+            
+            const html = `<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>طلب #${orderNum} - الصور</title>
+    <style>
+        body { font-family: 'Cairo', Arial; background: #f0f0f0; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        h1 { text-align: center; color: #333; margin-bottom: 30px; }
+        .group { margin: 30px 0; padding: 20px; border: 2px solid #d4af37; border-radius: 8px; background: #f9f9f9; }
+        .group-title { font-weight: bold; color: #d4af37; font-size: 18px; margin-bottom: 15px; }
+        .images { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .images img { width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; transition: transform 0.2s; }
+        .images img:hover { transform: scale(1.05); opacity: 0.9; }
+        .info { text-align: center; color: #666; margin-top: 30px; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📸 طلب #${orderNum} - مجموعات الصور</h1>
+        ${imageGroups.map(g => `
+            <div class="group">
+                <div class="group-title">📁 ${g.name}</div>
+                <div class="images">
+                    ${g.images.map(img => `<img src="${img}" alt="صورة" onclick="window.open('${img}', '_blank')" title="اضغط لفتح بحجم أكبر">`).join('')}
+                </div>
+            </div>
+        `).join('')}
+        <div class="info">💡 اضغط على أي صورة لفتحها بحجم أكبر</div>
+    </div>
+</body>
+</html>`;
+            
+            const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `طلب_${orderNum}_الصور.html`;
+            a.click();
+            URL.revokeObjectURL(url);
+        };

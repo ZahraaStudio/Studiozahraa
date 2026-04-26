@@ -19,8 +19,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet" />
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <script src="data.js"></script>
-  <script src="features.js"></script>
   <style>
     body { font-family: 'Cairo', sans-serif; background-color: #0a0a0a; color: #fff; scroll-behavior: smooth; }
     .gold-text { color: #d4af37; }
@@ -183,32 +181,6 @@
     </div>
   </section>
 
-
-  <!-- Portfolio Section -->
-  <section class="py-24 px-4 bg-black">
-    <div class="container mx-auto">
-      <div class="text-center mb-16">
-        <h2 class="text-4xl font-bold mb-4">معرض <span class="gold-text">أعمالنا</span></h2>
-        <p class="text-zinc-400 max-w-2xl mx-auto">أفضل جلسات التصوير والطباعة التي قمنا بها لعملائنا الكرام</p>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="portfolio-grid">
-        <!-- Portfolio items injected here -->
-      </div>
-    </div>
-  </section>
-
-  <!-- Testimonials Section -->
-  <section class="py-24 px-4 bg-zinc-900/50">
-    <div class="container mx-auto">
-      <div class="text-center mb-16">
-        <h2 class="text-4xl font-bold mb-4">آراء <span class="gold-text">عملائنا</span></h2>
-        <p class="text-zinc-400 max-w-2xl mx-auto">تجارب حقيقية من عملاء استوديو الزهراء الراضين</p>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8" id="testimonials-grid">
-        <!-- Testimonials injected here -->
-      </div>
-    </div>
-  </section>
   <!-- Store Section -->
   <section id="store-section" class="py-24 px-4">
     <div class="container mx-auto">
@@ -275,24 +247,6 @@
         <div id="image-groups-container" class="space-y-4 mb-4"></div>
         
         <button onclick="addImageGroup()" class="w-full text-sm gold-text underline hover:text-gold-bg transition-colors py-2">+ إضافة مجموعة صور جديدة</button>
-      <!-- Gift Wrapping Option -->
-      <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
-        <label class="flex items-center gap-3 cursor-pointer">
-          <input type="checkbox" id="gift-wrap" onchange="updateGiftWrap()" class="w-4 h-4 cursor-pointer">
-          <span class="text-sm font-bold">🎁 إضافة تغليف هدايا فاخر مع كارت إهداء (+30 جنيه)</span>
-        </label>
-        <textarea id="gift-message" placeholder="رسالة الإهداء (اختيارية)" class="w-full p-2 bg-black border border-zinc-800 rounded-lg text-sm mt-2 hidden outline-none focus:border-gold-text"></textarea>
-      </div>
-
-      <!-- Coupon Code -->
-      <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
-        <p class="text-sm font-bold mb-2">هل لديك كود خصم؟</p>
-        <div class="flex gap-2">
-          <input type="text" id="coupon-input" placeholder="أدخل كود الخصم" class="flex-1 p-2 bg-black border border-zinc-800 rounded-lg text-sm outline-none focus:border-gold-text">
-          <button onclick="applyCoupon()" class="bg-gold-bg text-black px-4 py-2 rounded-lg font-bold text-sm hover:bg-yellow-500 transition-colors">تطبيق</button>
-        </div>
-        <div id="coupon-message" class="text-xs mt-2 hidden"></div>
-      </div>
       </div>
 
       <div class="pt-4">
@@ -312,9 +266,6 @@
     let allProducts = [], cart = [], selectedCategory = 'all', searchTerm = '';
     let lastOrderTime = 0;
     let imageGroups = [];
-    let giftWrap = false;
-    let appliedCoupon = null;
-    let discountAmount = 0;
 
     // Register Service Worker for PWA
     if ('serviceWorker' in navigator) {
@@ -399,8 +350,6 @@
           catList.innerHTML += `<button onclick="filterCategory('${c}')" class="w-full text-right p-3 rounded-xl hover:bg-zinc-900 transition-colors text-zinc-400">${c}</button>`;
         });
         renderProducts();
-        renderPortfolio();
-        renderTestimonials();
       } catch (e) { console.error("Init error:", e); }
     }
 
