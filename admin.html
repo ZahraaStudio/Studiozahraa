@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم ZAHRAA STUDIO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Cairo', sans-serif; background-color: #0a0a0a; color: #fff; }
+        .gold-border { border: 1px solid #d4af37; }
+        .gold-bg { background-color: #d4af37; }
+        .gradient-text {
+            background: linear-gradient(to right, #d4af37, #f9e29c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div id="auth-section" class="max-w-md mx-auto mt-20 p-6 bg-zinc-900 rounded-xl gold-border">
+        <h2 class="text-2xl font-bold mb-6 text-center gradient-text">تسجيل دخول الإدارة</h2>
+        <input type="email" id="email" placeholder="البريد الإلكتروني" class="w-full p-3 mb-4 bg-black border border-zinc-700 rounded text-white">
+        <input type="password" id="password" placeholder="كلمة المرور" class="w-full p-3 mb-6 bg-black border border-zinc-700 rounded text-white">
+        <button onclick="login()" class="w-full p-3 gold-bg text-black font-bold rounded hover:opacity-90">دخول</button>
+        <p id="login-error" class="text-red-500 mt-4 text-center hidden">خطأ في البيانات</p>
+    </div>
+
+    <div id="admin-content" class="hidden max-w-5xl mx-auto">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold gradient-text">إدارة منتجات ZAHRAA STUDIO</h1>
+            <button onclick="logout()" class="bg-red-600 px-4 py-2 rounded font-bold">خروج</button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-1 bg-zinc-900 p-6 rounded-xl gold-border h-fit">
+                <h3 class="text-xl font-bold mb-4 border-b border-zinc-800 pb-2">إضافة / تعديل منتج</h3>
+                <input type="hidden" id="product-id">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-zinc-400 mb-1">اسم المنتج</label>
+                        <input type="text" id="p-name" class="w-full p-2 bg-black border border-zinc-700 rounded">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-zinc-400 mb-1">السعر (جنيه)</label>
+                        <input type="number" id="p-price" class="w-full p-2 bg-black border border-zinc-700 rounded">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-zinc-400 mb-1">الوصف</label>
+                        <textarea id="p-desc" class="w-full p-2 bg-black border border-zinc-700 rounded h-24"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-zinc-400 mb-1">رابط الصورة</label>
+                        <input type="text" id="p-image" class="w-full p-2 bg-black border border-zinc-700 rounded">
+                    </div>
+                    <button onclick="saveProduct()" id="save-btn" class="w-full p-3 gold-bg text-black font-bold rounded mt-4">حفظ المنتج</button>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 bg-zinc-900 p-6 rounded-xl gold-border">
+                <h3 class="text-xl font-bold mb-4 border-b border-zinc-800 pb-2">قائمة المنتجات</h3>
+                <div id="products-list" class="space-y-4">
+                    <p class="text-center text-zinc-500">جاري تحميل المنتجات...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
+            authDomain: "zahraa-store-f4c90.firebaseapp.com",
+            projectId: "zahraa-store-f4c90"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        window.login = () => {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('password').value;
+            signInWithEmailAndPassword(auth, email, pass)
+                .catch(err => {
+                    document.getElementById('login-error').classList.remove('hidden');
+                });
+        };
+
+        window.logout = () => signOut(auth);
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('admin-content').classList.remove('hidden');
+                loadProducts();
+            } else {
+                document.getElementById('auth-section').classList.remove('hidden');
+                document.getElementById('admin-content').classList.add('hidden');
+            }
+        });
+
+        async function loadProducts() {
+            const list = document.getElementById('products-list');
+            list.innerHTML = '';
+            const querySnapshot = await getDocs(collection(db, "products"));
+            querySnapshot.forEach((docData) => {
+                const p = docData.data();
+                const id = docData.id;
+                const div = document.createElement('div');
+                div.className = "flex items-center justify-between p-4 bg-black rounded border border-zinc-800";
+                div.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <img src="${p.images ? p.images[0] : ''}" class="w-12 h-12 object-cover rounded">
+                        <div>
+                            <h4 class="font-bold">${p.name}</h4>
+                            <p class="text-sm text-zinc-400">${p.price} جنيه</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="edit-btn text-blue-400 hover:underline">تعديل</button>
+                        <button class="delete-btn text-red-400 hover:underline">حذف</button>
+                    </div>
+                `;
+                div.querySelector('.edit-btn').onclick = () => editProduct(id, p.name, p.price, p.description, p.images ? p.images[0] : '');
+                div.querySelector('.delete-btn').onclick = () => deleteProduct(id);
+                list.appendChild(div);
+            });
+        }
+
+        window.saveProduct = async () => {
+            const id = document.getElementById('product-id').value;
+            const name = document.getElementById('p-name').value;
+            const price = parseFloat(document.getElementById('p-price').value);
+            const desc = document.getElementById('p-desc').value;
+            const img = document.getElementById('p-image').value;
+
+            if(!name || !price) return alert('أدخل الاسم والسعر');
+
+            const data = { name, price, description: desc, images: [img], updatedAt: Date.now() };
+
+            if(id) {
+                await updateDoc(doc(db, "products", id), data);
+                alert('تم التعديل');
+            } else {
+                await addDoc(collection(db, "products"), data);
+                alert('تمت الإضافة');
+            }
+            resetForm();
+            loadProducts();
+        };
+
+        function editProduct(id, name, price, desc, img) {
+            document.getElementById('product-id').value = id;
+            document.getElementById('p-name').value = name;
+            document.getElementById('p-price').value = price;
+            document.getElementById('p-desc').value = desc;
+            document.getElementById('p-image').value = img;
+            document.getElementById('save-btn').innerText = 'تحديث المنتج';
+        }
+
+        async function deleteProduct(id) {
+            if(confirm('متأكد من الحذف؟')) {
+                await deleteDoc(doc(db, "products", id));
+                loadProducts();
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('product-id').value = '';
+            document.getElementById('p-name').value = '';
+            document.getElementById('p-price').value = '';
+            document.getElementById('p-desc').value = '';
+            document.getElementById('p-image').value = '';
+            document.getElementById('save-btn').innerText = 'حفظ المنتج';
+        }
+    </script>
+</body>
+</html>
