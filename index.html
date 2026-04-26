@@ -24,7 +24,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-  <!-- Firebase SDKs -->
+  <!-- Firebase SDKs - Loaded first to be available globally -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -36,16 +36,16 @@
 <body>
   <div id="root"></div>
   <script>
-    // تهيئة Firebase بشكل متوافق لضمان عمل الكود القديم والجديد
+    // تهيئة Firebase العالمية لضمان عمل دالة جلب المنتجات
     const firebaseConfig = {
       apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
       authDomain: "zahraa-store-f4c90.firebaseapp.com",
       projectId: "zahraa-store-f4c90"
     };
-    if (!firebase.apps.length) {
+    if (typeof firebase !== 'undefined' && !firebase.apps.length) {
       firebase.initializeApp(firebaseConfig);
+      window.db = firebase.firestore();
     }
-    window.db = firebase.firestore();
   </script>
 </body>
 </html>
