@@ -22,14 +22,14 @@
         <h2 class="text-2xl font-bold mb-6 text-center gradient-text">تسجيل دخول الإدارة</h2>
         <input type="email" id="email" placeholder="البريد الإلكتروني" class="w-full p-3 mb-4 bg-black border border-zinc-700 rounded text-white">
         <input type="password" id="password" placeholder="كلمة المرور" class="w-full p-3 mb-6 bg-black border border-zinc-700 rounded text-white">
-        <button onclick="login()" class="w-full p-3 gold-bg text-black font-bold rounded hover:opacity-90">دخول</button>
-        <p id="login-error" class="text-red-500 mt-4 text-center hidden">خطأ في البيانات</p>
+        <button id="login-btn" class="w-full p-3 gold-bg text-black font-bold rounded hover:opacity-90">دخول</button>
+        <p id="login-error" class="text-red-500 mt-4 text-center hidden"></p>
     </div>
 
     <div id="admin-content" class="hidden max-w-5xl mx-auto">
         <div class="flex justify-between items-center mb-8">
             <h1 class="text-3xl font-bold gradient-text">إدارة منتجات ZAHRAA STUDIO</h1>
-            <button onclick="logout()" class="bg-red-600 px-4 py-2 rounded font-bold">خروج</button>
+            <button id="logout-btn" class="bg-red-600 px-4 py-2 rounded font-bold">خروج</button>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -53,7 +53,7 @@
                         <label class="block text-sm text-zinc-400 mb-1">رابط الصورة</label>
                         <input type="text" id="p-image" class="w-full p-2 bg-black border border-zinc-700 rounded">
                     </div>
-                    <button onclick="saveProduct()" id="save-btn" class="w-full p-3 gold-bg text-black font-bold rounded mt-4">حفظ المنتج</button>
+                    <button id="save-btn" class="w-full p-3 gold-bg text-black font-bold rounded mt-4">حفظ المنتج</button>
                 </div>
             </div>
 
@@ -81,16 +81,24 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        window.login = () => {
+        document.getElementById('login-btn').onclick = () => {
             const email = document.getElementById('email').value;
             const pass = document.getElementById('password').value;
+            const errorEl = document.getElementById('login-error');
+            
+            errorEl.classList.add('hidden');
+            
             signInWithEmailAndPassword(auth, email, pass)
+                .then(() => {
+                    console.log("Login success");
+                })
                 .catch(err => {
-                    document.getElementById('login-error').classList.remove('hidden');
+                    errorEl.innerText = "خطأ: " + err.message;
+                    errorEl.classList.remove('hidden');
                 });
         };
 
-        window.logout = () => signOut(auth);
+        document.getElementById('logout-btn').onclick = () => signOut(auth);
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
@@ -105,33 +113,39 @@
 
         async function loadProducts() {
             const list = document.getElementById('products-list');
-            list.innerHTML = '';
-            const querySnapshot = await getDocs(collection(db, "products"));
-            querySnapshot.forEach((docData) => {
-                const p = docData.data();
-                const id = docData.id;
-                const div = document.createElement('div');
-                div.className = "flex items-center justify-between p-4 bg-black rounded border border-zinc-800";
-                div.innerHTML = `
-                    <div class="flex items-center gap-4">
-                        <img src="${p.images ? p.images[0] : ''}" class="w-12 h-12 object-cover rounded">
-                        <div>
-                            <h4 class="font-bold">${p.name}</h4>
-                            <p class="text-sm text-zinc-400">${p.price} جنيه</p>
+            list.innerHTML = '<p class="text-center text-zinc-500">جاري التحميل...</p>';
+            try {
+                const querySnapshot = await getDocs(collection(db, "products"));
+                list.innerHTML = '';
+                querySnapshot.forEach((docData) => {
+                    const p = docData.data();
+                    const id = docData.id;
+                    const div = document.createElement('div');
+                    div.className = "flex items-center justify-between p-4 bg-black rounded border border-zinc-800";
+                    div.innerHTML = `
+                        <div class="flex items-center gap-4">
+                            <img src="${p.images && p.images[0] ? p.images[0] : 'https://via.placeholder.com/50'}" class="w-12 h-12 object-cover rounded">
+                            <div>
+                                <h4 class="font-bold">${p.name}</h4>
+                                <p class="text-sm text-zinc-400">${p.price} جنيه</p>
+                            </div>
                         </div>
-                    </div>
-                    <div class="flex gap-2">
-                        <button class="edit-btn text-blue-400 hover:underline">تعديل</button>
-                        <button class="delete-btn text-red-400 hover:underline">حذف</button>
-                    </div>
-                `;
-                div.querySelector('.edit-btn').onclick = () => editProduct(id, p.name, p.price, p.description, p.images ? p.images[0] : '');
-                div.querySelector('.delete-btn').onclick = () => deleteProduct(id);
-                list.appendChild(div);
-            });
+                        <div class="flex gap-2">
+                            <button class="edit-btn text-blue-400 hover:underline">تعديل</button>
+                            <button class="delete-btn text-red-400 hover:underline">حذف</button>
+                        </div>
+                    `;
+                    div.querySelector('.edit-btn').onclick = () => editProduct(id, p.name, p.price, p.description, p.images ? p.images[0] : '');
+                    div.querySelector('.delete-btn').onclick = () => deleteProduct(id);
+                    list.appendChild(div);
+                });
+                if (list.innerHTML === '') list.innerHTML = '<p class="text-center text-zinc-500">لا توجد منتجات حالياً</p>';
+            } catch (e) {
+                list.innerHTML = '<p class="text-center text-red-500">فشل تحميل المنتجات: ' + e.message + '</p>';
+            }
         }
 
-        window.saveProduct = async () => {
+        document.getElementById('save-btn').onclick = async () => {
             const id = document.getElementById('product-id').value;
             const name = document.getElementById('p-name').value;
             const price = parseFloat(document.getElementById('p-price').value);
@@ -142,15 +156,19 @@
 
             const data = { name, price, description: desc, images: [img], updatedAt: Date.now() };
 
-            if(id) {
-                await updateDoc(doc(db, "products", id), data);
-                alert('تم التعديل');
-            } else {
-                await addDoc(collection(db, "products"), data);
-                alert('تمت الإضافة');
+            try {
+                if(id) {
+                    await updateDoc(doc(db, "products", id), data);
+                    alert('تم التعديل بنجاح');
+                } else {
+                    await addDoc(collection(db, "products"), data);
+                    alert('تمت الإضافة بنجاح');
+                }
+                resetForm();
+                loadProducts();
+            } catch (e) {
+                alert('خطأ في الحفظ: ' + e.message);
             }
-            resetForm();
-            loadProducts();
         };
 
         function editProduct(id, name, price, desc, img) {
@@ -160,12 +178,17 @@
             document.getElementById('p-desc').value = desc;
             document.getElementById('p-image').value = img;
             document.getElementById('save-btn').innerText = 'تحديث المنتج';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         async function deleteProduct(id) {
-            if(confirm('متأكد من الحذف؟')) {
-                await deleteDoc(doc(db, "products", id));
-                loadProducts();
+            if(confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
+                try {
+                    await deleteDoc(doc(db, "products", id));
+                    loadProducts();
+                } catch (e) {
+                    alert('خطأ في الحذف: ' + e.message);
+                }
             }
         }
 
