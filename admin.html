@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم ZAHRAA STUDIO - النسخة الاحترافية الآمنة</title>
+    <title>لوحة تحكم استوديو الزهراء - ZAHRAA STUDIO</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -25,7 +25,10 @@
 
     <div id="admin-content" class="hidden max-w-6xl mx-auto">
         <div class="flex justify-between items-center mb-8">
-            <h1 class="text-2xl md:text-3xl font-bold gradient-text">ZAHRAA STUDIO Admin</h1>
+            <div class="flex items-center gap-3">
+                <img src="icon-192.png" class="w-10 h-10 object-contain" alt="Logo">
+                <h1 class="text-2xl md:text-3xl font-bold gradient-text">ZAHRAA STUDIO Admin</h1>
+            </div>
             <button id="logout-btn" class="bg-red-600/20 text-red-500 border border-red-600 px-4 py-2 rounded font-bold text-xs">خروج</button>
         </div>
 
@@ -228,8 +231,20 @@
                 const id = o.id;
                 count++;
                 const itemsStr = o.items.map(i => `${i.name} ${i.variant ? '('+i.variant+')' : ''} × ${i.qty}`).join(' - ');
-                const imagesHtml = (o.customerImages || []).map(img => `<a href="${img}" target="_blank" class="block"><img src="${img}" class="w-16 h-16 object-cover rounded border border-zinc-700"></a>`).join('');
                 
+                // Render Image Groups
+                let groupsHtml = '';
+                if(o.imageGroups && o.imageGroups.length > 0) {
+                    groupsHtml = o.imageGroups.map(g => `
+                        <div class="mt-2 p-2 bg-zinc-900 rounded border border-zinc-800">
+                            <p class="text-[10px] font-bold gold-text mb-1">${g.name}</p>
+                            <div class="flex gap-2 overflow-x-auto pb-1">
+                                ${g.images.map(img => `<a href="${img}" target="_blank" class="block flex-shrink-0"><img src="${img}" class="w-16 h-16 object-cover rounded border border-zinc-700"></a>`).join('')}
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
                 list.innerHTML += `
                     <div class="bg-black p-5 rounded-xl border border-zinc-800 space-y-3">
                         <div class="flex justify-between items-start">
@@ -248,7 +263,7 @@
                             </div>
                         </div>
                         <div class="bg-zinc-900/50 p-2 rounded text-[11px] text-zinc-300"><b>الطلبات:</b> ${itemsStr}</div>
-                        ${o.customerImages?.length ? `<div class="space-y-1"><b>صور العميل:</b><div class="flex gap-2 overflow-x-auto pb-1">${imagesHtml}</div></div>` : ''}
+                        ${groupsHtml ? `<div class="space-y-1"><b>مجموعات الصور:</b>${groupsHtml}</div>` : ''}
                         <div class="flex justify-between items-center pt-2 border-t border-zinc-900">
                             <button onclick="window.delOrder('${id}')" class="text-red-500 text-[10px]">حذف الطلب</button>
                             <b class="text-gold-text text-sm">${o.totalPrice} جنيه</b>
