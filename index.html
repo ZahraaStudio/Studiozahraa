@@ -3,7 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ZAHRAA STUDIO - المتجر الاحترافي المتكامل</title>
+  <meta name="description" content="استوديو الزهراء - متجر فاخر للمنتجات والخدمات. تصاميم عصرية، طباعة فاخرة، وهدايا تليق بأحبابك." />
+  <meta name="keywords" content="استوديو الزهراء, متجر, تصاميم, طباعة, هدايا, تابلوهات" />
+  <meta name="author" content="ZAHRAA STUDIO" />
+  <meta property="og:title" content="استوديو الزهراء - ZAHRAA STUDIO" />
+  <meta property="og:description" content="متجر فاخر للمنتجات والخدمات. تصاميم عصرية، طباعة فاخرة، وهدايا تليق بأحبابك." />
+  <meta property="og:type" content="website" />
+  <title>استوديو الزهراء - ZAHRAA STUDIO - المتجر الاحترافي المتكامل</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#D4AF37">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="استوديو الزهراء">
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet" />
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -20,6 +31,13 @@
     .cart-badge { position: absolute; top: -5px; right: -5px; background: #d4af37; color: black; font-size: 10px; font-weight: bold; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .hero-gradient { background: radial-gradient(circle at center, rgba(212, 175, 55, 0.1) 0%, rgba(0, 0, 0, 0) 70%); }
+    .toast { position: fixed; bottom: 20px; right: 20px; background: #d4af37; color: black; padding: 12px 20px; border-radius: 8px; font-weight: bold; z-index: 2000; animation: slideIn 0.3s ease; }
+    @keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    .image-modal { backdrop-filter: blur(15px); background: rgba(0,0,0,0.95); z-index: 1500; }
+    .image-modal img { max-width: 90vw; max-height: 90vh; object-fit: contain; }
+    .image-group-item { position: relative; overflow: hidden; border-radius: 12px; }
+    .image-group-item:hover .delete-btn { opacity: 1; }
+    .delete-btn { position: absolute; top: 5px; right: 5px; background: rgba(255,0,0,0.8); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; transition: opacity 0.3s; font-size: 14px; }
   </style>
 </head>
 <body class="overflow-x-hidden">
@@ -32,7 +50,7 @@
         </button>
         <div class="flex flex-col">
             <h1 class="text-xl font-bold gradient-text cursor-pointer leading-tight" onclick="location.reload()">ZAHRAA STUDIO</h1>
-            <span class="text-[10px] text-zinc-500 tracking-widest uppercase">Photography & Design</span>
+            <span class="text-[10px] text-zinc-500 tracking-widest uppercase">استوديو الزهراء</span>
         </div>
       </div>
       <div class="flex items-center gap-3">
@@ -79,7 +97,7 @@
             <svg class="w-8 h-8 gold-text" fill="currentColor" viewBox="0 0 24 24"><path d="M20 4h-3.17L15 2H9L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h4.05l1.83-2h4.24l1.83 2H20v12zM12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8c-1.65 0-3-1.35-3-3s1.35-3 3-3 3 1.35 3 3-1.35 3-3 3z"/></svg>
         </div>
         <h1 class="text-5xl md:text-7xl font-bold mb-4 tracking-tighter">
-            <span class="gradient-text">ZAHRAA STUDIO</span>
+            <span class="gradient-text">استوديو الزهراء</span>
         </h1>
         <p class="text-zinc-400 text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
             نحول لحظاتك الجميلة إلى تحف فنية خالدة. تصاميم عصرية، طباعة فاخرة، وهدايا تليق بأحبابك.
@@ -130,6 +148,14 @@
     </div>
   </div>
 
+  <!-- Image Viewer Modal -->
+  <div id="image-viewer-modal" class="image-modal fixed inset-0 hidden flex items-center justify-center p-4 z-[1500]" onclick="closeImageViewer()">
+    <div class="relative">
+      <button onclick="closeImageViewer()" class="absolute top-4 right-4 bg-black/50 text-white w-8 h-8 rounded-full z-[1600]">✕</button>
+      <img id="viewer-image" src="" class="image-modal img" />
+    </div>
+  </div>
+
   <!-- Cart Sidebar -->
   <div id="cart-sidebar" class="fixed inset-y-0 left-0 w-full md:w-96 bg-zinc-950 z-[1100] border-r border-zinc-800 transform -translate-x-full transition-transform duration-300 flex flex-col">
     <div class="p-6 border-b border-zinc-900 flex justify-between items-center">
@@ -152,7 +178,18 @@
         <input type="tel" id="cust-phone" placeholder="رقم الهاتف (11 رقم)" maxlength="11" class="w-full p-3 bg-black border border-zinc-800 rounded-xl outline-none focus:border-gold-text">
         <textarea id="cust-address" placeholder="العنوان بالتفصيل" class="w-full p-3 bg-black border border-zinc-800 rounded-xl outline-none focus:border-gold-text h-24"></textarea>
       </div>
-      
+
+      <!-- Image Groups Upload Section -->
+      <div class="border-2 border-dashed border-zinc-800 p-4 rounded-xl">
+        <p class="text-sm font-bold mb-3 text-gold-text">مجموعات الصور للطباعة</p>
+        <p class="text-xs text-zinc-500 mb-3">أضف مجموعات صور لمنتجات مختلفة (مثل تابلوهات بمقاسات مختلفة)</p>
+        
+        <div id="image-groups-container" class="space-y-4 mb-4"></div>
+        
+        <button onclick="addImageGroup()" class="w-full text-sm gold-text underline hover:text-gold-bg transition-colors py-2">+ إضافة مجموعة صور جديدة</button>
+      </div>
+
+      <!-- Old File Upload (for backward compatibility) -->
       <div class="border-2 border-dashed border-zinc-800 p-4 rounded-xl text-center">
         <p class="text-xs text-zinc-500 mb-2">ارفع صورك الخاصة للطباعة (اختياري)</p>
         <input type="file" id="cust-files" multiple accept="image/*" class="hidden" onchange="updateFileCount()">
@@ -176,6 +213,90 @@
 
     let allProducts = [], cart = [], selectedCategory = 'all', searchTerm = '';
     let lastOrderTime = 0;
+    let imageGroups = [];
+
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js').then(reg => {
+        console.log('✅ Service Worker registered');
+      }).catch(err => console.log('Service Worker registration failed:', err));
+    }
+
+    function showToast(message) {
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    function addImageGroup() {
+      const groupId = Date.now();
+      imageGroups.push({ id: groupId, name: '', images: [] });
+      renderImageGroups();
+    }
+
+    function renderImageGroups() {
+      const container = document.getElementById('image-groups-container');
+      container.innerHTML = '';
+      
+      imageGroups.forEach((group, idx) => {
+        const groupHtml = `
+          <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
+            <div class="flex gap-2 mb-3">
+              <input type="text" placeholder="مثال: تابلوهات 20x30" value="${group.name}" onchange="updateGroupName(${idx}, this.value)" class="flex-1 p-2 bg-black border border-zinc-800 rounded-lg text-xs outline-none focus:border-gold-text">
+              <button onclick="removeImageGroup(${idx})" class="text-red-500 text-xs px-3 py-2 hover:bg-red-500/20 rounded-lg">حذف</button>
+            </div>
+            <div class="grid grid-cols-3 gap-2 mb-3" id="group-images-${idx}">
+              ${group.images.map((img, imgIdx) => `
+                <div class="image-group-item bg-zinc-800 h-20 relative">
+                  <img src="${img}" class="w-full h-full object-cover rounded-lg cursor-pointer" onclick="openImageViewer('${img}')">
+                  <div class="delete-btn" onclick="removeImageFromGroup(${idx}, ${imgIdx})">✕</div>
+                </div>
+              `).join('')}
+            </div>
+            <input type="file" id="group-file-${idx}" multiple accept="image/*" class="hidden" onchange="addImagesToGroup(${idx}, this)">
+            <button onclick="document.getElementById('group-file-${idx}').click()" class="w-full text-xs gold-text border border-gold-text rounded-lg py-2 hover:bg-gold-text/10">+ إضافة صور</button>
+          </div>
+        `;
+        container.innerHTML += groupHtml;
+      });
+    }
+
+    function updateGroupName(idx, name) {
+      imageGroups[idx].name = name;
+    }
+
+    function removeImageGroup(idx) {
+      imageGroups.splice(idx, 1);
+      renderImageGroups();
+    }
+
+    function removeImageFromGroup(groupIdx, imgIdx) {
+      imageGroups[groupIdx].images.splice(imgIdx, 1);
+      renderImageGroups();
+    }
+
+    function addImagesToGroup(groupIdx, input) {
+      const files = Array.from(input.files);
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          imageGroups[groupIdx].images.push(e.target.result);
+          renderImageGroups();
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function openImageViewer(imageSrc) {
+      document.getElementById('viewer-image').src = imageSrc;
+      document.getElementById('image-viewer-modal').classList.remove('hidden');
+    }
+
+    function closeImageViewer() {
+      document.getElementById('image-viewer-modal').classList.add('hidden');
+    }
 
     async function init() {
       const snap = await db.collection("products").orderBy("updatedAt", "desc").get();
@@ -207,15 +328,18 @@
         const displayPrice = p.variants?.length ? `تبدأ من ${Math.min(...p.variants.map(v=>v.price))} ج` : `${p.price} ج`;
         grid.innerHTML += `
           <div class="product-card group">
-            <div onclick="openModal('${p.id}')" class="h-48 md:h-64 overflow-hidden cursor-pointer">
+            <div onclick="openModal('${p.id}')" class="h-48 md:h-64 overflow-hidden cursor-pointer relative">
               <img src="${p.images?.[0] || ''}" class="w-full h-full object-cover transition-transform group-hover:scale-110">
+              <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                <svg class="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7"></path></svg>
+              </div>
             </div>
             <div class="p-4">
               <h3 class="font-bold text-sm md:text-base mb-1 truncate">${p.name}</h3>
               <p class="gold-text font-bold mb-3 text-sm">${displayPrice}</p>
               <div class="grid grid-cols-2 gap-2">
-                <button onclick="openModal('${p.id}')" class="bg-zinc-800 text-white text-[10px] py-2 rounded-lg font-bold">التفاصيل</button>
-                <a href="https://wa.me/201204194540?text=${encodeURIComponent('أريد طلب: '+p.name)}" target="_blank" class="gold-bg text-black text-[10px] py-2 rounded-lg font-bold text-center">واتساب</a>
+                <button onclick="openModal('${p.id}')" class="bg-zinc-800 text-white text-[10px] py-2 rounded-lg font-bold hover:bg-zinc-700 transition-colors">التفاصيل</button>
+                <a href="https://wa.me/201204194540?text=${encodeURIComponent('أريد طلب: '+p.name)}" target="_blank" class="gold-bg text-black text-[10px] py-2 rounded-lg font-bold text-center hover:bg-yellow-500 transition-colors">واتساب</a>
               </div>
             </div>
           </div>
@@ -240,7 +364,7 @@
       const p = allProducts.find(x => x.id === id);
       const content = document.getElementById('modal-content');
       
-      let imagesHtml = (p.images || []).map(img => `<img src="${img}" class="w-full h-64 md:h-80 object-cover rounded-2xl flex-shrink-0 snap-center">`).join('');
+      let imagesHtml = (p.images || []).map(img => `<img src="${img}" class="w-full h-64 md:h-80 object-cover rounded-2xl flex-shrink-0 snap-center cursor-pointer hover:opacity-80 transition-opacity" onclick="openImageViewer('${img}')">`).join('');
       let variantsHtml = (p.variants || []).map((v, i) => `
         <label class="flex items-center gap-3 p-3 bg-zinc-800 rounded-xl cursor-pointer border border-transparent hover:border-gold-text">
           <input type="radio" name="variant" value="${i}" ${i===0?'checked':''} onchange="updateModalPrice('${id}', ${v.price})">
@@ -259,8 +383,8 @@
           <p class="text-zinc-400 text-sm leading-relaxed">${p.description || ''}</p>
           ${p.variants?.length ? `<div class="space-y-2"><p class="text-xs text-zinc-500">اختر النوع / المقاس:</p>${variantsHtml}</div>` : ''}
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-4">
-            <button onclick="addCartFromModal('${p.id}')" class="gold-bg text-black py-4 rounded-xl font-bold">إضافة للسلة</button>
-            <a href="https://wa.me/201204194540?text=${encodeURIComponent('أريد طلب: '+p.name)}" target="_blank" class="border border-gold-text text-gold-text py-4 rounded-xl font-bold text-center">طلب واتساب مباشر</a>
+            <button onclick="addCartFromModal('${p.id}')" class="gold-bg text-black py-4 rounded-xl font-bold hover:bg-yellow-500 transition-colors">إضافة للسلة</button>
+            <a href="https://wa.me/201204194540?text=${encodeURIComponent('أريد طلب: '+p.name)}" target="_blank" class="border border-gold-text text-gold-text py-4 rounded-xl font-bold text-center hover:bg-gold-text/10 transition-colors">طلب واتساب مباشر</a>
           </div>
         </div>
       `;
@@ -280,7 +404,7 @@
       const item = cart.find(x => x.cartId === cartId);
       if(item) item.qty++;
       else cart.push({ ...p, cartId, selectedVariant, qty: 1, price: selectedVariant ? selectedVariant.price : p.price });
-      updateCartUI(); closeModal(); toggleCart();
+      updateCartUI(); closeModal(); showToast('تمت إضافة المنتج للسلة ✓');
     }
 
     function updateCartUI() {
@@ -292,20 +416,20 @@
         total += item.price * item.qty;
         list.innerHTML += `
           <div class="flex items-center gap-4 bg-zinc-900 p-3 rounded-xl">
-            <img src="${item.images?.[0]}" class="w-12 h-12 object-cover rounded-lg">
+            <img src="${item.images?.[0]}" class="w-12 h-12 object-cover rounded-lg cursor-pointer" onclick="openImageViewer('${item.images?.[0]}')">
             <div class="flex-1">
               <h4 class="text-sm font-bold">${item.name}</h4>
               <p class="text-[10px] text-zinc-500">${item.selectedVariant ? item.selectedVariant.name : ''}</p>
               <p class="text-xs gold-text">${item.price} ج × ${item.qty}</p>
             </div>
-            <button onclick="removeFromCart(${i})" class="text-red-500 text-xs">حذف</button>
+            <button onclick="removeFromCart(${i})" class="text-red-500 text-xs hover:text-red-400 transition-colors">حذف</button>
           </div>
         `;
       });
       document.getElementById('cart-total').innerText = total + ' جنيه';
     }
 
-    function removeFromCart(i) { cart.splice(i, 1); updateCartUI(); }
+    function removeFromCart(i) { cart.splice(i, 1); updateCartUI(); showToast('تمت إزالة المنتج من السلة'); }
     function toggleCart() { document.getElementById('cart-sidebar').classList.toggle('-translate-x-full'); }
     function closeModal() { document.getElementById('product-modal').classList.add('hidden'); }
     function openCheckout() { if(cart.length===0) return alert('السلة فارغة'); document.getElementById('checkout-modal').classList.remove('hidden'); }
@@ -359,6 +483,7 @@
           customerPhone: phone,
           customerAddress: address,
           customerImages: customerImages,
+          imageGroups: imageGroups.filter(g => g.images.length > 0),
           items: cart.map(i => ({ name: i.name, qty: i.qty, price: i.price, variant: i.selectedVariant?.name || '' })),
           totalPrice: cart.reduce((a, b) => a + (b.price * b.qty), 0),
           status: 'قيد المراجعة',
@@ -368,9 +493,10 @@
         await db.collection("orders").add(order);
         lastOrderTime = now;
         alert(`تم استلام طلبك بنجاح! رقم طلبك هو: #${orderNum}`);
-        cart = []; updateCartUI(); closeCheckout(); toggleCart();
+        cart = []; imageGroups = []; updateCartUI(); closeCheckout(); toggleCart();
       } catch (e) {
         alert('حدث خطأ، يرجى المحاولة مرة أخرى');
+        console.error(e);
       } finally {
         btn.disabled = false; btn.innerText = 'تأكيد الطلب الآن';
       }

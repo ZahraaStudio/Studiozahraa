@@ -1,7 +1,7 @@
 {
-  "name": "ZAHRAA STUDIO - متجر فاخر",
-  "short_name": "ZAHRAA STUDIO",
-  "description": "متجر فاخر للمنتجات والخدمات",
+  "name": "استوديو الزهراء - ZAHRAA STUDIO",
+  "short_name": "استوديو الزهراء",
+  "description": "متجر فاخر للمنتجات والخدمات. تصاميم عصرية، طباعة فاخرة، وهدايا تليق بأحبابك",
   "start_url": "./#/",
   "scope": ".",
   "display": "standalone",
@@ -40,6 +40,20 @@
       "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "تصفح المتجر",
+      "short_name": "المتجر",
+      "description": "تصفح منتجات استوديو الزهراء",
+      "url": "./#store",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }

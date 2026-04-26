@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Allow: /index.html
+Allow: /manifest.json
+Allow: /service-worker.js
+
+Disallow: /admin
+Disallow: /__manus__
+
+Sitemap: https://zahraa-studio.github.io/sitemap.xml
+
+# استوديو الزهراء - ZAHRAA STUDIO
+# Photography & Design
