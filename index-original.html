@@ -38,14 +38,24 @@
     .image-group-item { position: relative; overflow: hidden; border-radius: 12px; }
     .image-group-item:hover .delete-btn { opacity: 1; }
     .delete-btn { position: absolute; top: 5px; right: 5px; background: rgba(255,0,0,0.8); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; transition: opacity 0.3s; font-size: 14px; }
-    .logo-frame { width: 160px; height: 160px; margin: 0 auto 20px; border: 3px solid #d4af37; border-radius: 20px; padding: 10px; background: rgba(212, 175, 55, 0.05); display: flex; align-items: center; justify-content: center; animation: logoFloat 3s ease-in-out infinite; box-shadow: 0 0 30px rgba(212, 175, 55, 0.3), inset 0 0 20px rgba(212, 175, 55, 0.1); }
+    
+    /* Logo Animation */
+    .logo-frame { 
+      width: 160px; height: 160px; margin: 0 auto 20px; 
+      border: 3px solid #d4af37; border-radius: 20px; 
+      padding: 10px; background: rgba(212, 175, 55, 0.05);
+      display: flex; align-items: center; justify-content: center;
+      animation: logoFloat 3s ease-in-out infinite;
+      box-shadow: 0 0 30px rgba(212, 175, 55, 0.3), inset 0 0 20px rgba(212, 175, 55, 0.1);
+    }
     .logo-img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.6)); }
     @keyframes logoFloat { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-15px); } }
+    
+    /* Cart quantity controls */
     .qty-control { display: flex; align-items: center; gap: 8px; background: #1a1a1a; border-radius: 8px; padding: 4px; }
     .qty-btn { width: 24px; height: 24px; border: none; background: #d4af37; color: black; border-radius: 4px; cursor: pointer; font-weight: bold; transition: all 0.2s; }
     .qty-btn:hover { background: #f9e29c; transform: scale(1.1); }
     .qty-display { min-width: 30px; text-align: center; font-weight: bold; }
-    .visitors-badge { background: rgba(212, 175, 55, 0.1); border: 1px solid #d4af37; padding: 6px 12px; border-radius: 20px; font-size: 11px; color: #d4af37; font-weight: bold; }
   </style>
 </head>
 <body class="overflow-x-hidden">
@@ -69,7 +79,6 @@
         <button onclick="showPage('portfolio')" class="px-4 py-2 text-sm rounded-lg hover:bg-zinc-900 transition-colors">📸 أعمالنا</button>
       </div>
       <div class="flex items-center gap-3">
-        <div class="visitors-badge" id="visitors-counter">👥 0</div>
         <a href="https://facebook.com/StudioZahraa" target="_blank" class="text-zinc-400 hover:text-[#1877F2] transition-colors">
             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
         </a>
@@ -103,48 +112,142 @@
   <!-- Page Content -->
   <main>
     <!-- Home Page -->
-    <section data-page="home" class="relative min-h-screen flex items-center justify-center pt-20 pb-10 px-4">
-      <div class="text-center max-w-2xl">
-        <div class="logo-frame">
-          <img src="https://i.ibb.co/gFbYCVhy/file-000000003d48620a9a545c81b8bf35e5.png" alt="ZAHRAA STUDIO" class="logo-img">
-        </div>
-        <h2 class="text-4xl md:text-5xl font-bold mb-6 gradient-text">استوديو الزهراء</h2>
-        <p class="text-lg text-zinc-400 mb-8 leading-relaxed">نحول لحظاتك الجميلة إلى تحف فنية خالدة. تصاميم عصرية، طباعة فاخرة، وهدايا تليق بأحبابك.</p>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <button onclick="showPage('store')" class="gold-bg text-black py-4 rounded-xl font-bold text-lg hover:bg-yellow-500 transition-colors">🛍️ اكتشف المتجر</button>
-          <button onclick="showPage('portfolio')" class="border border-gold-text text-gold-text py-4 rounded-xl font-bold text-lg hover:bg-gold-text/10 transition-colors">📸 معرض الأعمال</button>
-        </div>
+    <section data-page="home" class="relative min-h-screen flex items-center justify-center pt-20 hero-gradient overflow-hidden">
+      <div class="absolute inset-0 z-0">
+          <div class="absolute top-1/4 left-1/4 w-64 h-64 bg-gold-bg/10 rounded-full blur-[100px]"></div>
+          <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gold-bg/5 rounded-full blur-[120px]"></div>
+      </div>
+      
+      <div class="container mx-auto px-4 text-center z-10">
+          <div class="logo-frame">
+              <img src="https://i.ibb.co/gFbYCVhy/file-000000003d48620a9a545c81b8bf35e5.png" alt="ZAHRAA STUDIO Logo" class="logo-img">
+          </div>
+          <h1 class="text-5xl md:text-7xl font-bold mb-4 tracking-tighter">
+              <span class="gradient-text">استوديو الزهراء</span>
+          </h1>
+          <p class="text-zinc-400 text-lg md:text-xl max-w-2xl mx-auto mb-6 leading-relaxed">
+              نحول لحظاتك الجميلة إلى تحف فنية خالدة. تصاميم عصرية، طباعة فاخرة، وهدايا تليق بأحبابك.
+          </p>
+          <p class="text-gold-text text-sm mb-10">
+              📍 بصبيح - ههيا - الشرقية | بجوار المعهد الديني على الطريق العام
+          </p>
+          
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+              <button onclick="showPage('store')" class="w-full px-8 py-4 gold-bg text-black font-bold rounded-2xl shadow-xl shadow-gold-bg/20 hover:scale-105 transition-transform">🛍️ المتجر</button>
+              <button onclick="showPage('track')" class="w-full px-8 py-4 bg-blue-600 text-white font-bold rounded-2xl shadow-xl hover:scale-105 transition-transform">📦 تتبع الطلب</button>
+              <button onclick="showPage('testimonials')" class="w-full px-8 py-4 bg-purple-600 text-white font-bold rounded-2xl shadow-xl hover:scale-105 transition-transform">⭐ آرائك مهمة</button>
+          </div>
       </div>
     </section>
 
     <!-- Store Page -->
-    <section data-page="store" class="min-h-screen pt-24 pb-10 px-4">
+    <section data-page="store" class="hidden py-24 px-4">
       <div class="container mx-auto">
-        <h2 class="text-3xl font-bold mb-8 gradient-text text-center">متجرنا</h2>
-        <div class="mb-6 flex gap-3">
-          <input type="text" id="search-input" placeholder="ابحث عن منتج..." onkeyup="handleSearch()" class="flex-1 p-3 bg-zinc-900 border border-zinc-800 rounded-xl outline-none focus:border-gold-text text-white">
-          <button onclick="toggleSidebar()" class="px-6 py-3 gold-bg text-black rounded-xl font-bold hover:bg-yellow-500 transition-colors">🔽 الفئات</button>
-        </div>
-        <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+          <div class="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+              <div class="text-right">
+                  <h2 class="text-3xl font-bold mb-2">تصفح <span class="gold-text">منتجاتنا</span></h2>
+                  <p class="text-zinc-500">اختر ما يناسب ذوقك من تشكيلتنا الواسعة</p>
+              </div>
+              <div class="w-full md:w-96 relative">
+                  <input type="text" id="search-input" oninput="handleSearch()" placeholder="ابحث عن منتج..." class="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-2xl focus:border-gold-text outline-none text-right">
+              </div>
+          </div>
+
+          <div id="products-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-8">
+            <!-- Products injected here -->
+          </div>
       </div>
     </section>
 
-    <!-- Product Modal -->
-    <div id="product-modal" class="modal fixed inset-0 hidden flex items-center justify-center p-4 z-[1200]">
-      <div class="bg-zinc-900 w-full max-w-2xl rounded-3xl p-8 max-h-[90vh] overflow-y-auto">
-        <button onclick="closeModal()" class="float-left text-zinc-500 text-2xl">✕</button>
-        <div id="modal-content"></div>
+    <!-- Portfolio Page -->
+    <section data-page="portfolio" class="hidden py-24 px-4 bg-black">
+      <div class="container mx-auto">
+        <div class="text-center mb-16">
+          <h2 class="text-4xl font-bold mb-4">معرض <span class="gold-text">أعمالنا</span></h2>
+          <p class="text-zinc-400 max-w-2xl mx-auto">أفضل جلسات التصوير والطباعة التي قمنا بها لعملائنا الكرام</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="portfolio-grid">
+          <!-- Portfolio items injected here -->
+        </div>
       </div>
-    </div>
+    </section>
 
-    <!-- Testimonials Modal -->
-    <div id="testimonial-modal" class="modal fixed inset-0 hidden flex items-center justify-center p-4 z-[1200]">
-      <div class="bg-zinc-900 w-full max-w-md rounded-3xl p-8 space-y-4">
-        <h2 class="text-2xl font-bold">شارك رأيك</h2>
-        <div class="space-y-3">
-          <input type="text" placeholder="اسمك" class="w-full p-3 bg-black border border-zinc-800 rounded-xl outline-none focus:border-gold-text">
-          <textarea placeholder="رأيك في خدماتنا..." class="w-full p-3 bg-black border border-zinc-800 rounded-xl outline-none focus:border-gold-text h-24"></textarea>
-          <select class="w-full p-3 bg-black border border-zinc-800 rounded-xl outline-none focus:border-gold-text">
+    <!-- Testimonials Page -->
+    <section data-page="testimonials" class="hidden py-24 px-4 bg-zinc-900/50">
+      <div class="container mx-auto">
+        <div class="text-center mb-16">
+          <h2 class="text-4xl font-bold mb-4">آراء <span class="gold-text">عملائنا</span></h2>
+          <p class="text-zinc-400 max-w-2xl mx-auto">تجارب حقيقية من عملاء استوديو الزهراء الراضين</p>
+          <button onclick="openTestimonialModal()" class="mt-8 gold-bg text-black px-8 py-3 rounded-xl font-bold">أضف رأيك</button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8" id="testimonials-grid">
+          <!-- Testimonials injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Track Page -->
+    <section data-page="track" class="hidden py-24 px-4">
+      <div class="container mx-auto max-w-2xl">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl font-bold mb-4">تتبع <span class="gold-text">طلبك</span></h2>
+          <p class="text-zinc-400">أدخل رقم الطلب لمعرفة الحالة الحالية</p>
+        </div>
+        <div class="bg-zinc-900 p-8 rounded-3xl border border-zinc-800 space-y-6">
+          <div class="flex gap-3">
+            <input type="number" id="track-order-input" placeholder="رقم الطلب (مثال: 1001)" class="flex-1 p-4 bg-black border border-zinc-800 rounded-2xl outline-none focus:border-gold-text text-center text-xl font-bold">
+            <button onclick="trackOrder()" class="gold-bg text-black px-8 rounded-2xl font-bold">بحث</button>
+          </div>
+          
+          <div id="track-result" class="hidden space-y-6 pt-6 border-t border-zinc-800">
+            <div class="flex justify-between items-center">
+              <span class="text-zinc-500">رقم الطلب:</span>
+              <span id="track-order-num" class="font-bold"></span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-zinc-500">الحالة:</span>
+              <span id="track-status" class="px-4 py-1 rounded-full text-xs font-bold"></span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-zinc-500">الاسم:</span>
+              <span id="track-customer-name" class="font-bold"></span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-zinc-500">الإجمالي:</span>
+              <span id="track-total" class="gold-text font-bold"></span>
+            </div>
+            <div class="space-y-2">
+              <span class="text-zinc-500 block">المنتجات:</span>
+              <div id="track-items" class="bg-black p-4 rounded-xl text-sm"></div>
+            </div>
+          </div>
+          
+          <div id="track-not-found" class="hidden text-center py-8 text-red-500">
+            ❌ لم يتم العثور على طلب بهذا الرقم. يرجى التأكد من الرقم والمحاولة مرة أخرى.
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Product Details Modal -->
+  <div id="product-modal" class="modal fixed inset-0 hidden flex items-center justify-center p-4 z-[1100]">
+    <div class="bg-zinc-900 w-full max-w-3xl rounded-3xl overflow-hidden relative max-h-[90vh] flex flex-col">
+      <button onclick="closeModal()" class="absolute top-4 right-4 z-[1200] bg-black/50 text-white w-8 h-8 rounded-full">✕</button>
+      <div id="modal-content" class="overflow-y-auto p-6 flex-1"></div>
+    </div>
+  </div>
+
+  <!-- Testimonial Modal -->
+  <div id="testimonial-modal" class="modal fixed inset-0 hidden flex items-center justify-center p-4 z-[1200]">
+    <div class="bg-zinc-900 w-full max-w-md rounded-3xl p-8 space-y-4 max-h-[90vh] overflow-y-auto">
+      <h2 class="text-2xl font-bold mb-4">شارك رأيك معنا</h2>
+      <div class="space-y-3">
+        <input type="text" id="testimonial-name" placeholder="اسمك" class="w-full p-3 bg-black border border-zinc-800 rounded-xl outline-none focus:border-gold-text">
+        <textarea id="testimonial-text" placeholder="رأيك أو تجربتك معنا..." class="w-full p-3 bg-black border border-zinc-800 rounded-xl outline-none focus:border-gold-text h-24"></textarea>
+        <div>
+          <label class="text-sm text-gold-text mb-2 block">التقييم:</label>
+          <select id="testimonial-rating" class="w-full p-3 bg-black border border-zinc-800 rounded-xl outline-none focus:border-gold-text">
             <option value="5">⭐⭐⭐⭐⭐ ممتاز جداً</option>
             <option value="4">⭐⭐⭐⭐ جيد جداً</option>
             <option value="3">⭐⭐⭐ جيد</option>
@@ -152,137 +255,82 @@
             <option value="1">⭐ ضعيف</option>
           </select>
         </div>
-        <div class="pt-4 space-y-2">
-          <button onclick="submitTestimonial()" class="w-full gold-bg text-black py-3 rounded-xl font-bold">إرسال الرأي</button>
-          <button onclick="closeTestimonialModal()" class="w-full text-zinc-500 text-sm">إلغاء</button>
-        </div>
+      </div>
+      <div class="pt-4 space-y-2">
+        <button onclick="submitTestimonial()" class="w-full gold-bg text-black py-3 rounded-xl font-bold">إرسال الرأي</button>
+        <button onclick="closeTestimonialModal()" class="w-full text-zinc-500 text-sm">إلغاء</button>
       </div>
     </div>
+  </div>
 
-    <!-- Image Viewer Modal -->
-    <div id="image-viewer-modal" class="image-modal fixed inset-0 hidden flex items-center justify-center p-4 z-[1500]" onclick="closeImageViewer()">
-      <div class="relative">
-        <button onclick="closeImageViewer()" class="absolute top-4 right-4 bg-black/50 text-white w-8 h-8 rounded-full z-[1600]">✕</button>
-        <img id="viewer-image" src="" class="max-w-full max-h-full" />
+  <!-- Image Viewer Modal -->
+  <div id="image-viewer-modal" class="image-modal fixed inset-0 hidden flex items-center justify-center p-4 z-[1500]" onclick="closeImageViewer()">
+    <div class="relative">
+      <button onclick="closeImageViewer()" class="absolute top-4 right-4 bg-black/50 text-white w-8 h-8 rounded-full z-[1600]">✕</button>
+      <img id="viewer-image" src="" class="max-w-full max-h-full" />
+    </div>
+  </div>
+
+  <!-- Cart Sidebar -->
+  <div id="cart-sidebar" class="fixed inset-y-0 left-0 w-full md:w-96 bg-zinc-950 z-[1100] border-r border-zinc-800 transform -translate-x-full transition-transform duration-300 flex flex-col">
+    <div class="p-6 border-b border-zinc-900 flex justify-between items-center">
+      <h2 class="text-xl font-bold">سلة المشتريات</h2>
+      <button onclick="toggleCart()" class="text-zinc-500">إغلاق</button>
+    </div>
+    <div id="cart-items" class="flex-1 overflow-y-auto p-6 space-y-4"></div>
+    <div class="p-6 border-t border-zinc-900 space-y-4">
+      <div class="flex justify-between font-bold text-lg"><span>الإجمالي:</span><span id="cart-total">0 جنيه</span></div>
+      <button onclick="openCheckout()" class="w-full gold-bg text-black py-4 rounded-xl font-bold">إتمام الطلب</button>
+    </div>
+  </div>
+
+  <!-- Checkout Modal -->
+  <div id="checkout-modal" class="modal fixed inset-0 hidden flex items-center justify-center p-4 z-[1200]">
+    <div class="bg-zinc-900 w-full max-w-md rounded-3xl p-8 space-y-4 max-h-[90vh] overflow-y-auto">
+      <h2 class="text-2xl font-bold mb-4">بيانات الطلب</h2>
+      <div class="space-y-3">
+        <input type="text" id="cust-name" placeholder="الاسم بالكامل" class="w-full p-3 bg-black border border-zinc-800 rounded-xl outline-none focus:border-gold-text">
+        <input type="tel" id="cust-phone" placeholder="رقم الهاتف (11 رقم)" maxlength="11" class="w-full p-3 bg-black border border-zinc-800 rounded-xl outline-none focus:border-gold-text">
+        <textarea id="cust-address" placeholder="العنوان بالتفصيل" class="w-full p-3 bg-black border border-zinc-800 rounded-xl outline-none focus:border-gold-text h-24"></textarea>
+      </div>
+
+      <!-- Image Groups Upload Section -->
+      <div class="border-2 border-dashed border-zinc-800 p-4 rounded-xl">
+        <p class="text-sm font-bold mb-3 text-gold-text">مجموعات الصور للطباعة (اختياري)</p>
+        <p class="text-xs text-zinc-500 mb-3">أضف مجموعات صور لمنتجات مختلفة (مثل تابلوهات بمقاسات مختلفة)</p>
+        <div id="image-groups-container" class="space-y-4 mb-4"></div>
+        <button onclick="addImageGroup()" class="w-full text-sm gold-text underline hover:text-gold-bg transition-colors py-2">+ إضافة مجموعة صور جديدة</button>
+      </div>
+
+      <!-- Gift Wrapping Option -->
+      <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" id="gift-wrap" onchange="updateGiftWrap()" class="w-4 h-4 cursor-pointer">
+          <span class="text-sm font-bold">🎁 إضافة تغليف هدايا فاخر مع كارت إهداء (+30 جنيه)</span>
+        </label>
+        <textarea id="gift-message" placeholder="رسالة الإهداء (اختيارية)" class="w-full p-2 bg-black border border-zinc-800 rounded-lg text-sm mt-2 hidden outline-none focus:border-gold-text"></textarea>
+      </div>
+
+      <!-- Coupon Code -->
+      <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
+        <p class="text-sm font-bold mb-2">هل لديك كود خصم؟</p>
+        <div class="flex gap-2">
+          <input type="text" id="coupon-input" placeholder="أدخل كود الخصم" class="flex-1 p-2 bg-black border border-zinc-800 rounded-lg text-sm outline-none focus:border-gold-text">
+          <button onclick="applyCoupon()" class="bg-gold-bg text-black px-4 py-2 rounded-lg font-bold text-sm hover:bg-yellow-500 transition-colors">تطبيق</button>
+        </div>
+        <div id="coupon-message" class="text-xs mt-2 hidden"></div>
+      </div>
+
+      <div class="pt-4">
+        <div class="flex justify-between mb-4 text-lg font-bold">
+            <span>الإجمالي النهائي:</span>
+            <span id="checkout-total">0 جنيه</span>
+        </div>
+        <button id="submit-order-btn" onclick="submitOrder()" class="w-full gold-bg text-black py-4 rounded-xl font-bold shadow-lg shadow-gold-bg/20">تأكيد الطلب الآن</button>
+        <button onclick="closeCheckout()" class="w-full text-zinc-500 text-sm mt-3">إلغاء</button>
       </div>
     </div>
-
-    <!-- Cart Sidebar -->
-    <div id="cart-sidebar" class="fixed inset-y-0 left-0 w-full md:w-96 bg-zinc-950 z-[1100] border-r border-zinc-800 transform -translate-x-full transition-transform duration-300 flex flex-col">
-      <div class="p-6 border-b border-zinc-900 flex justify-between items-center">
-        <h2 class="text-xl font-bold">سلة المشتريات</h2>
-        <button onclick="toggleCart()" class="text-zinc-500">إغلاق</button>
-      </div>
-      <div id="cart-items" class="flex-1 overflow-y-auto p-6 space-y-4"></div>
-      <div class="p-6 border-t border-zinc-900 space-y-4">
-        <div class="flex justify-between font-bold text-lg"><span>الإجمالي:</span><span id="cart-total">0 جنيه</span></div>
-        <button onclick="openCheckout()" class="w-full gold-bg text-black py-4 rounded-xl font-bold">إتمام الطلب</button>
-      </div>
-    </div>
-
-    <!-- Checkout Modal -->
-    <div id="checkout-modal" class="modal fixed inset-0 hidden flex items-center justify-center p-4 z-[1200]">
-      <div class="bg-zinc-900 w-full max-w-md rounded-3xl p-8 space-y-4 max-h-[90vh] overflow-y-auto">
-        <h2 class="text-2xl font-bold mb-4">بيانات الطلب</h2>
-        <div class="space-y-3">
-          <input type="text" id="cust-name" placeholder="الاسم بالكامل" class="w-full p-3 bg-black border border-zinc-800 rounded-xl outline-none focus:border-gold-text">
-          <input type="tel" id="cust-phone" placeholder="رقم الهاتف (11 رقم)" maxlength="11" class="w-full p-3 bg-black border border-zinc-800 rounded-xl outline-none focus:border-gold-text">
-          <textarea id="cust-address" placeholder="العنوان بالتفصيل" class="w-full p-3 bg-black border border-zinc-800 rounded-xl outline-none focus:border-gold-text h-24"></textarea>
-        </div>
-
-        <!-- Image Groups Upload Section -->
-        <div class="border-2 border-dashed border-zinc-800 p-4 rounded-xl">
-          <p class="text-sm font-bold mb-3 text-gold-text">مجموعات الصور للطباعة (اختياري)</p>
-          <p class="text-xs text-zinc-500 mb-3">أضف مجموعات صور لمنتجات مختلفة (مثل تابلوهات بمقاسات مختلفة)</p>
-          <div id="image-groups-container" class="space-y-4 mb-4"></div>
-          <button onclick="addImageGroup()" class="w-full text-sm gold-text underline hover:text-gold-bg transition-colors py-2">+ إضافة مجموعة صور جديدة</button>
-        </div>
-
-        <!-- Gift Wrapping Option -->
-        <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
-          <label class="flex items-center gap-3 cursor-pointer">
-            <input type="checkbox" id="gift-wrap" onchange="updateGiftWrap()" class="w-4 h-4 cursor-pointer">
-            <span class="text-sm font-bold">🎁 إضافة تغليف هدايا فاخر مع كارت إهداء (+30 جنيه)</span>
-          </label>
-          <textarea id="gift-message" placeholder="رسالة الإهداء (اختيارية)" class="w-full p-2 bg-black border border-zinc-800 rounded-lg text-sm mt-2 hidden outline-none focus:border-gold-text"></textarea>
-        </div>
-
-        <!-- Coupon Code -->
-        <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
-          <p class="text-sm font-bold mb-2">هل لديك كود خصم؟</p>
-          <div class="flex gap-2">
-            <input type="text" id="coupon-input" placeholder="أدخل كود الخصم" class="flex-1 p-2 bg-black border border-zinc-800 rounded-lg text-sm outline-none focus:border-gold-text">
-            <button onclick="applyCoupon()" class="bg-gold-bg text-black px-4 py-2 rounded-lg font-bold text-sm hover:bg-yellow-500 transition-colors">تطبيق</button>
-          </div>
-          <div id="coupon-message" class="text-xs mt-2 hidden"></div>
-        </div>
-
-        <div class="pt-4">
-          <div class="flex justify-between mb-4 text-lg font-bold">
-              <span>الإجمالي النهائي:</span>
-              <span id="checkout-total">0 جنيه</span>
-          </div>
-          <button id="submit-order-btn" onclick="submitOrder()" class="w-full gold-bg text-black py-4 rounded-xl font-bold shadow-lg shadow-gold-bg/20">تأكيد الطلب الآن</button>
-          <button onclick="closeCheckout()" class="w-full text-zinc-500 text-sm mt-3">إلغاء</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Track Order Page -->
-    <section data-page="track" class="min-h-screen pt-24 pb-10 px-4">
-      <div class="container mx-auto max-w-2xl">
-        <h2 class="text-3xl font-bold mb-8 gradient-text text-center">تتبع الطلب</h2>
-        <div class="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 space-y-4">
-          <div class="flex gap-2">
-            <input type="text" id="track-order-input" placeholder="أدخل رقم الطلب أو كود التتبع" class="flex-1 p-3 bg-black border border-zinc-800 rounded-xl outline-none focus:border-gold-text">
-            <button onclick="trackOrder()" class="px-6 py-3 gold-bg text-black rounded-xl font-bold hover:bg-yellow-500 transition-colors">بحث</button>
-          </div>
-          <div id="track-not-found" class="hidden text-red-500 text-center py-4">❌ لم يتم العثور على الطلب</div>
-          <div id="track-result" class="hidden space-y-4 pt-4 border-t border-zinc-800">
-            <div class="flex justify-between items-center">
-              <span class="text-zinc-400">رقم الطلب:</span>
-              <span id="track-order-num" class="font-bold gold-text"></span>
-            </div>
-            <div class="flex justify-between items-center">
-              <span class="text-zinc-400">العميل:</span>
-              <span id="track-customer-name" class="font-bold"></span>
-            </div>
-            <div class="flex justify-between items-center">
-              <span class="text-zinc-400">الحالة:</span>
-              <span id="track-status" class="px-4 py-1 rounded-full text-xs font-bold text-white"></span>
-            </div>
-            <div class="flex justify-between items-center">
-              <span class="text-zinc-400">المنتجات:</span>
-              <div id="track-items" class="text-right text-sm"></div>
-            </div>
-            <div class="flex justify-between items-center">
-              <span class="text-zinc-400">الإجمالي:</span>
-              <span id="track-total" class="font-bold gold-text"></span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Testimonials Page -->
-    <section data-page="testimonials" class="min-h-screen pt-24 pb-10 px-4">
-      <div class="container mx-auto">
-        <h2 class="text-3xl font-bold mb-8 gradient-text text-center">آراء عملائنا</h2>
-        <div class="text-center mb-8">
-          <button onclick="openTestimonialModal()" class="gold-bg text-black px-8 py-3 rounded-xl font-bold hover:bg-yellow-500 transition-colors">⭐ شارك رأيك</button>
-        </div>
-        <div id="testimonials-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-      </div>
-    </section>
-
-    <!-- Portfolio Page -->
-    <section data-page="portfolio" class="min-h-screen pt-24 pb-10 px-4">
-      <div class="container mx-auto">
-        <h2 class="text-3xl font-bold mb-8 gradient-text text-center">معرض أعمالنا</h2>
-        <div id="portfolio-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-      </div>
-    </section>
-  </main>
+  </div>
 
   <!-- Footer -->
   <footer class="bg-zinc-950 border-t border-zinc-800 py-12 px-4 mt-24">
@@ -301,83 +349,51 @@
           </div>
         </div>
         <div>
-          <h4 class="text-sm font-bold mb-4 text-gold-text">تواصل معنا</h4>
-          <div class="space-y-2 text-sm">
-            <a href="https://wa.me/201204194540" target="_blank" class="text-zinc-400 hover:text-white transition-colors block">واتساب 1</a>
-            <a href="https://wa.me/201286815625" target="_blank" class="text-zinc-400 hover:text-white transition-colors block">واتساب 2</a>
-            <a href="https://facebook.com/StudioZahraa" target="_blank" class="text-zinc-400 hover:text-white transition-colors block">فيسبوك</a>
+          <h4 class="text-sm font-bold mb-4 text-gold-text">معلومات التواصل</h4>
+          <div class="space-y-2 text-sm text-zinc-400">
+            <p>📍 بصبيح - ههيا - الشرقية</p>
+            <p>📱 +20 120 419 4540</p>
+            <p>📱 +20 128 681 5625</p>
           </div>
         </div>
         <div>
-          <h4 class="text-sm font-bold mb-4 text-gold-text">معلومات</h4>
-          <div class="space-y-2 text-sm">
-            <p class="text-zinc-400">📍 بصبيح، ههيا، الشرقية</p>
-            <p class="text-zinc-400">⏰ متاح 24/7</p>
+          <h4 class="text-sm font-bold mb-4 text-gold-text">تابعنا</h4>
+          <div class="flex justify-end gap-4">
+            <a href="https://facebook.com/StudioZahraa" target="_blank" class="text-zinc-400 hover:text-[#1877F2] transition-colors">
+              <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            </a>
+            <a href="https://wa.me/201204194540" target="_blank" class="text-zinc-400 hover:text-[#25D366] transition-colors">
+              <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            </a>
           </div>
         </div>
       </div>
       <div class="border-t border-zinc-800 pt-8 text-center text-sm text-zinc-500">
-        <p>© 2024 استوديو الزهراء. جميع الحقوق محفوظة. تم التطوير بـ ❤️</p>
+        <p>© 2024 استوديو الزهراء - ZAHRAA STUDIO. جميع الحقوق محفوظة.</p>
       </div>
     </div>
   </footer>
 
   <script>
-    // Firebase Configuration
-    const firebaseConfig = {
-      apiKey: "AIzaSyDvPZjHKP9kQvJ7zQqZ5L2mN3oPqRsTuVw",
-      authDomain: "zahraa-studio.firebaseapp.com",
-      projectId: "zahraa-studio",
-      storageBucket: "zahraa-studio.appspot.com",
-      messagingSenderId: "123456789",
-      appId: "1:123456789:web:abcdef123456"
-    };
-
+    const firebaseConfig = { apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM", authDomain: "zahraa-store-f4c90.firebaseapp.com", projectId: "zahraa-store-f4c90" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload";
+    const CLOUDINARY_UPLOAD_PRESET = "zahraa_upload";
 
-    // Cloudinary Configuration
-    const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/image/upload';
-    const CLOUDINARY_UPLOAD_PRESET = 'YOUR_UPLOAD_PRESET';
-
-    // Global Variables
-    let allProducts = [];
-    let cart = [];
+    let allProducts = [], cart = [], selectedCategory = 'all', searchTerm = '';
+    let lastOrderTime = 0;
     let imageGroups = [];
     let giftWrap = false;
     let appliedCoupon = null;
     let discountAmount = 0;
-    let selectedCategory = 'all';
-    let searchTerm = '';
-    let currentPage = 'home';
-    let lastOrderTime = 0;
-    let totalVisitors = 0;
+    let currentPage = "home";
 
-    // Visitors Tracking
-    function initVisitorsTracking() {
-      const sessionId = 'visitor-' + Date.now() + '-' + Math.random();
-      sessionStorage.setItem('sessionId', sessionId);
-      
-      db.collection('settings').doc('visitors').set({
-        total: firebase.firestore.FieldValue.increment(1),
-        lastUpdate: new Date()
-      }, { merge: true });
-
-      const activeRef = db.collection('activeVisitors').doc(sessionId);
-      activeRef.set({ timestamp: new Date() });
-      
-      setTimeout(() => activeRef.delete(), 5 * 60 * 1000);
-
-      updateVisitorsCounter();
-      setInterval(updateVisitorsCounter, 3000);
-    }
-
-    async function updateVisitorsCounter() {
-      try {
-        const statsDoc = await db.collection('settings').doc('visitors').get();
-        totalVisitors = statsDoc.exists ? (statsDoc.data().total || 0) : 0;
-        document.getElementById('visitors-counter').textContent = `👥 ${totalVisitors}`;
-      } catch(e) { console.error('Visitors tracking error:', e); }
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js').then(reg => {
+        console.log('✅ Service Worker registered');
+      }).catch(err => console.log('Service Worker registration failed:', err));
     }
 
     function showToast(message) {
@@ -404,6 +420,7 @@
       const page = document.querySelector(`[data-page="${pageName}"]`);
       if (page) page.classList.remove("hidden");
       
+      // Close sidebar if open
       if(!document.getElementById('sidebar').classList.contains('translate-x-full')) toggleSidebar();
       window.scrollTo(0, 0);
     }
@@ -541,7 +558,6 @@
 
       filtered.forEach(p => {
         const displayPrice = p.variants?.length ? `تبدأ من ${Math.min(...p.variants.map(v=>v.price))} ج` : `${p.price} ج`;
-        const productCode = p.code || 'ZHR-' + Math.random().toString(36).substr(2, 9).toUpperCase();
         grid.innerHTML += `
           <div class="product-card group">
             <div onclick="openModal('${p.id}')" class="h-48 md:h-64 overflow-hidden cursor-pointer relative">
@@ -552,7 +568,6 @@
             </div>
             <div class="p-4">
               <h3 class="font-bold text-sm md:text-base mb-1 truncate">${p.name}</h3>
-              <p class="text-xs text-zinc-500 mb-2">الكود: ${productCode}</p>
               <p class="gold-text font-bold mb-3 text-sm">${displayPrice}</p>
               <div class="grid grid-cols-2 gap-2">
                 <button onclick="openModal('${p.id}')" class="bg-zinc-800 text-white text-[10px] py-2 rounded-lg font-bold hover:bg-zinc-700 transition-colors">التفاصيل</button>
@@ -570,7 +585,6 @@
     function openModal(id) {
       const p = allProducts.find(x => x.id === id);
       const content = document.getElementById('modal-content');
-      const productCode = p.code || 'ZHR-' + Math.random().toString(36).substr(2, 9).toUpperCase();
       let imagesHtml = (p.images || []).map(img => `<img src="${img}" class="w-full h-64 md:h-80 object-cover rounded-2xl flex-shrink-0 snap-center cursor-pointer hover:opacity-80 transition-opacity" onclick="openImageViewer('${img}')">`).join('');
       let variantsHtml = (p.variants || []).map((v, i) => `
         <label class="flex items-center gap-3 p-3 bg-black border border-zinc-800 rounded-xl cursor-pointer hover:border-gold-text transition-colors">
@@ -588,7 +602,6 @@
         </div>
         <div class="space-y-4">
           <h2 class="text-2xl font-bold">${p.name}</h2>
-          <p class="text-xs text-zinc-500">الكود: <span class="gold-text font-bold">${productCode}</span></p>
           <p id="modal-price" class="gold-text text-xl font-bold">${p.variants?.length ? p.variants[0].price : p.price} جنيه</p>
           <p class="text-zinc-400 text-sm leading-relaxed">${p.description || ''}</p>
           ${p.variants?.length ? `<div class="space-y-2"><p class="text-xs text-zinc-500">اختر النوع / المقاس:</p>${variantsHtml}</div>` : ''}
@@ -627,13 +640,11 @@
       let total = 0;
       cart.forEach((item, i) => {
         total += item.price * item.qty;
-        const productCode = item.code || 'ZHR-' + Math.random().toString(36).substr(2, 9).toUpperCase();
         list.innerHTML += `
           <div class="flex items-center gap-4 bg-zinc-900 p-3 rounded-xl">
             <img src="${item.images?.[0]}" class="w-12 h-12 object-cover rounded-lg cursor-pointer" onclick="openImageViewer('${item.images?.[0]}')">
             <div class="flex-1 text-right">
               <h4 class="text-sm font-bold">${item.name}</h4>
-              <p class="text-[10px] text-zinc-500">الكود: ${productCode}</p>
               <p class="text-[10px] text-zinc-500">${item.selectedVariant ? item.selectedVariant.name : ''}</p>
               <p class="text-xs gold-text">${item.price} ج</p>
             </div>
@@ -669,17 +680,14 @@
 
     async function trackOrder() {
       const orderNum = document.getElementById('track-order-input').value.trim();
-      if(!orderNum) return alert('يرجى إدخال رقم الطلب أو كود التتبع');
+      if(!orderNum) return alert('يرجى إدخال رقم الطلب');
       const resultDiv = document.getElementById('track-result');
       const notFoundDiv = document.getElementById('track-not-found');
       resultDiv.classList.add('hidden');
       notFoundDiv.classList.add('hidden');
 
       try {
-        let snapshot = await db.collection('orders').where('orderNumber', '==', parseInt(orderNum)).get();
-        if(snapshot.empty) {
-          snapshot = await db.collection('orders').where('trackingCode', '==', orderNum.toUpperCase()).get();
-        }
+        const snapshot = await db.collection('orders').where('orderNumber', '==', parseInt(orderNum)).get();
         if(snapshot.empty) {
           notFoundDiv.classList.remove('hidden');
           return;
@@ -692,7 +700,7 @@
         const statusElem = document.getElementById('track-status');
         statusElem.className = `px-4 py-1 rounded-full text-xs font-bold text-white ${statusColors[order.status] || 'bg-gray-600'}`;
         statusElem.textContent = order.status;
-        const itemsHtml = order.items.map(i => `<span>${i.name} (${i.code || 'بدون كود'}) ${i.variant ? '(' + i.variant + ')' : ''} × ${i.qty}</span>`).join('<br>');
+        const itemsHtml = order.items.map(i => `<span>${i.name} ${i.variant ? '(' + i.variant + ')' : ''} × ${i.qty}</span>`).join('<br>');
         document.getElementById('track-items').innerHTML = itemsHtml;
         resultDiv.classList.remove('hidden');
       } catch(e) {
@@ -736,7 +744,6 @@
         }
 
         let orderNum = 1001;
-        let trackingCode = 'ZHR-' + Math.random().toString(36).substr(2, 9).toUpperCase();
         try {
           const statsDoc = await db.collection('settings').doc('stats').get();
           if (statsDoc.exists()) { orderNum = (statsDoc.data().lastOrderNum || 1000) + 1; }
@@ -746,7 +753,6 @@
         const finalTotal = updateCheckoutTotal();
         const order = {
           orderNumber: orderNum,
-          trackingCode: trackingCode,
           customerName: name,
           customerPhone: phone,
           customerAddress: address,
@@ -755,7 +761,7 @@
           giftMessage: document.getElementById('gift-message').value,
           couponCode: appliedCoupon ? appliedCoupon.code : null,
           discountAmount: discountAmount,
-          items: cart.map(i => ({ name: i.name, code: i.code || 'ZHR-' + Math.random().toString(36).substr(2, 9).toUpperCase(), qty: i.qty, price: i.price, variant: i.selectedVariant?.name || '' })),
+          items: cart.map(i => ({ name: i.name, qty: i.qty, price: i.price, variant: i.selectedVariant?.name || '' })),
           totalPrice: finalTotal,
           status: 'قيد المراجعة',
           createdAt: now
@@ -763,7 +769,7 @@
 
         await db.collection("orders").add(order);
         lastOrderTime = now;
-        alert(`✅ تم استلام طلبك بنجاح!\n\nرقم طلبك: #${orderNum}\nكود التتبع: ${trackingCode}\n\nشكراً لتعاملك معنا 🎉`);
+        alert(`✅ تم استلام طلبك بنجاح!\n\nرقم طلبك: #${orderNum}\n\nشكراً لتعاملك معنا 🎉`);
         cart = []; imageGroups = []; giftWrap = false; appliedCoupon = null;
         updateCartUI(); closeCheckout(); showPage('home');
         document.getElementById('cust-name').value = '';
@@ -781,9 +787,11 @@
       }
     }
 
+    // Placeholder functions for Portfolio and Testimonials if external scripts are not available
     function renderPortfolio() {
         const grid = document.getElementById('portfolio-grid');
         if(!grid) return;
+        // In a real scenario, this would fetch from Firebase or a JS file
         grid.innerHTML = '<p class="text-zinc-500 col-span-full text-center py-10">جاري تحميل معرض الأعمال...</p>';
     }
 
@@ -797,10 +805,7 @@
     function closeTestimonialModal() { document.getElementById('testimonial-modal').classList.add('hidden'); }
     function submitTestimonial() { alert('شكراً لمشاركتنا رأيك!'); closeTestimonialModal(); }
 
-    window.onload = () => {
-      init();
-      initVisitorsTracking();
-    };
+    window.onload = init;
   </script>
 </body>
 </html>
