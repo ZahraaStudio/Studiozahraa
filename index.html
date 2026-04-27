@@ -67,16 +67,9 @@
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
         </button>
         <div class="flex flex-col">
-            <h1 class="text-xl font-bold gradient-text cursor-pointer leading-tight" onclick="showPage('home')">ZAHRAA STUDIO</h1>
+            <h1 class="text-xl font-bold gradient-text cursor-pointer leading-tight" onclick="location.reload()">ZAHRAA STUDIO</h1>
             <span class="text-[10px] text-zinc-500 tracking-widest uppercase">استوديو الزهراء</span>
         </div>
-      </div>
-      <div class="hidden md:flex items-center gap-2 flex-1 justify-center">
-        <button onclick="showPage('home')" class="px-4 py-2 text-sm rounded-lg hover:bg-zinc-900 transition-colors">🏠 الرئيسية</button>
-        <button onclick="showPage('store')" class="px-4 py-2 text-sm rounded-lg hover:bg-zinc-900 transition-colors gold-text font-bold">🛍️ المتجر</button>
-        <button onclick="showPage('track')" class="px-4 py-2 text-sm rounded-lg hover:bg-zinc-900 transition-colors">📦 تتبع</button>
-        <button onclick="showPage('testimonials')" class="px-4 py-2 text-sm rounded-lg hover:bg-zinc-900 transition-colors">⭐ الآراء</button>
-        <button onclick="showPage('portfolio')" class="px-4 py-2 text-sm rounded-lg hover:bg-zinc-900 transition-colors">📸 أعمالنا</button>
       </div>
       <div class="flex items-center gap-3">
         <a href="https://facebook.com/StudioZahraa" target="_blank" class="text-zinc-400 hover:text-[#1877F2] transition-colors">
@@ -109,158 +102,69 @@
     </div>
   </div>
 
-  <!-- Page Content -->
-  <main>
-    <!-- Home Page -->
-    <section data-page="home" class="relative min-h-screen flex items-center justify-center pt-20 hero-gradient overflow-hidden">
-      <div class="absolute inset-0 z-0">
-          <div class="absolute top-1/4 left-1/4 w-64 h-64 bg-gold-bg/10 rounded-full blur-[100px]"></div>
-          <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gold-bg/5 rounded-full blur-[120px]"></div>
-      </div>
-      
-      <div class="container mx-auto px-4 text-center z-10">
-          <div class="logo-frame">
-              <img src="https://i.ibb.co/gFbYCVhy/file-000000003d48620a9a545c81b8bf35e5.png" alt="ZAHRAA STUDIO Logo" class="logo-img">
-          </div>
-          <h1 class="text-5xl md:text-7xl font-bold mb-4 tracking-tighter">
-              <span class="gradient-text">استوديو الزهراء</span>
-          </h1>
-          <p class="text-zinc-400 text-lg md:text-xl max-w-2xl mx-auto mb-6 leading-relaxed">
-              نحول لحظاتك الجميلة إلى تحف فنية خالدة. تصاميم عصرية، طباعة فاخرة، وهدايا تليق بأحبابك.
-          </p>
-          <p class="text-gold-text text-sm mb-10">
-              📍 بصبيح - ههيا - الشرقية | بجوار المعهد الديني على الطريق العام
-          </p>
-          
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-              <button onclick="showPage('store')" class="w-full px-8 py-4 gold-bg text-black font-bold rounded-2xl shadow-xl shadow-gold-bg/20 hover:scale-105 transition-transform">🛍️ المتجر</button>
-              <button onclick="showPage('track')" class="w-full px-8 py-4 bg-blue-600 text-white font-bold rounded-2xl shadow-xl hover:scale-105 transition-transform">📦 تتبع الطلب</button>
-              <button onclick="showPage('testimonials')" class="w-full px-8 py-4 bg-purple-600 text-white font-bold rounded-2xl shadow-xl hover:scale-105 transition-transform">⭐ آرائك مهمة</button>
-          </div>
-      </div>
-    </section>
-
-    <!-- Store Page -->
-    <section data-page="store" class="hidden py-24 px-4">
-      <div class="container mx-auto">
-          <div class="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
-              <div class="text-right">
-                  <h2 class="text-3xl font-bold mb-2">تصفح <span class="gold-text">منتجاتنا</span></h2>
-                  <p class="text-zinc-500">اختر ما يناسب ذوقك من تشكيلتنا الواسعة</p>
-              </div>
-              <div class="w-full md:w-96 relative">
-                  <input type="text" id="search-input" oninput="handleSearch()" placeholder="ابحث عن منتج..." class="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-2xl focus:border-gold-text outline-none text-right">
-              </div>
-          </div>
-
-          <div id="products-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-8">
-            <!-- Products injected here -->
-          </div>
-      </div>
-    </section>
-
-    <!-- Portfolio Page -->
-    <section data-page="portfolio" class="hidden py-24 px-4 bg-black">
-      <div class="container mx-auto">
-        <div class="text-center mb-16">
-          <h2 class="text-4xl font-bold mb-4">معرض <span class="gold-text">أعمالنا</span></h2>
-          <p class="text-zinc-400 max-w-2xl mx-auto">أفضل جلسات التصوير والطباعة التي قمنا بها لعملائنا الكرام</p>
+  <!-- Hero Section -->
+  <section class="relative min-h-screen flex items-center justify-center pt-20 hero-gradient overflow-hidden">
+    <div class="absolute inset-0 z-0">
+        <div class="absolute top-1/4 left-1/4 w-64 h-64 bg-gold-bg/10 rounded-full blur-[100px]"></div>
+        <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gold-bg/5 rounded-full blur-[120px]"></div>
+    </div>
+    
+    <div class="container mx-auto px-4 text-center z-10">
+        <div class="logo-frame">
+            <img src="https://i.ibb.co/gFbYCVhy/file-000000003d48620a9a545c81b8bf35e5.png" alt="ZAHRAA STUDIO Logo" class="logo-img">
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="portfolio-grid">
-          <!-- Portfolio items injected here -->
-        </div>
-      </div>
-    </section>
-
-    <!-- Testimonials Page -->
-    <section data-page="testimonials" class="hidden py-24 px-4 bg-zinc-900/50">
-      <div class="container mx-auto">
-        <div class="text-center mb-16">
-          <h2 class="text-4xl font-bold mb-4">آراء <span class="gold-text">عملائنا</span></h2>
-          <p class="text-zinc-400 max-w-2xl mx-auto">تجارب حقيقية من عملاء استوديو الزهراء الراضين</p>
-          <button onclick="openTestimonialModal()" class="mt-8 gold-bg text-black px-8 py-3 rounded-xl font-bold">أضف رأيك</button>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8" id="testimonials-grid">
-          <!-- Testimonials injected here -->
-        </div>
-      </div>
-    </section>
-
-    <!-- Track Page -->
-    <section data-page="track" class="hidden py-24 px-4">
-      <div class="container mx-auto max-w-2xl">
-        <div class="text-center mb-12">
-          <h2 class="text-3xl font-bold mb-4">تتبع <span class="gold-text">طلبك</span></h2>
-          <p class="text-zinc-400">أدخل رقم الطلب لمعرفة الحالة الحالية</p>
-        </div>
-        <div class="bg-zinc-900 p-8 rounded-3xl border border-zinc-800 space-y-6">
-          <div class="flex gap-3">
-            <input type="number" id="track-order-input" placeholder="رقم الطلب (مثال: 1001)" class="flex-1 p-4 bg-black border border-zinc-800 rounded-2xl outline-none focus:border-gold-text text-center text-xl font-bold">
-            <button onclick="trackOrder()" class="gold-bg text-black px-8 rounded-2xl font-bold">بحث</button>
-          </div>
-          
-          <div id="track-result" class="hidden space-y-6 pt-6 border-t border-zinc-800">
-            <div class="flex justify-between items-center">
-              <span class="text-zinc-500">رقم الطلب:</span>
-              <span id="track-order-num" class="font-bold"></span>
+        <h1 class="text-5xl md:text-7xl font-bold mb-4 tracking-tighter">
+            <span class="gradient-text">استوديو الزهراء</span>
+        </h1>
+        <p class="text-zinc-400 text-lg md:text-xl max-w-2xl mx-auto mb-6 leading-relaxed">
+            نحول لحظاتك الجميلة إلى تحف فنية خالدة. تصاميم عصرية، طباعة فاخرة، وهدايا تليق بأحبابك.
+        </p>
+        <p class="text-gold-text text-sm mb-10">
+            📍 بصبيح - ههيا - الشرقية | بجوار المعهد الديني على الطريق العام
+        </p>
+        
+        <div class="flex flex-col md:flex-row items-center justify-center gap-4">
+            <a href="#store-section" class="w-full md:w-auto px-10 py-4 gold-bg text-black font-bold rounded-2xl shadow-xl shadow-gold-bg/20 hover:scale-105 transition-transform">تصفح المتجر الآن</a>
+            <div class="flex gap-4">
+                <a href="https://maps.app.goo.gl/GrSF5zg2Zpg7cdUA6" target="_blank" class="p-4 bg-zinc-900 rounded-2xl border border-zinc-800 hover:border-gold-text transition-colors" title="موقعنا على الخريطة">
+                    <svg class="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                </a>
+                <a href="https://wa.me/201204194540" target="_blank" class="p-4 bg-zinc-900 rounded-2xl border border-zinc-800 hover:border-gold-text transition-colors">
+                    <svg class="w-6 h-6 text-[#25D366]" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                </a>
             </div>
-            <div class="flex justify-between items-center">
-              <span class="text-zinc-500">الحالة:</span>
-              <span id="track-status" class="px-4 py-1 rounded-full text-xs font-bold"></span>
-            </div>
-            <div class="flex justify-between items-center">
-              <span class="text-zinc-500">الاسم:</span>
-              <span id="track-customer-name" class="font-bold"></span>
-            </div>
-            <div class="flex justify-between items-center">
-              <span class="text-zinc-500">الإجمالي:</span>
-              <span id="track-total" class="gold-text font-bold"></span>
-            </div>
-            <div class="space-y-2">
-              <span class="text-zinc-500 block">المنتجات:</span>
-              <div id="track-items" class="bg-black p-4 rounded-xl text-sm"></div>
-            </div>
-          </div>
-          
-          <div id="track-not-found" class="hidden text-center py-8 text-red-500">
-            ❌ لم يتم العثور على طلب بهذا الرقم. يرجى التأكد من الرقم والمحاولة مرة أخرى.
-          </div>
         </div>
-      </div>
-    </section>
-  </main>
+        
+        <div class="mt-16 animate-bounce">
+            <a href="#store-section" class="text-zinc-500"><svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7-7-7m14-8l-7 7-7-7"></path></svg></a>
+        </div>
+    </div>
+  </section>
+
+  <!-- Store Section -->
+  <section id="store-section" class="py-24 px-4">
+    <div class="container mx-auto">
+        <div class="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+            <div class="text-right">
+                <h2 class="text-3xl font-bold mb-2">تصفح <span class="gold-text">منتجاتنا</span></h2>
+                <p class="text-zinc-500">اختر ما يناسب ذوقك من تشكيلتنا الواسعة</p>
+            </div>
+            <div class="w-full md:w-96 relative">
+                <input type="text" id="search-input" oninput="handleSearch()" placeholder="ابحث عن منتج..." class="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-2xl focus:border-gold-text outline-none text-right">
+            </div>
+        </div>
+
+        <div id="products-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-8">
+          <!-- Products injected here -->
+        </div>
+    </div>
+  </section>
 
   <!-- Product Details Modal -->
   <div id="product-modal" class="modal fixed inset-0 hidden flex items-center justify-center p-4 z-[1100]">
     <div class="bg-zinc-900 w-full max-w-3xl rounded-3xl overflow-hidden relative max-h-[90vh] flex flex-col">
       <button onclick="closeModal()" class="absolute top-4 right-4 z-[1200] bg-black/50 text-white w-8 h-8 rounded-full">✕</button>
-      <div id="modal-content" class="overflow-y-auto p-6 flex-1" ontouchstart="handleTouchStart(event)" ontouchend="handleTouchEnd(event)"></div>
-    </div>
-  </div>
-
-  <!-- Testimonial Modal -->
-  <div id="testimonial-modal" class="modal fixed inset-0 hidden flex items-center justify-center p-4 z-[1200]">
-    <div class="bg-zinc-900 w-full max-w-md rounded-3xl p-8 space-y-4 max-h-[90vh] overflow-y-auto"      <h2 class="text-2xl font-bold mb-4">شارك رأيك معنا</h2>
-      <div class="space-y-3">
-        <input type="text" id="testimonial-name" placeholder="اسمك" class="w-full p-3 bg-black border border-zinc-800 rounded-xl outline-none focus:border-gold-text">
-        <textarea id="testimonial-text" placeholder="رأيك أو تجربتك معنا..." class="w-full p-3 bg-black border border-zinc-800 rounded-xl outline-none focus:border-gold-text h-24"></textarea>
-        <div>
-          <label class="text-sm text-gold-text mb-2 block">صورتك:</label>
-          <input type="file" id="testimonial-avatar" accept="image/*" class="w-full p-3 bg-black border border-zinc-800 rounded-xl">
-        </div>
-        <div>
-          <label class="text-sm text-gold-text mb-2 block">التقييم:</label>
-          <select id="testimonial-rating" class="w-full p-3 bg-black border border-zinc-800 rounded-xl outline-none focus:border-gold-text"></select>      <option value="5">⭐⭐⭐⭐⭐ ممتاز جداً</option>
-            <option value="4">⭐⭐⭐⭐ جيد جداً</option>
-            <option value="3">⭐⭐⭐ جيد</option>
-            <option value="2">⭐⭐ مقبول</option>
-            <option value="1">⭐ ضعيف</option>
-          </select>
-        </div>
-      </div>
-      <div class="pt-4 space-y-2">
-        <button onclick="submitTestimonialWithImage()" class="w-full gold-bg text-black py-3 rounded-xl font-bold hover:bg-yellow-500">إرسال الرأي</button>lick="closeTestimonialModal()" class="w-full text-zinc-500 text-sm">إلغاء</button>
-      </div>
+      <div id="modal-content" class="overflow-y-auto p-6 flex-1"></div>
     </div>
   </div>
 
@@ -268,7 +172,7 @@
   <div id="image-viewer-modal" class="image-modal fixed inset-0 hidden flex items-center justify-center p-4 z-[1500]" onclick="closeImageViewer()">
     <div class="relative">
       <button onclick="closeImageViewer()" class="absolute top-4 right-4 bg-black/50 text-white w-8 h-8 rounded-full z-[1600]">✕</button>
-      <img id="viewer-image" src="" class="max-w-full max-h-full" />
+      <img id="viewer-image" src="" class="image-modal img" />
     </div>
   </div>
 
@@ -299,81 +203,18 @@
       <div class="border-2 border-dashed border-zinc-800 p-4 rounded-xl">
         <p class="text-sm font-bold mb-3 text-gold-text">مجموعات الصور للطباعة (اختياري)</p>
         <p class="text-xs text-zinc-500 mb-3">أضف مجموعات صور لمنتجات مختلفة (مثل تابلوهات بمقاسات مختلفة)</p>
+        
         <div id="image-groups-container" class="space-y-4 mb-4"></div>
+        
         <button onclick="addImageGroup()" class="w-full text-sm gold-text underline hover:text-gold-bg transition-colors py-2">+ إضافة مجموعة صور جديدة</button>
       </div>
 
-      <!-- Gift Wrapping Option -->
-      <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
-        <label class="flex items-center gap-3 cursor-pointer">
-          <input type="checkbox" id="gift-wrap" onchange="updateGiftWrap()" class="w-4 h-4 cursor-pointer">
-          <span class="text-sm font-bold">🎁 إضافة تغليف هدايا فاخر مع كارت إهداء (+30 جنيه)</span>
-        </label>
-        <textarea id="gift-message" placeholder="رسالة الإهداء (اختيارية)" class="w-full p-2 bg-black border border-zinc-800 rounded-lg text-sm mt-2 hidden outline-none focus:border-gold-text"></textarea>
-      </div>
-
-      <!-- Coupon Code -->
-      <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
-        <p class="text-sm font-bold mb-2">هل لديك كود خصم؟</p>
-        <div class="flex gap-2">
-          <input type="text" id="coupon-input" placeholder="أدخل كود الخصم" class="flex-1 p-2 bg-black border border-zinc-800 rounded-lg text-sm outline-none focus:border-gold-text">
-          <button onclick="applyCoupon()" class="bg-gold-bg text-black px-4 py-2 rounded-lg font-bold text-sm hover:bg-yellow-500 transition-colors">تطبيق</button>
-        </div>
-        <div id="coupon-message" class="text-xs mt-2 hidden"></div>
-      </div>
-
       <div class="pt-4">
-        <div class="flex justify-between mb-4 text-lg font-bold">
-            <span>الإجمالي النهائي:</span>
-            <span id="checkout-total">0 جنيه</span>
-        </div>
         <button id="submit-order-btn" onclick="submitOrder()" class="w-full gold-bg text-black py-4 rounded-xl font-bold shadow-lg shadow-gold-bg/20">تأكيد الطلب الآن</button>
         <button onclick="closeCheckout()" class="w-full text-zinc-500 text-sm mt-3">إلغاء</button>
       </div>
     </div>
   </div>
-
-  <!-- Footer -->
-  <footer class="bg-zinc-950 border-t border-zinc-800 py-12 px-4 mt-24">
-    <div class="container mx-auto">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8 text-right">
-        <div>
-          <h3 class="text-lg font-bold mb-4 gradient-text">استوديو الزهراء</h3>
-          <p class="text-sm text-zinc-400 leading-relaxed">نحول لحظاتك الجميلة إلى تحف فنية خالدة. تصاميم عصرية، طباعة فاخرة، وهدايا تليق بأحبابك.</p>
-        </div>
-        <div>
-          <h4 class="text-sm font-bold mb-4 text-gold-text">روابط سريعة</h4>
-          <div class="space-y-2 text-sm">
-            <button onclick="showPage('store')" class="text-zinc-400 hover:text-white transition-colors block">المتجر</button>
-            <button onclick="showPage('track')" class="text-zinc-400 hover:text-white transition-colors block">تتبع الطلب</button>
-            <a href="https://maps.app.goo.gl/GrSF5zg2Zpg7cdUA6" target="_blank" class="text-zinc-400 hover:text-white transition-colors block">موقعنا على الخريطة</a>
-          </div>
-        </div>
-        <div>
-          <h4 class="text-sm font-bold mb-4 text-gold-text">معلومات التواصل</h4>
-          <div class="space-y-2 text-sm text-zinc-400">
-            <p>📍 بصبيح - ههيا - الشرقية</p>
-            <p>📱 +20 120 419 4540</p>
-            <p>📱 +20 128 681 5625</p>
-          </div>
-        </div>
-        <div>
-          <h4 class="text-sm font-bold mb-4 text-gold-text">تابعنا</h4>
-          <div class="flex justify-end gap-4">
-            <a href="https://facebook.com/StudioZahraa" target="_blank" class="text-zinc-400 hover:text-[#1877F2] transition-colors">
-              <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-            </a>
-            <a href="https://wa.me/201204194540" target="_blank" class="text-zinc-400 hover:text-[#25D366] transition-colors">
-              <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-            </a>
-          </div>
-        </div>
-      </div>
-      <div class="border-t border-zinc-800 pt-8 text-center text-sm text-zinc-500">
-        <p>© 2024 استوديو الزهراء - ZAHRAA STUDIO. جميع الحقوق محفوظة.</p>
-      </div>
-    </div>
-  </footer>
 
   <script>
     const firebaseConfig = { apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM", authDomain: "zahraa-store-f4c90.firebaseapp.com", projectId: "zahraa-store-f4c90" };
@@ -385,10 +226,6 @@
     let allProducts = [], cart = [], selectedCategory = 'all', searchTerm = '';
     let lastOrderTime = 0;
     let imageGroups = [];
-    let giftWrap = false;
-    let appliedCoupon = null;
-    let discountAmount = 0;
-    let currentPage = "home";
 
     // Register Service Worker for PWA
     if ('serviceWorker' in navigator) {
@@ -405,27 +242,6 @@
       setTimeout(() => toast.remove(), 3000);
     }
 
-    function toggleSidebar() {
-      document.getElementById('sidebar').classList.toggle('translate-x-full');
-      document.getElementById('sidebar-overlay').classList.toggle('hidden');
-    }
-
-    function toggleCart() {
-      document.getElementById('cart-sidebar').classList.toggle('-translate-x-full');
-    }
-
-    function showPage(pageName) {
-      currentPage = pageName;
-      const pages = document.querySelectorAll("[data-page]");
-      pages.forEach(p => p.classList.add("hidden"));
-      const page = document.querySelector(`[data-page="${pageName}"]`);
-      if (page) page.classList.remove("hidden");
-      
-      // Close sidebar if open
-      if(!document.getElementById('sidebar').classList.contains('translate-x-full')) toggleSidebar();
-      window.scrollTo(0, 0);
-    }
-
     function addImageGroup() {
       const groupId = Date.now();
       imageGroups.push({ id: groupId, name: '', images: [] });
@@ -435,6 +251,7 @@
     function renderImageGroups() {
       const container = document.getElementById('image-groups-container');
       container.innerHTML = '';
+      
       imageGroups.forEach((group, idx) => {
         const groupHtml = `
           <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
@@ -442,7 +259,7 @@
               <input type="text" placeholder="مثال: تابلوهات 20x30" value="${group.name}" onchange="updateGroupName(${idx}, this.value)" class="flex-1 p-2 bg-black border border-zinc-800 rounded-lg text-xs outline-none focus:border-gold-text">
               <button onclick="removeImageGroup(${idx})" class="text-red-500 text-xs px-3 py-2 hover:bg-red-500/20 rounded-lg">حذف</button>
             </div>
-            <div class="grid grid-cols-3 gap-2 mb-3">
+            <div class="grid grid-cols-3 gap-2 mb-3" id="group-images-${idx}">
               ${group.images.map((img, imgIdx) => `
                 <div class="image-group-item bg-zinc-800 h-20 relative">
                   <img src="${img}" class="w-full h-full object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity" onclick="openImageViewer('${img}')">
@@ -470,92 +287,11 @@
       });
     }
 
-    function updateGiftWrap() {
-      giftWrap = document.getElementById('gift-wrap').checked;
-      document.getElementById('gift-message').classList.toggle('hidden', !giftWrap);
-      updateCheckoutTotal();
+    function openImageViewer(imageSrc) {
+      document.getElementById('viewer-image').src = imageSrc;
+      document.getElementById('image-viewer-modal').classList.remove('hidden');
     }
-
-    async function applyCoupon() {
-        const code = document.getElementById('coupon-input').value.trim().toUpperCase();
-        const msg = document.getElementById('coupon-message');
-        if(!code) return;
-        try {
-            const snap = await db.collection('coupons').where('code', '==', code).get();
-            if(snap.empty) {
-                msg.innerText = "❌ كود الخصم غير صحيح";
-                msg.className = "text-xs mt-2 text-red-500 block";
-                appliedCoupon = null;
-            } else {
-                const coupon = snap.docs[0].data();
-                if(!coupon.active) {
-                    msg.innerText = "❌ هذا الكود منتهي الصلاحية";
-                    msg.className = "text-xs mt-2 text-red-500 block";
-                    appliedCoupon = null;
-                } else {
-                    appliedCoupon = coupon;
-                    msg.innerText = `✅ تم تطبيق خصم ${coupon.discount}${coupon.type === 'percentage' ? '%' : ' جنيه'}`;
-                    msg.className = "text-xs mt-2 text-green-500 block";
-                }
-            }
-            updateCheckoutTotal();
-        } catch(e) {
-            console.error(e);
-            alert("حدث خطأ أثناء التحقق من الكوبون");
-        }
-    }
-
-    function updateCheckoutTotal() {
-        let subtotal = cart.reduce((a, b) => a + (b.price * b.qty), 0);
-        let total = subtotal;
-        if(giftWrap) total += 30;
-        
-        discountAmount = 0;
-        if(appliedCoupon) {
-            if(appliedCoupon.type === 'percentage') {
-                discountAmount = subtotal * (appliedCoupon.discount / 100);
-            } else {
-                discountAmount = appliedCoupon.discount;
-            }
-            total -= discountAmount;
-        }
-        
-        const totalText = Math.max(0, total) + ' جنيه';
-        const totalElem = document.getElementById('checkout-total');
-        if(totalElem) totalElem.innerText = totalText;
-        return total;
-    }
-
-    // بيانات منتجات تجريبية
-    const defaultProducts = [
-      { id: '1', name: 'تابلوهات فاخرة', category: 'تابلوهات', price: 150, images: ['https://via.placeholder.com/400x400?text=Tableau'], description: 'تابلوهات عصرية بتصاميم فريدة' },
-      { id: '2', name: 'ألبوم صور', category: 'ألبومات', price: 200, images: ['https://via.placeholder.com/400x400?text=Album'], description: 'ألبومات فاخرة لحفظ ذكرياتك' },
-      { id: '3', name: 'مجات مخصصة', category: 'مجات', price: 80, images: ['https://via.placeholder.com/400x400?text=Mug'], description: 'مجات بطباعة مخصصة' },
-      { id: '4', name: 'براويز ذهبية', category: 'براويز', price: 120, images: ['https://via.placeholder.com/400x400?text=Frame'], description: 'براويز بتصميم فاخر' },
-      { id: '5', name: 'بطاقات معايدة', category: 'بطاقات', price: 50, images: ['https://via.placeholder.com/400x400?text=Card'], description: 'بطاقات معايدة مميزة' },
-      { id: '6', name: 'لوحات كانفاس', category: 'كانفاس', price: 300, images: ['https://via.placeholder.com/400x400?text=Canvas'], description: 'لوحات كانفاس بجودة عالية' }
-    ];
-
-
-    // دالة لإنشاء صورة رمزية عشوائية
-    function generateAvatarUrl(name) {
-      const colors = ['FF6B6B', '4ECDC4', '45B7D1', 'FFA07A', '98D8C8', 'F7DC6F', 'BB8FCE', '85C1E2'];
-      const randomColor = colors[Math.floor(Math.random() * colors.length)];
-      const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-      return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=${randomColor}&color=fff&size=60&bold=true`;
-    }
-
-
-    // دالة لتوليد كود عميل فريد
-    function generateCustomerCode() {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      let code = 'ZAH-';
-      for(let i = 0; i < 8; i++) {
-        code += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      code += '#';
-      return code;
-    }
+    function closeImageViewer() { document.getElementById('image-viewer-modal').classList.add('hidden'); }
 
     async function init() {
       try {
@@ -568,38 +304,18 @@
           if(p.category) cats.add(p.category);
         });
         
-        // إذا لم توجد منتجات، استخدم البيانات التجريبية
-        if(allProducts.length === 0) {
-          allProducts = defaultProducts;
-          defaultProducts.forEach(p => cats.add(p.category));
-        }
-        
         const catList = document.getElementById('categories-list');
         catList.innerHTML = '<button onclick="filterCategory(\'all\')" class="w-full text-right p-3 rounded-xl hover:bg-zinc-900 transition-colors text-gold-text font-bold">كل المنتجات</button>';
         cats.forEach(c => {
           catList.innerHTML += `<button onclick="filterCategory('${c}')" class="w-full text-right p-3 rounded-xl hover:bg-zinc-900 transition-colors text-zinc-400">${c}</button>`;
         });
-        console.log('Rendering products...', allProducts);
         renderProducts();
-        console.log('Products rendered!');
-        renderPortfolio();
-        loadTestimonials();
       } catch (e) { console.error("Init error:", e); }
     }
 
     function renderProducts() {
-      console.log('renderProducts called, allProducts:', allProducts);
       const grid = document.getElementById('products-grid');
-      if(!grid) {
-        console.error('products-grid element not found!');
-        return;
-      }
       grid.innerHTML = '';
-      if(allProducts.length === 0) {
-        console.warn('No products to display!');
-        grid.innerHTML = '<p class="col-span-full text-center text-zinc-500">لا توجد منتجات</p>';
-        return;
-      }
       const filtered = allProducts.filter(p => {
         const matchCat = selectedCategory === 'all' || p.category === selectedCategory;
         const matchSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -629,24 +345,24 @@
       });
     }
 
-    function filterCategory(cat) { selectedCategory = cat; console.log('Rendering products...', allProducts);
-        renderProducts();
-        console.log('Products rendered!'); toggleSidebar(); }
-    function handleSearch() { searchTerm = document.getElementById('search-input').value; console.log('Rendering products...', allProducts);
-        renderProducts();
-        console.log('Products rendered!'); }
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('translate-x-full');
+      document.getElementById('sidebar-overlay').classList.toggle('hidden');
+    }
+
+    function filterCategory(cat) { selectedCategory = cat; toggleSidebar(); renderProducts(); }
+    function handleSearch() { searchTerm = document.getElementById('search-input').value; renderProducts(); }
 
     function openModal(id) {
       const p = allProducts.find(x => x.id === id);
       const content = document.getElementById('modal-content');
+      
       let imagesHtml = (p.images || []).map(img => `<img src="${img}" class="w-full h-64 md:h-80 object-cover rounded-2xl flex-shrink-0 snap-center cursor-pointer hover:opacity-80 transition-opacity" onclick="openImageViewer('${img}')">`).join('');
       let variantsHtml = (p.variants || []).map((v, i) => `
-        <label class="flex items-center gap-3 p-3 bg-black border border-zinc-800 rounded-xl cursor-pointer hover:border-gold-text transition-colors">
-          <input type="radio" name="variant" value="${i}" ${i===0?'checked':''} onchange="updateModalPrice('${id}', ${v.price})" class="accent-gold-text">
-          <div class="flex-1">
-            <p class="text-sm font-bold">${v.name}</p>
-            <p class="text-xs gold-text">${v.price} جنيه</p>
-          </div>
+        <label class="flex items-center gap-3 p-3 bg-zinc-800 rounded-xl cursor-pointer border border-transparent hover:border-gold-text">
+          <input type="radio" name="variant" value="${i}" ${i===0?'checked':''} onchange="updateModalPrice('${id}', ${v.price})">
+          <span class="flex-1 text-sm">${v.name}</span>
+          <span class="gold-text font-bold">${v.price} ج</span>
         </label>
       `).join('');
 
@@ -669,7 +385,6 @@
     }
 
     function updateModalPrice(id, price) { document.getElementById('modal-price').innerText = price + ' جنيه'; }
-    function closeModal() { document.getElementById('product-modal').classList.add('hidden'); }
 
     function addCartFromModal(id) {
       const p = allProducts.find(x => x.id === id);
@@ -682,9 +397,7 @@
       const item = cart.find(x => x.cartId === cartId);
       if(item) item.qty++;
       else cart.push({ ...p, cartId, selectedVariant, qty: 1, price: selectedVariant ? selectedVariant.price : p.price });
-      updateCartUI(); 
-      showToast('تمت إضافة المنتج للسلة ✓');
-      closeModal();
+      updateCartUI(); showToast('تمت إضافة المنتج للسلة ✓');
     }
 
     function updateCartUI() {
@@ -697,7 +410,7 @@
         list.innerHTML += `
           <div class="flex items-center gap-4 bg-zinc-900 p-3 rounded-xl">
             <img src="${item.images?.[0]}" class="w-12 h-12 object-cover rounded-lg cursor-pointer" onclick="openImageViewer('${item.images?.[0]}')">
-            <div class="flex-1 text-right">
+            <div class="flex-1">
               <h4 class="text-sm font-bold">${item.name}</h4>
               <p class="text-[10px] text-zinc-500">${item.selectedVariant ? item.selectedVariant.name : ''}</p>
               <p class="text-xs gold-text">${item.price} ج</p>
@@ -706,81 +419,26 @@
               <button class="qty-btn" onclick="decreaseQty(${i})">−</button>
               <span class="qty-display">${item.qty}</span>
               <button class="qty-btn" onclick="increaseQty(${i})">+</button>
-              <button class="text-red-500 text-xs ml-2" onclick="removeFromCart(${i})">✕</button>
+              <button class="text-red-500 text-xs ml-2 hover:text-red-400 transition-colors" onclick="removeFromCart(${i})">✕</button>
             </div>
           </div>
         `;
       });
       document.getElementById('cart-total').innerText = total + ' جنيه';
-      updateCheckoutTotal();
     }
 
     function increaseQty(i) { cart[i].qty++; updateCartUI(); }
     function decreaseQty(i) { if(cart[i].qty > 1) cart[i].qty--; else removeFromCart(i); updateCartUI(); }
     function removeFromCart(i) { cart.splice(i, 1); updateCartUI(); showToast('تمت إزالة المنتج من السلة'); }
-
-    function openCheckout() { 
-      if(cart.length===0) return alert('السلة فارغة'); 
-      document.getElementById('checkout-modal').classList.remove('hidden'); 
-      updateCheckoutTotal();
-    }
+    function toggleCart() { document.getElementById('cart-sidebar').classList.toggle('-translate-x-full'); }
+    function closeModal() { document.getElementById('product-modal').classList.add('hidden'); }
+    function openCheckout() { if(cart.length===0) return alert('السلة فارغة'); document.getElementById('checkout-modal').classList.remove('hidden'); }
     function closeCheckout() { document.getElementById('checkout-modal').classList.add('hidden'); }
-
-    function openImageViewer(src) {
-      document.getElementById('viewer-image').src = src;
-      document.getElementById('image-viewer-modal').classList.remove('hidden');
-    }
-    function closeImageViewer() { document.getElementById('image-viewer-modal').classList.add('hidden'); }
-
-    async function trackOrder() {
-      const orderNum = document.getElementById('track-order-input').value.trim();
-      if(!orderNum) return alert('يرجى إدخال رقم الطلب');
-      const resultDiv = document.getElementById('track-result');
-      const notFoundDiv = document.getElementById('track-not-found');
-      resultDiv.classList.add('hidden');
-      notFoundDiv.classList.add('hidden');
-
-      try {
-        const snapshot = await db.collection('orders').where('orderNumber', '==', parseInt(orderNum)).get();
-        if(snapshot.empty) {
-          notFoundDiv.classList.remove('hidden');
-          return;
-        }
-        const order = snapshot.docs[0].data();
-        const statusColors = { 'قيد المراجعة': 'bg-yellow-600', 'جاري التنفيذ': 'bg-blue-600', 'تم التوصيل': 'bg-green-600', 'ملغي': 'bg-red-600' };
-        document.getElementById('track-order-num').textContent = `#${orderNum}`;
-        document.getElementById('track-customer-name').textContent = order.customerName;
-        document.getElementById('track-total').textContent = order.totalPrice + ' جنيه';
-        const statusElem = document.getElementById('track-status');
-        statusElem.className = `px-4 py-1 rounded-full text-xs font-bold text-white ${statusColors[order.status] || 'bg-gray-600'}`;
-        statusElem.textContent = order.status;
-        const itemsHtml = order.items.map(i => `<div class="flex justify-between text-sm mb-2">
-            <span>${i.name} ${i.variant ? '(' + i.variant + ')' : ''} × ${i.qty}</span>
-            <span>${i.price * i.qty} جنيه</span>
-          </div>`).join('');
-        const invoiceHtml = `
-          <div class="bg-zinc-900 p-4 rounded-lg text-sm space-y-2 mb-4">
-            <div class="font-bold border-b border-gold-text pb-2">تفاصيل الفاتورة</div>
-            ${itemsHtml}
-            ${order.couponCode ? `<div class="flex justify-between text-gold-text"><span>الخصم (${order.couponCode}):</span><span>-${order.discountAmount} جنيه</span></div>` : ''}
-            <div class="flex justify-between font-bold border-t border-gold-text pt-2">
-              <span>الإجمالي:</span>
-              <span>${order.totalPrice} جنيه</span>
-            </div>
-            <div class="text-gold-text font-bold">كود العميل: ${order.customerCode}</div>
-          </div>
-        `;
-        document.getElementById('track-items').innerHTML = invoiceHtml;
-        resultDiv.classList.remove('hidden');
-      } catch(e) {
-        console.error('Tracking error:', e);
-        alert('حدث خطأ أثناء البحث عن الطلب');
-      }
-    }
 
     async function submitOrder() {
       const now = Date.now();
       if(now - lastOrderTime < 5000) return alert('يرجى الانتظار قليلاً قبل إرسال طلب آخر');
+
       const btn = document.getElementById('submit-order-btn');
       const name = document.getElementById('cust-name').value.trim();
       const phone = document.getElementById('cust-phone').value.trim();
@@ -806,230 +464,72 @@
                 const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: fd });
                 const data = await res.json();
                 if(data.secure_url) urls.push(data.secure_url);
-              } catch(imgErr) { console.warn('Image upload error:', imgErr); }
+              } catch(imgErr) {
+                console.warn('Image upload error:', imgErr);
+              }
             }
             if(urls.length > 0) uploadedGroups.push({ name: group.name || 'بدون اسم', images: urls });
           }
         }
 
+        // Get next order number
         let orderNum = 1001;
         try {
           const statsDoc = await db.collection('settings').doc('stats').get();
-          if (statsDoc.exists()) { orderNum = (statsDoc.data().lastOrderNum || 1000) + 1; }
+          if (statsDoc.exists()) {
+            orderNum = (statsDoc.data().lastOrderNum || 1000) + 1;
+          }
           await db.collection('settings').doc('stats').set({ lastOrderNum: orderNum }, { merge: true });
-        } catch(statsErr) { orderNum = 1001 + Math.floor(Math.random() * 9000); }
+        } catch(statsErr) {
+          console.warn('Stats update error:', statsErr);
+          orderNum = 1001 + Math.floor(Math.random() * 9000);
+        }
 
-        const finalTotal = updateCheckoutTotal();
-        const customerCode = generateCustomerCode();
         const order = {
-          customerCode: customerCode,
           orderNumber: orderNum,
           customerName: name,
           customerPhone: phone,
           customerAddress: address,
           imageGroups: uploadedGroups,
-          giftWrap: giftWrap,
-          giftMessage: document.getElementById('gift-message').value,
-          couponCode: appliedCoupon ? appliedCoupon.code : null,
-          discountAmount: discountAmount,
-          items: cart.map(i => ({ name: i.name, qty: i.qty, price: i.price, variant: i.selectedVariant?.name || '' })),
-          totalPrice: finalTotal,
+          items: cart.map(i => ({ 
+            name: i.name, 
+            qty: i.qty, 
+            price: i.price, 
+            variant: i.selectedVariant?.name || '' 
+          })),
+          totalPrice: cart.reduce((a, b) => a + (b.price * b.qty), 0),
           status: 'قيد المراجعة',
           createdAt: now
         };
 
         await db.collection("orders").add(order);
         lastOrderTime = now;
+        
         alert(`✅ تم استلام طلبك بنجاح!\n\nرقم طلبك: #${orderNum}\n\nشكراً لتعاملك معنا 🎉`);
-        cart = []; imageGroups = []; giftWrap = false; appliedCoupon = null;
-        updateCartUI(); closeCheckout(); showPage('home');
+        
+        // Clear cart and close modals
+        cart = []; 
+        imageGroups = []; 
+        updateCartUI(); 
+        closeCheckout();
+        toggleCart();
+        
+        // Clear form
         document.getElementById('cust-name').value = '';
         document.getElementById('cust-phone').value = '';
         document.getElementById('cust-address').value = '';
-        document.getElementById('gift-wrap').checked = false;
-        document.getElementById('gift-message').value = '';
-        document.getElementById('coupon-input').value = '';
-        document.getElementById('coupon-message').classList.add('hidden');
+        
+        if(!document.getElementById('product-modal').classList.contains('hidden')) closeModal();
       } catch (e) {
         console.error("Order error:", e);
-        alert('❌ حدث خطأ أثناء إرسال الطلب');
+        alert('❌ حدث خطأ أثناء إرسال الطلب\n\nيرجى المحاولة مرة أخرى أو التواصل معنا عبر الواتساب:\n📱 +20 120 419 4540');
       } finally {
-        btn.disabled = false; btn.innerText = 'تأكيد الطلب الآن';
+        btn.disabled = false; 
+        btn.innerText = 'تأكيد الطلب الآن';
       }
     }
 
-    // إضافة أكواد المنتجات
-    const productCodes = {
-      'تابلوهات': 'ZHR-TAB-001',
-      'ألبومات': 'ZHR-ALB-002',
-      'مجات': 'ZHR-MUG-003',
-      'براويز': 'ZHR-FRM-004',
-      'بطاقات': 'ZHR-CAR-005',
-      'كانفاس': 'ZHR-CAN-006'
-    };
-
-    // دالة لإضافة كود المنتج في العرض
-    function addProductCode(productName, category) {
-      const code = productCodes[category] || 'ZHR-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-      return code;
-    }
-
-    // Placeholder functions for Portfolio and Testimonials if external scripts are not available
-    function renderPortfolio() {
-        const grid = document.getElementById('portfolio-grid');
-        if(!grid) return;
-        // In a real scenario, this would fetch from Firebase or a JS file
-        grid.innerHTML = '<p class="text-zinc-500 col-span-full text-center py-10">جاري تحميل معرض الأعمال...</p>';
-    }
-
-    // متغيرات للسحب بين المنتجات
-    let touchStartX = 0, touchEndX = 0;
-    let currentImageIndex = 0;
-    let autoSlideInterval = null;
-
-    // دالة لبدء السحب
-    function handleTouchStart(e) {
-      touchStartX = e.changedTouches[0].clientX;
-    }
-
-    // دالة لإنهاء السحب
-    function handleTouchEnd(e) {
-      touchEndX = e.changedTouches[0].clientX;
-      handleSwipe();
-    }
-
-    // دالة للتعامل مع السحب
-    function handleSwipe() {
-      const diff = touchStartX - touchEndX;
-      if(Math.abs(diff) > 50) {
-        if(diff > 0) nextProduct();
-        else prevProduct();
-      }
-    }
-
-    // دالة للانتقال للمنتج التالي
-    function nextProduct() {
-      const products = document.querySelectorAll('[data-product-id]');
-      if(products.length === 0) return;
-      const currentIndex = Array.from(products).findIndex(p => p.style.display !== 'none');
-      const nextIndex = (currentIndex + 1) % products.length;
-      products.forEach(p => p.style.display = 'none');
-      products[nextIndex].style.display = 'block';
-    }
-
-    // دالة للانتقال للمنتج السابق
-    function prevProduct() {
-      const products = document.querySelectorAll('[data-product-id]');
-      if(products.length === 0) return;
-      const currentIndex = Array.from(products).findIndex(p => p.style.display !== 'none');
-      const prevIndex = (currentIndex - 1 + products.length) % products.length;
-      products.forEach(p => p.style.display = 'none');
-      products[prevIndex].style.display = 'block';
-    }
-
-    // دالة لتشغيل السلايدر التلقائي للصور
-    function startAutoSlide(images) {
-      if(autoSlideInterval) clearInterval(autoSlideInterval);
-      if(!images || images.length <= 1) return;
-      
-      currentImageIndex = 0;
-      autoSlideInterval = setInterval(() => {
-        currentImageIndex = (currentImageIndex + 1) % images.length;
-        const mainImage = document.getElementById('main-image');
-        if(mainImage) {
-          mainImage.src = images[currentImageIndex];
-        }
-      }, 3000);
-    }
-
-    // دالة لإيقاف السلايدر التلقائي
-    function stopAutoSlide() {
-      if(autoSlideInterval) clearInterval(autoSlideInterval);
-    }
-
-    async function loadTestimonials() {
-        const grid = document.getElementById('testimonials-grid');
-        if(!grid) return;
-        grid.innerHTML = '<p class="text-zinc-500 col-span-full text-center py-10">جاري تحميل الآراء...</p>';
-        try {
-          const snap = await db.collection('testimonials').orderBy('createdAt', 'desc').get();
-          grid.innerHTML = '';
-      if(allProducts.length === 0) {
-        console.warn('No products to display!');
-        grid.innerHTML = '<p class="col-span-full text-center text-zinc-500">لا توجد منتجات</p>';
-        return;
-      }
-          if(snap.empty) {
-            grid.innerHTML = '<p class="text-zinc-500 col-span-full text-center py-10">لا توجد آراء حالياً</p>';
-            return;
-          }
-          snap.forEach(doc => {
-            const item = doc.data();
-            const stars = '⭐'.repeat(item.rating || 5);
-            const avatarUrl = generateAvatarUrl(item.name);
-            grid.innerHTML += `
-              <div class="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 hover:border-gold-text transition-colors">
-                <div class="flex items-center gap-3 mb-4">
-                  <img src="${avatarUrl}" alt="${item.name}" class="w-12 h-12 rounded-full object-cover border border-gold-text">
-                  <div>
-                    <h3 class="font-bold">${item.name}</h3>
-                    <p class="text-xs text-gold-text">${stars}</p>
-                  </div>
-                </div>
-                <p class="text-sm text-zinc-300">${item.text}</p>
-              </div>
-            `;
-          });
-        } catch(e) { console.error('Testimonials error:', e); }
-    }
-
-    function openTestimonialModal() { document.getElementById('testimonial-modal').classList.remove('hidden'); }
-    function closeTestimonialModal() { document.getElementById('testimonial-modal').classList.add('hidden'); }    async function submitTestimonialWithImage() {
-      const name = document.getElementById('testimonial-name').value.trim();
-      const text = document.getElementById('testimonial-text').value.trim();
-      const rating = parseInt(document.getElementById('testimonial-rating').value);
-      const avatarFile = document.getElementById('testimonial-avatar').files[0];
-
-      if(!name || !text) return alert('يرجى ملء جميع الحقول');
-
-      let avatarUrl = 'https://via.placeholder.com/60x60?text=' + encodeURIComponent(name.charAt(0));
-      
-      if(avatarFile) {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          avatarUrl = e.target.result;
-          try {
-            await db.collection('testimonials').add({
-              name, text, rating, avatarUrl,
-              createdAt: new Date()
-            });
-            alert('شكراً لمشاركتنا رأيك!');
-            document.getElementById('testimonial-name').value = '';
-            document.getElementById('testimonial-text').value = '';
-            document.getElementById('testimonial-avatar').value = '';
-            document.getElementById('testimonial-rating').value = '5';
-            closeTestimonialModal();
-            loadTestimonials();
-          } catch(e) { alert('خطأ: ' + e.message); }
-        };
-        reader.readAsDataURL(avatarFile);
-      } else {
-        try {
-          await db.collection('testimonials').add({
-            name, text, rating, avatarUrl,
-            createdAt: new Date()
-          });
-          alert('شكراً لمشاركتنا رأيك!');
-          document.getElementById('testimonial-name').value = '';
-          document.getElementById('testimonial-text').value = '';
-          document.getElementById('testimonial-avatar').value = '';
-          document.getElementById('testimonial-rating').value = '5';
-          closeTestimonialModal();
-          loadTestimonials();
-        } catch(e) { alert('خطأ: ' + e.message); }
-      }
-    }window.addEventListener('DOMContentLoaded', init);
-    window.addEventListener('load', init);
+    window.onload = init;
   </script>
 </body>
 </html>
