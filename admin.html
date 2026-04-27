@@ -6,6 +6,7 @@
     <title>لوحة تحكم استوديو الزهراء - ZAHRAA STUDIO</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         body { font-family: 'Cairo', sans-serif; background-color: #0a0a0a; color: #fff; }
         .gold-border { border: 1px solid #d4af37; }
@@ -18,28 +19,15 @@
         .tab-content.active { display: block; }
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; }
         .modal.active { display: flex; }
-        .modal-content { background: #1a1a1a; border: 1px solid #d4af37; border-radius: 12px; padding: 24px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; }
-        .invoice-table { width: 100%; border-collapse: collapse; margin: 16px 0; }
-        .invoice-table th, .invoice-table td { padding: 8px; text-align: right; border-bottom: 1px solid #333; }
-        .invoice-table th { background: #333; font-weight: bold; }
+        .modal-content { background: #1a1a1a; border: 1px solid #d4af37; border-radius: 12px; padding: 24px; max-width: 700px; width: 95%; max-height: 90vh; overflow-y: auto; }
         .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
         .status-pending { background: #fbbf24; color: #000; }
         .status-completed { background: #10b981; color: #fff; }
         .status-cancelled { background: #ef4444; color: #fff; }
-        .coupon-active { background: #10b981; }
-        .coupon-inactive { background: #6b7280; }
         .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 6px; cursor: pointer; transition: all 0.3s; }
         .btn-primary { background: #d4af37; color: #000; }
-        .btn-primary:hover { opacity: 0.9; }
         .btn-danger { background: #ef4444; color: #fff; }
-        .btn-danger:hover { background: #dc2626; }
-        .btn-success { background: #10b981; color: #fff; }
-        .btn-success:hover { background: #059669; }
         .btn-warning { background: #f59e0b; color: #000; }
-        .btn-warning:hover { background: #d97706; }
-        .copy-btn { cursor: pointer; display: inline-block; margin-left: 8px; }
-        .expiry-warning { color: #fbbf24; }
-        .expiry-expired { color: #ef4444; }
     </style>
 </head>
 <body class="p-2 md:p-6">
@@ -79,6 +67,13 @@
                             <input type="number" id="p-price" placeholder="السعر" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
                             <input type="text" id="p-category" placeholder="القسم" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
                         </div>
+                        
+                        <!-- New Fields: Type and Size -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <input type="text" id="p-type" placeholder="نوع المنتج (مثلاً: قطن)" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                            <input type="text" id="p-size" placeholder="المقاس (مثلاً: XL أو 30x40)" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                        </div>
+
                         <textarea id="p-desc" placeholder="وصف المنتج" class="w-full p-2 bg-black border border-zinc-700 rounded h-24 text-sm outline-none focus:border-gold-text"></textarea>
                         
                         <div class="border-2 border-dashed border-zinc-700 p-4 rounded-lg text-center">
@@ -170,10 +165,11 @@
                 <h2 class="text-2xl font-bold gradient-text">فاتورة الطلب</h2>
                 <button onclick="closeInvoiceModal()" class="text-2xl cursor-pointer">×</button>
             </div>
-            <div id="invoice-content" class="space-y-4"></div>
+            <div id="invoice-wrapper" style="background: white; border-radius: 8px; overflow: hidden;">
+                <div id="invoice-content"></div>
+            </div>
             <div class="mt-6 flex gap-3">
-                <button onclick="printInvoice()" class="flex-1 btn-sm btn-primary">🖨️ طباعة</button>
-                <button onclick="downloadInvoice()" class="flex-1 btn-sm btn-success">📥 تحميل PDF</button>
+                <button onclick="downloadInvoice()" class="flex-1 btn-sm btn-primary font-bold">📥 تحميل الفاتورة PDF</button>
                 <button onclick="closeInvoiceModal()" class="flex-1 btn-sm bg-zinc-800 text-white">إغلاق</button>
             </div>
         </div>
@@ -278,6 +274,8 @@
             const name = document.getElementById('p-name').value;
             const price = document.getElementById('p-price').value;
             const category = document.getElementById('p-category').value;
+            const type = document.getElementById('p-type').value;
+            const size = document.getElementById('p-size').value;
             const desc = document.getElementById('p-desc').value;
 
             if (!name || !price) {
@@ -286,7 +284,7 @@
             }
 
             const productData = {
-                name, price: parseFloat(price), category, desc,
+                name, price: parseFloat(price), category, type, size, desc,
                 images: currentProductImages,
                 updatedAt: new Date(),
                 createdAt: editingProductId ? undefined : new Date()
@@ -311,6 +309,8 @@
             document.getElementById('p-name').value = '';
             document.getElementById('p-price').value = '';
             document.getElementById('p-category').value = '';
+            document.getElementById('p-type').value = '';
+            document.getElementById('p-size').value = '';
             document.getElementById('p-desc').value = '';
             currentProductImages = [];
             window.renderProductPreviews();
@@ -324,6 +324,8 @@
             document.getElementById('p-name').value = product.name;
             document.getElementById('p-price').value = product.price;
             document.getElementById('p-category').value = product.category || '';
+            document.getElementById('p-type').value = product.type || '';
+            document.getElementById('p-size').value = product.size || '';
             document.getElementById('p-desc').value = product.desc || '';
             currentProductImages = product.images || [];
             window.renderProductPreviews();
@@ -360,7 +362,7 @@
                                 <img src="${p.images?.[0] || 'https://via.placeholder.com/40'}" class="w-10 h-10 object-cover rounded">
                                 <div class="flex-1">
                                     <h4 class="font-bold text-sm">${p.name}</h4>
-                                    <p class="text-[10px] text-zinc-500">${p.category || 'بدون قسم'} | ${p.price} ج</p>
+                                    <p class="text-[10px] text-zinc-500">${p.category || 'بدون قسم'} | ${p.price} ج | ${p.type || 'بدون نوع'} | ${p.size || 'بدون مقاس'}</p>
                                 </div>
                             </div>
                             <div class="flex gap-2">
@@ -377,15 +379,6 @@
         };
 
         // ==================== ORDERS ====================
-        window.generateTrackingCode = () => {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-            let code = '';
-            for (let i = 0; i < 8; i++) {
-                code += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return code;
-        };
-
         window.loadOrders = async () => {
             const list = document.getElementById('orders-list');
             try {
@@ -411,8 +404,8 @@
                             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
                                 <div>
                                     <h4 class="font-bold text-sm mb-2">طلب من: ${order.customerName || 'عميل'}</h4>
-                                    <p class="text-[10px] text-zinc-500">البريد: ${order.customerEmail || 'N/A'}</p>
                                     <p class="text-[10px] text-zinc-500">الهاتف: ${order.customerPhone || 'N/A'}</p>
+                                    <p class="text-[10px] text-zinc-500">العنوان: ${order.customerAddress || 'N/A'}</p>
                                 </div>
                                 <div class="text-right">
                                     <span class="status-badge ${statusClass}">${statusText}</span>
@@ -420,9 +413,8 @@
                                 </div>
                             </div>
                             <div class="bg-zinc-900 p-3 rounded mb-4 border border-zinc-800">
-                                <p class="text-[12px] font-bold mb-2">🔍 كود التتبع: <span class="gold-text">${trackingCode}</span> <span class="copy-btn cursor-pointer" onclick="copyToClipboard('${trackingCode}')">📋</span></p>
+                                <p class="text-[12px] font-bold mb-2">🔍 كود التتبع: <span class="gold-text">${trackingCode}</span></p>
                                 <p class="text-[11px] text-zinc-400">المجموع: <span class="gold-text font-bold">${order.total || 0} ج</span></p>
-                                ${order.discountAmount ? `<p class="text-[11px] text-green-400">خصم: -${order.discountAmount} ج</p>` : ''}
                             </div>
                             <div class="flex gap-2 flex-wrap">
                                 <button onclick="window.showInvoice('${order.id}')" class="btn-sm btn-primary">📄 فاتورة</button>
@@ -456,54 +448,46 @@
             const order = allOrders.find(o => o.id === orderId);
             if (!order) return;
 
-            const trackingCode = order.trackingCode || 'لم يتم التعيين';
             const items = order.items || [];
             let itemsHtml = '';
-            let subtotal = 0;
-
             items.forEach(item => {
-                const itemTotal = (item.price || 0) * (item.quantity || 1);
-                subtotal += itemTotal;
                 itemsHtml += `
                     <tr>
-                        <td>${item.name || 'منتج'}</td>
-                        <td>${item.quantity || 1}</td>
-                        <td>${item.price || 0} ج</td>
-                        <td>${itemTotal} ج</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${item.name}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${item.quantity}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${item.price} ج</td>
+                        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${item.price * item.quantity} ج</td>
                     </tr>
                 `;
             });
 
-            const discount = order.discountAmount || 0;
-            const total = order.total || (subtotal - discount);
-
             const invoiceHtml = `
-                <div id="printable-invoice" class="bg-white text-black p-8 rounded">
-                    <div class="text-center mb-6">
-                        <h1 class="text-2xl font-bold">فاتورة الطلب</h1>
-                        <p class="text-sm text-gray-600">استوديو الزهراء</p>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4 mb-6 text-sm">
+                <div id="printable-invoice" style="padding: 40px; font-family: 'Cairo', sans-serif; direction: rtl; background: white; color: black;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #d4af37; padding-bottom: 20px; margin-bottom: 20px;">
                         <div>
-                            <p><strong>رقم الطلب:</strong> ${order.id}</p>
-                            <p><strong>كود التتبع:</strong> <span class="font-bold text-blue-600">${trackingCode}</span></p>
-                            <p><strong>التاريخ:</strong> ${new Date(order.createdAt?.toDate?.() || order.createdAt).toLocaleDateString('ar-EG')}</p>
+                            <h1 style="margin: 0; color: #d4af37;">ZAHRAA STUDIO</h1>
+                            <p style="margin: 5px 0; color: #666;">فاتورة طلب رقم: ${order.id.substring(0,8)}</p>
                         </div>
-                        <div class="text-right">
-                            <p><strong>اسم العميل:</strong> ${order.customerName || 'N/A'}</p>
-                            <p><strong>البريد:</strong> ${order.customerEmail || 'N/A'}</p>
-                            <p><strong>الهاتف:</strong> ${order.customerPhone || 'N/A'}</p>
+                        <div style="text-align: left;">
+                            <p style="margin: 0;">التاريخ: ${new Date(order.createdAt?.toDate?.() || order.createdAt).toLocaleDateString('ar-EG')}</p>
+                            <p style="margin: 5px 0; font-weight: bold; color: #d4af37;">كود التتبع: ${order.trackingCode || 'N/A'}</p>
                         </div>
                     </div>
 
-                    <table class="invoice-table">
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="border-bottom: 1px solid #eee; padding-bottom: 10px;">بيانات العميل:</h3>
+                        <p style="margin: 5px 0;"><strong>الاسم:</strong> ${order.customerName || 'N/A'}</p>
+                        <p style="margin: 5px 0;"><strong>الهاتف:</strong> ${order.customerPhone || 'N/A'}</p>
+                        <p style="margin: 5px 0;"><strong>العنوان:</strong> ${order.customerAddress || 'N/A'}</p>
+                    </div>
+
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
                         <thead>
-                            <tr>
-                                <th>المنتج</th>
-                                <th>الكمية</th>
-                                <th>السعر</th>
-                                <th>الإجمالي</th>
+                            <tr style="background: #f8f9fa;">
+                                <th style="border: 1px solid #ddd; padding: 12px; text-align: right;">المنتج</th>
+                                <th style="border: 1px solid #ddd; padding: 12px; text-align: center;">الكمية</th>
+                                <th style="border: 1px solid #ddd; padding: 12px; text-align: center;">السعر</th>
+                                <th style="border: 1px solid #ddd; padding: 12px; text-align: center;">الإجمالي</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -511,28 +495,28 @@
                         </tbody>
                     </table>
 
-                    <div class="flex justify-end mb-6">
-                        <div class="w-64 space-y-2 text-sm">
-                            <div class="flex justify-between border-b pb-2">
+                    <div style="text-align: left; margin-top: 20px;">
+                        <div style="display: inline-block; width: 250px;">
+                            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee;">
                                 <span>الإجمالي الفرعي:</span>
-                                <span>${subtotal} ج</span>
+                                <span>${order.subtotal || order.total} ج</span>
                             </div>
-                            ${discount > 0 ? `
-                                <div class="flex justify-between border-b pb-2 text-green-600">
-                                    <span>الخصم:</span>
-                                    <span>-${discount} ج</span>
-                                </div>
+                            ${order.discountAmount ? `
+                            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; color: #10b981;">
+                                <span>الخصم:</span>
+                                <span>-${order.discountAmount} ج</span>
+                            </div>
                             ` : ''}
-                            <div class="flex justify-between font-bold text-lg">
-                                <span>الإجمالي:</span>
-                                <span>${total} ج</span>
+                            <div style="display: flex; justify-content: space-between; padding: 15px 0; font-size: 1.2em; font-weight: bold; color: #d4af37;">
+                                <span>الإجمالي النهائي:</span>
+                                <span>${order.total} ج</span>
                             </div>
                         </div>
                     </div>
 
-                    <div class="text-center text-xs text-gray-600 border-t pt-4">
-                        <p>شكراً لتعاملك معنا</p>
-                        <p>استوديو الزهراء - ZAHRAA STUDIO</p>
+                    <div style="margin-top: 50px; text-align: center; border-top: 1px solid #eee; padding-top: 20px; color: #888; font-size: 0.9em;">
+                        <p>شكراً لتعاملك مع استوديو الزهراء</p>
+                        <p>بصبيح - ههيا - الشرقية | 01204194540</p>
                     </div>
                 </div>
             `;
@@ -541,25 +525,20 @@
             document.getElementById('invoice-modal').classList.add('active');
         };
 
+        window.downloadInvoice = () => {
+            const element = document.getElementById('printable-invoice');
+            const opt = {
+                margin: 0,
+                filename: 'Zahraa-Studio-Invoice.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save();
+        };
+
         window.closeInvoiceModal = () => {
             document.getElementById('invoice-modal').classList.remove('active');
-        };
-
-        window.printInvoice = () => {
-            const printWindow = window.open('', '', 'height=600,width=800');
-            printWindow.document.write(document.getElementById('printable-invoice').innerHTML);
-            printWindow.document.close();
-            printWindow.print();
-        };
-
-        window.downloadInvoice = () => {
-            alert('ميزة تحميل PDF قريباً - يمكنك استخدام طباعة "حفظ كـ PDF"');
-        };
-
-        window.copyToClipboard = (text) => {
-            navigator.clipboard.writeText(text).then(() => {
-                alert('تم نسخ كود التتبع');
-            });
         };
 
         // ==================== COUPONS ====================
@@ -659,24 +638,7 @@
                     allCoupons.push(coupon);
                     count++;
 
-                    const expiryDate = coupon.expiryDate?.toDate?.() || new Date(coupon.expiryDate);
-                    const now = new Date();
-                    const isExpired = expiryDate < now;
-                    const daysLeft = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
-
-                    let expiryClass = '';
-                    let expiryText = '';
-                    if (isExpired) {
-                        expiryClass = 'expiry-expired';
-                        expiryText = 'انتهت الصلاحية';
-                    } else if (daysLeft <= 3) {
-                        expiryClass = 'expiry-warning';
-                        expiryText = `${daysLeft} أيام متبقية`;
-                    } else {
-                        expiryText = `${daysLeft} أيام متبقية`;
-                    }
-
-                    const statusClass = coupon.isActive ? 'coupon-active' : 'coupon-inactive';
+                    const statusClass = coupon.isActive ? 'bg-green-600' : 'bg-gray-600';
                     const statusText = coupon.isActive ? '✓ مفعل' : '✕ معطل';
 
                     list.innerHTML += `
@@ -687,7 +649,6 @@
                                     <span class="text-[10px] bg-zinc-800 px-2 py-1 rounded">${coupon.type === 'percentage' ? coupon.discount + '%' : coupon.discount + ' ج'}</span>
                                 </div>
                                 <p class="text-[10px] text-zinc-500">الحد: ${coupon.limit || 'غير محدود'} | المستخدم: ${coupon.usedCount || 0}</p>
-                                <p class="text-[10px] ${expiryClass}">${expiryText}</p>
                             </div>
                             <div class="flex gap-2">
                                 <button onclick="window.toggleCouponStatus('${coupon.id}', ${coupon.isActive})" class="btn-sm ${statusClass}">${statusText}</button>
