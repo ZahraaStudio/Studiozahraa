@@ -23,8 +23,6 @@
         .loader { border-top-color: #d4af37; animation: spinner 1.5s linear infinite; }
         @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .download-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .expired-badge { background: #dc2626; color: white; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; }
-        .active-badge { background: #16a34a; color: white; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; }
     </style>
 </head>
 <body class="p-2 md:p-6">
@@ -51,7 +49,6 @@
             <button onclick="showTab('products-tab')" id="btn-products-tab" class="px-6 py-3 font-bold tab-active whitespace-nowrap">📦 المنتجات</button>
             <button onclick="showTab('orders-tab')" id="btn-orders-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">🛒 الطلبات <span id="orders-count-badge" class="bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1 hidden">0</span></button>
             <button onclick="showTab('coupons-tab')" id="btn-coupons-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">🏷️ الكوبونات</button>
-            <button onclick="showTab('portfolio-tab')" id="btn-portfolio-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">📸 الأعمال</button>
             <button onclick="showTab('testimonials-tab')" id="btn-testimonials-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">⭐ الآراء</button>
             <button onclick="showTab('stats-tab')" id="btn-stats-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">📊 الإحصائيات</button>
         </div>
@@ -141,59 +138,22 @@
                             <option value="fixed">مبلغ ثابت</option>
                         </select>
                         <input type="text" id="coupon-desc" placeholder="الوصف" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
-                        
-                        <!-- صلاحية الكوبون -->
-                        <div class="border border-zinc-700 rounded p-3 space-y-2">
-                            <p class="text-xs text-gold-text font-bold">صلاحية الكوبون</p>
-                            <input type="number" id="coupon-duration" placeholder="المدة" min="1" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
-                            <select id="coupon-duration-unit" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="number" id="coupon-max-users" placeholder="عدد المستخدمين" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text" min="1" value="1">
+                            <select id="coupon-duration-type" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
                                 <option value="minutes">دقائق</option>
                                 <option value="hours">ساعات</option>
                                 <option value="days">أيام</option>
                                 <option value="months">أشهر</option>
                             </select>
                         </div>
-
-                        <!-- عدد المستخدمين -->
-                        <div>
-                            <label class="text-xs text-gold-text font-bold block mb-2">عدد المستخدمين المسموح</label>
-                            <input type="number" id="coupon-max-users" placeholder="مثال: 5 أو 10" min="1" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
-                        </div>
-
+                        <input type="number" id="coupon-duration" placeholder="مدة الصلاحية" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text" min="1" value="1">
                         <button onclick="addCoupon()" class="w-full p-3 gold-bg text-black font-bold rounded">إضافة الكوبون</button>
                     </div>
                 </div>
                 <div class="lg:col-span-2 bg-zinc-900 p-6 rounded-xl gold-border">
                     <h3 class="text-xl font-bold mb-4">الكوبونات الحالية</h3>
                     <div id="coupons-list" class="space-y-3"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Portfolio Tab -->
-        <div id="portfolio-tab" class="tab-content">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div class="lg:col-span-1 bg-zinc-900 p-6 rounded-xl gold-border h-fit">
-                    <h3 class="text-xl font-bold mb-4 border-b border-zinc-800 pb-2">إضافة عمل</h3>
-                    <div class="space-y-4">
-                        <input type="text" id="portfolio-title" placeholder="عنوان العمل" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
-                        <textarea id="portfolio-desc" placeholder="وصف العمل" class="w-full p-2 bg-black border border-zinc-700 rounded h-20 text-sm outline-none focus:border-gold-text"></textarea>
-                        
-                        <div class="border-2 border-dashed border-zinc-700 p-4 rounded-lg text-center hover:border-gold-text transition-colors">
-                            <label class="cursor-pointer block">
-                                <span class="text-zinc-400 block mb-2 text-xs">رفع صورة العمل</span>
-                                <input type="file" id="portfolio-file" accept="image/*" class="hidden">
-                                <div class="gold-bg text-black px-4 py-2 rounded font-bold inline-block text-xs">اختر الصورة</div>
-                            </label>
-                        </div>
-                        <div id="portfolio-preview" class="w-full h-32 bg-black border border-zinc-800 rounded overflow-hidden"></div>
-                        
-                        <button onclick="addPortfolioItem()" class="w-full p-3 gold-bg text-black font-bold rounded">إضافة العمل</button>
-                    </div>
-                </div>
-                <div class="lg:col-span-2 bg-zinc-900 p-6 rounded-xl gold-border">
-                    <h3 class="text-xl font-bold mb-4">الأعمال المنشورة</h3>
-                    <div id="portfolio-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
                 </div>
             </div>
         </div>
@@ -208,23 +168,10 @@
 
         <!-- Stats Tab -->
         <div id="stats-tab" class="tab-content">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div class="bg-zinc-900 p-8 rounded-xl gold-border text-center">
-                    <h4 class="text-zinc-400 mb-2 text-sm">إجمالي الزوار</h4>
-                    <p id="stat-total-visitors" class="text-4xl font-bold gradient-text">0</p>
-                </div>
-                <div class="bg-zinc-900 p-8 rounded-xl gold-border text-center">
-                    <h4 class="text-zinc-400 mb-2 text-sm">الزوار الحاليين</h4>
-                    <p id="stat-active-visitors" class="text-4xl font-bold text-green-500">0</p>
-                </div>
-                <div class="bg-zinc-900 p-8 rounded-xl gold-border text-center">
-                    <h4 class="text-zinc-400 mb-2 text-sm">إجمالي المنتجات</h4>
-                    <p id="stat-products" class="text-4xl font-bold gradient-text">0</p>
-                </div>
-                <div class="bg-zinc-900 p-8 rounded-xl gold-border text-center">
-                    <h4 class="text-zinc-400 mb-2 text-sm">إجمالي الطلبات</h4>
-                    <p id="stat-orders" class="text-4xl font-bold gradient-text">0</p>
-                </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-zinc-900 p-8 rounded-xl gold-border text-center"><h4 class="text-zinc-400 mb-2">إجمالي المنتجات</h4><p id="stat-products" class="text-4xl font-bold gradient-text">0</p></div>
+                <div class="bg-zinc-900 p-8 rounded-xl gold-border text-center"><h4 class="text-zinc-400 mb-2">إجمالي الطلبات</h4><p id="stat-orders" class="text-4xl font-bold gradient-text">0</p></div>
+                <div class="bg-zinc-900 p-8 rounded-xl gold-border text-center"><h4 class="text-zinc-400 mb-2">حالة المتجر</h4><p class="text-4xl font-bold text-green-500">نشط</p></div>
             </div>
         </div>
     </div>
@@ -272,9 +219,7 @@
             loadProducts();
             loadOrders();
             loadCoupons();
-            loadPortfolio();
             loadTestimonials();
-            loadStats();
         }
 
         // Tab Switching
@@ -427,28 +372,17 @@
             document.getElementById('product-id').value = id;
             document.getElementById('p-name').value = p.name;
             document.getElementById('p-price').value = p.price;
-            document.getElementById('p-stock').value = p.stock;
+            document.getElementById('p-stock').value = p.stock || 0;
             document.getElementById('p-category').value = p.category || '';
             document.getElementById('p-desc').value = p.description || '';
             document.getElementById('p-status').value = p.status;
-            currentProductImages = p.images || [];
+            currentProductImages = [...(p.images || [])];
             renderPreviews();
-            document.getElementById('form-title').innerText = 'تعديل المنتج';
-            document.getElementById('cancel-edit-btn').classList.remove('hidden');
             document.getElementById('variants-list').innerHTML = '';
             (p.variants || []).forEach(v => addVariantField(v.name, v.price));
-        };
-
-        window.delProduct = async (id) => {
-            if(confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
-                try {
-                    await deleteDoc(doc(db, "products", id));
-                    alert('تم حذف المنتج بنجاح');
-                    await loadProducts();
-                } catch (err) {
-                    alert("خطأ في الحذف: " + err.message);
-                }
-            }
+            document.getElementById('form-title').innerText = 'تعديل المنتج';
+            document.getElementById('cancel-edit-btn').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
         window.resetProductForm = () => {
@@ -459,307 +393,253 @@
             document.getElementById('p-category').value = '';
             document.getElementById('p-desc').value = '';
             document.getElementById('p-status').value = 'available';
-            document.getElementById('form-title').innerText = 'إضافة/تعديل منتج';
-            document.getElementById('cancel-edit-btn').classList.add('hidden');
-            document.getElementById('variants-list').innerHTML = '';
             currentProductImages = [];
             renderPreviews();
+            document.getElementById('variants-list').innerHTML = '';
+            document.getElementById('form-title').innerText = 'إضافة منتج جديد';
+            document.getElementById('cancel-edit-btn').classList.add('hidden');
+        };
+
+        window.delProduct = async (id) => {
+            if(confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
+                await deleteDoc(doc(db, "products", id));
+                loadProducts();
+            }
+        };
+
+        // --- ZIP Download Logic ---
+        window.downloadImageGroup = async (btn, groupName, imageUrls) => {
+            const originalText = btn.innerText;
+            btn.disabled = true;
+            btn.innerText = "جاري التحميل...";
+            
+            const zip = new JSZip();
+            const folder = zip.folder(groupName);
+            
+            try {
+                const promises = imageUrls.map(async (url, index) => {
+                    const response = await fetch(url);
+                    const blob = await response.blob();
+                    const extension = url.split('.').pop().split(/\#|\?/)[0] || 'jpg';
+                    folder.file(`${groupName}_${index + 1}.${extension}`, blob);
+                });
+                
+                await Promise.all(promises);
+                const content = await zip.generateAsync({ type: "blob" });
+                saveAs(content, `${groupName}.zip`);
+                btn.innerText = "تم التحميل ✅";
+            } catch (err) {
+                console.error("Download error", err);
+                alert("خطأ أثناء تحميل الصور");
+                btn.innerText = "فشل التحميل ❌";
+            } finally {
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerText = originalText;
+                }, 2000);
+            }
         };
 
         // --- Orders Management ---
-        async function loadOrders() {
+        window.loadOrders = async () => {
             const list = document.getElementById('orders-list');
-            try {
-                const snapshot = await getDocs(query(collection(db, "orders"), orderBy("createdAt", "desc")));
-                list.innerHTML = '';
-                if (snapshot.empty) {
-                    list.innerHTML = '<p class="text-center text-zinc-500 py-10">لا توجد طلبات</p>';
-                    document.getElementById('orders-count-badge').classList.add('hidden');
-                    return;
-                }
-                document.getElementById('orders-count-badge').innerText = snapshot.size;
-                document.getElementById('orders-count-badge').classList.remove('hidden');
-                document.getElementById('stat-orders').innerText = snapshot.size;
+            const snapshot = await getDocs(query(collection(db, "orders"), orderBy("createdAt", "desc")));
+            list.innerHTML = '';
+            let count = 0;
+            
+            // Get all coupons usage info
+            const couponUsage = {};
+            
+            snapshot.forEach(docData => {
+                const o = docData.data();
+                const id = docData.id;
+                count++;
                 
-                snapshot.forEach(docData => {
-                    const order = docData.data();
-                    const date = new Date(order.createdAt).toLocaleDateString('ar-EG');
-                    list.innerHTML += `
-                        <div class="p-4 bg-black rounded border border-zinc-800">
-                            <div class="flex justify-between items-start mb-3">
-                                <div>
-                                    <h4 class="font-bold">رقم الطلب: #${order.orderNumber}</h4>
-                                    <p class="text-xs text-zinc-500">${date}</p>
-                                </div>
-                                <span class="px-3 py-1 rounded text-xs font-bold ${order.status === 'قيد المراجعة' ? 'bg-yellow-600' : order.status === 'تم التأكيد' ? 'bg-blue-600' : 'bg-green-600'}">${order.status}</span>
+                // Track coupon usage
+                if(o.couponCode) {
+                    couponUsage[o.couponCode] = (couponUsage[o.couponCode] || 0) + 1;
+                }
+                
+                const itemsStr = (o.items || []).map(i => `${i.name} ${i.variant ? '('+i.variant+')' : ''} × ${i.qty}`).join(' - ');
+                
+                let groupsHtml = '';
+                if(o.imageGroups && o.imageGroups.length > 0) {
+                    groupsHtml = o.imageGroups.map(g => `
+                        <div class="mt-2 p-3 bg-zinc-900 rounded border border-zinc-800">
+                            <div class="flex justify-between items-center mb-2">
+                                <p class="text-[11px] font-bold gold-text">${g.name}</p>
+                                <button onclick='window.downloadImageGroup(this, "${g.name.replace(/"/g, '&quot;')}", ${JSON.stringify(g.images)})' class="download-btn bg-gold-text text-black text-[9px] px-2 py-1 rounded font-bold hover:opacity-80">تحميل المجموعة (ZIP) 📥</button>
                             </div>
-                            <p class="text-sm mb-2"><strong>العميل:</strong> ${order.customerName}</p>
-                            <p class="text-sm mb-2"><strong>الهاتف:</strong> ${order.customerPhone}</p>
-                            <p class="text-sm mb-2"><strong>الإجمالي:</strong> ${order.totalPrice} ج</p>
+                            <div class="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                                ${g.images.map(img => `<a href="${img}" target="_blank" class="block flex-shrink-0"><img src="${img}" class="w-16 h-16 object-cover rounded border border-zinc-700"></a>`).join('')}
+                            </div>
                         </div>
-                    `;
-                });
-            } catch (err) {
-                console.error("Orders error:", err);
-                list.innerHTML = '<p class="text-red-500">خطأ في تحميل الطلبات</p>';
+                    `).join('');
+                }
+
+                list.innerHTML += `
+                    <div class="bg-black p-5 rounded-xl border border-zinc-800 space-y-3">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h4 class="font-bold text-md gold-text">#${o.orderNumber || id.slice(0,5)} - ${o.customerName}</h4>
+                                <p class="text-[10px] text-zinc-400">${o.customerPhone} | ${o.customerAddress}</p>
+                                ${o.couponCode ? `<p class="text-[10px] text-green-500 font-bold mt-1">🏷️ تم استخدام كوبون: ${o.couponCode} (خصم ${o.discountAmount || 0} ج)</p>` : ''}
+                            </div>
+                            <div class="flex flex-col items-end gap-2">
+                                <select onchange="window.updateOrderStatus('${id}', this.value)" class="bg-zinc-900 border border-zinc-700 text-[10px] p-1.5 rounded outline-none">
+                                    <option value="قيد المراجعة" ${o.status==='قيد المراجعة'?'selected':''}>قيد المراجعة</option>
+                                    <option value="جاري التنفيذ" ${o.status==='جاري التنفيذ'?'selected':''}>جاري التنفيذ</option>
+                                    <option value="تم التوصيل" ${o.status==='تم التوصيل'?'selected':''}>تم التوصيل</option>
+                                    <option value="ملغي" ${o.status==='ملغي'?'selected':''}>ملغي</option>
+                                </select>
+                                <div class="flex gap-2">
+                                    <a href="https://wa.me/20${o.customerPhone.startsWith('0') ? o.customerPhone.substring(1) : o.customerPhone}" target="_blank" class="bg-green-600 text-white text-[9px] px-2 py-1 rounded font-bold hover:bg-green-700">واتساب مباشر ✅</a>
+                                    <button onclick="window.copyOrder('${o.orderNumber}', '${o.customerName}', '${o.customerPhone}', '${itemsStr}', '${o.totalPrice}')" class="text-[9px] text-zinc-500 underline">نسخ الفاتورة</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-zinc-900/50 p-2 rounded text-[11px] text-zinc-300"><b>الطلبات:</b> ${itemsStr}</div>
+                        ${groupsHtml ? `<div class="space-y-1"><b>مجموعات الصور:</b>${groupsHtml}</div>` : ''}
+                        <div class="flex justify-between items-center pt-2 border-t border-zinc-900">
+                            <button onclick="window.delOrder('${id}')" class="text-red-500 text-[10px]">حذف الطلب</button>
+                            <b class="text-gold-text text-sm">${o.totalPrice} جنيه</b>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('stat-orders').innerText = count;
+            document.getElementById('orders-count-badge').innerText = count;
+            document.getElementById('orders-count-badge').classList.remove('hidden');
+            
+            // Store coupon usage globally to be used by loadCoupons
+            window.currentCouponUsage = couponUsage;
+            loadCoupons();
+        };
+
+        window.updateOrderStatus = async (id, newStatus) => {
+            await updateDoc(doc(db, "orders", id), { status: newStatus });
+            alert('تم تحديث حالة الطلب');
+        };
+
+        window.delOrder = async (id) => {
+            if(confirm('حذف الطلب نهائياً؟')) {
+                await deleteDoc(doc(db, "orders", id));
+                loadOrders();
             }
-        }
+        };
+
+        window.copyOrder = (num, name, phone, items, total) => {
+            const text = `طلب رقم: #${num}\nالعميل: ${name}\nالهاتف: ${phone}\nالطلبات: ${items}\nالإجمالي: ${total} جنيه\nشكراً لتعاملك مع زهراء ستوديو!`;
+            navigator.clipboard.writeText(text).then(() => alert('تم نسخ التفاصيل!'));
+        };
 
         // --- Coupons Management ---
-        async function addCoupon() {
-            const code = document.getElementById('coupon-code').value.trim();
+        window.loadCoupons = async () => {
+            const list = document.getElementById('coupons-list');
+            const snap = await getDocs(collection(db, "coupons"));
+            list.innerHTML = '';
+            const usage = window.currentCouponUsage || {};
+            
+            snap.forEach(docData => {
+                const c = docData.data();
+                const id = docData.id;
+                const count = usage[c.code] || 0;
+                const now = new Date();
+                const isExpired = c.expiryTime && new Date(c.expiryTime.seconds * 1000) < now;
+                const isMaxUsersReached = c.maxUsers && count >= c.maxUsers;
+                const statusColor = isExpired ? 'text-red-500' : isMaxUsersReached ? 'text-orange-500' : 'text-green-500';
+                const statusText = isExpired ? '❌ انتهاء الصلاحية' : isMaxUsersReached ? '⚠️ انتهى العدد المحدد' : '✅ نشط';
+                
+                list.innerHTML += `
+                    <div class="bg-black p-4 rounded-lg border border-zinc-700 flex justify-between items-center">
+                        <div>
+                            <p class="font-bold gold-text">${c.code}</p>
+                            <p class="text-[10px] text-zinc-400">${c.description || ''}</p>
+                            <p class="text-[10px]">خصم: ${c.discount}${c.type === 'percentage' ? '%' : ' جنيه'}</p>
+                            <p class="text-[10px] text-blue-400 font-bold mt-1">📈 الاستخدام: ${count}/${c.maxUsers || '∞'}</p>
+                            ${c.expiryTime ? `<p class="text-[10px] text-yellow-400 font-bold mt-1">⏰ ينتهي: ${new Date(c.expiryTime.seconds * 1000).toLocaleString('ar-EG')}</p>` : ''}
+                            <p class="text-[10px] ${statusColor} font-bold mt-1">${statusText}</p>
+                        </div>
+                        <button onclick="window.deleteCoupon('${id}')" class="bg-red-600/20 text-red-500 border border-red-600 px-3 py-1 rounded text-[10px]">حذف</button>
+                    </div>
+                `;
+            });
+        };
+
+        window.addCoupon = async () => {
+            const code = document.getElementById('coupon-code').value.trim().toUpperCase();
             const discount = parseFloat(document.getElementById('coupon-discount').value);
             const type = document.getElementById('coupon-type').value;
             const desc = document.getElementById('coupon-desc').value.trim();
-            const duration = parseInt(document.getElementById('coupon-duration').value);
-            const durationUnit = document.getElementById('coupon-duration-unit').value;
-            const maxUsers = parseInt(document.getElementById('coupon-max-users').value);
-
-            if(!code || !discount || !duration || !maxUsers) {
-                alert('يرجى ملء جميع الحقول');
-                return;
-            }
-
-            // حساب وقت الانتهاء
-            const now = new Date();
-            let expiryTime = new Date(now);
+            const maxUsers = parseInt(document.getElementById('coupon-max-users').value) || 1;
+            const duration = parseInt(document.getElementById('coupon-duration').value) || 1;
+            const durationType = document.getElementById('coupon-duration-type').value;
             
-            switch(durationUnit) {
-                case 'minutes': expiryTime.setMinutes(expiryTime.getMinutes() + duration); break;
-                case 'hours': expiryTime.setHours(expiryTime.getHours() + duration); break;
-                case 'days': expiryTime.setDate(expiryTime.getDate() + duration); break;
-                case 'months': expiryTime.setMonth(expiryTime.getMonth() + duration); break;
-            }
-
+            if (!code || isNaN(discount)) { alert('يرجى إدخال الكود وقيمة الخصم'); return; }
+            
             try {
-                await addDoc(collection(db, "coupons"), {
-                    code: code.toUpperCase(),
-                    discount: discount,
-                    type: type,
-                    description: desc,
-                    maxUsers: maxUsers,
-                    usedCount: 0,
-                    expiryTime: expiryTime.getTime(),
-                    createdAt: Date.now(),
-                    isActive: true
+                const now = new Date();
+                let expiryTime = new Date(now);
+                
+                switch(durationType) {
+                    case 'minutes': expiryTime.setMinutes(expiryTime.getMinutes() + duration); break;
+                    case 'hours': expiryTime.setHours(expiryTime.getHours() + duration); break;
+                    case 'days': expiryTime.setDate(expiryTime.getDate() + duration); break;
+                    case 'months': expiryTime.setMonth(expiryTime.getMonth() + duration); break;
+                }
+                
+                await addDoc(collection(db, "coupons"), { 
+                    code, discount, type, description: desc, active: true,
+                    maxUsers: maxUsers, usageCount: 0, createdAt: now, expiryTime: expiryTime,
+                    durationType: durationType, duration: duration
                 });
-                alert('تم إضافة الكوبون بنجاح');
                 document.getElementById('coupon-code').value = '';
                 document.getElementById('coupon-discount').value = '';
                 document.getElementById('coupon-desc').value = '';
-                document.getElementById('coupon-duration').value = '';
-                document.getElementById('coupon-max-users').value = '';
-                await loadCoupons();
+                document.getElementById('coupon-max-users').value = '1';
+                document.getElementById('coupon-duration').value = '1';
+                loadCoupons();
+                alert('تم إضافة الكوبون');
             } catch (err) {
                 alert("خطأ: " + err.message);
             }
-        }
-
-        async function loadCoupons() {
-            const list = document.getElementById('coupons-list');
-            try {
-                const snapshot = await getDocs(collection(db, "coupons"));
-                list.innerHTML = '';
-                if (snapshot.empty) {
-                    list.innerHTML = '<p class="text-center text-zinc-500 py-10">لا توجد كوبونات</p>';
-                    return;
-                }
-                
-                snapshot.forEach(docData => {
-                    const coupon = docData.data();
-                    const now = Date.now();
-                    const isExpired = coupon.expiryTime < now;
-                    const isMaxUsersReached = coupon.usedCount >= coupon.maxUsers;
-                    
-                    const expiryDate = new Date(coupon.expiryTime).toLocaleDateString('ar-EG');
-                    const expiryTime = new Date(coupon.expiryTime).toLocaleTimeString('ar-EG');
-                    
-                    list.innerHTML += `
-                        <div class="p-4 bg-black rounded border border-zinc-800">
-                            <div class="flex justify-between items-start mb-2">
-                                <h4 class="font-bold text-gold-text">${coupon.code}</h4>
-                                <div class="flex gap-2">
-                                    ${isExpired ? '<span class="expired-badge">انتهاء الصلاحية</span>' : '<span class="active-badge">نشط</span>'}
-                                </div>
-                            </div>
-                            <p class="text-sm mb-1"><strong>الخصم:</strong> ${coupon.discount}${coupon.type === 'percentage' ? '%' : ' ج'}</p>
-                            <p class="text-sm mb-1"><strong>الوصف:</strong> ${coupon.description}</p>
-                            <p class="text-sm mb-1"><strong>المستخدمين:</strong> ${coupon.usedCount}/${coupon.maxUsers}</p>
-                            <p class="text-sm mb-2"><strong>الصلاحية:</strong> ${expiryDate} ${expiryTime}</p>
-                            <button onclick="window.delCoupon('${docData.id}')" class="text-red-500 text-xs hover:underline">حذف</button>
-                        </div>
-                    `;
-                });
-            } catch (err) {
-                console.error("Coupons error:", err);
-            }
-        }
-
-        window.delCoupon = async (id) => {
-            if(confirm('هل أنت متأكد من حذف هذا الكوبون؟')) {
-                try {
-                    await deleteDoc(doc(db, "coupons", id));
-                    alert('تم حذف الكوبون بنجاح');
-                    await loadCoupons();
-                } catch (err) {
-                    alert("خطأ: " + err.message);
-                }
-            }
         };
 
-        window.addCoupon = addCoupon;
-
-        // --- Portfolio Management ---
-        let currentPortfolioImage = '';
-
-        document.getElementById('portfolio-file').onchange = (e) => {
-            const file = e.target.files[0];
-            if(file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    currentPortfolioImage = event.target.result;
-                    document.getElementById('portfolio-preview').innerHTML = `<img src="${currentPortfolioImage}" class="w-full h-full object-cover">`;
-                };
-                reader.readAsDataURL(file);
+        window.deleteCoupon = async (id) => {
+            if (confirm('حذف الكوبون؟')) {
+                await deleteDoc(doc(db, "coupons", id));
+                loadCoupons();
             }
         };
-
-        async function addPortfolioItem() {
-            const title = document.getElementById('portfolio-title').value.trim();
-            const desc = document.getElementById('portfolio-desc').value.trim();
-
-            if(!title || !currentPortfolioImage) {
-                alert('يرجى إدخال العنوان واختيار صورة');
-                return;
-            }
-
-            try {
-                await addDoc(collection(db, "portfolio"), {
-                    title: title,
-                    description: desc,
-                    image: currentPortfolioImage,
-                    createdAt: Date.now()
-                });
-                alert('تم إضافة العمل بنجاح');
-                document.getElementById('portfolio-title').value = '';
-                document.getElementById('portfolio-desc').value = '';
-                document.getElementById('portfolio-file').value = '';
-                currentPortfolioImage = '';
-                document.getElementById('portfolio-preview').innerHTML = '';
-                await loadPortfolio();
-            } catch (err) {
-                alert("خطأ: " + err.message);
-            }
-        }
-
-        async function loadPortfolio() {
-            const list = document.getElementById('portfolio-list');
-            try {
-                const snapshot = await getDocs(query(collection(db, "portfolio"), orderBy("createdAt", "desc")));
-                list.innerHTML = '';
-                if (snapshot.empty) {
-                    list.innerHTML = '<p class="text-center text-zinc-500 py-10 col-span-full">لا توجد أعمال</p>';
-                    return;
-                }
-                
-                snapshot.forEach(docData => {
-                    const item = docData.data();
-                    list.innerHTML += `
-                        <div class="bg-black rounded border border-zinc-800 overflow-hidden">
-                            <img src="${item.image}" class="w-full h-32 object-cover">
-                            <div class="p-3">
-                                <h4 class="font-bold text-sm mb-1">${item.title}</h4>
-                                <p class="text-xs text-zinc-500 mb-3">${item.description}</p>
-                                <button onclick="window.delPortfolio('${docData.id}')" class="text-red-500 text-xs hover:underline">حذف</button>
-                            </div>
-                        </div>
-                    `;
-                });
-            } catch (err) {
-                console.error("Portfolio error:", err);
-            }
-        }
-
-        window.delPortfolio = async (id) => {
-            if(confirm('هل أنت متأكد من حذف هذا العمل؟')) {
-                try {
-                    await deleteDoc(doc(db, "portfolio", id));
-                    alert('تم حذف العمل بنجاح');
-                    await loadPortfolio();
-                } catch (err) {
-                    alert("خطأ: " + err.message);
-                }
-            }
-        };
-
-        window.addPortfolioItem = addPortfolioItem;
 
         // --- Testimonials Management ---
-        async function loadTestimonials() {
+        window.loadTestimonials = async () => {
             const list = document.getElementById('testimonials-list');
-            try {
-                const snapshot = await getDocs(query(collection(db, "testimonials"), orderBy("createdAt", "desc")));
-                list.innerHTML = '';
-                if (snapshot.empty) {
-                    list.innerHTML = '<p class="text-center text-zinc-500 py-10 col-span-full">لا توجد آراء</p>';
-                    return;
-                }
-                
-                snapshot.forEach(docData => {
-                    const testimonial = docData.data();
-                    const stars = '⭐'.repeat(testimonial.rating || 5);
-                    list.innerHTML += `
-                        <div class="bg-black rounded border border-zinc-800 p-4">
-                            <div class="flex items-center gap-2 mb-2">
-                                <img src="${testimonial.avatarUrl || 'https://via.placeholder.com/40x40'}" class="w-10 h-10 rounded-full object-cover">
-                                <div class="flex-1">
-                                    <h4 class="font-bold text-sm">${testimonial.name}</h4>
-                                    <p class="text-xs text-gold-text">${stars}</p>
-                                </div>
-                            </div>
-                            <p class="text-xs text-zinc-300 mb-3">${testimonial.text}</p>
-                            <button onclick="window.delTestimonial('${docData.id}')" class="text-red-500 text-xs hover:underline">حذف</button>
+            const snap = await getDocs(collection(db, "testimonials"));
+            list.innerHTML = '';
+            snap.forEach(docData => {
+                const t = docData.data();
+                const id = docData.id;
+                list.innerHTML += `
+                    <div class="bg-black p-4 rounded-lg border border-zinc-700">
+                        <div class="flex justify-between">
+                            <p class="font-bold text-sm">${t.name}</p>
+                            <p class="text-gold-text text-xs">${'⭐'.repeat(t.rating || 5)}</p>
                         </div>
-                    `;
-                });
-            } catch (err) {
-                console.error("Testimonials error:", err);
-            }
-        }
+                        <p class="text-xs text-zinc-400 my-2 italic">"${t.text}"</p>
+                        <button onclick="window.deleteTestimonial('${id}')" class="text-red-500 text-[10px] underline">حذف</button>
+                    </div>
+                `;
+            });
+        };
 
-        window.delTestimonial = async (id) => {
-            if(confirm('هل أنت متأكد من حذف هذا الرأي؟')) {
-                try {
-                    await deleteDoc(doc(db, "testimonials", id));
-                    alert('تم حذف الرأي بنجاح');
-                    await loadTestimonials();
-                } catch (err) {
-                    alert("خطأ: " + err.message);
-                }
+        window.deleteTestimonial = async (id) => {
+            if (confirm('حذف هذا الرأي؟')) {
+                await deleteDoc(doc(db, "testimonials", id));
+                loadTestimonials();
             }
         };
 
-        // --- Stats Management ---
-        async function loadStats() {
-            try {
-                const productsSnap = await getDocs(collection(db, "products"));
-                const ordersSnap = await getDocs(collection(db, "orders"));
-                const visitorsSnap = await getDocs(collection(db, "visitors"));
-                const activeVisitorsSnap = await getDocs(collection(db, "activeVisitors"));
-
-                document.getElementById('stat-products').innerText = productsSnap.size;
-                document.getElementById('stat-orders').innerText = ordersSnap.size;
-                
-                let totalVisitors = 0;
-                visitorsSnap.forEach(doc => {
-                    totalVisitors += doc.data().count || 0;
-                });
-                document.getElementById('stat-total-visitors').innerText = totalVisitors;
-                document.getElementById('stat-active-visitors').innerText = activeVisitorsSnap.size;
-            } catch (err) {
-                console.error("Stats error:", err);
-            }
-        }
     </script>
 </body>
 </html>
