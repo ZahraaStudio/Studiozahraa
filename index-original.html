@@ -234,23 +234,21 @@
   <div id="product-modal" class="modal fixed inset-0 hidden flex items-center justify-center p-4 z-[1100]">
     <div class="bg-zinc-900 w-full max-w-3xl rounded-3xl overflow-hidden relative max-h-[90vh] flex flex-col">
       <button onclick="closeModal()" class="absolute top-4 right-4 z-[1200] bg-black/50 text-white w-8 h-8 rounded-full">✕</button>
-      <div id="modal-content" class="overflow-y-auto p-6 flex-1" ontouchstart="handleTouchStart(event)" ontouchend="handleTouchEnd(event)"></div>
+      <div id="modal-content" class="overflow-y-auto p-6 flex-1"></div>
     </div>
   </div>
 
   <!-- Testimonial Modal -->
   <div id="testimonial-modal" class="modal fixed inset-0 hidden flex items-center justify-center p-4 z-[1200]">
-    <div class="bg-zinc-900 w-full max-w-md rounded-3xl p-8 space-y-4 max-h-[90vh] overflow-y-auto"      <h2 class="text-2xl font-bold mb-4">شارك رأيك معنا</h2>
+    <div class="bg-zinc-900 w-full max-w-md rounded-3xl p-8 space-y-4 max-h-[90vh] overflow-y-auto">
+      <h2 class="text-2xl font-bold mb-4">شارك رأيك معنا</h2>
       <div class="space-y-3">
         <input type="text" id="testimonial-name" placeholder="اسمك" class="w-full p-3 bg-black border border-zinc-800 rounded-xl outline-none focus:border-gold-text">
         <textarea id="testimonial-text" placeholder="رأيك أو تجربتك معنا..." class="w-full p-3 bg-black border border-zinc-800 rounded-xl outline-none focus:border-gold-text h-24"></textarea>
         <div>
-          <label class="text-sm text-gold-text mb-2 block">صورتك:</label>
-          <input type="file" id="testimonial-avatar" accept="image/*" class="w-full p-3 bg-black border border-zinc-800 rounded-xl">
-        </div>
-        <div>
           <label class="text-sm text-gold-text mb-2 block">التقييم:</label>
-          <select id="testimonial-rating" class="w-full p-3 bg-black border border-zinc-800 rounded-xl outline-none focus:border-gold-text"></select>      <option value="5">⭐⭐⭐⭐⭐ ممتاز جداً</option>
+          <select id="testimonial-rating" class="w-full p-3 bg-black border border-zinc-800 rounded-xl outline-none focus:border-gold-text">
+            <option value="5">⭐⭐⭐⭐⭐ ممتاز جداً</option>
             <option value="4">⭐⭐⭐⭐ جيد جداً</option>
             <option value="3">⭐⭐⭐ جيد</option>
             <option value="2">⭐⭐ مقبول</option>
@@ -259,7 +257,8 @@
         </div>
       </div>
       <div class="pt-4 space-y-2">
-        <button onclick="submitTestimonialWithImage()" class="w-full gold-bg text-black py-3 rounded-xl font-bold hover:bg-yellow-500">إرسال الرأي</button>lick="closeTestimonialModal()" class="w-full text-zinc-500 text-sm">إلغاء</button>
+        <button onclick="submitTestimonial()" class="w-full gold-bg text-black py-3 rounded-xl font-bold">إرسال الرأي</button>
+        <button onclick="closeTestimonialModal()" class="w-full text-zinc-500 text-sm">إلغاء</button>
       </div>
     </div>
   </div>
@@ -559,7 +558,6 @@
 
       filtered.forEach(p => {
         const displayPrice = p.variants?.length ? `تبدأ من ${Math.min(...p.variants.map(v=>v.price))} ج` : `${p.price} ج`;
-        const productCode = productCodes[p.category] || 'ZHR-' + Math.random().toString(36).substr(2, 6).toUpperCase();
         grid.innerHTML += `
           <div class="product-card group">
             <div onclick="openModal('${p.id}')" class="h-48 md:h-64 overflow-hidden cursor-pointer relative">
@@ -570,7 +568,6 @@
             </div>
             <div class="p-4">
               <h3 class="font-bold text-sm md:text-base mb-1 truncate">${p.name}</h3>
-              <p class="text-[10px] text-zinc-500 mb-2">الكود: <span class="gold-text font-bold">${productCode}</span></p>
               <p class="gold-text font-bold mb-3 text-sm">${displayPrice}</p>
               <div class="grid grid-cols-2 gap-2">
                 <button onclick="openModal('${p.id}')" class="bg-zinc-800 text-white text-[10px] py-2 rounded-lg font-bold hover:bg-zinc-700 transition-colors">التفاصيل</button>
@@ -588,12 +585,7 @@
     function openModal(id) {
       const p = allProducts.find(x => x.id === id);
       const content = document.getElementById('modal-content');
-      let imagesHtml = (p.images || []).map(img => `<img src="${img}" class="w-full h-64 md:h-80 object-cover rounded-2xl flex-shrink-0 snap-center cursor-pointer hover:opacity-80 transition-opacity" onclick="openImageViewer('${img}')" onload="startAutoSlide(${JSON.stringify(p.images || [])})">`).join('');
-      
-      // بدء السلايدر التلقائي
-      if(p.images && p.images.length > 1) {
-        setTimeout(() => startAutoSlide(p.images), 500);
-      }
+      let imagesHtml = (p.images || []).map(img => `<img src="${img}" class="w-full h-64 md:h-80 object-cover rounded-2xl flex-shrink-0 snap-center cursor-pointer hover:opacity-80 transition-opacity" onclick="openImageViewer('${img}')">`).join('');
       let variantsHtml = (p.variants || []).map((v, i) => `
         <label class="flex items-center gap-3 p-3 bg-black border border-zinc-800 rounded-xl cursor-pointer hover:border-gold-text transition-colors">
           <input type="radio" name="variant" value="${i}" ${i===0?'checked':''} onchange="updateModalPrice('${id}', ${v.price})" class="accent-gold-text">
@@ -604,18 +596,12 @@
         </label>
       `).join('');
 
-      const productCode = productCodes[p.category] || 'ZHR-' + Math.random().toString(36).substr(2, 6).toUpperCase();
       content.innerHTML = `
         <div class="flex overflow-x-auto snap-x snap-mandatory gap-2 no-scrollbar mb-6">
           ${imagesHtml || '<div class="w-full h-64 bg-zinc-800 rounded-2xl flex items-center justify-center">لا توجد صور</div>'}
         </div>
         <div class="space-y-4">
-          <div class="flex justify-between items-start">
-            <div>
-              <h2 class="text-2xl font-bold">${p.name}</h2>
-              <p class="text-xs text-zinc-500 mt-2">الكود: <span class="gold-text font-bold text-sm">${productCode}</span></p>
-            </div>
-          </div>
+          <h2 class="text-2xl font-bold">${p.name}</h2>
           <p id="modal-price" class="gold-text text-xl font-bold">${p.variants?.length ? p.variants[0].price : p.price} جنيه</p>
           <p class="text-zinc-400 text-sm leading-relaxed">${p.description || ''}</p>
           ${p.variants?.length ? `<div class="space-y-2"><p class="text-xs text-zinc-500">اختر النوع / المقاس:</p>${variantsHtml}</div>` : ''}
@@ -626,20 +612,10 @@
         </div>
       `;
       document.getElementById('product-modal').classList.remove('hidden');
-      
-      // إضافة دعم السحب بين الصور
-      const imagesContainer = document.querySelector('.flex.overflow-x-auto');
-      if(imagesContainer) {
-        imagesContainer.addEventListener('touchstart', handleTouchStart, false);
-        imagesContainer.addEventListener('touchend', handleTouchEnd, false);
-      }
     }
 
     function updateModalPrice(id, price) { document.getElementById('modal-price').innerText = price + ' جنيه'; }
-    function closeModal() { 
-      stopAutoSlide();
-      document.getElementById('product-modal').classList.add('hidden'); 
-    }
+    function closeModal() { document.getElementById('product-modal').classList.add('hidden'); }
 
     function addCartFromModal(id) {
       const p = allProducts.find(x => x.id === id);
@@ -811,22 +787,6 @@
       }
     }
 
-    // إضافة أكواد المنتجات
-    const productCodes = {
-      'تابلوهات': 'ZHR-TAB-001',
-      'ألبومات': 'ZHR-ALB-002',
-      'مجات': 'ZHR-MUG-003',
-      'براويز': 'ZHR-FRM-004',
-      'بطاقات': 'ZHR-CAR-005',
-      'كانفاس': 'ZHR-CAN-006'
-    };
-
-    // دالة لإضافة كود المنتج في العرض
-    function addProductCode(productName, category) {
-      const code = productCodes[category] || 'ZHR-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-      return code;
-    }
-
     // Placeholder functions for Portfolio and Testimonials if external scripts are not available
     function renderPortfolio() {
         const grid = document.getElementById('portfolio-grid');
@@ -835,150 +795,16 @@
         grid.innerHTML = '<p class="text-zinc-500 col-span-full text-center py-10">جاري تحميل معرض الأعمال...</p>';
     }
 
-    // متغيرات للسحب بين المنتجات
-    let touchStartX = 0, touchEndX = 0;
-    let currentImageIndex = 0;
-    let autoSlideInterval = null;
-
-    // دالة لبدء السحب
-    function handleTouchStart(e) {
-      touchStartX = e.changedTouches[0].clientX;
-    }
-
-    // دالة لإنهاء السحب
-    function handleTouchEnd(e) {
-      touchEndX = e.changedTouches[0].clientX;
-      handleSwipe();
-    }
-
-    // دالة للتعامل مع السحب
-    function handleSwipe() {
-      const diff = touchStartX - touchEndX;
-      if(Math.abs(diff) > 50) {
-        if(diff > 0) nextProduct();
-        else prevProduct();
-      }
-    }
-
-    // دالة للانتقال للمنتج التالي
-    function nextProduct() {
-      const products = document.querySelectorAll('[data-product-id]');
-      if(products.length === 0) return;
-      const currentIndex = Array.from(products).findIndex(p => p.style.display !== 'none');
-      const nextIndex = (currentIndex + 1) % products.length;
-      products.forEach(p => p.style.display = 'none');
-      products[nextIndex].style.display = 'block';
-    }
-
-    // دالة للانتقال للمنتج السابق
-    function prevProduct() {
-      const products = document.querySelectorAll('[data-product-id]');
-      if(products.length === 0) return;
-      const currentIndex = Array.from(products).findIndex(p => p.style.display !== 'none');
-      const prevIndex = (currentIndex - 1 + products.length) % products.length;
-      products.forEach(p => p.style.display = 'none');
-      products[prevIndex].style.display = 'block';
-    }
-
-    // دالة لتشغيل السلايدر التلقائي للصور
-    function startAutoSlide(images) {
-      if(autoSlideInterval) clearInterval(autoSlideInterval);
-      if(!images || images.length <= 1) return;
-      
-      currentImageIndex = 0;
-      autoSlideInterval = setInterval(() => {
-        currentImageIndex = (currentImageIndex + 1) % images.length;
-        const mainImage = document.getElementById('main-image');
-        if(mainImage) {
-          mainImage.src = images[currentImageIndex];
-        }
-      }, 3000);
-    }
-
-    // دالة لإيقاف السلايدر التلقائي
-    function stopAutoSlide() {
-      if(autoSlideInterval) clearInterval(autoSlideInterval);
-    }
-
-    async function loadTestimonials() {
+    function loadTestimonials() {
         const grid = document.getElementById('testimonials-grid');
         if(!grid) return;
-        try {
-          const snap = await db.collection('testimonials').orderBy('createdAt', 'desc').get();
-          grid.innerHTML = '';
-          if(snap.empty) {
-            grid.innerHTML = '<p class="text-zinc-500 col-span-full text-center py-10">لا توجد آراء حالياً</p>';
-            return;
-          }
-          snap.forEach(doc => {
-            const item = doc.data();
-            const stars = '⭐'.repeat(item.rating || 5);
-            const avatarUrl = item.avatarUrl || 'https://via.placeholder.com/60x60?text=' + encodeURIComponent(item.name.charAt(0));
-            grid.innerHTML += `
-              <div class="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 hover:border-gold-text transition-colors">
-                <div class="flex items-center gap-3 mb-4">
-                  <img src="${avatarUrl}" alt="${item.name}" class="w-12 h-12 rounded-full object-cover border border-gold-text">
-                  <div>
-                    <h3 class="font-bold">${item.name}</h3>
-                    <p class="text-xs text-gold-text">${stars}</p>
-                  </div>
-                </div>
-                <p class="text-sm text-zinc-300">${item.text}</p>
-              </div>
-            `;
-          });
-        } catch(e) { console.error('Testimonials error:', e); }
-    }
+        grid.innerHTML = '<p class="text-zinc-500 col-span-full text-center py-10">جاري تحميل الآراء...</p>';
     }
 
     function openTestimonialModal() { document.getElementById('testimonial-modal').classList.remove('hidden'); }
     function closeTestimonialModal() { document.getElementById('testimonial-modal').classList.add('hidden'); }
-    
-    async function submitTestimonialWithImage() {
-      const name = document.getElementById('testimonial-name').value.trim();
-      const text = document.getElementById('testimonial-text').value.trim();
-      const rating = parseInt(document.getElementById('testimonial-rating').value);
-      const avatarFile = document.getElementById('testimonial-avatar').files[0];
+    function submitTestimonial() { alert('شكراً لمشاركتنا رأيك!'); closeTestimonialModal(); }
 
-      if(!name || !text) return alert('يرجى ملء جميع الحقول');
-
-      let avatarUrl = 'https://via.placeholder.com/60x60?text=' + encodeURIComponent(name.charAt(0));
-      
-      if(avatarFile) {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          avatarUrl = e.target.result;
-          try {
-            await db.collection('testimonials').add({
-              name, text, rating, avatarUrl,
-              createdAt: new Date()
-            });
-            alert('شكراً لمشاركتنا رأيك!');
-            document.getElementById('testimonial-name').value = '';
-            document.getElementById('testimonial-text').value = '';
-            document.getElementById('testimonial-avatar').value = '';
-            document.getElementById('testimonial-rating').value = '5';
-            closeTestimonialModal();
-            loadTestimonials();
-          } catch(e) { alert('خطأ: ' + e.message); }
-        };
-        reader.readAsDataURL(avatarFile);
-      } else {
-        try {
-          await db.collection('testimonials').add({
-            name, text, rating, avatarUrl,
-            createdAt: new Date()
-          });
-          alert('شكراً لمشاركتنا رأيك!');
-          document.getElementById('testimonial-name').value = '';
-          document.getElementById('testimonial-text').value = '';
-          document.getElementById('testimonial-avatar').value = '';
-          document.getElementById('testimonial-rating').value = '5';
-          closeTestimonialModal();
-          loadTestimonials();
-        } catch(e) { alert('خطأ: ' + e.message); }
-      }
-    }
     window.onload = init;
   </script>
 </body>
