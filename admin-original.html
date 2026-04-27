@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم استوديو الزهراء - ZAHRAA STUDIO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- JSZip for creating ZIP files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- FileSaver for saving files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        body { font-family: 'Cairo', sans-serif; background-color: #0a0a0a; color: #fff; }
+        .gold-border { border: 1px solid #d4af37; }
+        .gold-bg { background-color: #d4af37; }
+        .gold-text { color: #d4af37; }
+        .gradient-text { background: linear-gradient(to right, #d4af37, #f9e29c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .tab-active { border-bottom: 3px solid #d4af37; color: #d4af37; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .loader { border-top-color: #d4af37; animation: spinner 1.5s linear infinite; }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .download-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    </style>
+</head>
+<body class="p-2 md:p-6">
+    <!-- Auth Section -->
+    <div id="auth-section" class="max-w-md mx-auto mt-20 p-6 bg-zinc-900 rounded-xl gold-border shadow-2xl">
+        <h2 class="text-2xl font-bold mb-6 text-center gradient-text">تسجيل دخول الإدارة</h2>
+        <input type="email" id="email" placeholder="البريد الإلكتروني" class="w-full p-3 mb-4 bg-black border border-zinc-700 rounded text-white outline-none focus:border-gold-text">
+        <input type="password" id="password" placeholder="كلمة المرور" class="w-full p-3 mb-6 bg-black border border-zinc-700 rounded text-white outline-none focus:border-gold-text">
+        <button id="login-btn" class="w-full p-3 gold-bg text-black font-bold rounded hover:opacity-90 transition-all">دخول</button>
+        <p id="login-error" class="text-red-500 mt-4 text-center hidden"></p>
+    </div>
+
+    <!-- Admin Content -->
+    <div id="admin-content" class="hidden max-w-6xl mx-auto">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <div class="flex items-center gap-3">
+                <h1 class="text-2xl md:text-3xl font-bold gradient-text">ZAHRAA STUDIO Admin</h1>
+            </div>
+            <button id="logout-btn" class="bg-red-600/20 text-red-500 border border-red-600 px-4 py-2 rounded font-bold text-xs hover:bg-red-600 hover:text-white transition-all">خروج</button>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div class="flex border-b border-zinc-800 mb-8 overflow-x-auto no-scrollbar">
+            <button onclick="showTab('products-tab')" id="btn-products-tab" class="px-6 py-3 font-bold tab-active whitespace-nowrap">📦 المنتجات</button>
+            <button onclick="showTab('orders-tab')" id="btn-orders-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">🛒 الطلبات <span id="orders-count-badge" class="bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1 hidden">0</span></button>
+            <button onclick="showTab('coupons-tab')" id="btn-coupons-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">🏷️ الكوبونات</button>
+            <button onclick="showTab('testimonials-tab')" id="btn-testimonials-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">⭐ الآراء</button>
+            <button onclick="showTab('stats-tab')" id="btn-stats-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">📊 الإحصائيات</button>
+        </div>
+
+        <!-- Products Tab -->
+        <div id="products-tab" class="tab-content active">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-1 bg-zinc-900 p-6 rounded-xl gold-border h-fit sticky top-4">
+                    <h3 id="form-title" class="text-xl font-bold mb-4 border-b border-zinc-800 pb-2">إضافة/تعديل منتج</h3>
+                    <input type="hidden" id="product-id">
+                    <div class="space-y-4">
+                        <input type="text" id="p-name" placeholder="اسم المنتج" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                        <div class="grid grid-cols-2 gap-4">
+                            <input type="number" id="p-price" placeholder="السعر الأساسي" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                            <input type="number" id="p-stock" placeholder="الكمية" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                        </div>
+                        <input type="text" id="p-category" placeholder="القسم (مجات، براويز...)" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                        
+                        <div class="p-3 bg-black/50 rounded-lg border border-zinc-800 space-y-2">
+                            <p class="text-[10px] text-gold-text font-bold">خيارات المنتج (مقاسات/أنواع):</p>
+                            <div id="variants-list" class="space-y-2"></div>
+                            <button onclick="addVariantField()" class="text-[10px] bg-zinc-800 px-2 py-1 rounded text-zinc-400">+ إضافة خيار</button>
+                        </div>
+
+                        <select id="p-status" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                            <option value="available">متوفر</option>
+                            <option value="out_of_stock">نفذت الكمية</option>
+                        </select>
+                        <textarea id="p-desc" placeholder="وصف المنتج" class="w-full p-2 bg-black border border-zinc-700 rounded h-24 text-sm outline-none focus:border-gold-text"></textarea>
+                        
+                        <!-- Cloudinary Upload -->
+                        <div class="border-2 border-dashed border-zinc-700 p-4 rounded-lg text-center hover:border-gold-text transition-colors">
+                            <label class="cursor-pointer block">
+                                <span class="text-zinc-400 block mb-2 text-xs">رفع صور المعرض (Cloudinary)</span>
+                                <input type="file" id="p-file" multiple accept="image/*" class="hidden">
+                                <div class="gold-bg text-black px-4 py-2 rounded font-bold inline-block text-xs">اختر الصور</div>
+                            </label>
+                            <div id="upload-progress" class="mt-2 hidden">
+                                <div class="w-full bg-zinc-800 rounded-full h-1.5">
+                                    <div id="progress-bar" class="bg-gold-text h-1.5 rounded-full" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="images-preview" class="grid grid-cols-3 gap-2"></div>
+                        
+                        <div class="flex gap-2">
+                            <button id="save-btn" class="flex-1 p-3 gold-bg text-black font-bold rounded shadow-lg shadow-gold-bg/20">حفظ المنتج</button>
+                            <button id="cancel-edit-btn" class="hidden p-3 bg-zinc-800 text-white font-bold rounded" onclick="resetProductForm()">إلغاء</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="lg:col-span-2 bg-zinc-900 p-6 rounded-xl gold-border">
+                    <div class="flex justify-between items-center mb-4 border-b border-zinc-800 pb-2">
+                        <h3 class="text-xl font-bold">قائمة المنتجات</h3>
+                        <input type="text" id="search-products" placeholder="بحث عن منتج..." class="bg-black border border-zinc-700 rounded px-3 py-1 text-sm outline-none focus:border-gold-text">
+                    </div>
+                    <div id="products-list" class="space-y-3">
+                        <div class="flex justify-center py-10"><div class="loader ease-linear rounded-full border-4 border-t-4 border-zinc-800 h-12 w-12"></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Orders Tab -->
+        <div id="orders-tab" class="tab-content">
+            <div class="bg-zinc-900 p-6 rounded-xl gold-border">
+                <div class="flex justify-between items-center mb-6 border-b border-zinc-800 pb-2">
+                    <h3 class="text-xl font-bold">طلبات الأونلاين</h3>
+                    <button onclick="loadOrders()" class="text-xs bg-zinc-800 px-3 py-1 rounded hover:bg-zinc-700">تحديث</button>
+                </div>
+                <div id="orders-list" class="space-y-6">
+                    <p class="text-center text-zinc-500 py-10">جاري تحميل الطلبات...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Coupons Tab -->
+        <div id="coupons-tab" class="tab-content">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-1 bg-zinc-900 p-6 rounded-xl gold-border h-fit">
+                    <h3 class="text-xl font-bold mb-4 border-b border-zinc-800 pb-2">إضافة كوبون</h3>
+                    <div class="space-y-4">
+                        <input type="text" id="coupon-code" placeholder="كود الكوبون" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                        <input type="number" id="coupon-discount" placeholder="قيمة الخصم" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                        <select id="coupon-type" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                            <option value="percentage">نسبة مئوية %</option>
+                            <option value="fixed">مبلغ ثابت</option>
+                        </select>
+                        <input type="text" id="coupon-desc" placeholder="الوصف" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                        <button onclick="addCoupon()" class="w-full p-3 gold-bg text-black font-bold rounded">إضافة الكوبون</button>
+                    </div>
+                </div>
+                <div class="lg:col-span-2 bg-zinc-900 p-6 rounded-xl gold-border">
+                    <h3 class="text-xl font-bold mb-4">الكوبونات الحالية</h3>
+                    <div id="coupons-list" class="space-y-3"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Testimonials Tab -->
+        <div id="testimonials-tab" class="tab-content">
+            <div class="bg-zinc-900 p-6 rounded-xl gold-border">
+                <h3 class="text-xl font-bold mb-6 border-b border-zinc-800 pb-2">آراء العملاء</h3>
+                <div id="testimonials-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            </div>
+        </div>
+
+        <!-- Stats Tab -->
+        <div id="stats-tab" class="tab-content">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-zinc-900 p-8 rounded-xl gold-border text-center"><h4 class="text-zinc-400 mb-2">إجمالي المنتجات</h4><p id="stat-products" class="text-4xl font-bold gradient-text">0</p></div>
+                <div class="bg-zinc-900 p-8 rounded-xl gold-border text-center"><h4 class="text-zinc-400 mb-2">إجمالي الطلبات</h4><p id="stat-orders" class="text-4xl font-bold gradient-text">0</p></div>
+                <div class="bg-zinc-900 p-8 rounded-xl gold-border text-center"><h4 class="text-zinc-400 mb-2">حالة المتجر</h4><p class="text-4xl font-bold text-green-500">نشط</p></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM", authDomain: "zahraa-store-f4c90.firebaseapp.com", projectId: "zahraa-store-f4c90" };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload";
+        const CLOUDINARY_UPLOAD_PRESET = "zahraa_upload";
+        let currentProductImages = [];
+        let allProducts = [];
+
+        // Auth Logic
+        document.getElementById('login-btn').onclick = () => {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorEl = document.getElementById('login-error');
+            errorEl.classList.add('hidden');
+            signInWithEmailAndPassword(auth, email, password).catch(err => {
+                errorEl.innerText = "خطأ في الدخول: " + err.message;
+                errorEl.classList.remove('hidden');
+            });
+        };
+        document.getElementById('logout-btn').onclick = () => signOut(auth);
+        
+        onAuthStateChanged(auth, user => {
+            if (user) {
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('admin-content').classList.remove('hidden');
+                loadAllData();
+            } else {
+                document.getElementById('auth-section').classList.remove('hidden');
+                document.getElementById('admin-content').classList.add('hidden');
+            }
+        });
+
+        function loadAllData() {
+            loadProducts();
+            loadOrders();
+            loadCoupons();
+            loadTestimonials();
+        }
+
+        // Tab Switching
+        window.showTab = (tabId) => {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.querySelectorAll('[id^="btn-"]').forEach(b => {
+                b.classList.remove('tab-active');
+                b.classList.add('text-zinc-500');
+            });
+            const activeBtn = document.getElementById('btn-' + tabId);
+            activeBtn.classList.add('tab-active');
+            activeBtn.classList.remove('text-zinc-500');
+        };
+
+        // --- Products Management ---
+        window.addVariantField = (name = '', price = '') => {
+            const div = document.createElement('div');
+            div.className = "flex gap-2 variant-item";
+            div.innerHTML = `
+                <input type="text" placeholder="الخيار" value="${name}" class="v-name flex-1 p-1 bg-zinc-800 border border-zinc-700 rounded text-[10px] outline-none">
+                <input type="number" placeholder="ج" value="${price}" class="v-price w-12 p-1 bg-zinc-800 border border-zinc-700 rounded text-[10px] outline-none">
+                <button onclick="this.parentElement.remove()" class="text-red-500 px-1 text-xs">×</button>
+            `;
+            document.getElementById('variants-list').appendChild(div);
+        };
+
+        document.getElementById('p-file').onchange = async (e) => {
+            const progressDiv = document.getElementById('upload-progress');
+            const progressBar = document.getElementById('progress-bar');
+            progressDiv.classList.remove('hidden');
+            
+            let count = 0;
+            const total = e.target.files.length;
+
+            for (let file of e.target.files) {
+                const fd = new FormData();
+                fd.append('file', file);
+                fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                try {
+                    const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: fd });
+                    const data = await res.json();
+                    if (data.secure_url) {
+                        currentProductImages.push(data.secure_url);
+                        renderPreviews();
+                    }
+                } catch (err) {
+                    console.error("Upload error", err);
+                }
+                count++;
+                progressBar.style.width = (count / total * 100) + '%';
+            }
+            setTimeout(() => progressDiv.classList.add('hidden'), 1000);
+        };
+
+        function renderPreviews() {
+            const container = document.getElementById('images-preview');
+            container.innerHTML = '';
+            currentProductImages.forEach((url, i) => {
+                container.innerHTML += `
+                    <div class="relative aspect-square border border-zinc-800 rounded overflow-hidden">
+                        <img src="${url}" class="w-full h-full object-cover">
+                        <button onclick="window.removeImg(${i})" class="absolute top-0 right-0 bg-red-600 text-white w-5 h-5 text-xs">×</button>
+                    </div>
+                `;
+            });
+        }
+        window.removeImg = (i) => { currentProductImages.splice(i, 1); renderPreviews(); };
+
+        async function loadProducts() {
+            const list = document.getElementById('products-list');
+            const snapshot = await getDocs(query(collection(db, "products"), orderBy("updatedAt", "desc")));
+            allProducts = [];
+            snapshot.forEach(docData => allProducts.push({ id: docData.id, ...docData.data() }));
+            renderProducts(allProducts);
+            document.getElementById('stat-products').innerText = allProducts.length;
+        }
+
+        function renderProducts(products) {
+            const list = document.getElementById('products-list');
+            list.innerHTML = '';
+            if (products.length === 0) {
+                list.innerHTML = '<p class="text-center text-zinc-500 py-10">لا توجد منتجات مطابقة</p>';
+                return;
+            }
+            products.forEach(p => {
+                list.innerHTML += `
+                    <div class="flex items-center justify-between p-4 bg-black rounded border border-zinc-800 hover:border-zinc-600 transition-colors">
+                        <div class="flex items-center gap-4">
+                            <img src="${p.images?.[0] || ''}" class="w-12 h-12 object-cover rounded">
+                            <div class="max-w-[250px]">
+                                <h4 class="font-bold text-sm truncate">${p.name}</h4>
+                                <p class="text-[10px] text-zinc-500">${p.category || 'بدون قسم'} | ${p.price} ج | ${p.status === 'available' ? '✅ متوفر' : '❌ نفذ'}</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-3">
+                            <button onclick='window.editProduct("${p.id}", ${JSON.stringify(p).replace(/'/g, "&apos;")})' class="text-blue-400 text-[11px] hover:underline">تعديل</button>
+                            <button onclick="window.delProduct('${p.id}')" class="text-red-500 text-[11px] hover:underline">حذف</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        document.getElementById('search-products').oninput = (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = allProducts.filter(p => p.name.toLowerCase().includes(term) || (p.category && p.category.toLowerCase().includes(term)));
+            renderProducts(filtered);
+        };
+
+        document.getElementById('save-btn').onclick = async () => {
+            const id = document.getElementById('product-id').value;
+            const variants = [];
+            document.querySelectorAll('.variant-item').forEach(v => {
+                const vName = v.querySelector('.v-name').value;
+                const vPrice = parseFloat(v.querySelector('.v-price').value);
+                if(vName && vPrice) variants.push({ name: vName, price: vPrice });
+            });
+
+            const data = {
+                name: document.getElementById('p-name').value,
+                price: parseFloat(document.getElementById('p-price').value) || 0,
+                stock: parseInt(document.getElementById('p-stock').value) || 0,
+                category: document.getElementById('p-category').value,
+                description: document.getElementById('p-desc').value,
+                status: document.getElementById('p-status').value,
+                variants: variants,
+                images: currentProductImages,
+                updatedAt: Date.now()
+            };
+
+            if(!data.name || !data.price) { alert("يرجى إدخال الاسم والسعر على الأقل"); return; }
+
+            try {
+                if(id) {
+                    await updateDoc(doc(db, "products", id), data);
+                    alert('تم تحديث المنتج بنجاح');
+                } else {
+                    await addDoc(collection(db, "products"), data);
+                    alert('تم إضافة المنتج بنجاح');
+                }
+                resetProductForm();
+                await loadProducts();
+            } catch (err) {
+                alert("خطأ في الحفظ: " + err.message);
+            }
+        };
+
+        window.editProduct = (id, p) => {
+            document.getElementById('product-id').value = id;
+            document.getElementById('p-name').value = p.name;
+            document.getElementById('p-price').value = p.price;
+            document.getElementById('p-stock').value = p.stock || 0;
+            document.getElementById('p-category').value = p.category || '';
+            document.getElementById('p-desc').value = p.description || '';
+            document.getElementById('p-status').value = p.status;
+            currentProductImages = [...(p.images || [])];
+            renderPreviews();
+            document.getElementById('variants-list').innerHTML = '';
+            (p.variants || []).forEach(v => addVariantField(v.name, v.price));
+            document.getElementById('form-title').innerText = 'تعديل المنتج';
+            document.getElementById('cancel-edit-btn').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        window.resetProductForm = () => {
+            document.getElementById('product-id').value = '';
+            document.getElementById('p-name').value = '';
+            document.getElementById('p-price').value = '';
+            document.getElementById('p-stock').value = '';
+            document.getElementById('p-category').value = '';
+            document.getElementById('p-desc').value = '';
+            document.getElementById('p-status').value = 'available';
+            currentProductImages = [];
+            renderPreviews();
+            document.getElementById('variants-list').innerHTML = '';
+            document.getElementById('form-title').innerText = 'إضافة منتج جديد';
+            document.getElementById('cancel-edit-btn').classList.add('hidden');
+        };
+
+        window.delProduct = async (id) => {
+            if(confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
+                await deleteDoc(doc(db, "products", id));
+                loadProducts();
+            }
+        };
+
+        // --- ZIP Download Logic ---
+        window.downloadImageGroup = async (btn, groupName, imageUrls) => {
+            const originalText = btn.innerText;
+            btn.disabled = true;
+            btn.innerText = "جاري التحميل...";
+            
+            const zip = new JSZip();
+            const folder = zip.folder(groupName);
+            
+            try {
+                const promises = imageUrls.map(async (url, index) => {
+                    const response = await fetch(url);
+                    const blob = await response.blob();
+                    const extension = url.split('.').pop().split(/\#|\?/)[0] || 'jpg';
+                    folder.file(`${groupName}_${index + 1}.${extension}`, blob);
+                });
+                
+                await Promise.all(promises);
+                const content = await zip.generateAsync({ type: "blob" });
+                saveAs(content, `${groupName}.zip`);
+                btn.innerText = "تم التحميل ✅";
+            } catch (err) {
+                console.error("Download error", err);
+                alert("خطأ أثناء تحميل الصور");
+                btn.innerText = "فشل التحميل ❌";
+            } finally {
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerText = originalText;
+                }, 2000);
+            }
+        };
+
+        // --- Orders Management ---
+        window.loadOrders = async () => {
+            const list = document.getElementById('orders-list');
+            const snapshot = await getDocs(query(collection(db, "orders"), orderBy("createdAt", "desc")));
+            list.innerHTML = '';
+            let count = 0;
+            
+            // Get all coupons usage info
+            const couponUsage = {};
+            
+            snapshot.forEach(docData => {
+                const o = docData.data();
+                const id = docData.id;
+                count++;
+                
+                // Track coupon usage
+                if(o.couponCode) {
+                    couponUsage[o.couponCode] = (couponUsage[o.couponCode] || 0) + 1;
+                }
+                
+                const itemsStr = (o.items || []).map(i => `${i.name} ${i.variant ? '('+i.variant+')' : ''} × ${i.qty}`).join(' - ');
+                
+                let groupsHtml = '';
+                if(o.imageGroups && o.imageGroups.length > 0) {
+                    groupsHtml = o.imageGroups.map(g => `
+                        <div class="mt-2 p-3 bg-zinc-900 rounded border border-zinc-800">
+                            <div class="flex justify-between items-center mb-2">
+                                <p class="text-[11px] font-bold gold-text">${g.name}</p>
+                                <button onclick='window.downloadImageGroup(this, "${g.name.replace(/"/g, '&quot;')}", ${JSON.stringify(g.images)})' class="download-btn bg-gold-text text-black text-[9px] px-2 py-1 rounded font-bold hover:opacity-80">تحميل المجموعة (ZIP) 📥</button>
+                            </div>
+                            <div class="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                                ${g.images.map(img => `<a href="${img}" target="_blank" class="block flex-shrink-0"><img src="${img}" class="w-16 h-16 object-cover rounded border border-zinc-700"></a>`).join('')}
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
+                list.innerHTML += `
+                    <div class="bg-black p-5 rounded-xl border border-zinc-800 space-y-3">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h4 class="font-bold text-md gold-text">#${o.orderNumber || id.slice(0,5)} - ${o.customerName}</h4>
+                                <p class="text-[10px] text-zinc-400">${o.customerPhone} | ${o.customerAddress}</p>
+                                ${o.couponCode ? `<p class="text-[10px] text-green-500 font-bold mt-1">🏷️ تم استخدام كوبون: ${o.couponCode} (خصم ${o.discountAmount || 0} ج)</p>` : ''}
+                            </div>
+                            <div class="flex flex-col items-end gap-2">
+                                <select onchange="window.updateOrderStatus('${id}', this.value)" class="bg-zinc-900 border border-zinc-700 text-[10px] p-1.5 rounded outline-none">
+                                    <option value="قيد المراجعة" ${o.status==='قيد المراجعة'?'selected':''}>قيد المراجعة</option>
+                                    <option value="جاري التنفيذ" ${o.status==='جاري التنفيذ'?'selected':''}>جاري التنفيذ</option>
+                                    <option value="تم التوصيل" ${o.status==='تم التوصيل'?'selected':''}>تم التوصيل</option>
+                                    <option value="ملغي" ${o.status==='ملغي'?'selected':''}>ملغي</option>
+                                </select>
+                                <div class="flex gap-2">
+                                    <a href="https://wa.me/20${o.customerPhone.startsWith('0') ? o.customerPhone.substring(1) : o.customerPhone}" target="_blank" class="bg-green-600 text-white text-[9px] px-2 py-1 rounded font-bold hover:bg-green-700">واتساب مباشر ✅</a>
+                                    <button onclick="window.copyOrder('${o.orderNumber}', '${o.customerName}', '${o.customerPhone}', '${itemsStr}', '${o.totalPrice}')" class="text-[9px] text-zinc-500 underline">نسخ الفاتورة</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-zinc-900/50 p-2 rounded text-[11px] text-zinc-300"><b>الطلبات:</b> ${itemsStr}</div>
+                        ${groupsHtml ? `<div class="space-y-1"><b>مجموعات الصور:</b>${groupsHtml}</div>` : ''}
+                        <div class="flex justify-between items-center pt-2 border-t border-zinc-900">
+                            <button onclick="window.delOrder('${id}')" class="text-red-500 text-[10px]">حذف الطلب</button>
+                            <b class="text-gold-text text-sm">${o.totalPrice} جنيه</b>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('stat-orders').innerText = count;
+            document.getElementById('orders-count-badge').innerText = count;
+            document.getElementById('orders-count-badge').classList.remove('hidden');
+            
+            // Store coupon usage globally to be used by loadCoupons
+            window.currentCouponUsage = couponUsage;
+            loadCoupons();
+        };
+
+        window.updateOrderStatus = async (id, newStatus) => {
+            await updateDoc(doc(db, "orders", id), { status: newStatus });
+            alert('تم تحديث حالة الطلب');
+        };
+
+        window.delOrder = async (id) => {
+            if(confirm('حذف الطلب نهائياً؟')) {
+                await deleteDoc(doc(db, "orders", id));
+                loadOrders();
+            }
+        };
+
+        window.copyOrder = (num, name, phone, items, total) => {
+            const text = `طلب رقم: #${num}\nالعميل: ${name}\nالهاتف: ${phone}\nالطلبات: ${items}\nالإجمالي: ${total} جنيه\nشكراً لتعاملك مع زهراء ستوديو!`;
+            navigator.clipboard.writeText(text).then(() => alert('تم نسخ التفاصيل!'));
+        };
+
+        // --- Coupons Management ---
+        window.loadCoupons = async () => {
+            const list = document.getElementById('coupons-list');
+            const snap = await getDocs(collection(db, "coupons"));
+            list.innerHTML = '';
+            const usage = window.currentCouponUsage || {};
+            
+            snap.forEach(docData => {
+                const c = docData.data();
+                const id = docData.id;
+                const count = usage[c.code] || 0;
+                list.innerHTML += `
+                    <div class="bg-black p-4 rounded-lg border border-zinc-700 flex justify-between items-center">
+                        <div>
+                            <p class="font-bold gold-text">${c.code}</p>
+                            <p class="text-[10px] text-zinc-400">${c.description || ''}</p>
+                            <p class="text-[10px]">خصم: ${c.discount}${c.type === 'percentage' ? '%' : ' جنيه'}</p>
+                            <p class="text-[10px] text-blue-400 font-bold mt-1">📈 عدد مرات الاستخدام: ${count}</p>
+                        </div>
+                        <button onclick="window.deleteCoupon('${id}')" class="bg-red-600/20 text-red-500 border border-red-600 px-3 py-1 rounded text-[10px]">حذف</button>
+                    </div>
+                `;
+            });
+        };
+
+        window.addCoupon = async () => {
+            const code = document.getElementById('coupon-code').value.trim().toUpperCase();
+            const discount = parseFloat(document.getElementById('coupon-discount').value);
+            const type = document.getElementById('coupon-type').value;
+            const desc = document.getElementById('coupon-desc').value.trim();
+            
+            if (!code || isNaN(discount)) { alert('يرجى إدخال الكود وقيمة الخصم'); return; }
+            
+            try {
+                await addDoc(collection(db, "coupons"), { code, discount, type, description: desc, active: true });
+                document.getElementById('coupon-code').value = '';
+                document.getElementById('coupon-discount').value = '';
+                document.getElementById('coupon-desc').value = '';
+                loadCoupons();
+                alert('تم إضافة الكوبون');
+            } catch (err) {
+                alert("خطأ: " + err.message);
+            }
+        };
+
+        window.deleteCoupon = async (id) => {
+            if (confirm('حذف الكوبون؟')) {
+                await deleteDoc(doc(db, "coupons", id));
+                loadCoupons();
+            }
+        };
+
+        // --- Testimonials Management ---
+        window.loadTestimonials = async () => {
+            const list = document.getElementById('testimonials-list');
+            const snap = await getDocs(collection(db, "testimonials"));
+            list.innerHTML = '';
+            snap.forEach(docData => {
+                const t = docData.data();
+                const id = docData.id;
+                list.innerHTML += `
+                    <div class="bg-black p-4 rounded-lg border border-zinc-700">
+                        <div class="flex justify-between">
+                            <p class="font-bold text-sm">${t.name}</p>
+                            <p class="text-gold-text text-xs">${'⭐'.repeat(t.rating || 5)}</p>
+                        </div>
+                        <p class="text-xs text-zinc-400 my-2 italic">"${t.text}"</p>
+                        <button onclick="window.deleteTestimonial('${id}')" class="text-red-500 text-[10px] underline">حذف</button>
+                    </div>
+                `;
+            });
+        };
+
+        window.deleteTestimonial = async (id) => {
+            if (confirm('حذف هذا الرأي؟')) {
+                await deleteDoc(doc(db, "testimonials", id));
+                loadTestimonials();
+            }
+        };
+
+    </script>
+</body>
+</html>

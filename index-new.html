@@ -526,37 +526,6 @@
         return total;
     }
 
-    // بيانات منتجات تجريبية
-    const defaultProducts = [
-      { id: '1', name: 'تابلوهات فاخرة', category: 'تابلوهات', price: 150, images: ['https://via.placeholder.com/400x400?text=Tableau'], description: 'تابلوهات عصرية بتصاميم فريدة' },
-      { id: '2', name: 'ألبوم صور', category: 'ألبومات', price: 200, images: ['https://via.placeholder.com/400x400?text=Album'], description: 'ألبومات فاخرة لحفظ ذكرياتك' },
-      { id: '3', name: 'مجات مخصصة', category: 'مجات', price: 80, images: ['https://via.placeholder.com/400x400?text=Mug'], description: 'مجات بطباعة مخصصة' },
-      { id: '4', name: 'براويز ذهبية', category: 'براويز', price: 120, images: ['https://via.placeholder.com/400x400?text=Frame'], description: 'براويز بتصميم فاخر' },
-      { id: '5', name: 'بطاقات معايدة', category: 'بطاقات', price: 50, images: ['https://via.placeholder.com/400x400?text=Card'], description: 'بطاقات معايدة مميزة' },
-      { id: '6', name: 'لوحات كانفاس', category: 'كانفاس', price: 300, images: ['https://via.placeholder.com/400x400?text=Canvas'], description: 'لوحات كانفاس بجودة عالية' }
-    ];
-
-
-    // دالة لإنشاء صورة رمزية عشوائية
-    function generateAvatarUrl(name) {
-      const colors = ['FF6B6B', '4ECDC4', '45B7D1', 'FFA07A', '98D8C8', 'F7DC6F', 'BB8FCE', '85C1E2'];
-      const randomColor = colors[Math.floor(Math.random() * colors.length)];
-      const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-      return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=${randomColor}&color=fff&size=60&bold=true`;
-    }
-
-
-    // دالة لتوليد كود عميل فريد
-    function generateCustomerCode() {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      let code = 'ZAH-';
-      for(let i = 0; i < 8; i++) {
-        code += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      code += '#';
-      return code;
-    }
-
     async function init() {
       try {
         const snap = await db.collection("products").orderBy("updatedAt", "desc").get();
@@ -567,12 +536,6 @@
           allProducts.push(p);
           if(p.category) cats.add(p.category);
         });
-        
-        // إذا لم توجد منتجات، استخدم البيانات التجريبية
-        if(allProducts.length === 0) {
-          allProducts = defaultProducts;
-          defaultProducts.forEach(p => cats.add(p.category));
-        }
         
         const catList = document.getElementById('categories-list');
         catList.innerHTML = '<button onclick="filterCategory(\'all\')" class="w-full text-right p-3 rounded-xl hover:bg-zinc-900 transition-colors text-gold-text font-bold">كل المنتجات</button>';
@@ -738,23 +701,8 @@
         const statusElem = document.getElementById('track-status');
         statusElem.className = `px-4 py-1 rounded-full text-xs font-bold text-white ${statusColors[order.status] || 'bg-gray-600'}`;
         statusElem.textContent = order.status;
-        const itemsHtml = order.items.map(i => `<div class="flex justify-between text-sm mb-2">
-            <span>${i.name} ${i.variant ? '(' + i.variant + ')' : ''} × ${i.qty}</span>
-            <span>${i.price * i.qty} جنيه</span>
-          </div>`).join('');
-        const invoiceHtml = `
-          <div class="bg-zinc-900 p-4 rounded-lg text-sm space-y-2 mb-4">
-            <div class="font-bold border-b border-gold-text pb-2">تفاصيل الفاتورة</div>
-            ${itemsHtml}
-            ${order.couponCode ? `<div class="flex justify-between text-gold-text"><span>الخصم (${order.couponCode}):</span><span>-${order.discountAmount} جنيه</span></div>` : ''}
-            <div class="flex justify-between font-bold border-t border-gold-text pt-2">
-              <span>الإجمالي:</span>
-              <span>${order.totalPrice} جنيه</span>
-            </div>
-            <div class="text-gold-text font-bold">كود العميل: ${order.customerCode}</div>
-          </div>
-        `;
-        document.getElementById('track-items').innerHTML = invoiceHtml;
+        const itemsHtml = order.items.map(i => `<span>${i.name} ${i.variant ? '(' + i.variant + ')' : ''} × ${i.qty}</span>`).join('<br>');
+        document.getElementById('track-items').innerHTML = itemsHtml;
         resultDiv.classList.remove('hidden');
       } catch(e) {
         console.error('Tracking error:', e);
@@ -804,9 +752,7 @@
         } catch(statsErr) { orderNum = 1001 + Math.floor(Math.random() * 9000); }
 
         const finalTotal = updateCheckoutTotal();
-        const customerCode = generateCustomerCode();
         const order = {
-          customerCode: customerCode,
           orderNumber: orderNum,
           customerName: name,
           customerPhone: phone,
@@ -934,7 +880,6 @@
     async function loadTestimonials() {
         const grid = document.getElementById('testimonials-grid');
         if(!grid) return;
-        grid.innerHTML = '<p class="text-zinc-500 col-span-full text-center py-10">جاري تحميل الآراء...</p>';
         try {
           const snap = await db.collection('testimonials').orderBy('createdAt', 'desc').get();
           grid.innerHTML = '';
@@ -945,7 +890,7 @@
           snap.forEach(doc => {
             const item = doc.data();
             const stars = '⭐'.repeat(item.rating || 5);
-            const avatarUrl = generateAvatarUrl(item.name);
+            const avatarUrl = item.avatarUrl || 'https://via.placeholder.com/60x60?text=' + encodeURIComponent(item.name.charAt(0));
             grid.innerHTML += `
               <div class="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 hover:border-gold-text transition-colors">
                 <div class="flex items-center gap-3 mb-4">
@@ -961,9 +906,12 @@
           });
         } catch(e) { console.error('Testimonials error:', e); }
     }
+    }
 
     function openTestimonialModal() { document.getElementById('testimonial-modal').classList.remove('hidden'); }
-    function closeTestimonialModal() { document.getElementById('testimonial-modal').classList.add('hidden'); }    async function submitTestimonialWithImage() {
+    function closeTestimonialModal() { document.getElementById('testimonial-modal').classList.add('hidden'); }
+    
+    async function submitTestimonialWithImage() {
       const name = document.getElementById('testimonial-name').value.trim();
       const text = document.getElementById('testimonial-text').value.trim();
       const rating = parseInt(document.getElementById('testimonial-rating').value);
@@ -1007,7 +955,8 @@
           loadTestimonials();
         } catch(e) { alert('خطأ: ' + e.message); }
       }
-    }load = init;
+    }
+    window.onload = init;
   </script>
 </body>
 </html>
