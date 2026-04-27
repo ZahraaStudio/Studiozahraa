@@ -6,11 +6,6 @@
     <title>لوحة تحكم استوديو الزهراء - ZAHRAA STUDIO</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <style>
         body { font-family: 'Cairo', sans-serif; background-color: #0a0a0a; color: #fff; }
         .gold-border { border: 1px solid #d4af37; }
@@ -21,8 +16,30 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        .loader { border-top-color: #d4af37; animation: spinner 1.5s linear infinite; }
-        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: #1a1a1a; border: 1px solid #d4af37; border-radius: 12px; padding: 24px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; }
+        .invoice-table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+        .invoice-table th, .invoice-table td { padding: 8px; text-align: right; border-bottom: 1px solid #333; }
+        .invoice-table th { background: #333; font-weight: bold; }
+        .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .status-pending { background: #fbbf24; color: #000; }
+        .status-completed { background: #10b981; color: #fff; }
+        .status-cancelled { background: #ef4444; color: #fff; }
+        .coupon-active { background: #10b981; }
+        .coupon-inactive { background: #6b7280; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 6px; cursor: pointer; transition: all 0.3s; }
+        .btn-primary { background: #d4af37; color: #000; }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-danger { background: #ef4444; color: #fff; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-success { background: #10b981; color: #fff; }
+        .btn-success:hover { background: #059669; }
+        .btn-warning { background: #f59e0b; color: #000; }
+        .btn-warning:hover { background: #d97706; }
+        .copy-btn { cursor: pointer; display: inline-block; margin-left: 8px; }
+        .expiry-warning { color: #fbbf24; }
+        .expiry-expired { color: #ef4444; }
     </style>
 </head>
 <body class="p-2 md:p-6">
@@ -36,14 +53,14 @@
     </div>
 
     <!-- Admin Content -->
-    <div id="admin-content" class="hidden max-w-6xl mx-auto">
+    <div id="admin-content" class="hidden max-w-7xl mx-auto">
         <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
             <h1 class="text-2xl md:text-3xl font-bold gradient-text">ZAHRAA STUDIO Admin</h1>
             <button id="logout-btn" class="bg-red-600/20 text-red-500 border border-red-600 px-4 py-2 rounded font-bold text-xs hover:bg-red-600 hover:text-white transition-all">خروج</button>
         </div>
 
         <!-- Tabs Navigation -->
-        <div class="flex border-b border-zinc-800 mb-8 overflow-x-auto no-scrollbar">
+        <div class="flex border-b border-zinc-800 mb-8 overflow-x-auto no-scrollbar gap-2">
             <button onclick="showTab('products-tab')" id="btn-products-tab" class="px-6 py-3 font-bold tab-active whitespace-nowrap">📦 المنتجات</button>
             <button onclick="showTab('orders-tab')" id="btn-orders-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">🛒 الطلبات <span id="orders-count-badge" class="bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1 hidden">0</span></button>
             <button onclick="showTab('coupons-tab')" id="btn-coupons-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">🏷️ الكوبونات</button>
@@ -66,12 +83,13 @@
                         
                         <div class="border-2 border-dashed border-zinc-700 p-4 rounded-lg text-center">
                             <input type="file" id="p-file" multiple accept="image/*" class="hidden" onchange="uploadToCloudinary(this)">
-                            <button onclick="document.getElementById('p-file').click()" class="gold-bg text-black px-4 py-2 rounded font-bold text-xs">رفع صور (Cloudinary)</button>
+                            <button onclick="document.getElementById('p-file').click()" class="gold-bg text-black px-4 py-2 rounded font-bold text-xs">رفع صور</button>
                             <div id="upload-status" class="text-[10px] mt-2 text-zinc-500"></div>
                         </div>
                         <div id="images-preview" class="grid grid-cols-3 gap-2"></div>
                         
                         <button id="save-btn" onclick="saveProduct()" class="w-full p-3 gold-bg text-black font-bold rounded">حفظ المنتج</button>
+                        <button id="cancel-btn" onclick="resetProductForm()" class="w-full p-3 bg-zinc-800 text-white font-bold rounded hidden">إلغاء</button>
                     </div>
                 </div>
                 <div class="lg:col-span-2 bg-zinc-900 p-6 rounded-xl gold-border">
@@ -82,14 +100,21 @@
 
         <!-- Orders Tab -->
         <div id="orders-tab" class="tab-content">
-            <div id="orders-list" class="space-y-6"></div>
+            <div class="bg-zinc-900 p-6 rounded-xl gold-border">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold">طلبات الأونلاين</h3>
+                    <button onclick="loadOrders()" class="text-xs bg-zinc-800 px-3 py-1 rounded hover:bg-zinc-700">🔄 تحديث</button>
+                </div>
+                <div id="orders-list" class="space-y-6"></div>
+            </div>
         </div>
 
         <!-- Coupons Tab -->
         <div id="coupons-tab" class="tab-content">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div class="lg:col-span-1 bg-zinc-900 p-6 rounded-xl gold-border h-fit">
-                    <h3 class="text-xl font-bold mb-4 border-b border-zinc-800 pb-2">إضافة كوبون</h3>
+                <div class="lg:col-span-1 bg-zinc-900 p-6 rounded-xl gold-border h-fit sticky top-4">
+                    <h3 id="coupon-form-title" class="text-xl font-bold mb-4 border-b border-zinc-800 pb-2">إضافة كوبون</h3>
+                    <input type="hidden" id="coupon-id">
                     <div class="space-y-4">
                         <input type="text" id="c-code" placeholder="كود الكوبون" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
                         <input type="number" id="c-discount" placeholder="قيمة الخصم" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
@@ -105,7 +130,8 @@
                             <option value="2592000000">شهر</option>
                             <option value="31536000000">سنة</option>
                         </select>
-                        <button onclick="addCoupon()" class="w-full p-3 gold-bg text-black font-bold rounded">إضافة الكوبون</button>
+                        <button id="save-coupon-btn" onclick="saveCoupon()" class="w-full p-3 gold-bg text-black font-bold rounded">حفظ الكوبون</button>
+                        <button id="cancel-coupon-btn" onclick="resetCouponForm()" class="w-full p-3 bg-zinc-800 text-white font-bold rounded hidden">إلغاء</button>
                     </div>
                 </div>
                 <div class="lg:col-span-2 bg-zinc-900 p-6 rounded-xl gold-border">
@@ -116,7 +142,7 @@
 
         <!-- Stats Tab -->
         <div id="stats-tab" class="tab-content">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div class="bg-zinc-900 p-8 rounded-2xl gold-border text-center">
                     <p class="text-zinc-500 text-sm mb-2">إجمالي المنتجات</p>
                     <h4 id="stat-products" class="text-4xl font-bold gold-text">0</h4>
@@ -129,38 +155,68 @@
                     <p class="text-zinc-500 text-sm mb-2">إجمالي المبيعات</p>
                     <h4 id="stat-sales" class="text-4xl font-bold gold-text">0 ج</h4>
                 </div>
+                <div class="bg-zinc-900 p-8 rounded-2xl gold-border text-center">
+                    <p class="text-zinc-500 text-sm mb-2">عدد الكوبونات</p>
+                    <h4 id="stat-coupons" class="text-4xl font-bold gold-text">0</h4>
+                </div>
             </div>
         </div>
     </div>
 
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
-            authDomain: "zahraa-store-f4c90.firebaseapp.com",
-            projectId: "zahraa-store-f4c90"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const auth = firebase.auth();
+    <!-- Invoice Modal -->
+    <div id="invoice-modal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold gradient-text">فاتورة الطلب</h2>
+                <button onclick="closeInvoiceModal()" class="text-2xl cursor-pointer">×</button>
+            </div>
+            <div id="invoice-content" class="space-y-4"></div>
+            <div class="mt-6 flex gap-3">
+                <button onclick="printInvoice()" class="flex-1 btn-sm btn-primary">🖨️ طباعة</button>
+                <button onclick="downloadInvoice()" class="flex-1 btn-sm btn-success">📥 تحميل PDF</button>
+                <button onclick="closeInvoiceModal()" class="flex-1 btn-sm bg-zinc-800 text-white">إغلاق</button>
+            </div>
+        </div>
+    </div>
 
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy, limit, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM", 
+            authDomain: "zahraa-store-f4c90.firebaseapp.com", 
+            projectId: "zahraa-store-f4c90" 
+        };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
         const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload";
         const CLOUDINARY_PRESET = "zahraa_upload";
-
+        
         let currentProductImages = [];
+        let editingProductId = null;
+        let editingCouponId = null;
+        let allOrders = [];
+        let allCoupons = [];
 
-        // Auth Logic
-        document.getElementById('login-btn').onclick = async () => {
+        // ==================== AUTH ====================
+        window.loginUser = async () => {
             const email = document.getElementById('email').value;
-            const pass = document.getElementById('password').value;
+            const password = document.getElementById('password').value;
             try {
-                await auth.signInWithEmailAndPassword(email, pass);
+                await signInWithEmailAndPassword(auth, email, password);
             } catch (e) {
                 document.getElementById('login-error').innerText = "خطأ في البيانات";
                 document.getElementById('login-error').classList.remove('hidden');
             }
         };
 
-        auth.onAuthStateChanged(user => {
+        document.getElementById('login-btn').onclick = window.loginUser;
+        document.getElementById('logout-btn').onclick = () => signOut(auth);
+
+        onAuthStateChanged(auth, user => {
             if (user) {
                 document.getElementById('auth-section').classList.add('hidden');
                 document.getElementById('admin-content').classList.remove('hidden');
@@ -171,9 +227,8 @@
             }
         });
 
-        document.getElementById('logout-btn').onclick = () => auth.signOut();
-
-        function showTab(tabId) {
+        // ==================== TABS ====================
+        window.showTab = (tabId) => {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
             document.querySelectorAll('[id^="btn-"]').forEach(b => {
@@ -182,303 +237,485 @@
             });
             document.getElementById('btn-' + tabId).classList.add('tab-active');
             document.getElementById('btn-' + tabId).classList.remove('text-zinc-500');
-        }
+        };
 
-        async function loadAll() {
-            loadProducts();
-            loadOrders();
-            loadCoupons();
-        }
-
-        // Cloudinary Upload
-        async function uploadToCloudinary(input) {
-            const files = input.files;
+        // ==================== PRODUCTS ====================
+        window.uploadToCloudinary = async (input) => {
             const status = document.getElementById('upload-status');
-            status.innerText = "جاري الرفع...";
-            
-            for (let file of files) {
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('upload_preset', CLOUDINARY_PRESET);
-                
-                const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
-                const data = await res.json();
-                currentProductImages.push(data.secure_url);
+            for (let file of input.files) {
+                const fd = new FormData();
+                fd.append('file', file);
+                fd.append('upload_preset', CLOUDINARY_PRESET);
+                status.innerText = 'جاري الرفع...';
+                try {
+                    const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: fd });
+                    const data = await res.json();
+                    if (data.secure_url) {
+                        currentProductImages.push(data.secure_url);
+                        renderProductPreviews();
+                        status.innerText = 'تم الرفع بنجاح ✓';
+                    }
+                } catch (e) {
+                    status.innerText = 'خطأ في الرفع';
+                }
             }
-            status.innerText = "تم الرفع بنجاح";
-            renderImagePreviews();
-        }
+        };
 
-        function renderImagePreviews() {
-            const div = document.getElementById('images-preview');
-            div.innerHTML = currentProductImages.map((img, i) => `
-                <div class="relative group">
-                    <img src="${img}" class="w-full h-20 object-cover rounded">
-                    <button onclick="removeImg(${i})" class="absolute top-0 right-0 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100">✕</button>
-                </div>
-            `).join('');
-        }
-        window.removeImg = (i) => { currentProductImages.splice(i, 1); renderImagePreviews(); };
-
-        // Products CRUD
-        async function loadProducts() {
-            const list = document.getElementById('products-list');
-            const snap = await db.collection('products').orderBy('updatedAt', 'desc').get();
-            list.innerHTML = '';
-            document.getElementById('stat-products').innerText = snap.size;
-            snap.forEach(doc => {
-                const p = doc.data();
-                list.innerHTML += `
-                    <div class="bg-black p-4 rounded-xl border border-zinc-800 flex justify-between items-center">
-                        <div class="flex gap-4 items-center">
-                            <img src="${p.images?.[0]}" class="w-12 h-12 object-cover rounded">
-                            <div>
-                                <h4 class="font-bold">${p.name}</h4>
-                                <p class="text-xs gold-text">${p.price} ج | ${p.category}</p>
-                            </div>
-                        </div>
-                        <div class="flex gap-2">
-                            <button onclick="editProduct('${doc.id}')" class="text-blue-500 text-xs">تعديل</button>
-                            <button onclick="deleteProduct('${doc.id}')" class="text-red-500 text-xs">حذف</button>
-                        </div>
-                    </div>
-                `;
+        window.renderProductPreviews = () => {
+            const container = document.getElementById('images-preview');
+            container.innerHTML = '';
+            currentProductImages.forEach((url, i) => {
+                container.innerHTML += `<div class="relative aspect-square border border-zinc-800 rounded overflow-hidden"><img src="${url}" class="w-full h-full object-cover"><button onclick="window.removeProductImage(${i})" class="absolute top-0 right-0 bg-red-600 text-white w-5 h-5 text-xs">×</button></div>`;
             });
-        }
+        };
 
-        async function saveProduct() {
-            const id = document.getElementById('product-id').value;
-            const data = {
-                name: document.getElementById('p-name').value,
-                price: parseFloat(document.getElementById('p-price').value),
-                category: document.getElementById('p-category').value,
-                description: document.getElementById('p-desc').value,
+        window.removeProductImage = (i) => {
+            currentProductImages.splice(i, 1);
+            window.renderProductPreviews();
+        };
+
+        window.saveProduct = async () => {
+            const name = document.getElementById('p-name').value;
+            const price = document.getElementById('p-price').value;
+            const category = document.getElementById('p-category').value;
+            const desc = document.getElementById('p-desc').value;
+
+            if (!name || !price) {
+                alert('الرجاء ملء البيانات المطلوبة');
+                return;
+            }
+
+            const productData = {
+                name, price: parseFloat(price), category, desc,
                 images: currentProductImages,
-                updatedAt: Date.now()
+                updatedAt: new Date(),
+                createdAt: editingProductId ? undefined : new Date()
             };
-            if (id) await db.collection('products').doc(id).update(data);
-            else await db.collection('products').add(data);
-            location.reload();
-        }
 
-        window.editProduct = async (id) => {
-            const doc = await db.collection('products').doc(id).get();
-            const p = doc.data();
-            document.getElementById('product-id').value = id;
-            document.getElementById('p-name').value = p.name;
-            document.getElementById('p-price').value = p.price;
-            document.getElementById('p-category').value = p.category;
-            document.getElementById('p-desc').value = p.description;
-            currentProductImages = p.images || [];
-            renderImagePreviews();
-            document.getElementById('form-title').innerText = "تعديل المنتج";
+            try {
+                if (editingProductId) {
+                    await updateDoc(doc(db, 'products', editingProductId), productData);
+                    alert('تم تحديث المنتج');
+                } else {
+                    await addDoc(collection(db, 'products'), productData);
+                    alert('تم إضافة المنتج');
+                }
+                window.resetProductForm();
+                loadProducts();
+            } catch (e) {
+                alert('خطأ: ' + e.message);
+            }
+        };
+
+        window.resetProductForm = () => {
+            document.getElementById('p-name').value = '';
+            document.getElementById('p-price').value = '';
+            document.getElementById('p-category').value = '';
+            document.getElementById('p-desc').value = '';
+            currentProductImages = [];
+            window.renderProductPreviews();
+            document.getElementById('form-title').innerText = 'إضافة/تعديل منتج';
+            document.getElementById('cancel-btn').classList.add('hidden');
+            editingProductId = null;
+        };
+
+        window.editProduct = async (id, product) => {
+            editingProductId = id;
+            document.getElementById('p-name').value = product.name;
+            document.getElementById('p-price').value = product.price;
+            document.getElementById('p-category').value = product.category || '';
+            document.getElementById('p-desc').value = product.desc || '';
+            currentProductImages = product.images || [];
+            window.renderProductPreviews();
+            document.getElementById('form-title').innerText = 'تعديل المنتج';
+            document.getElementById('cancel-btn').classList.remove('hidden');
+            window.showTab('products-tab');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
         window.deleteProduct = async (id) => {
-            if (confirm('حذف المنتج؟')) {
-                await db.collection('products').doc(id).delete();
-                loadProducts();
+            if (confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
+                try {
+                    await deleteDoc(doc(db, 'products', id));
+                    loadProducts();
+                } catch (e) {
+                    alert('خطأ: ' + e.message);
+                }
             }
         };
 
-        // Orders
-        async function loadOrders() {
-            const list = document.getElementById('orders-list');
-            const snap = await db.collection('orders').orderBy('createdAt', 'desc').get();
-            list.innerHTML = '';
-            document.getElementById('stat-orders').innerText = snap.size;
-            let totalSales = 0;
-            snap.forEach(doc => {
-                const o = doc.data();
-                totalSales += o.totalPrice;
-                const items = o.items.map(i => `
-                    <div class="p-2 bg-zinc-900 rounded mt-2">
-                        <p class="text-xs font-bold">${i.name} × ${i.qty} (${i.variant || 'بدون نوع'})</p>
-                        ${i.printImages?.length ? `<button onclick='downloadImages(${JSON.stringify(i.printImages)}, "${o.orderNumber}_${i.name}")' class="text-[10px] gold-text underline">تحميل صور الطباعة (${i.printImages.length})</button>` : ''}
-                    </div>
-                `).join('');
-                
-                list.innerHTML += `
-                    <div class="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 space-y-4">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <h4 class="font-bold gold-text">#${o.orderNumber}</h4>
-                                <p class="text-sm">${o.customerName} | ${o.customerPhone}</p>
-                                <p class="text-xs text-zinc-500">${o.customerAddress}</p>
+        window.loadProducts = async () => {
+            const list = document.getElementById('products-list');
+            try {
+                const snapshot = await getDocs(query(collection(db, 'products'), orderBy('updatedAt', 'desc')));
+                list.innerHTML = '';
+                let count = 0;
+                snapshot.forEach(docData => {
+                    count++;
+                    const p = docData.data();
+                    const id = docData.id;
+                    list.innerHTML += `
+                        <div class="flex items-center justify-between p-4 bg-black rounded border border-zinc-800 hover:border-gold-text transition">
+                            <div class="flex items-center gap-4 flex-1">
+                                <img src="${p.images?.[0] || 'https://via.placeholder.com/40'}" class="w-10 h-10 object-cover rounded">
+                                <div class="flex-1">
+                                    <h4 class="font-bold text-sm">${p.name}</h4>
+                                    <p class="text-[10px] text-zinc-500">${p.category || 'بدون قسم'} | ${p.price} ج</p>
+                                </div>
                             </div>
-                            <select onchange="updateStatus('${doc.id}', this.value)" class="bg-black border border-zinc-700 text-xs p-2 rounded">
-                                <option value="قيد المراجعة" ${o.status==='قيد المراجعة'?'selected':''}>قيد المراجعة</option>
-                                <option value="جاري التنفيذ" ${o.status==='جاري التنفيذ'?'selected':''}>جاري التنفيذ</option>
-                                <option value="تم التوصيل" ${o.status==='تم التوصيل'?'selected':''}>تم التوصيل</option>
-                            </select>
+                            <div class="flex gap-2">
+                                <button onclick='window.editProduct("${id}", ${JSON.stringify(p).replace(/"/g, '&quot;')})' class="btn-sm btn-warning">✏️ تعديل</button>
+                                <button onclick="window.deleteProduct('${id}')" class="btn-sm btn-danger">🗑️ حذف</button>
+                            </div>
                         </div>
-                        <div class="border-t border-zinc-800 pt-4">${items}</div>
-                        <div class="flex justify-between items-center pt-4 border-t border-zinc-800">
-                            <button onclick="copyInvoice('${doc.id}')" class="text-xs underline text-zinc-500">نسخ الفاتورة</button>
-                            <p class="font-bold">${o.totalPrice} جنيه</p>
-                        </div>
-                    </div>
-                `;
-            });
-            document.getElementById('stat-sales').innerText = totalSales + " ج";
-        }
-
-        window.updateStatus = async (id, s) => { await db.collection('orders').doc(id).update({ status: s }); alert('تم التحديث'); };
-
-        window.downloadImages = async (urls, name) => {
-            const zip = new JSZip();
-            for (let i = 0; i < urls.length; i++) {
-                const res = await fetch(urls[i]);
-                const blob = await res.blob();
-                zip.file(`image_${i+1}.jpg`, blob);
+                    `;
+                });
+                document.getElementById('stat-products').innerText = count;
+            } catch (e) {
+                console.error('Error loading products:', e);
             }
-            const content = await zip.generateAsync({ type: "blob" });
-            saveAs(content, `${name}.zip`);
         };
 
-        window.copyInvoice = async (id) => {
-            const doc = await db.collection('orders').doc(id).get();
-            const o = doc.data();
-            const items = o.items.map(i => `- ${i.name} × ${i.qty} (${i.price} ج)`).join('\n');
-            const text = `فاتورة استوديو الزهراء\nرقم الطلب: ${o.orderNumber}\nالعميل: ${o.customerName}\nالهاتف: ${o.customerPhone}\n\nالمنتجات:\n${items}\n\nالسعر الأصلي: ${o.subtotal} ج\nالخصم: ${o.discountAmount} ج\nالإجمالي النهائي: ${o.totalPrice} ج\nشكراً لتعاملك معنا!`;
-            navigator.clipboard.writeText(text);
-            alert('تم نسخ الفاتورة');
+        // ==================== ORDERS ====================
+        window.generateTrackingCode = () => {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let code = '';
+            for (let i = 0; i < 8; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return code;
         };
 
-        // Coupons
-        async function loadCoupons() {
-            const list = document.getElementById('coupons-list');
-            const snap = await db.collection('coupons').get();
-            list.innerHTML = '';
-            snap.forEach(doc => {
-                const c = doc.data();
-                list.innerHTML += `
-                    <div class="bg-black p-4 rounded-xl border border-zinc-800 flex justify-between items-center">
-                        <div>
-                            <p class="font-bold gold-text">${c.code}</p>
-                            <p class="text-xs text-zinc-500">خصم: ${c.discount}${c.type==='percentage'?'%':' ج'} | استخدم: ${c.usedCount || 0}/${c.usageLimit || '∞'}</p>
+        window.loadOrders = async () => {
+            const list = document.getElementById('orders-list');
+            try {
+                const snapshot = await getDocs(query(collection(db, 'orders'), orderBy('createdAt', 'desc')));
+                list.innerHTML = '';
+                allOrders = [];
+                let count = 0;
+                let totalSales = 0;
+
+                snapshot.forEach(docData => {
+                    const order = docData.data();
+                    order.id = docData.id;
+                    allOrders.push(order);
+                    count++;
+                    totalSales += order.total || 0;
+
+                    const statusClass = order.status === 'completed' ? 'status-completed' : order.status === 'pending' ? 'status-pending' : 'status-cancelled';
+                    const statusText = order.status === 'completed' ? 'مكتمل' : order.status === 'pending' ? 'قيد الانتظار' : 'ملغى';
+                    const trackingCode = order.trackingCode || 'لم يتم التعيين';
+
+                    list.innerHTML += `
+                        <div class="bg-black p-4 rounded border border-zinc-800 hover:border-gold-text transition">
+                            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+                                <div>
+                                    <h4 class="font-bold text-sm mb-2">طلب من: ${order.customerName || 'عميل'}</h4>
+                                    <p class="text-[10px] text-zinc-500">البريد: ${order.customerEmail || 'N/A'}</p>
+                                    <p class="text-[10px] text-zinc-500">الهاتف: ${order.customerPhone || 'N/A'}</p>
+                                </div>
+                                <div class="text-right">
+                                    <span class="status-badge ${statusClass}">${statusText}</span>
+                                    <p class="text-[10px] text-zinc-500 mt-2">التاريخ: ${new Date(order.createdAt?.toDate?.() || order.createdAt).toLocaleDateString('ar-EG')}</p>
+                                </div>
+                            </div>
+                            <div class="bg-zinc-900 p-3 rounded mb-4 border border-zinc-800">
+                                <p class="text-[12px] font-bold mb-2">🔍 كود التتبع: <span class="gold-text">${trackingCode}</span> <span class="copy-btn cursor-pointer" onclick="copyToClipboard('${trackingCode}')">📋</span></p>
+                                <p class="text-[11px] text-zinc-400">المجموع: <span class="gold-text font-bold">${order.total || 0} ج</span></p>
+                                ${order.discountAmount ? `<p class="text-[11px] text-green-400">خصم: -${order.discountAmount} ج</p>` : ''}
+                            </div>
+                            <div class="flex gap-2 flex-wrap">
+                                <button onclick="window.showInvoice('${order.id}')" class="btn-sm btn-primary">📄 فاتورة</button>
+                                <button onclick="window.updateOrderStatus('${order.id}', 'completed')" class="btn-sm btn-success">✓ مكتمل</button>
+                                <button onclick="window.updateOrderStatus('${order.id}', 'cancelled')" class="btn-sm btn-danger">✕ ملغى</button>
+                            </div>
                         </div>
-                        <button onclick="deleteCoupon('${doc.id}')" class="text-red-500 text-xs">حذف</button>
-                    </div>
+                    `;
+                });
+
+                document.getElementById('orders-count-badge').innerText = count;
+                document.getElementById('orders-count-badge').classList.toggle('hidden', count === 0);
+                document.getElementById('stat-orders').innerText = count;
+                document.getElementById('stat-sales').innerText = totalSales.toFixed(2) + ' ج';
+            } catch (e) {
+                console.error('Error loading orders:', e);
+            }
+        };
+
+        window.updateOrderStatus = async (orderId, status) => {
+            try {
+                await updateDoc(doc(db, 'orders', orderId), { status });
+                alert('تم تحديث حالة الطلب');
+                loadOrders();
+            } catch (e) {
+                alert('خطأ: ' + e.message);
+            }
+        };
+
+        window.showInvoice = (orderId) => {
+            const order = allOrders.find(o => o.id === orderId);
+            if (!order) return;
+
+            const trackingCode = order.trackingCode || 'لم يتم التعيين';
+            const items = order.items || [];
+            let itemsHtml = '';
+            let subtotal = 0;
+
+            items.forEach(item => {
+                const itemTotal = (item.price || 0) * (item.quantity || 1);
+                subtotal += itemTotal;
+                itemsHtml += `
+                    <tr>
+                        <td>${item.name || 'منتج'}</td>
+                        <td>${item.quantity || 1}</td>
+                        <td>${item.price || 0} ج</td>
+                        <td>${itemTotal} ج</td>
+                    </tr>
                 `;
             });
-        }
 
-        async function addCoupon() {
-            const data = {
-                code: document.getElementById('c-code').value.toUpperCase(),
-                discount: parseFloat(document.getElementById('c-discount').value),
-                type: document.getElementById('c-type').value,
-                usageLimit: parseInt(document.getElementById('c-limit').value) || null,
-                expiry: Date.now() + parseInt(document.getElementById('c-expiry').value),
-                usedCount: 0,
-                active: true
+            const discount = order.discountAmount || 0;
+            const total = order.total || (subtotal - discount);
+
+            const invoiceHtml = `
+                <div id="printable-invoice" class="bg-white text-black p-8 rounded">
+                    <div class="text-center mb-6">
+                        <h1 class="text-2xl font-bold">فاتورة الطلب</h1>
+                        <p class="text-sm text-gray-600">استوديو الزهراء</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-6 text-sm">
+                        <div>
+                            <p><strong>رقم الطلب:</strong> ${order.id}</p>
+                            <p><strong>كود التتبع:</strong> <span class="font-bold text-blue-600">${trackingCode}</span></p>
+                            <p><strong>التاريخ:</strong> ${new Date(order.createdAt?.toDate?.() || order.createdAt).toLocaleDateString('ar-EG')}</p>
+                        </div>
+                        <div class="text-right">
+                            <p><strong>اسم العميل:</strong> ${order.customerName || 'N/A'}</p>
+                            <p><strong>البريد:</strong> ${order.customerEmail || 'N/A'}</p>
+                            <p><strong>الهاتف:</strong> ${order.customerPhone || 'N/A'}</p>
+                        </div>
+                    </div>
+
+                    <table class="invoice-table">
+                        <thead>
+                            <tr>
+                                <th>المنتج</th>
+                                <th>الكمية</th>
+                                <th>السعر</th>
+                                <th>الإجمالي</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemsHtml}
+                        </tbody>
+                    </table>
+
+                    <div class="flex justify-end mb-6">
+                        <div class="w-64 space-y-2 text-sm">
+                            <div class="flex justify-between border-b pb-2">
+                                <span>الإجمالي الفرعي:</span>
+                                <span>${subtotal} ج</span>
+                            </div>
+                            ${discount > 0 ? `
+                                <div class="flex justify-between border-b pb-2 text-green-600">
+                                    <span>الخصم:</span>
+                                    <span>-${discount} ج</span>
+                                </div>
+                            ` : ''}
+                            <div class="flex justify-between font-bold text-lg">
+                                <span>الإجمالي:</span>
+                                <span>${total} ج</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center text-xs text-gray-600 border-t pt-4">
+                        <p>شكراً لتعاملك معنا</p>
+                        <p>استوديو الزهراء - ZAHRAA STUDIO</p>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('invoice-content').innerHTML = invoiceHtml;
+            document.getElementById('invoice-modal').classList.add('active');
+        };
+
+        window.closeInvoiceModal = () => {
+            document.getElementById('invoice-modal').classList.remove('active');
+        };
+
+        window.printInvoice = () => {
+            const printWindow = window.open('', '', 'height=600,width=800');
+            printWindow.document.write(document.getElementById('printable-invoice').innerHTML);
+            printWindow.document.close();
+            printWindow.print();
+        };
+
+        window.downloadInvoice = () => {
+            alert('ميزة تحميل PDF قريباً - يمكنك استخدام طباعة "حفظ كـ PDF"');
+        };
+
+        window.copyToClipboard = (text) => {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('تم نسخ كود التتبع');
+            });
+        };
+
+        // ==================== COUPONS ====================
+        window.saveCoupon = async () => {
+            const code = document.getElementById('c-code').value;
+            const discount = document.getElementById('c-discount').value;
+            const type = document.getElementById('c-type').value;
+            const limit = document.getElementById('c-limit').value;
+            const expiryMs = document.getElementById('c-expiry').value;
+
+            if (!code || !discount) {
+                alert('الرجاء ملء البيانات المطلوبة');
+                return;
+            }
+
+            const couponData = {
+                code: code.toUpperCase(),
+                discount: parseFloat(discount),
+                type,
+                limit: parseInt(limit) || 0,
+                usedCount: editingCouponId ? (allCoupons.find(c => c.id === editingCouponId)?.usedCount || 0) : 0,
+                expiryDate: new Date(Date.now() + parseInt(expiryMs)),
+                isActive: true,
+                createdAt: editingCouponId ? undefined : new Date(),
+                updatedAt: new Date()
             };
-            await db.collection('coupons').add(data);
-            loadCoupons();
-            alert('تمت الإضافة');
-        }
 
-        window.deleteCoupon = async (id) => { if(confirm('حذف؟')) { await db.collection('coupons').doc(id).delete(); loadCoupons(); } };
+            try {
+                if (editingCouponId) {
+                    await updateDoc(doc(db, 'coupons', editingCouponId), couponData);
+                    alert('تم تحديث الكوبون');
+                } else {
+                    await addDoc(collection(db, 'coupons'), couponData);
+                    alert('تم إضافة الكوبون');
+                }
+                window.resetCouponForm();
+                loadCoupons();
+            } catch (e) {
+                alert('خطأ: ' + e.message);
+            }
+        };
 
+        window.resetCouponForm = () => {
+            document.getElementById('c-code').value = '';
+            document.getElementById('c-discount').value = '';
+            document.getElementById('c-type').value = 'percentage';
+            document.getElementById('c-limit').value = '';
+            document.getElementById('c-expiry').value = '2592000000';
+            document.getElementById('coupon-form-title').innerText = 'إضافة كوبون';
+            document.getElementById('cancel-coupon-btn').classList.add('hidden');
+            editingCouponId = null;
+        };
+
+        window.editCoupon = async (id, coupon) => {
+            editingCouponId = id;
+            document.getElementById('c-code').value = coupon.code;
+            document.getElementById('c-discount').value = coupon.discount;
+            document.getElementById('c-type').value = coupon.type;
+            document.getElementById('c-limit').value = coupon.limit || 0;
+            document.getElementById('coupon-form-title').innerText = 'تعديل الكوبون';
+            document.getElementById('cancel-coupon-btn').classList.remove('hidden');
+            window.showTab('coupons-tab');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        window.deleteCoupon = async (id) => {
+            if (confirm('هل أنت متأكد من حذف هذا الكوبون؟')) {
+                try {
+                    await deleteDoc(doc(db, 'coupons', id));
+                    loadCoupons();
+                } catch (e) {
+                    alert('خطأ: ' + e.message);
+                }
+            }
+        };
+
+        window.toggleCouponStatus = async (id, currentStatus) => {
+            try {
+                await updateDoc(doc(db, 'coupons', id), { isActive: !currentStatus });
+                loadCoupons();
+            } catch (e) {
+                alert('خطأ: ' + e.message);
+            }
+        };
+
+        window.loadCoupons = async () => {
+            const list = document.getElementById('coupons-list');
+            try {
+                const snapshot = await getDocs(query(collection(db, 'coupons'), orderBy('createdAt', 'desc')));
+                list.innerHTML = '';
+                allCoupons = [];
+                let count = 0;
+
+                snapshot.forEach(docData => {
+                    const coupon = docData.data();
+                    coupon.id = docData.id;
+                    allCoupons.push(coupon);
+                    count++;
+
+                    const expiryDate = coupon.expiryDate?.toDate?.() || new Date(coupon.expiryDate);
+                    const now = new Date();
+                    const isExpired = expiryDate < now;
+                    const daysLeft = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+
+                    let expiryClass = '';
+                    let expiryText = '';
+                    if (isExpired) {
+                        expiryClass = 'expiry-expired';
+                        expiryText = 'انتهت الصلاحية';
+                    } else if (daysLeft <= 3) {
+                        expiryClass = 'expiry-warning';
+                        expiryText = `${daysLeft} أيام متبقية`;
+                    } else {
+                        expiryText = `${daysLeft} أيام متبقية`;
+                    }
+
+                    const statusClass = coupon.isActive ? 'coupon-active' : 'coupon-inactive';
+                    const statusText = coupon.isActive ? '✓ مفعل' : '✕ معطل';
+
+                    list.innerHTML += `
+                        <div class="flex items-center justify-between p-4 bg-black rounded border border-zinc-800 hover:border-gold-text transition">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <h4 class="font-bold text-sm gold-text">${coupon.code}</h4>
+                                    <span class="text-[10px] bg-zinc-800 px-2 py-1 rounded">${coupon.type === 'percentage' ? coupon.discount + '%' : coupon.discount + ' ج'}</span>
+                                </div>
+                                <p class="text-[10px] text-zinc-500">الحد: ${coupon.limit || 'غير محدود'} | المستخدم: ${coupon.usedCount || 0}</p>
+                                <p class="text-[10px] ${expiryClass}">${expiryText}</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="window.toggleCouponStatus('${coupon.id}', ${coupon.isActive})" class="btn-sm ${statusClass}">${statusText}</button>
+                                <button onclick='window.editCoupon("${coupon.id}", ${JSON.stringify(coupon).replace(/"/g, '&quot;')})' class="btn-sm btn-warning">✏️</button>
+                                <button onclick="window.deleteCoupon('${coupon.id}')" class="btn-sm btn-danger">🗑️</button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                document.getElementById('stat-coupons').innerText = count;
+            } catch (e) {
+                console.error('Error loading coupons:', e);
+            }
+        };
+
+        // ==================== LOAD ALL ====================
+        window.loadAll = async () => {
+            await loadProducts();
+            await loadOrders();
+            await loadCoupons();
+        };
+
+        // Make functions globally available
+        window.loadProducts = loadProducts;
+        window.loadOrders = loadOrders;
+        window.loadCoupons = loadCoupons;
+        window.loadAll = loadAll;
     </script>
-</body>
-</html>
-products.innerHTML="";
-pCount.innerText=snap.size;
-
-snap.forEach(d=>{
-let p=d.data();
-products.innerHTML+=`
-<div class="box mb-2 flex justify-between">
-${p.name} - ${p.price} ج
-<button onclick="delP('${d.id}')">حذف</button>
-</div>`;
-});
-});
-}
-
-window.delP=async id=>{
-await deleteDoc(doc(db,"products",id));
-};
-
-// ORDERS LIVE
-let last=0;
-
-function loadOrders(){
-onSnapshot(query(collection(db,"orders"),orderBy("createdAt","desc")),snap=>{
-orders.innerHTML="";
-oCount.innerText=snap.size;
-
-if(last && snap.size>last){
-sound.play();
-alert("🔥 طلب جديد");
-}
-last=snap.size;
-
-let total=0;
-
-snap.forEach(d=>{
-let o=d.data();
-total+=o.totalPrice||0;
-
-orders.innerHTML+=`
-<div class="box mb-2">
-#${o.orderNumber} - ${o.customerName}
-<br>${o.totalPrice} ج
-<button onclick='copy("${o.orderNumber}","${o.customerName}","${o.customerPhone}","${o.totalPrice}")'>نسخ</button>
-</div>`;
-});
-
-sales.innerText=total+" ج";
-});
-}
-
-// COPY
-window.copy=(n,name,phone,total)=>{
-navigator.clipboard.writeText(
-`طلب رقم ${n}
-${name}
-${phone}
-${total} جنيه`
-);
-alert("تم النسخ");
-};
-
-// FILTER
-filter.onchange=()=>{
-let v=filter.value;
-document.querySelectorAll("#orders div").forEach(e=>{
-e.style.display=v=="all"||e.innerText.includes(v)?"block":"none";
-});
-};
-
-// COUPONS
-addC.onclick=async ()=>{
-await addDoc(collection(db,"coupons"),{
-code:code.value,
-discount:+discount.value
-});
-};
-
-function loadCoupons(){
-onSnapshot(collection(db,"coupons"),snap=>{
-coupons.innerHTML="";
-snap.forEach(d=>{
-let c=d.data();
-coupons.innerHTML+=`<div class="box mt-2">${c.code} - ${c.discount}</div>`;
-});
-});
-}
-
-// INIT
-function loadAll(){
-loadProducts();
-loadOrders();
-loadCoupons();
-}
-
-</script>
-
 </body>
 </html>
