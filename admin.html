@@ -1,346 +1,238 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم استوديو الزهراء - ZAHRAA STUDIO</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Cairo', sans-serif; background-color: #0a0a0a; color: #fff; }
-        .gold-border { border: 1px solid #d4af37; }
-        .gold-bg { background-color: #d4af37; }
-        .gradient-text { background: linear-gradient(to right, #d4af37, #f9e29c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .tab-active { border-bottom: 3px solid #d4af37; color: #d4af37; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة التحكم - استوديو الزهراء</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <style>
+    body { font-family: 'Cairo', sans-serif; background-color: #0a0a0a; color: #fff; }
+    .gold-text { color: #d4af37; }
+    .gold-bg { background-color: #d4af37; }
+    .tab-btn.active { background-color: #d4af37; color: black; }
+    .tab-btn { color: #d4af37; border: 2px solid #d4af37; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+  </style>
 </head>
-<body class="p-2 md:p-6">
-    <div id="auth-section" class="max-w-md mx-auto mt-20 p-6 bg-zinc-900 rounded-xl gold-border shadow-2xl">
-        <h2 class="text-2xl font-bold mb-6 text-center gradient-text">تسجيل دخول الإدارة</h2>
-        <input type="email" id="email" placeholder="البريد الإلكتروني" class="w-full p-3 mb-4 bg-black border border-zinc-700 rounded text-white outline-none focus:border-gold-text">
-        <input type="password" id="password" placeholder="كلمة المرور" class="w-full p-3 mb-6 bg-black border border-zinc-700 rounded text-white outline-none focus:border-gold-text">
-        <button id="login-btn" class="w-full p-3 gold-bg text-black font-bold rounded hover:opacity-90 transition-all">دخول</button>
+<body class="bg-zinc-950">
+  <nav class="bg-black border-b border-zinc-800 p-6">
+    <div class="container mx-auto flex justify-between items-center">
+      <h1 class="text-2xl font-bold gradient-text">🎛️ لوحة التحكم</h1>
+      <button onclick="logout()" class="bg-red-600 text-white px-6 py-2 rounded-lg font-bold">تسجيل الخروج</button>
+    </div>
+  </nav>
+
+  <div class="container mx-auto p-6">
+    <!-- Tabs -->
+    <div class="flex gap-2 mb-8 flex-wrap">
+      <button class="tab-btn active px-6 py-3 rounded-lg font-bold transition-all" onclick="switchTab('orders')">📦 الطلبات</button>
+      <button class="tab-btn px-6 py-3 rounded-lg font-bold transition-all" onclick="switchTab('coupons')">🏷️ الكوبونات</button>
+      <button class="tab-btn px-6 py-3 rounded-lg font-bold transition-all" onclick="switchTab('testimonials')">⭐ الآراء</button>
+      <button class="tab-btn px-6 py-3 rounded-lg font-bold transition-all" onclick="switchTab('products')">📦 المنتجات</button>
     </div>
 
-    <div id="admin-content" class="hidden max-w-6xl mx-auto">
-        <div class="flex justify-between items-center mb-8">
-            <div class="flex items-center gap-3">
-                <img src="icon-192.png" class="w-10 h-10 object-contain" alt="Logo">
-                <h1 class="text-2xl md:text-3xl font-bold gradient-text">ZAHRAA STUDIO Admin</h1>
-            </div>
-            <button id="logout-btn" class="bg-red-600/20 text-red-500 border border-red-600 px-4 py-2 rounded font-bold text-xs">خروج</button>
-        </div>
-
-        <div class="flex border-b border-zinc-800 mb-8 overflow-x-auto no-scrollbar">
-            <button onclick="showTab('products-tab')" id="btn-products-tab" class="px-6 py-3 font-bold tab-active whitespace-nowrap">المنتجات</button>
-            <button onclick="showTab('orders-tab')" id="btn-orders-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">الطلبات <span id="orders-count-badge" class="bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1 hidden">0</span></button>
-            <button onclick="showTab('stats-tab')" id="btn-stats-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">الإحصائيات</button>
-        </div>
-
-        <!-- Products Tab -->
-        <div id="products-tab" class="tab-content">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div class="lg:col-span-1 bg-zinc-900 p-6 rounded-xl gold-border h-fit">
-                    <h3 id="form-title" class="text-xl font-bold mb-4 border-b border-zinc-800 pb-2">إضافة/تعديل منتج</h3>
-                    <input type="hidden" id="product-id">
-                    <div class="space-y-4">
-                        <input type="text" id="p-name" placeholder="اسم المنتج" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none">
-                        <div class="grid grid-cols-2 gap-4">
-                            <input type="number" id="p-price" placeholder="السعر الأساسي" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none">
-                            <input type="number" id="p-stock" placeholder="الكمية" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none">
-                        </div>
-                        <input type="text" id="p-category" placeholder="القسم (مجات، براويز...)" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none">
-                        
-                        <div class="p-3 bg-black/50 rounded-lg border border-zinc-800 space-y-2">
-                            <p class="text-[10px] text-gold-text font-bold">خيارات المنتج (مقاسات/أنواع):</p>
-                            <div id="variants-list" class="space-y-2"></div>
-                            <button onclick="addVariantField()" class="text-[10px] bg-zinc-800 px-2 py-1 rounded text-zinc-400">+ إضافة خيار</button>
-                        </div>
-
-                        <select id="p-status" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none">
-                            <option value="available">متوفر</option>
-                            <option value="out_of_stock">نفذت الكمية</option>
-                        </select>
-                        <textarea id="p-desc" placeholder="وصف المنتج" class="w-full p-2 bg-black border border-zinc-700 rounded h-24 text-sm outline-none"></textarea>
-                        
-                        <input type="file" id="p-file" multiple accept="image/*" class="hidden">
-                        <button onclick="document.getElementById('p-file').click()" class="w-full py-2 border border-dashed border-zinc-700 rounded text-xs text-zinc-400">رفع صور المعرض</button>
-                        <div id="images-preview" class="grid grid-cols-3 gap-2"></div>
-                        
-                        <button id="save-btn" class="w-full p-3 gold-bg text-black font-bold rounded shadow-lg shadow-gold-bg/20">حفظ المنتج</button>
-                    </div>
-                </div>
-                <div class="lg:col-span-2 bg-zinc-900 p-6 rounded-xl gold-border">
-                    <h3 class="text-xl font-bold mb-4">قائمة المنتجات</h3>
-                    <div id="products-list" class="space-y-3"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Orders Tab -->
-        <div id="orders-tab" class="tab-content hidden">
-            <div class="bg-zinc-900 p-6 rounded-xl gold-border">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-xl font-bold">طلبات الأونلاين</h3>
-                    <div class="flex gap-2">
-                        <button onclick="loadOrders()" class="text-xs bg-zinc-800 px-3 py-1 rounded">تحديث</button>
-                    </div>
-                </div>
-                <div id="orders-list" class="space-y-6"></div>
-            </div>
-        </div>
-
-        <!-- Stats Tab -->
-        <div id="stats-tab" class="tab-content hidden">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-zinc-900 p-8 rounded-xl gold-border text-center"><h4 class="text-zinc-400 mb-2">إجمالي المنتجات</h4><p id="stat-products" class="text-4xl font-bold gradient-text">0</p></div>
-                <div class="bg-zinc-900 p-8 rounded-xl gold-border text-center"><h4 class="text-zinc-400 mb-2">إجمالي الطلبات</h4><p id="stat-orders" class="text-4xl font-bold gradient-text">0</p></div>
-                <div class="bg-zinc-900 p-8 rounded-xl gold-border text-center"><h4 class="text-zinc-400 mb-2">حالة المتجر</h4><p class="text-4xl font-bold text-green-500">نشط</p></div>
-            </div>
-        </div>
+    <!-- Orders Tab -->
+    <div id="orders" class="tab-content active bg-zinc-900 p-8 rounded-xl border border-zinc-800">
+      <h2 class="text-2xl font-bold mb-6 gold-text">الطلبات الجديدة</h2>
+      <div id="orders-list" class="space-y-4"></div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    <!-- Coupons Tab -->
+    <div id="coupons" class="tab-content bg-zinc-900 p-8 rounded-xl border border-zinc-800">
+      <h2 class="text-2xl font-bold mb-6 gold-text">إدارة الكوبونات</h2>
+      <div class="mb-8 p-6 bg-black rounded-lg border border-zinc-800">
+        <h3 class="font-bold mb-4">➕ إضافة كوبون جديد</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <input type="text" id="coupon-code" placeholder="كود الكوبون" class="p-3 bg-zinc-900 border border-zinc-700 rounded-lg outline-none focus:border-gold-text">
+          <input type="number" id="coupon-discount" placeholder="قيمة الخصم" class="p-3 bg-zinc-900 border border-zinc-700 rounded-lg outline-none focus:border-gold-text">
+          <select id="coupon-type" class="p-3 bg-zinc-900 border border-zinc-700 rounded-lg outline-none focus:border-gold-text">
+            <option value="percentage">نسبة مئوية %</option>
+            <option value="fixed">مبلغ ثابت</option>
+          </select>
+          <input type="text" id="coupon-desc" placeholder="الوصف" class="p-3 bg-zinc-900 border border-zinc-700 rounded-lg outline-none focus:border-gold-text">
+        </div>
+        <button onclick="addCoupon()" class="gold-bg text-black px-8 py-3 rounded-lg font-bold">إضافة</button>
+      </div>
+      <div id="coupons-list" class="space-y-4"></div>
+    </div>
 
-        const firebaseConfig = { apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM", authDomain: "zahraa-store-f4c90.firebaseapp.com", projectId: "zahraa-store-f4c90" };
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload";
-        const CLOUDINARY_UPLOAD_PRESET = "zahraa_upload";
-        let currentProductImages = [];
+    <!-- Testimonials Tab -->
+    <div id="testimonials" class="tab-content bg-zinc-900 p-8 rounded-xl border border-zinc-800">
+      <h2 class="text-2xl font-bold mb-6 gold-text">الآراء المعلقة</h2>
+      <div id="testimonials-list" class="space-y-4"></div>
+    </div>
 
-        // Auth
-        document.getElementById('login-btn').onclick = () => {
-            signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value).catch(err => alert("خطأ في الدخول"));
-        };
-        document.getElementById('logout-btn').onclick = () => signOut(auth);
-        onAuthStateChanged(auth, user => {
-            if (user) {
-                document.getElementById('auth-section').classList.add('hidden');
-                document.getElementById('admin-content').classList.remove('hidden');
-                loadProducts(); loadOrders();
-            } else {
-                document.getElementById('auth-section').classList.remove('hidden');
-                document.getElementById('admin-content').classList.add('hidden');
-            }
-        });
+    <!-- Products Tab -->
+    <div id="products" class="tab-content bg-zinc-900 p-8 rounded-xl border border-zinc-800">
+      <h2 class="text-2xl font-bold mb-6 gold-text">المنتجات</h2>
+      <div id="products-list" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+    </div>
+  </div>
 
-        window.showTab = (tabId) => {
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
-            document.getElementById(tabId).classList.remove('hidden');
-            document.querySelectorAll('[id^="btn-"]').forEach(b => b.classList.remove('tab-active'));
-            document.getElementById('btn-' + tabId).classList.add('tab-active');
-        };
+  <script>
+    const firebaseConfig = { apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM", authDomain: "zahraa-store-f4c90.firebaseapp.com", projectId: "zahraa-store-f4c90" };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-        // Variants
-        window.addVariantField = (name = '', price = '') => {
-            const div = document.createElement('div');
-            div.className = "flex gap-2 variant-item";
-            div.innerHTML = `<input type="text" placeholder="الخيار" value="${name}" class="v-name flex-1 p-1 bg-zinc-800 border border-zinc-700 rounded text-[10px] outline-none"><input type="number" placeholder="ج" value="${price}" class="v-price w-12 p-1 bg-zinc-800 border border-zinc-700 rounded text-[10px] outline-none"><button onclick="this.parentElement.remove()" class="text-red-500 px-1 text-xs">×</button>`;
-            document.getElementById('variants-list').appendChild(div);
-        };
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.getElementById(tabName).classList.add('active');
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      if (tabName === 'orders') loadOrders();
+      else if (tabName === 'coupons') loadCoupons();
+      else if (tabName === 'testimonials') loadPendingTestimonials();
+      else if (tabName === 'products') loadProducts();
+    }
 
-        // Upload
-        document.getElementById('p-file').onchange = async (e) => {
-            for (let file of e.target.files) {
-                const fd = new FormData(); fd.append('file', file); fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-                const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: fd });
-                const data = await res.json();
-                if (data.secure_url) { currentProductImages.push(data.secure_url); renderPreviews(); }
-            }
-        };
-        function renderPreviews() {
-            const container = document.getElementById('images-preview');
-            container.innerHTML = '';
-            currentProductImages.forEach((url, i) => {
-                container.innerHTML += `<div class="relative aspect-square border border-zinc-800 rounded overflow-hidden"><img src="${url}" class="w-full h-full object-cover"><button onclick="window.removeImg(${i})" class="absolute top-0 right-0 bg-red-600 text-white w-5 h-5 text-xs">×</button></div>`;
-            });
+    async function loadOrders() {
+      const snap = await db.collection("orders").orderBy("createdAt", "desc").get();
+      let html = '';
+      snap.forEach(doc => {
+        const o = doc.data();
+        html += `
+          <div class="bg-black p-6 rounded-lg border border-zinc-700">
+            <div class="flex justify-between items-start mb-4">
+              <div>
+                <h3 class="text-lg font-bold gold-text">#${o.orderNumber}</h3>
+                <p class="text-sm text-zinc-400">${o.customerName} | ${o.customerPhone}</p>
+              </div>
+              <select onchange="updateOrderStatus('${doc.id}', this.value)" class="bg-zinc-900 border border-zinc-700 p-2 rounded text-sm">
+                <option value="قيد المراجعة" ${o.status === 'قيد المراجعة' ? 'selected' : ''}>قيد المراجعة</option>
+                <option value="جاري التنفيذ" ${o.status === 'جاري التنفيذ' ? 'selected' : ''}>جاري التنفيذ</option>
+                <option value="تم التوصيل" ${o.status === 'تم التوصيل' ? 'selected' : ''}>تم التوصيل</option>
+              </select>
+            </div>
+            <p class="text-sm mb-2"><strong>الإجمالي:</strong> ${o.totalPrice} جنيه</p>
+            <p class="text-sm text-zinc-400"><strong>العنوان:</strong> ${o.customerAddress}</p>
+            ${o.giftWrap ? '<p class="text-sm text-gold-text">🎁 مع تغليف هدايا</p>' : ''}
+          </div>
+        `;
+      });
+      document.getElementById('orders-list').innerHTML = html || '<p class="text-zinc-500">لا توجد طلبات</p>';
+    }
+
+    async function updateOrderStatus(id, status) {
+      await db.collection("orders").doc(id).update({ status });
+      loadOrders();
+    }
+
+    async function loadCoupons() {
+      const snap = await db.collection("coupons").get();
+      let html = '';
+      snap.forEach(doc => {
+        const c = doc.data();
+        html += `
+          <div class="bg-black p-4 rounded-lg border border-zinc-700 flex justify-between items-center">
+            <div>
+              <p class="font-bold gold-text">${c.code}</p>
+              <p class="text-sm text-zinc-400">${c.description}</p>
+              <p class="text-sm">خصم: ${c.discount}${c.type === 'percentage' ? '%' : ' جنيه'}</p>
+            </div>
+            <button onclick="deleteCoupon('${doc.id}')" class="bg-red-600 text-white px-4 py-2 rounded text-sm">حذف</button>
+          </div>
+        `;
+      });
+      document.getElementById('coupons-list').innerHTML = html || '<p class="text-zinc-500">لا توجد كوبونات</p>';
+    }
+
+    async function addCoupon() {
+      const code = document.getElementById('coupon-code').value.trim().toUpperCase();
+      const discount = parseFloat(document.getElementById('coupon-discount').value);
+      const type = document.getElementById('coupon-type').value;
+      const desc = document.getElementById('coupon-desc').value.trim();
+      
+      if (!code || !discount || !desc) { alert('ملء جميع الحقول مطلوب'); return; }
+      
+      await db.collection("coupons").add({ code, discount, type, description: desc, active: true });
+      document.getElementById('coupon-code').value = '';
+      document.getElementById('coupon-discount').value = '';
+      document.getElementById('coupon-desc').value = '';
+      loadCoupons();
+      alert('تم إضافة الكوبون بنجاح');
+    }
+
+    async function deleteCoupon(id) {
+      if (confirm('هل أنت متأكد؟')) {
+        await db.collection("coupons").doc(id).delete();
+        loadCoupons();
+      }
+    }
+
+    async function loadPendingTestimonials() {
+      const snap = await db.collection("testimonials").get();
+      let html = '';
+      snap.forEach(doc => {
+        const t = doc.data();
+        html += `
+          <div class="bg-black p-4 rounded-lg border border-zinc-700">
+            <p class="font-bold">${t.name}</p>
+            <p class="text-sm text-zinc-400 my-2">"${t.text}"</p>
+            <p class="text-sm text-gold-text">${'⭐'.repeat(t.rating)}</p>
+            <button onclick="deleteTestimonial('${doc.id}')" class="bg-red-600 text-white px-4 py-2 rounded text-sm mt-2">حذف</button>
+          </div>
+        `;
+      });
+      document.getElementById('testimonials-list').innerHTML = html || '<p class="text-zinc-500">لا توجد آراء</p>';
+    }
+
+    async function deleteTestimonial(id) {
+      if (confirm('حذف هذا الرأي؟')) {
+        await db.collection("testimonials").doc(id).delete();
+        loadPendingTestimonials();
+      }
+    }
+
+    async function loadProducts() {
+      const snap = await db.collection("products").get();
+      let html = '';
+      snap.forEach(doc => {
+        const p = doc.data();
+        html += `
+          <div class="bg-black p-4 rounded-lg border border-zinc-700">
+            <img src="${p.images?.[0] || ''}" class="w-full h-32 object-cover rounded mb-2">
+            <p class="font-bold">${p.name}</p>
+            <p class="text-sm text-gold-text">${p.price} جنيه</p>
+            <button onclick="deleteProduct('${doc.id}')" class="bg-red-600 text-white px-4 py-2 rounded text-sm mt-2 w-full">حذف</button>
+          </div>
+        `;
+      });
+      document.getElementById('products-list').innerHTML = html || '<p class="text-zinc-500">لا توجد منتجات</p>';
+    }
+
+    async function deleteProduct(id) {
+      if (confirm('حذف هذا المنتج؟')) {
+        await db.collection("products").doc(id).delete();
+        loadProducts();
+      }
+    }
+
+    function logout() {
+      if (confirm('تسجيل الخروج؟')) {
+        localStorage.removeItem('adminAuth');
+        window.location.href = 'index.html';
+      }
+    }
+
+    window.onload = () => {
+      if (!localStorage.getItem('adminAuth')) {
+        const pass = prompt('أدخل كلمة المرور:');
+        if (pass === 'zahraa2024') {
+          localStorage.setItem('adminAuth', 'true');
+          loadOrders();
+        } else {
+          alert('كلمة المرور خاطئة');
+          window.location.href = 'index.html';
         }
-        window.removeImg = (i) => { currentProductImages.splice(i, 1); renderPreviews(); };
-
-        // CRUD
-        async function loadProducts() {
-            const list = document.getElementById('products-list');
-            const snapshot = await getDocs(query(collection(db, "products"), orderBy("updatedAt", "desc")));
-            list.innerHTML = '';
-            let count = 0;
-            snapshot.forEach(docData => {
-                count++; const p = docData.data(); const id = docData.id;
-                list.innerHTML += `<div class="flex items-center justify-between p-4 bg-black rounded border border-zinc-800"><div class="flex items-center gap-4"><img src="${p.images?.[0] || ''}" class="w-10 h-10 object-cover rounded"><div class="max-w-[150px]"><h4 class="font-bold text-xs truncate">${p.name}</h4><p class="text-[9px] text-zinc-500">${p.category || 'بدون قسم'} | ${p.price} ج</p></div></div><div class="flex gap-3"><button onclick='window.editProduct("${id}", ${JSON.stringify(p).replace(/'/g, "&apos;")})' class="text-blue-400 text-[10px]">تعديل</button><button onclick="window.delProduct('${id}')" class="text-red-500 text-[10px]">حذف</button></div></div>`;
-            });
-            document.getElementById('stat-products').innerText = count;
-        }
-
-        document.getElementById('save-btn').onclick = async () => {
-            const id = document.getElementById('product-id').value;
-            const variants = [];
-            document.querySelectorAll('.variant-item').forEach(v => {
-                const vName = v.querySelector('.v-name').value;
-                const vPrice = parseFloat(v.querySelector('.v-price').value);
-                if(vName && vPrice) variants.push({ name: vName, price: vPrice });
-            });
-            const data = {
-                name: document.getElementById('p-name').value,
-                price: parseFloat(document.getElementById('p-price').value) || 0,
-                stock: parseInt(document.getElementById('p-stock').value) || 0,
-                category: document.getElementById('p-category').value,
-                description: document.getElementById('p-desc').value,
-                status: document.getElementById('p-status').value,
-                variants: variants,
-                images: currentProductImages,
-                updatedAt: Date.now()
-            };
-            if(id) await updateDoc(doc(db, "products", id), data);
-            else await addDoc(collection(db, "products"), data);
-            alert('تم الحفظ'); location.reload();
-        };
-
-        window.editProduct = (id, p) => {
-            document.getElementById('product-id').value = id;
-            document.getElementById('p-name').value = p.name;
-            document.getElementById('p-price').value = p.price;
-            document.getElementById('p-stock').value = p.stock || 0;
-            document.getElementById('p-category').value = p.category || '';
-            document.getElementById('p-desc').value = p.description || '';
-            document.getElementById('p-status').value = p.status;
-            currentProductImages = [...(p.images || [])];
-            renderPreviews();
-            document.getElementById('variants-list').innerHTML = '';
-            (p.variants || []).forEach(v => addVariantField(v.name, v.price));
-            document.getElementById('form-title').innerText = 'تعديل المنتج';
-            window.scrollTo(0,0);
-        };
-
-        window.delProduct = async (id) => { if(confirm('حذف؟')) { await deleteDoc(doc(db, "products", id)); loadProducts(); } };
-
-        // Orders Management
-        async function loadOrders() {
-            const list = document.getElementById('orders-list');
-            const snapshot = await getDocs(query(collection(db, "orders"), orderBy("createdAt", "desc")));
-            list.innerHTML = '';
-            let count = 0;
-            let ordersArr = [];
-            snapshot.forEach(docData => ordersArr.push({id: docData.id, ...docData.data()}));
-            
-            ordersArr.forEach((o, index) => {
-                const id = o.id;
-                count++;
-                const itemsStr = o.items.map(i => `${i.name} ${i.variant ? '('+i.variant+')' : ''} × ${i.qty}`).join(' - ');
-                
-                // Render Image Groups
-                let groupsHtml = '';
-                if(o.imageGroups && o.imageGroups.length > 0) {
-                    groupsHtml = o.imageGroups.map(g => `
-                        <div class="mt-2 p-2 bg-zinc-900 rounded border border-zinc-800">
-                            <p class="text-[10px] font-bold gold-text mb-1">${g.name}</p>
-                            <div class="flex gap-2 overflow-x-auto pb-1">
-                                ${g.images.map(img => `<a href="${img}" target="_blank" class="block flex-shrink-0"><img src="${img}" class="w-16 h-16 object-cover rounded border border-zinc-700"></a>`).join('')}
-                            </div>
-                        </div>
-                    `).join('');
-                }
-
-                list.innerHTML += `
-                    <div class="bg-black p-5 rounded-xl border border-zinc-800 space-y-3">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <h4 class="font-bold text-md gold-text">#${o.orderNumber || (index + 1001)} - ${o.customerName}</h4>
-                                <p class="text-[10px] text-zinc-400">${o.customerPhone} | ${o.customerAddress}</p>
-                            </div>
-                            <div class="flex flex-col items-end gap-2">
-                                <select onchange="window.updateOrderStatus('${id}', this.value)" class="bg-zinc-900 border border-zinc-700 text-[10px] p-1.5 rounded outline-none">
-                                    <option value="قيد المراجعة" ${o.status==='قيد المراجعة'?'selected':''}>قيد المراجعة</option>
-                                    <option value="جاري التنفيذ" ${o.status==='جاري التنفيذ'?'selected':''}>جاري التنفيذ</option>
-                                    <option value="تم التوصيل" ${o.status==='تم التوصيل'?'selected':''}>تم التوصيل</option>
-                                    <option value="ملغي" ${o.status==='ملغي'?'selected':''}>ملغي</option>
-                                </select>
-                                <div class="flex gap-1.5">
-                                    <a href="https://wa.me/${o.customerPhone}?text=${encodeURIComponent('السلام عليكم\nرقم طلبك: #' + o.orderNumber + '\nالحالة: ' + o.status)}" target="_blank" class="text-[9px] bg-green-600/20 text-green-500 px-2 py-1 rounded hover:bg-green-600/40 transition-colors">💬 واتساب</a>
-                                    <a href="tel:${o.customerPhone}" class="text-[9px] bg-blue-600/20 text-blue-500 px-2 py-1 rounded hover:bg-blue-600/40 transition-colors">📞 اتصال</a>
-                                </div>
-                                <button onclick="window.copyOrder('${o.orderNumber}', '${o.customerName}', '${o.customerPhone}', '${itemsStr}', '${o.totalPrice}')" class="text-[9px] text-zinc-500 underline">نسخ الفاتورة للواتساب</button>
-                            </div>
-                        </div>
-                        <div class="bg-zinc-900/50 p-2 rounded text-[11px] text-zinc-300"><b>الطلبات:</b> ${itemsStr}</div>
-                        ${groupsHtml ? `<div class="space-y-1"><b>مجموعات الصور:</b>${groupsHtml}<button onclick="window.downloadImageGroup('${o.orderNumber}', ${JSON.stringify(o.imageGroups).replace(/'/g, '\\"')})" class="mt-2 text-[9px] bg-gold-bg text-black px-3 py-1 rounded font-bold hover:opacity-80 transition-opacity">⬇️ تحميل المجموعة</button></div>` : ''}
-                        <div class="flex justify-between items-center pt-2 border-t border-zinc-900">
-                            <button onclick="window.delOrder('${id}')" class="text-red-500 text-[10px]">حذف الطلب</button>
-                            <b class="text-gold-text text-sm">${o.totalPrice} جنيه</b>
-                        </div>
-                    </div>
-                `;
-            });
-            document.getElementById('stat-orders').innerText = count;
-            document.getElementById('orders-count-badge').innerText = count;
-            document.getElementById('orders-count-badge').classList.remove('hidden');
-        }
-
-        window.updateOrderStatus = async (id, newStatus) => {
-            await updateDoc(doc(db, "orders", id), { status: newStatus });
-            alert('تم التحديث');
-        };
-
-        window.delOrder = async (id) => {
-            if(confirm('هل أنت متأكد من حذف هذا الطلب نهائياً؟')) {
-                await deleteDoc(doc(db, "orders", id));
-                loadOrders();
-            }
-        };
-
-        window.copyOrder = (num, name, phone, items, total) => {
-            const text = `طلب رقم: #${num}\nالعميل: ${name}\nالهاتف: ${phone}\nالطلبات: ${items}\nالإجمالي: ${total} جنيه\nشكراً لتعاملك مع زهراء ستوديو!`;
-            navigator.clipboard.writeText(text).then(() => alert('تم نسخ تفاصيل الطلب بنجاح! يمكنك لصقها في الواتساب الآن.'));
-        };
-    </script>
+      } else {
+        loadOrders();
+      }
+    };
+  </script>
 </body>
 </html>
-
-        window.downloadImageGroup = (orderNum, imageGroups) => {
-            if(!imageGroups || imageGroups.length === 0) return alert('لا توجد صور لتحميلها');
-            
-            const html = `<!DOCTYPE html>
-<html dir="rtl" lang="ar">
-<head>
-    <meta charset="UTF-8">
-    <title>طلب #${orderNum} - الصور</title>
-    <style>
-        body { font-family: 'Cairo', Arial; background: #f0f0f0; padding: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
-        h1 { text-align: center; color: #333; margin-bottom: 30px; }
-        .group { margin: 30px 0; padding: 20px; border: 2px solid #d4af37; border-radius: 8px; background: #f9f9f9; }
-        .group-title { font-weight: bold; color: #d4af37; font-size: 18px; margin-bottom: 15px; }
-        .images { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
-        .images img { width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; transition: transform 0.2s; }
-        .images img:hover { transform: scale(1.05); opacity: 0.9; }
-        .info { text-align: center; color: #666; margin-top: 30px; font-size: 12px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>📸 طلب #${orderNum} - مجموعات الصور</h1>
-        ${imageGroups.map(g => `
-            <div class="group">
-                <div class="group-title">📁 ${g.name}</div>
-                <div class="images">
-                    ${g.images.map(img => `<img src="${img}" alt="صورة" onclick="window.open('${img}', '_blank')" title="اضغط لفتح بحجم أكبر">`).join('')}
-                </div>
-            </div>
-        `).join('')}
-        <div class="info">💡 اضغط على أي صورة لفتحها بحجم أكبر</div>
-    </div>
-</body>
-</html>`;
-            
-            const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `طلب_${orderNum}_الصور.html`;
-            a.click();
-            URL.revokeObjectURL(url);
-        };
