@@ -1,9 +1,10 @@
-const CACHE_VERSION = 2;
-const CACHE_NAME = "zahraa-studio-v" + CACHE_VERSION;
+const CACHE_NAME = "zahraa-studio-v1";
 const URLS_TO_CACHE = [
-  "./",
-  "./index.html",
-  "./manifest.json",
+  "/",
+  "/index.html",
+  "/manifest.json",
+  "/icon-192.png",
+  "/icon-512.png",
 ];
 
 // Install event
@@ -45,7 +46,7 @@ self.addEventListener("fetch", (event) => {
   if (
     event.request.url.includes("firebase") ||
     event.request.url.includes("gstatic") ||
-    event.request.url.includes("googleapis") || event.request.url.includes("firestore") || event.request.url.includes("cloudinary")
+    event.request.url.includes("googleapis")
   ) {
     return;
   }
