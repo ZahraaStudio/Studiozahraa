@@ -159,7 +159,7 @@
         <!-- Stats Tab -->
         <div id="stats-tab" class="tab-content">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-zinc-900 p-8 rounded-xl gold-border text-center"><h4 class="text-zinc-400 mb-2">إجمالي المنتبات</h4><p id="stat-products" class="text-4xl font-bold gradient-text">0</p></div>
+                <div class="bg-zinc-900 p-8 rounded-xl gold-border text-center"><h4 class="text-zinc-400 mb-2">إجمالي المنتجات</h4><p id="stat-products" class="text-4xl font-bold gradient-text">0</p></div>
                 <div class="bg-zinc-900 p-8 rounded-xl gold-border text-center"><h4 class="text-zinc-400 mb-2">إجمالي الطلبات</h4><p id="stat-orders" class="text-4xl font-bold gradient-text">0</p></div>
                 <div class="bg-zinc-900 p-8 rounded-xl gold-border text-center"><h4 class="text-zinc-400 mb-2">حالة المتجر</h4><p class="text-4xl font-bold text-green-500">نشط</p></div>
             </div>
@@ -352,7 +352,7 @@
                     alert('تم إضافة المنتج بنجاح');
                 }
                 resetProductForm();
-                loadProducts();
+                await loadProducts();
             } catch (err) {
                 alert("خطأ في الحفظ: " + err.message);
             }
@@ -436,10 +436,19 @@
             const snapshot = await getDocs(query(collection(db, "orders"), orderBy("createdAt", "desc")));
             list.innerHTML = '';
             let count = 0;
+            
+            // Get all coupons usage info
+            const couponUsage = {};
+            
             snapshot.forEach(docData => {
                 const o = docData.data();
                 const id = docData.id;
                 count++;
+                
+                // Track coupon usage
+                if(o.couponCode) {
+                    couponUsage[o.couponCode] = (couponUsage[o.couponCode] || 0) + 1;
+                }
                 
                 const itemsStr = (o.items || []).map(i => `${i.name} ${i.variant ? '('+i.variant+')' : ''} × ${i.qty}`).join(' - ');
                 
@@ -464,6 +473,7 @@
                             <div>
                                 <h4 class="font-bold text-md gold-text">#${o.orderNumber || id.slice(0,5)} - ${o.customerName}</h4>
                                 <p class="text-[10px] text-zinc-400">${o.customerPhone} | ${o.customerAddress}</p>
+                                ${o.couponCode ? `<p class="text-[10px] text-green-500 font-bold mt-1">🏷️ تم استخدام كوبون: ${o.couponCode} (خصم ${o.discountAmount || 0} ج)</p>` : ''}
                             </div>
                             <div class="flex flex-col items-end gap-2">
                                 <select onchange="window.updateOrderStatus('${id}', this.value)" class="bg-zinc-900 border border-zinc-700 text-[10px] p-1.5 rounded outline-none">
@@ -472,7 +482,10 @@
                                     <option value="تم التوصيل" ${o.status==='تم التوصيل'?'selected':''}>تم التوصيل</option>
                                     <option value="ملغي" ${o.status==='ملغي'?'selected':''}>ملغي</option>
                                 </select>
-                                <button onclick="window.copyOrder('${o.orderNumber}', '${o.customerName}', '${o.customerPhone}', '${itemsStr}', '${o.totalPrice}')" class="text-[9px] text-zinc-500 underline">نسخ الفاتورة للواتساب</button>
+                                <div class="flex gap-2">
+                                    <a href="https://wa.me/20${o.customerPhone.startsWith('0') ? o.customerPhone.substring(1) : o.customerPhone}" target="_blank" class="bg-green-600 text-white text-[9px] px-2 py-1 rounded font-bold hover:bg-green-700">واتساب مباشر ✅</a>
+                                    <button onclick="window.copyOrder('${o.orderNumber}', '${o.customerName}', '${o.customerPhone}', '${itemsStr}', '${o.totalPrice}')" class="text-[9px] text-zinc-500 underline">نسخ الفاتورة</button>
+                                </div>
                             </div>
                         </div>
                         <div class="bg-zinc-900/50 p-2 rounded text-[11px] text-zinc-300"><b>الطلبات:</b> ${itemsStr}</div>
@@ -487,6 +500,10 @@
             document.getElementById('stat-orders').innerText = count;
             document.getElementById('orders-count-badge').innerText = count;
             document.getElementById('orders-count-badge').classList.remove('hidden');
+            
+            // Store coupon usage globally to be used by loadCoupons
+            window.currentCouponUsage = couponUsage;
+            loadCoupons();
         };
 
         window.updateOrderStatus = async (id, newStatus) => {
@@ -511,15 +528,19 @@
             const list = document.getElementById('coupons-list');
             const snap = await getDocs(collection(db, "coupons"));
             list.innerHTML = '';
+            const usage = window.currentCouponUsage || {};
+            
             snap.forEach(docData => {
                 const c = docData.data();
                 const id = docData.id;
+                const count = usage[c.code] || 0;
                 list.innerHTML += `
                     <div class="bg-black p-4 rounded-lg border border-zinc-700 flex justify-between items-center">
                         <div>
                             <p class="font-bold gold-text">${c.code}</p>
                             <p class="text-[10px] text-zinc-400">${c.description || ''}</p>
                             <p class="text-[10px]">خصم: ${c.discount}${c.type === 'percentage' ? '%' : ' جنيه'}</p>
+                            <p class="text-[10px] text-blue-400 font-bold mt-1">📈 عدد مرات الاستخدام: ${count}</p>
                         </div>
                         <button onclick="window.deleteCoupon('${id}')" class="bg-red-600/20 text-red-500 border border-red-600 px-3 py-1 rounded text-[10px]">حذف</button>
                     </div>
