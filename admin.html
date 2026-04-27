@@ -33,11 +33,6 @@
     .hero-gradient { background: radial-gradient(circle at center, rgba(212, 175, 55, 0.1) 0%, rgba(0, 0, 0, 0) 70%); }
     .toast { position: fixed; bottom: 20px; right: 20px; background: #d4af37; color: black; padding: 12px 20px; border-radius: 8px; font-weight: bold; z-index: 2000; animation: slideIn 0.3s ease; }
     @keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-    .image-modal { backdrop-filter: blur(15px); background: rgba(0,0,0,0.95); z-index: 1500; }
-    .image-modal img { max-width: 90vw; max-height: 90vh; object-fit: contain; }
-    .image-group-item { position: relative; overflow: hidden; border-radius: 12px; }
-    .image-group-item:hover .delete-btn { opacity: 1; }
-    .delete-btn { position: absolute; top: 5px; right: 5px; background: rgba(255,0,0,0.8); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; transition: opacity 0.3s; font-size: 14px; }
     
     /* Logo Animation */
     .logo-frame { 
@@ -51,11 +46,14 @@
     .logo-img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.6)); }
     @keyframes logoFloat { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-15px); } }
     
-    /* Cart quantity controls */
-    .qty-control { display: flex; align-items: center; gap: 8px; background: #1a1a1a; border-radius: 8px; padding: 4px; }
-    .qty-btn { width: 24px; height: 24px; border: none; background: #d4af37; color: black; border-radius: 4px; cursor: pointer; font-weight: bold; transition: all 0.2s; }
-    .qty-btn:hover { background: #f9e29c; transform: scale(1.1); }
-    .qty-display { min-width: 30px; text-align: center; font-weight: bold; }
+    /* Slider Styles */
+    .slider-container { position: relative; overflow: hidden; border-radius: 20px; }
+    .slider-track { display: flex; transition: transform 0.5s ease-in-out; }
+    .slider-item { min-width: 100%; }
+    .slider-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10; }
+    .slider-btn:hover { background: #d4af37; color: black; }
+    .slider-prev { right: 10px; }
+    .slider-next { left: 10px; }
   </style>
 </head>
 <body class="overflow-x-hidden">
@@ -67,9 +65,15 @@
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
         </button>
         <div class="flex flex-col">
-            <h1 class="text-xl font-bold gradient-text cursor-pointer leading-tight" onclick="location.reload()">ZAHRAA STUDIO</h1>
+            <h1 class="text-xl font-bold gradient-text cursor-pointer leading-tight" onclick="showPage('home')">ZAHRAA STUDIO</h1>
             <span class="text-[10px] text-zinc-500 tracking-widest uppercase">استوديو الزهراء</span>
         </div>
+      </div>
+      <div class="hidden md:flex items-center gap-2 flex-1 justify-center">
+        <button onclick="showPage('home')" class="px-4 py-2 text-sm rounded-lg hover:bg-zinc-900 transition-colors">🏠 الرئيسية</button>
+        <button onclick="showPage('store')" class="px-4 py-2 text-sm rounded-lg hover:bg-zinc-900 transition-colors gold-text font-bold">🛍️ المتجر</button>
+        <button onclick="showPage('track')" class="px-4 py-2 text-sm rounded-lg hover:bg-zinc-900 transition-colors">📦 تتبع</button>
+        <button onclick="window.open('https://maps.app.goo.gl/xxx', '_blank')" class="px-4 py-2 text-sm rounded-lg hover:bg-zinc-900 transition-colors">📍 الموقع</button>
       </div>
       <div class="flex items-center gap-3">
         <a href="https://facebook.com/StudioZahraa" target="_blank" class="text-zinc-400 hover:text-[#1877F2] transition-colors">
@@ -88,64 +92,343 @@
   <div id="sidebar" class="sidebar fixed top-0 right-0 h-full w-72 bg-zinc-950 border-l border-zinc-800 transform translate-x-full">
     <div class="p-6">
       <h2 class="text-2xl font-bold mb-8 gradient-text">الأقسام</h2>
-      <div id="categories-list" class="space-y-4">
-        <button onclick="filterCategory('all')" class="w-full text-right p-3 rounded-xl hover:bg-zinc-900 transition-colors text-gold-text font-bold">كل المنتجات</button>
-      </div>
+      <div id="categories-list" class="space-y-4"></div>
       <div class="mt-20 pt-8 border-t border-zinc-900 space-y-6">
         <p class="text-xs text-zinc-500 uppercase tracking-widest">تواصل معنا</p>
         <div class="space-y-4">
             <a href="https://facebook.com/StudioZahraa" target="_blank" class="flex items-center gap-3 text-zinc-400 hover:text-white"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg> فيسبوك</a>
-            <a href="https://wa.me/201204194540" target="_blank" class="flex items-center gap-3 text-zinc-400 hover:text-white"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> واتساب 1</a>
-            <a href="https://wa.me/201286815625" target="_blank" class="flex items-center gap-3 text-zinc-400 hover:text-white"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> واتساب 2</a>
+            <a href="https://wa.me/201204194540" target="_blank" class="flex items-center gap-3 text-zinc-400 hover:text-white">واتساب 1</a>
+            <a href="https://wa.me/201286815625" target="_blank" class="flex items-center gap-3 text-zinc-400 hover:text-white">واتساب 2</a>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Hero Section -->
-  <section class="relative min-h-screen flex items-center justify-center pt-20 hero-gradient overflow-hidden">
-    <div class="absolute inset-0 z-0">
-        <div class="absolute top-1/4 left-1/4 w-64 h-64 bg-gold-bg/10 rounded-full blur-[100px]"></div>
-        <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gold-bg/5 rounded-full blur-[120px]"></div>
-    </div>
-    
-    <div class="container mx-auto px-4 text-center z-10">
-        <div class="logo-frame">
-            <img src="https://i.ibb.co/gFbYCVhy/file-000000003d48620a9a545c81b8bf35e5.png" alt="ZAHRAA STUDIO Logo" class="logo-img">
+  <!-- Page Content -->
+  <main>
+    <!-- Home Page -->
+    <section data-page="home" class="relative min-h-screen flex items-center justify-center pt-20 hero-gradient overflow-hidden">
+        <div class="container mx-auto px-4 text-center z-10">
+            <div class="logo-frame"><img src="https://i.ibb.co/gFbYCVhy/file-000000003d48620a9a545c81b8bf35e5.png" class="logo-img"></div>
+            <h1 class="text-5xl md:text-7xl font-bold mb-4 tracking-tighter"><span class="gradient-text">استوديو الزهراء</span></h1>
+            <p class="text-zinc-400 text-lg md:text-xl max-w-2xl mx-auto mb-6 leading-relaxed">نحول لحظاتكم الجميلة إلى ذكريات لا تُنسى</p>
+            <button onclick="showPage('store')" class="gold-bg text-black px-10 py-4 rounded-full font-bold text-lg hover:scale-105 transition">تسوق الآن</button>
         </div>
-        <h1 class="text-5xl md:text-7xl font-bold mb-4 tracking-tighter">
-            <span class="gradient-text">استوديو الزهراء</span>
-        </h1>
-        <p class="text-zinc-400 text-lg md:text-xl max-w-2xl mx-auto mb-6 leading-relaxed">
-            نحول لحظاتك الجميلة إلى تحف فنية خالدة. تصاميم عصرية، طباعة فاخرة، وهدايا تليق بأحبابك.
-        </p>
-        <p class="text-gold-text text-sm mb-10">
-            📍 بصبيح - ههيا - الشرقية | بجوار المعهد الديني على الطريق العام
-        </p>
-        
-        <div class="flex flex-col md:flex-row items-center justify-center gap-4">
-            <a href="#store-section" class="w-full md:w-auto px-10 py-4 gold-bg text-black font-bold rounded-2xl shadow-xl shadow-gold-bg/20 hover:scale-105 transition-transform">تصفح المتجر الآن</a>
-            <div class="flex gap-4">
-                <a href="https://maps.app.goo.gl/GrSF5zg2Zpg7cdUA6" target="_blank" class="p-4 bg-zinc-900 rounded-2xl border border-zinc-800 hover:border-gold-text transition-colors" title="موقعنا على الخريطة">
-                    <svg class="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-                </a>
-                <a href="https://wa.me/201204194540" target="_blank" class="p-4 bg-zinc-900 rounded-2xl border border-zinc-800 hover:border-gold-text transition-colors">
-                    <svg class="w-6 h-6 text-[#25D366]" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                </a>
-            </div>
-        </div>
-        
-        <div class="mt-16 animate-bounce">
-            <a href="#store-section" class="text-zinc-500"><svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7-7-7m14-8l-7 7-7-7"></path></svg></a>
-        </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Store Section -->
-  <section id="store-section" class="py-24 px-4">
-    <div class="container mx-auto">
-        <div class="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
-            <div class="text-right">
+    <!-- Store Page -->
+    <section data-page="store" class="hidden pt-32 pb-20 container mx-auto px-4">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-12 gap-6">
+            <h2 class="text-3xl font-bold border-r-4 border-gold-text pr-4">منتجاتنا المميزة</h2>
+            <input type="text" id="search-input" oninput="handleSearch()" placeholder="ابحث عن منتج..." class="w-full md:w-96 bg-zinc-900 border border-zinc-800 rounded-2xl py-3 px-6 outline-none focus:border-gold-text">
+        </div>
+        <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+    </section>
+
+    <!-- Track Page -->
+    <section data-page="track" class="hidden pt-32 pb-20 container mx-auto px-4">
+        <div class="max-w-2xl mx-auto bg-zinc-900 p-8 rounded-3xl border border-zinc-800">
+            <h2 class="text-3xl font-bold mb-8 text-center gold-text">تتبع طلبك</h2>
+            <div class="flex gap-3 mb-8">
+                <input type="text" id="track-order-input" placeholder="أدخل كود التتبع (مثلاً: ZS-A7B9X2)" class="flex-1 bg-black border border-zinc-800 rounded-2xl py-4 px-6 outline-none focus:border-gold-text">
+                <button onclick="trackOrder()" class="gold-bg text-black px-8 rounded-2xl font-bold">تتبع</button>
+            </div>
+            <div id="track-result" class="hidden space-y-6">
+                <div class="flex justify-between items-center p-4 bg-black rounded-2xl border border-zinc-800">
+                    <div><p class="text-xs text-zinc-500 mb-1">رقم الطلب</p><p id="track-order-num" class="font-bold"></p></div>
+                    <div id="track-status" class="px-4 py-1 rounded-full text-xs font-bold"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="p-4 bg-black rounded-2xl border border-zinc-800"><p class="text-xs text-zinc-500 mb-1">العميل</p><p id="track-customer-name" class="font-bold"></p></div>
+                    <div class="p-4 bg-black rounded-2xl border border-zinc-800"><p class="text-xs text-zinc-500 mb-1">الإجمالي</p><p id="track-total" class="font-bold gold-text"></p></div>
+                </div>
+                <div class="p-4 bg-black rounded-2xl border border-zinc-800"><p class="text-xs text-zinc-500 mb-2">المنتجات</p><div id="track-items" class="text-sm space-y-1"></div></div>
+            </div>
+            <div id="track-not-found" class="hidden text-center py-10 text-red-500">عذراً، لم يتم العثور على طلب بهذا الكود</div>
+        </div>
+    </section>
+  </main>
+
+  <!-- Product Modal -->
+  <div id="product-modal" class="modal fixed inset-0 hidden flex items-center justify-center p-4 z-[1100]">
+    <div class="bg-zinc-950 w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl border border-zinc-800 p-6 md:p-10 relative">
+        <button onclick="closeModal()" class="absolute top-6 left-6 text-zinc-500 hover:text-white text-2xl">✕</button>
+        <div id="modal-content" class="grid grid-cols-1 md:grid-cols-2 gap-10"></div>
+    </div>
+  </div>
+
+  <!-- Cart Modal -->
+  <div id="cart-modal" class="modal fixed inset-0 hidden flex items-center justify-center p-4 z-[1100]">
+    <div class="bg-zinc-950 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border border-zinc-800 p-8">
+        <div class="flex justify-between items-center mb-8"><h2 class="text-2xl font-bold gold-text">سلة المشتريات</h2><button onclick="toggleCart()" class="text-zinc-500">✕</button></div>
+        <div id="cart-items" class="space-y-4 mb-8"></div>
+        <div class="border-t border-zinc-900 pt-6 space-y-4">
+            <div class="flex gap-2">
+                <input type="text" id="coupon-input" placeholder="كود الخصم" class="flex-1 bg-black border border-zinc-800 rounded-xl py-3 px-4 outline-none focus:border-gold-text">
+                <button onclick="applyCoupon()" class="bg-zinc-800 px-6 rounded-xl font-bold">تطبيق</button>
+            </div>
+            <div class="flex justify-between text-xl font-bold gold-text"><span>الإجمالي:</span><span id="cart-total">0 ج</span></div>
+            <button onclick="openCheckout()" class="w-full gold-bg text-black py-4 rounded-2xl font-bold text-lg">إتمام الطلب</button>
+        </div>
+    </div>
+  </div>
+
+  <!-- Checkout Modal -->
+  <div id="checkout-modal" class="modal fixed inset-0 hidden flex items-center justify-center p-4 z-[1200]">
+    <div class="bg-zinc-950 w-full max-w-md rounded-3xl border border-zinc-800 p-8">
+        <h2 class="text-2xl font-bold mb-6 gold-text">بيانات الشحن</h2>
+        <div class="space-y-4">
+            <input type="text" id="cust-name" placeholder="الاسم الكامل" class="w-full bg-black border border-zinc-800 rounded-xl py-4 px-6 outline-none focus:border-gold-text">
+            <input type="tel" id="cust-phone" placeholder="رقم الهاتف" class="w-full bg-black border border-zinc-800 rounded-xl py-4 px-6 outline-none focus:border-gold-text">
+            <textarea id="cust-address" placeholder="العنوان بالتفصيل" class="w-full bg-black border border-zinc-800 rounded-xl py-4 px-6 outline-none focus:border-gold-text h-24"></textarea>
+            
+            <!-- Customer Image Upload -->
+            <div class="border-2 border-dashed border-zinc-800 p-4 rounded-xl text-center">
+                <p class="text-xs text-zinc-500 mb-2">ارفع صورك هنا (اختياري)</p>
+                <input type="file" id="cust-files" multiple accept="image/*" class="hidden" onchange="handleCustomerFiles(this)">
+                <button onclick="document.getElementById('cust-files').click()" class="bg-zinc-800 text-white px-4 py-2 rounded-lg text-xs">اختيار صور</button>
+                <div id="cust-upload-status" class="text-[10px] mt-2 text-zinc-500"></div>
+            </div>
+
+            <button onclick="submitOrder()" id="submit-order-btn" class="w-full gold-bg text-black py-4 rounded-2xl font-bold text-lg">تأكيد الطلب</button>
+            <button onclick="closeCheckout()" class="w-full text-zinc-500 py-2">إلغاء</button>
+        </div>
+    </div>
+  </div>
+
+  <!-- Success Modal -->
+  <div id="success-modal" class="modal fixed inset-0 hidden flex items-center justify-center p-4 z-[1300]">
+    <div class="bg-zinc-950 w-full max-w-md rounded-3xl border border-zinc-800 p-10 text-center">
+        <div class="w-20 h-20 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">✓</div>
+        <h2 class="text-2xl font-bold mb-2">تم استلام طلبك!</h2>
+        <p class="text-zinc-400 mb-6">كود التتبع الخاص بك هو:</p>
+        <div class="bg-black p-4 rounded-2xl border border-gold-text mb-8"><span id="success-track-code" class="text-2xl font-bold gold-text tracking-widest"></span></div>
+        <button onclick="location.reload()" class="w-full gold-bg text-black py-4 rounded-2xl font-bold">العودة للمتجر</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script type="module">
+    const firebaseConfig = { apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM", authDomain: "zahraa-store-f4c90.firebaseapp.com", projectId: "zahraa-store-f4c90" };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload";
+    const CLOUDINARY_PRESET = "zahraa_upload";
+
+    let allProducts = [];
+    let cart = [];
+    let appliedCoupon = null;
+    let selectedCategory = 'all';
+    let searchTerm = '';
+    let customerImages = [];
+    let currentSlide = 0;
+
+    async function init() {
+        const snap = await db.collection("products").orderBy("updatedAt", "desc").get();
+        allProducts = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderProducts();
+        renderCategories();
+    }
+
+    function renderProducts() {
+        const grid = document.getElementById('products-grid');
+        const filtered = allProducts.filter(p => (selectedCategory === 'all' || p.category === selectedCategory) && p.name.toLowerCase().includes(searchTerm.toLowerCase()));
+        grid.innerHTML = filtered.map(p => `
+            <div class="product-card group">
+                <div onclick="openModal('${p.id}')" class="h-64 overflow-hidden cursor-pointer relative">
+                    <img src="${p.images?.[0] || ''}" class="w-full h-full object-cover transition-transform group-hover:scale-110">
+                </div>
+                <div class="p-6">
+                    <h3 class="font-bold mb-1 truncate">${p.name}</h3>
+                    <p class="gold-text font-bold mb-4">${p.price} ج</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="openModal('${p.id}')" class="bg-zinc-800 py-3 rounded-xl font-bold text-[10px] hover:bg-zinc-700 transition">التفاصيل</button>
+                        <a href="https://wa.me/201204194540?text=${encodeURIComponent('أريد طلب: '+p.name)}" target="_blank" class="gold-bg text-black py-3 rounded-xl font-bold text-[10px] text-center">واتساب</a>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function renderCategories() {
+        const cats = [...new Set(allProducts.map(p => p.category).filter(Boolean))];
+        const list = document.getElementById('categories-list');
+        list.innerHTML = '<button onclick="filterCategory(\'all\')" class="w-full text-right p-3 rounded-xl hover:bg-zinc-900 transition-colors text-gold-text font-bold">كل المنتجات</button>';
+        cats.forEach(c => list.innerHTML += `<button onclick="filterCategory('${c}')" class="w-full text-right p-3 rounded-xl hover:bg-zinc-900 transition-colors text-zinc-400">${c}</button>`);
+    }
+
+    window.filterCategory = (cat) => { selectedCategory = cat; renderProducts(); toggleSidebar(); };
+    window.handleSearch = () => { searchTerm = document.getElementById('search-input').value; renderProducts(); };
+
+    window.openModal = (id) => {
+        const p = allProducts.find(x => x.id === id);
+        const content = document.getElementById('modal-content');
+        currentSlide = 0;
+        
+        let variantsHtml = (p.variants || []).map((v, i) => `
+            <label class="flex items-center gap-3 p-3 bg-black border border-zinc-800 rounded-xl cursor-pointer hover:border-gold-text transition-colors">
+                <input type="radio" name="variant" value="${i}" ${i===0?'checked':''} onchange="updateModalPrice(${v.price})" class="accent-gold-text">
+                <div class="flex-1"><p class="text-sm font-bold">${v.name}</p><p class="text-xs gold-text">${v.price} ج</p></div>
+            </label>
+        `).join('');
+
+        content.innerHTML = `
+            <div class="slider-container">
+                <div class="slider-track" id="slider-track">
+                    ${(p.images || []).map(img => `<div class="slider-item"><img src="${img}" class="w-full h-80 object-cover rounded-2xl"></div>`).join('')}
+                </div>
+                ${p.images?.length > 1 ? `
+                    <button class="slider-btn slider-prev" onclick="moveSlide(1)">❯</button>
+                    <button class="slider-btn slider-next" onclick="moveSlide(-1)">❮</button>
+                ` : ''}
+            </div>
+            <div class="space-y-6">
+                <h2 class="text-3xl font-bold">${p.name}</h2>
+                <p id="modal-price" class="gold-text text-2xl font-bold">${p.price} ج</p>
+                ${variantsHtml ? `<div class="space-y-2"><p class="text-xs text-zinc-500">اختر النوع / المقاس:</p>${variantsHtml}</div>` : ''}
+                <p class="text-zinc-500 leading-relaxed">${p.desc || ''}</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <button onclick="addToCart('${p.id}')" class="gold-bg text-black py-4 rounded-2xl font-bold">إضافة للسلة</button>
+                    <a href="https://wa.me/201204194540?text=${encodeURIComponent('أريد طلب: '+p.name)}" target="_blank" class="border border-gold-text text-gold-text py-4 rounded-2xl font-bold text-center">واتساب مباشر</a>
+                </div>
+            </div>
+        `;
+        document.getElementById('product-modal').classList.remove('hidden');
+    };
+
+    window.moveSlide = (dir) => {
+        const track = document.getElementById('slider-track');
+        const items = track.querySelectorAll('.slider-item');
+        currentSlide = (currentSlide + dir + items.length) % items.length;
+        track.style.transform = `translateX(${currentSlide * 100}%)`;
+    };
+
+    window.updateModalPrice = (price) => document.getElementById('modal-price').innerText = price + ' ج';
+    window.closeModal = () => document.getElementById('product-modal').classList.add('hidden');
+
+    window.handleCustomerFiles = async (input) => {
+        const status = document.getElementById('cust-upload-status');
+        customerImages = [];
+        for (let file of input.files) {
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('upload_preset', CLOUDINARY_PRESET);
+            status.innerText = 'جاري رفع صورك...';
+            try {
+                const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data.secure_url) customerImages.push(data.secure_url);
+            } catch (e) {}
+        }
+        status.innerText = `تم رفع ${customerImages.length} صورة ✓`;
+    };
+
+    window.addToCart = (id) => {
+        const p = allProducts.find(x => x.id === id);
+        let selectedVariant = null;
+        if(p.variants?.length) {
+            const idx = document.querySelector('input[name="variant"]:checked').value;
+            selectedVariant = p.variants[idx];
+        }
+        const cartId = id + (selectedVariant ? '-' + selectedVariant.name : '');
+        const existing = cart.find(x => x.cartId === cartId);
+        if(existing) existing.qty++;
+        else cart.push({ ...p, cartId, selectedVariant, qty: 1, price: selectedVariant ? selectedVariant.price : p.price });
+        updateCartUI();
+        showToast('تمت الإضافة للسلة ✓');
+        closeModal();
+    };
+
+    function updateCartUI() {
+        document.getElementById('cart-count').innerText = cart.reduce((a, b) => a + b.qty, 0);
+        const list = document.getElementById('cart-items');
+        let subtotal = cart.reduce((a, b) => a + (b.price * b.qty), 0);
+        let discount = 0;
+        if(appliedCoupon) discount = appliedCoupon.type === 'percentage' ? subtotal * (appliedCoupon.discount / 100) : appliedCoupon.discount;
+        list.innerHTML = cart.map((item, i) => `
+            <div class="flex items-center gap-4 bg-zinc-900 p-4 rounded-2xl">
+                <img src="${item.images?.[0]}" class="w-16 h-16 object-cover rounded-xl">
+                <div class="flex-1"><h4 class="font-bold text-sm">${item.name}</h4><p class="text-[10px] text-zinc-500">${item.selectedVariant ? item.selectedVariant.name : ''}</p><p class="text-xs gold-text">${item.price} ج</p></div>
+                <div class="qty-control"><button class="qty-btn" onclick="updateQty(${i}, -1)">−</button><span class="qty-display">${item.qty}</span><button class="qty-btn" onclick="updateQty(${i}, 1)">+</button></div>
+            </div>
+        `).join('');
+        document.getElementById('cart-total').innerText = (subtotal - discount) + ' ج';
+    }
+
+    window.updateQty = (i, delta) => { cart[i].qty += delta; if(cart[i].qty <= 0) cart.splice(i, 1); updateCartUI(); };
+
+    window.submitOrder = async () => {
+        const name = document.getElementById('cust-name').value.trim();
+        const phone = document.getElementById('cust-phone').value.trim();
+        const address = document.getElementById('cust-address').value.trim();
+        if(!name || !phone || !address) return alert('يرجى ملء البيانات');
+        
+        const btn = document.getElementById('submit-order-btn');
+        btn.disabled = true; btn.innerText = 'جاري الإرسال...';
+
+        const subtotal = cart.reduce((a, b) => a + (b.price * b.qty), 0);
+        let discount = 0;
+        if(appliedCoupon) discount = appliedCoupon.type === 'percentage' ? subtotal * (appliedCoupon.discount / 100) : appliedCoupon.discount;
+
+        const trackingCode = 'ZS-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+        const orderData = {
+            customerName: name, customerPhone: phone, customerAddress: address,
+            items: cart.map(i => ({ name: i.name, price: i.price, qty: i.qty, variant: i.selectedVariant?.name || '' })),
+            subtotal, discountAmount: discount, total: subtotal - discount,
+            trackingCode, status: 'pending', createdAt: new Date(), customerImages
+        };
+
+        await db.collection('orders').add(orderData);
+        if(appliedCoupon) await db.collection('coupons').doc(appliedCoupon.id).update({ usedCount: firebase.firestore.FieldValue.increment(1) });
+
+        document.getElementById('success-track-code').innerText = trackingCode;
+        document.getElementById('success-modal').classList.remove('hidden');
+    };
+
+    window.trackOrder = async () => {
+        const code = document.getElementById('track-order-input').value.trim().toUpperCase();
+        const snap = await db.collection('orders').where('trackingCode', '==', code).get();
+        const res = document.getElementById('track-result');
+        const err = document.getElementById('track-not-found');
+        res.classList.add('hidden'); err.classList.add('hidden');
+        if(snap.empty) return err.classList.remove('hidden');
+        const o = snap.docs[0].data();
+        document.getElementById('track-order-num').innerText = code;
+        document.getElementById('track-customer-name').innerText = o.customerName;
+        document.getElementById('track-total').innerText = o.total + ' ج';
+        const statusElem = document.getElementById('track-status');
+        statusElem.innerText = o.status === 'pending' ? 'قيد المراجعة' : o.status === 'completed' ? 'تم التوصيل' : 'ملغي';
+        statusElem.className = `px-4 py-1 rounded-full text-xs font-bold ${o.status === 'pending' ? 'bg-yellow-600' : o.status === 'completed' ? 'bg-green-600' : 'bg-red-600'}`;
+        document.getElementById('track-items').innerHTML = o.items.map(i => `<div>${i.name} ${i.variant ? '('+i.variant+')' : ''} × ${i.qty}</div>`).join('');
+        res.classList.remove('hidden');
+    };
+
+    window.showPage = (pageId) => {
+        document.querySelectorAll('section[data-page]').forEach(s => s.classList.add('hidden'));
+        document.querySelector(`section[data-page="${pageId}"]`).classList.remove('hidden');
+        window.scrollTo(0,0);
+    };
+
+    window.toggleSidebar = () => {
+        document.getElementById('sidebar').classList.toggle('translate-x-full');
+        document.getElementById('sidebar-overlay').classList.toggle('hidden');
+    };
+
+    window.toggleCart = () => document.getElementById('cart-modal').classList.toggle('hidden');
+    window.closeCheckout = () => document.getElementById('checkout-modal').classList.add('hidden');
+    window.openCheckout = () => { if(cart.length === 0) return; document.getElementById('checkout-modal').classList.remove('hidden'); };
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.innerText = msg; t.classList.remove('hidden');
+        setTimeout(() => t.classList.add('hidden'), 3000);
+    }
+
+    init();
+  </script>
+</body>
+</html>
                 <h2 class="text-3xl font-bold mb-2">تصفح <span class="gold-text">منتجاتنا</span></h2>
                 <p class="text-zinc-500">اختر ما يناسب ذوقك من تشكيلتنا الواسعة</p>
             </div>
