@@ -1,18 +1,16 @@
-const CACHE_VERSION = 3;
+const CACHE_VERSION = 2;
 const CACHE_NAME = "zahraa-studio-v" + CACHE_VERSION;
 const URLS_TO_CACHE = [
   "./",
   "./index.html",
   "./manifest.json",
-  "./icon-192.png",
-  "./icon-512.png"
 ];
 
 // Install event
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log("✅ Service Worker: Cache opened - استوديو الزهراء");
+      console.log("✅ Service Worker: Cache opened");
       return cache.addAll(URLS_TO_CACHE);
     })
   );
@@ -47,10 +45,7 @@ self.addEventListener("fetch", (event) => {
   if (
     event.request.url.includes("firebase") ||
     event.request.url.includes("gstatic") ||
-    event.request.url.includes("googleapis") || 
-    event.request.url.includes("firestore") || 
-    event.request.url.includes("cloudinary") ||
-    event.request.url.includes("cdn.tailwindcss")
+    event.request.url.includes("googleapis") || event.request.url.includes("firestore") || event.request.url.includes("cloudinary")
   ) {
     return;
   }
@@ -92,15 +87,5 @@ self.addEventListener("fetch", (event) => {
 self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "SKIP_WAITING") {
     self.skipWaiting();
-  }
-});
-
-// Background sync for offline orders (optional)
-self.addEventListener("sync", (event) => {
-  if (event.tag === "sync-orders") {
-    event.waitUntil(
-      // Handle offline order syncing here
-      Promise.resolve()
-    );
   }
 });
