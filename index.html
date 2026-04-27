@@ -579,15 +579,27 @@
         cats.forEach(c => {
           catList.innerHTML += `<button onclick="filterCategory('${c}')" class="w-full text-right p-3 rounded-xl hover:bg-zinc-900 transition-colors text-zinc-400">${c}</button>`;
         });
+        console.log('Rendering products...', allProducts);
         renderProducts();
+        console.log('Products rendered!');
         renderPortfolio();
         loadTestimonials();
       } catch (e) { console.error("Init error:", e); }
     }
 
     function renderProducts() {
+      console.log('renderProducts called, allProducts:', allProducts);
       const grid = document.getElementById('products-grid');
+      if(!grid) {
+        console.error('products-grid element not found!');
+        return;
+      }
       grid.innerHTML = '';
+      if(allProducts.length === 0) {
+        console.warn('No products to display!');
+        grid.innerHTML = '<p class="col-span-full text-center text-zinc-500">لا توجد منتجات</p>';
+        return;
+      }
       const filtered = allProducts.filter(p => {
         const matchCat = selectedCategory === 'all' || p.category === selectedCategory;
         const matchSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -617,8 +629,12 @@
       });
     }
 
-    function filterCategory(cat) { selectedCategory = cat; renderProducts(); toggleSidebar(); }
-    function handleSearch() { searchTerm = document.getElementById('search-input').value; renderProducts(); }
+    function filterCategory(cat) { selectedCategory = cat; console.log('Rendering products...', allProducts);
+        renderProducts();
+        console.log('Products rendered!'); toggleSidebar(); }
+    function handleSearch() { searchTerm = document.getElementById('search-input').value; console.log('Rendering products...', allProducts);
+        renderProducts();
+        console.log('Products rendered!'); }
 
     function openModal(id) {
       const p = allProducts.find(x => x.id === id);
@@ -938,6 +954,11 @@
         try {
           const snap = await db.collection('testimonials').orderBy('createdAt', 'desc').get();
           grid.innerHTML = '';
+      if(allProducts.length === 0) {
+        console.warn('No products to display!');
+        grid.innerHTML = '<p class="col-span-full text-center text-zinc-500">لا توجد منتجات</p>';
+        return;
+      }
           if(snap.empty) {
             grid.innerHTML = '<p class="text-zinc-500 col-span-full text-center py-10">لا توجد آراء حالياً</p>';
             return;
@@ -1007,7 +1028,8 @@
           loadTestimonials();
         } catch(e) { alert('خطأ: ' + e.message); }
       }
-    }load = init;
+    }window.addEventListener('DOMContentLoaded', init);
+    window.addEventListener('load', init);
   </script>
 </body>
 </html>
