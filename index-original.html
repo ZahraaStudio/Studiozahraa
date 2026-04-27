@@ -559,6 +559,7 @@
 
       filtered.forEach(p => {
         const displayPrice = p.variants?.length ? `تبدأ من ${Math.min(...p.variants.map(v=>v.price))} ج` : `${p.price} ج`;
+        const productCode = productCodes[p.category] || 'ZHR-' + Math.random().toString(36).substr(2, 6).toUpperCase();
         grid.innerHTML += `
           <div class="product-card group">
             <div onclick="openModal('${p.id}')" class="h-48 md:h-64 overflow-hidden cursor-pointer relative">
@@ -569,6 +570,7 @@
             </div>
             <div class="p-4">
               <h3 class="font-bold text-sm md:text-base mb-1 truncate">${p.name}</h3>
+              <p class="text-[10px] text-zinc-500 mb-2">الكود: <span class="gold-text font-bold">${productCode}</span></p>
               <p class="gold-text font-bold mb-3 text-sm">${displayPrice}</p>
               <div class="grid grid-cols-2 gap-2">
                 <button onclick="openModal('${p.id}')" class="bg-zinc-800 text-white text-[10px] py-2 rounded-lg font-bold hover:bg-zinc-700 transition-colors">التفاصيل</button>
@@ -586,7 +588,12 @@
     function openModal(id) {
       const p = allProducts.find(x => x.id === id);
       const content = document.getElementById('modal-content');
-      let imagesHtml = (p.images || []).map(img => `<img src="${img}" class="w-full h-64 md:h-80 object-cover rounded-2xl flex-shrink-0 snap-center cursor-pointer hover:opacity-80 transition-opacity" onclick="openImageViewer('${img}')">`).join('');
+      let imagesHtml = (p.images || []).map(img => `<img src="${img}" class="w-full h-64 md:h-80 object-cover rounded-2xl flex-shrink-0 snap-center cursor-pointer hover:opacity-80 transition-opacity" onclick="openImageViewer('${img}')" onload="startAutoSlide(${JSON.stringify(p.images || [])})">`).join('');
+      
+      // بدء السلايدر التلقائي
+      if(p.images && p.images.length > 1) {
+        setTimeout(() => startAutoSlide(p.images), 500);
+      }
       let variantsHtml = (p.variants || []).map((v, i) => `
         <label class="flex items-center gap-3 p-3 bg-black border border-zinc-800 rounded-xl cursor-pointer hover:border-gold-text transition-colors">
           <input type="radio" name="variant" value="${i}" ${i===0?'checked':''} onchange="updateModalPrice('${id}', ${v.price})" class="accent-gold-text">
@@ -597,12 +604,18 @@
         </label>
       `).join('');
 
+      const productCode = productCodes[p.category] || 'ZHR-' + Math.random().toString(36).substr(2, 6).toUpperCase();
       content.innerHTML = `
         <div class="flex overflow-x-auto snap-x snap-mandatory gap-2 no-scrollbar mb-6">
           ${imagesHtml || '<div class="w-full h-64 bg-zinc-800 rounded-2xl flex items-center justify-center">لا توجد صور</div>'}
         </div>
         <div class="space-y-4">
-          <h2 class="text-2xl font-bold">${p.name}</h2>
+          <div class="flex justify-between items-start">
+            <div>
+              <h2 class="text-2xl font-bold">${p.name}</h2>
+              <p class="text-xs text-zinc-500 mt-2">الكود: <span class="gold-text font-bold text-sm">${productCode}</span></p>
+            </div>
+          </div>
           <p id="modal-price" class="gold-text text-xl font-bold">${p.variants?.length ? p.variants[0].price : p.price} جنيه</p>
           <p class="text-zinc-400 text-sm leading-relaxed">${p.description || ''}</p>
           ${p.variants?.length ? `<div class="space-y-2"><p class="text-xs text-zinc-500">اختر النوع / المقاس:</p>${variantsHtml}</div>` : ''}
@@ -613,10 +626,20 @@
         </div>
       `;
       document.getElementById('product-modal').classList.remove('hidden');
+      
+      // إضافة دعم السحب بين الصور
+      const imagesContainer = document.querySelector('.flex.overflow-x-auto');
+      if(imagesContainer) {
+        imagesContainer.addEventListener('touchstart', handleTouchStart, false);
+        imagesContainer.addEventListener('touchend', handleTouchEnd, false);
+      }
     }
 
     function updateModalPrice(id, price) { document.getElementById('modal-price').innerText = price + ' جنيه'; }
-    function closeModal() { document.getElementById('product-modal').classList.add('hidden'); }
+    function closeModal() { 
+      stopAutoSlide();
+      document.getElementById('product-modal').classList.add('hidden'); 
+    }
 
     function addCartFromModal(id) {
       const p = allProducts.find(x => x.id === id);
