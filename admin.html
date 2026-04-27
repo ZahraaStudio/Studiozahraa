@@ -138,16 +138,6 @@
                             <option value="fixed">مبلغ ثابت</option>
                         </select>
                         <input type="text" id="coupon-desc" placeholder="الوصف" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
-                        <div class="grid grid-cols-2 gap-2">
-                            <input type="number" id="coupon-max-users" placeholder="عدد المستخدمين" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text" min="1" value="1">
-                            <select id="coupon-duration-type" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
-                                <option value="minutes">دقائق</option>
-                                <option value="hours">ساعات</option>
-                                <option value="days">أيام</option>
-                                <option value="months">أشهر</option>
-                            </select>
-                        </div>
-                        <input type="number" id="coupon-duration" placeholder="مدة الصلاحية" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text" min="1" value="1">
                         <button onclick="addCoupon()" class="w-full p-3 gold-bg text-black font-bold rounded">إضافة الكوبون</button>
                     </div>
                 </div>
@@ -544,21 +534,13 @@
                 const c = docData.data();
                 const id = docData.id;
                 const count = usage[c.code] || 0;
-                const now = new Date();
-                const isExpired = c.expiryTime && new Date(c.expiryTime.seconds * 1000) < now;
-                const isMaxUsersReached = c.maxUsers && count >= c.maxUsers;
-                const statusColor = isExpired ? 'text-red-500' : isMaxUsersReached ? 'text-orange-500' : 'text-green-500';
-                const statusText = isExpired ? '❌ انتهاء الصلاحية' : isMaxUsersReached ? '⚠️ انتهى العدد المحدد' : '✅ نشط';
-                
                 list.innerHTML += `
                     <div class="bg-black p-4 rounded-lg border border-zinc-700 flex justify-between items-center">
                         <div>
                             <p class="font-bold gold-text">${c.code}</p>
                             <p class="text-[10px] text-zinc-400">${c.description || ''}</p>
                             <p class="text-[10px]">خصم: ${c.discount}${c.type === 'percentage' ? '%' : ' جنيه'}</p>
-                            <p class="text-[10px] text-blue-400 font-bold mt-1">📈 الاستخدام: ${count}/${c.maxUsers || '∞'}</p>
-                            ${c.expiryTime ? `<p class="text-[10px] text-yellow-400 font-bold mt-1">⏰ ينتهي: ${new Date(c.expiryTime.seconds * 1000).toLocaleString('ar-EG')}</p>` : ''}
-                            <p class="text-[10px] ${statusColor} font-bold mt-1">${statusText}</p>
+                            <p class="text-[10px] text-blue-400 font-bold mt-1">📈 عدد مرات الاستخدام: ${count}</p>
                         </div>
                         <button onclick="window.deleteCoupon('${id}')" class="bg-red-600/20 text-red-500 border border-red-600 px-3 py-1 rounded text-[10px]">حذف</button>
                     </div>
@@ -571,33 +553,14 @@
             const discount = parseFloat(document.getElementById('coupon-discount').value);
             const type = document.getElementById('coupon-type').value;
             const desc = document.getElementById('coupon-desc').value.trim();
-            const maxUsers = parseInt(document.getElementById('coupon-max-users').value) || 1;
-            const duration = parseInt(document.getElementById('coupon-duration').value) || 1;
-            const durationType = document.getElementById('coupon-duration-type').value;
             
             if (!code || isNaN(discount)) { alert('يرجى إدخال الكود وقيمة الخصم'); return; }
             
             try {
-                const now = new Date();
-                let expiryTime = new Date(now);
-                
-                switch(durationType) {
-                    case 'minutes': expiryTime.setMinutes(expiryTime.getMinutes() + duration); break;
-                    case 'hours': expiryTime.setHours(expiryTime.getHours() + duration); break;
-                    case 'days': expiryTime.setDate(expiryTime.getDate() + duration); break;
-                    case 'months': expiryTime.setMonth(expiryTime.getMonth() + duration); break;
-                }
-                
-                await addDoc(collection(db, "coupons"), { 
-                    code, discount, type, description: desc, active: true,
-                    maxUsers: maxUsers, usageCount: 0, createdAt: now, expiryTime: expiryTime,
-                    durationType: durationType, duration: duration
-                });
+                await addDoc(collection(db, "coupons"), { code, discount, type, description: desc, active: true });
                 document.getElementById('coupon-code').value = '';
                 document.getElementById('coupon-discount').value = '';
                 document.getElementById('coupon-desc').value = '';
-                document.getElementById('coupon-max-users').value = '1';
-                document.getElementById('coupon-duration').value = '1';
                 loadCoupons();
                 alert('تم إضافة الكوبون');
             } catch (err) {
