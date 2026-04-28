@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>لوحة تحكم استوديو الزهراء - ZAHRAA STUDIO</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
@@ -17,26 +17,41 @@
         .tab-active { border-bottom: 3px solid #d4af37; color: #d4af37; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
         .modal.active { display: flex; }
-        .modal-content { background: #1a1a1a; border: 1px solid #d4af37; border-radius: 12px; padding: 24px; max-width: 700px; width: 95%; max-height: 90vh; overflow-y: auto; }
-        .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .modal-content { background: #1a1a1a; border: 1px solid #d4af37; border-radius: 24px; padding: 32px; max-width: 800px; width: 95%; max-height: 90vh; overflow-y: auto; box-shadow: 0 0 50px rgba(212, 175, 55, 0.2); }
+        .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: bold; }
         .status-pending { background: #fbbf24; color: #000; }
         .status-completed { background: #10b981; color: #fff; }
         .status-cancelled { background: #ef4444; color: #fff; }
-        .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 6px; cursor: pointer; transition: all 0.3s; }
+        .btn-sm { padding: 6px 12px; font-size: 11px; border-radius: 8px; cursor: pointer; transition: all 0.3s; font-weight: bold; }
         .btn-primary { background: #d4af37; color: #000; }
         .btn-danger { background: #ef4444; color: #fff; }
         .btn-warning { background: #f59e0b; color: #000; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        /* Custom Toast */
+        .toast { position: fixed; bottom: 20px; right: 20px; background: #d4af37; color: black; padding: 12px 24px; border-radius: 12px; font-weight: bold; z-index: 3000; transform: translateX(150%); transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .toast.active { transform: translateX(0); }
     </style>
 </head>
 <body class="p-2 md:p-6">
+    <!-- Custom Alert Modal -->
+    <div id="custom-alert" class="modal">
+        <div class="modal-content max-w-sm text-center">
+            <div id="alert-icon" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl"></div>
+            <h3 id="alert-title" class="text-xl font-bold mb-2"></h3>
+            <p id="alert-msg" class="text-zinc-400 mb-6 text-sm"></p>
+            <button onclick="closeAlert()" class="w-full gold-bg text-black py-3 rounded-xl font-bold">حسناً</button>
+        </div>
+    </div>
+
     <!-- Auth Section -->
-    <div id="auth-section" class="max-w-md mx-auto mt-20 p-6 bg-zinc-900 rounded-xl gold-border shadow-2xl">
+    <div id="auth-section" class="max-w-md mx-auto mt-20 p-8 bg-zinc-900 rounded-3xl gold-border shadow-2xl">
         <h2 class="text-2xl font-bold mb-6 text-center gradient-text">تسجيل دخول الإدارة</h2>
-        <input type="email" id="email" placeholder="البريد الإلكتروني" class="w-full p-3 mb-4 bg-black border border-zinc-700 rounded text-white outline-none focus:border-gold-text">
-        <input type="password" id="password" placeholder="كلمة المرور" class="w-full p-3 mb-6 bg-black border border-zinc-700 rounded text-white outline-none focus:border-gold-text">
-        <button id="login-btn" class="w-full p-3 gold-bg text-black font-bold rounded hover:opacity-90 transition-all">دخول</button>
+        <input type="email" id="email" placeholder="البريد الإلكتروني" class="w-full p-4 mb-4 bg-black border border-zinc-700 rounded-xl text-white outline-none focus:border-gold-text">
+        <input type="password" id="password" placeholder="كلمة المرور" class="w-full p-4 mb-6 bg-black border border-zinc-700 rounded-xl text-white outline-none focus:border-gold-text">
+        <button id="login-btn" class="w-full p-4 gold-bg text-black font-bold rounded-xl hover:opacity-90 transition-all">دخول</button>
         <p id="login-error" class="text-red-500 mt-4 text-center hidden"></p>
     </div>
 
@@ -44,7 +59,10 @@
     <div id="admin-content" class="hidden max-w-7xl mx-auto">
         <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
             <h1 class="text-2xl md:text-3xl font-bold gradient-text">ZAHRAA STUDIO Admin</h1>
-            <button id="logout-btn" class="bg-red-600/20 text-red-500 border border-red-600 px-4 py-2 rounded font-bold text-xs hover:bg-red-600 hover:text-white transition-all">خروج</button>
+            <div class="flex gap-2">
+                <button onclick="showTab('settings-tab')" class="bg-zinc-800 text-white px-4 py-2 rounded-xl font-bold text-xs">⚙️ الإعدادات</button>
+                <button id="logout-btn" class="bg-red-600/20 text-red-500 border border-red-600 px-4 py-2 rounded-xl font-bold text-xs hover:bg-red-600 hover:text-white transition-all">خروج</button>
+            </div>
         </div>
 
         <!-- Tabs Navigation -->
@@ -58,37 +76,37 @@
         <!-- Products Tab -->
         <div id="products-tab" class="tab-content active">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div class="lg:col-span-1 bg-zinc-900 p-6 rounded-xl gold-border h-fit sticky top-4">
+                <div class="lg:col-span-1 bg-zinc-900 p-6 rounded-3xl gold-border h-fit sticky top-4">
                     <h3 id="form-title" class="text-xl font-bold mb-4 border-b border-zinc-800 pb-2">إضافة/تعديل منتج</h3>
                     <input type="hidden" id="product-id">
                     <div class="space-y-4">
-                        <input type="text" id="p-name" placeholder="اسم المنتج" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                        <input type="text" id="p-name" placeholder="اسم المنتج" class="w-full p-3 bg-black border border-zinc-700 rounded-xl text-sm outline-none focus:border-gold-text">
                         <div class="grid grid-cols-2 gap-4">
-                            <input type="number" id="p-price" placeholder="السعر الأساسي" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
-                            <input type="text" id="p-category" placeholder="القسم" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                            <input type="number" id="p-price" placeholder="السعر الأساسي" class="w-full p-3 bg-black border border-zinc-700 rounded-xl text-sm outline-none focus:border-gold-text">
+                            <input type="text" id="p-category" placeholder="القسم" class="w-full p-3 bg-black border border-zinc-700 rounded-xl text-sm outline-none focus:border-gold-text">
                         </div>
                         
                         <!-- Variants Section -->
-                        <div class="border border-zinc-800 p-3 rounded-lg">
-                            <p class="text-xs font-bold mb-2 gold-text">الأنواع / المقاسات والأسعار:</p>
-                            <div id="variants-container" class="space-y-2 mb-2"></div>
-                            <button onclick="addVariantField()" class="text-[10px] bg-zinc-800 px-2 py-1 rounded">+ إضافة نوع/سعر</button>
+                        <div class="border border-zinc-800 p-4 rounded-xl">
+                            <p class="text-xs font-bold mb-3 gold-text">الأنواع / المقاسات والأسعار:</p>
+                            <div id="variants-container" class="space-y-2 mb-3"></div>
+                            <button onclick="addVariantField()" class="text-[10px] bg-zinc-800 px-3 py-2 rounded-lg hover:bg-zinc-700 transition">+ إضافة نوع/سعر</button>
                         </div>
 
-                        <textarea id="p-desc" placeholder="وصف المنتج" class="w-full p-2 bg-black border border-zinc-700 rounded h-24 text-sm outline-none focus:border-gold-text"></textarea>
+                        <textarea id="p-desc" placeholder="وصف المنتج" class="w-full p-3 bg-black border border-zinc-700 rounded-xl h-24 text-sm outline-none focus:border-gold-text"></textarea>
                         
-                        <div class="border-2 border-dashed border-zinc-700 p-4 rounded-lg text-center">
+                        <div class="border-2 border-dashed border-zinc-700 p-6 rounded-xl text-center">
                             <input type="file" id="p-file" multiple accept="image/*" class="hidden" onchange="uploadToCloudinary(this)">
-                            <button onclick="document.getElementById('p-file').click()" class="gold-bg text-black px-4 py-2 rounded font-bold text-xs">رفع صور المنتج</button>
+                            <button onclick="document.getElementById('p-file').click()" class="gold-bg text-black px-6 py-3 rounded-xl font-bold text-xs">رفع صور المنتج</button>
                             <div id="upload-status" class="text-[10px] mt-2 text-zinc-500"></div>
                         </div>
                         <div id="images-preview" class="grid grid-cols-3 gap-2"></div>
                         
-                        <button id="save-btn" onclick="saveProduct()" class="w-full p-3 gold-bg text-black font-bold rounded">حفظ المنتج</button>
-                        <button id="cancel-btn" onclick="resetProductForm()" class="w-full p-3 bg-zinc-800 text-white font-bold rounded hidden">إلغاء</button>
+                        <button id="save-btn" onclick="saveProduct()" class="w-full p-4 gold-bg text-black font-bold rounded-xl shadow-lg shadow-gold-bg/20">حفظ المنتج</button>
+                        <button id="cancel-btn" onclick="resetProductForm()" class="w-full p-4 bg-zinc-800 text-white font-bold rounded-xl hidden">إلغاء</button>
                     </div>
                 </div>
-                <div class="lg:col-span-2 bg-zinc-900 p-6 rounded-xl gold-border">
+                <div class="lg:col-span-2 bg-zinc-900 p-6 rounded-3xl gold-border">
                     <div id="products-list" class="space-y-3"></div>
                 </div>
             </div>
@@ -96,10 +114,10 @@
 
         <!-- Orders Tab -->
         <div id="orders-tab" class="tab-content">
-            <div class="bg-zinc-900 p-6 rounded-xl gold-border">
+            <div class="bg-zinc-900 p-6 rounded-3xl gold-border">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-xl font-bold">طلبات الأونلاين</h3>
-                    <button onclick="loadOrders()" class="text-xs bg-zinc-800 px-3 py-1 rounded hover:bg-zinc-700">🔄 تحديث</button>
+                    <button onclick="loadOrders()" class="text-xs bg-zinc-800 px-4 py-2 rounded-xl hover:bg-zinc-700 transition">🔄 تحديث</button>
                 </div>
                 <div id="orders-list" class="space-y-6"></div>
             </div>
@@ -108,29 +126,29 @@
         <!-- Coupons Tab -->
         <div id="coupons-tab" class="tab-content">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div class="lg:col-span-1 bg-zinc-900 p-6 rounded-xl gold-border h-fit sticky top-4">
+                <div class="lg:col-span-1 bg-zinc-900 p-6 rounded-3xl gold-border h-fit sticky top-4">
                     <h3 id="coupon-form-title" class="text-xl font-bold mb-4 border-b border-zinc-800 pb-2">إضافة كوبون</h3>
                     <input type="hidden" id="coupon-id">
                     <div class="space-y-4">
-                        <input type="text" id="c-code" placeholder="كود الكوبون" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
-                        <input type="number" id="c-discount" placeholder="قيمة الخصم" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
-                        <select id="c-type" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                        <input type="text" id="c-code" placeholder="كود الكوبون" class="w-full p-3 bg-black border border-zinc-700 rounded-xl text-sm outline-none focus:border-gold-text">
+                        <input type="number" id="c-discount" placeholder="قيمة الخصم" class="w-full p-3 bg-black border border-zinc-700 rounded-xl text-sm outline-none focus:border-gold-text">
+                        <select id="c-type" class="w-full p-3 bg-black border border-zinc-700 rounded-xl text-sm outline-none focus:border-gold-text">
                             <option value="percentage">نسبة %</option>
                             <option value="fixed">مبلغ ثابت</option>
                         </select>
-                        <input type="number" id="c-limit" placeholder="حد الاستخدام (مثلاً 10)" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
-                        <select id="c-expiry" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                        <input type="number" id="c-limit" placeholder="حد الاستخدام (مثلاً 10)" class="w-full p-3 bg-black border border-zinc-700 rounded-xl text-sm outline-none focus:border-gold-text">
+                        <select id="c-expiry" class="w-full p-3 bg-black border border-zinc-700 rounded-xl text-sm outline-none focus:border-gold-text">
                             <option value="3600000">ساعة واحدة</option>
                             <option value="86400000">يوم واحد</option>
                             <option value="604800000">أسبوع</option>
                             <option value="2592000000">شهر</option>
                             <option value="31536000000">سنة</option>
                         </select>
-                        <button id="save-coupon-btn" onclick="saveCoupon()" class="w-full p-3 gold-bg text-black font-bold rounded">حفظ الكوبون</button>
-                        <button id="cancel-coupon-btn" onclick="resetCouponForm()" class="w-full p-3 bg-zinc-800 text-white font-bold rounded hidden">إلغاء</button>
+                        <button id="save-coupon-btn" onclick="saveCoupon()" class="w-full p-4 gold-bg text-black font-bold rounded-xl">حفظ الكوبون</button>
+                        <button id="cancel-coupon-btn" onclick="resetCouponForm()" class="w-full p-4 bg-zinc-800 text-white font-bold rounded-xl hidden">إلغاء</button>
                     </div>
                 </div>
-                <div class="lg:col-span-2 bg-zinc-900 p-6 rounded-xl gold-border">
+                <div class="lg:col-span-2 bg-zinc-900 p-6 rounded-3xl gold-border">
                     <div id="coupons-list" class="space-y-3"></div>
                 </div>
             </div>
@@ -139,394 +157,403 @@
         <!-- Stats Tab -->
         <div id="stats-tab" class="tab-content">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div class="bg-zinc-900 p-8 rounded-2xl gold-border text-center">
+                <div class="bg-zinc-900 p-8 rounded-3xl gold-border text-center">
                     <p class="text-zinc-500 text-sm mb-2">إجمالي المنتجات</p>
                     <h4 id="stat-products" class="text-4xl font-bold gold-text">0</h4>
                 </div>
-                <div class="bg-zinc-900 p-8 rounded-2xl gold-border text-center">
+                <div class="bg-zinc-900 p-8 rounded-3xl gold-border text-center">
                     <p class="text-zinc-500 text-sm mb-2">إجمالي الطلبات</p>
                     <h4 id="stat-orders" class="text-4xl font-bold gold-text">0</h4>
                 </div>
-                <div class="bg-zinc-900 p-8 rounded-2xl gold-border text-center">
-                    <p class="text-zinc-500 text-sm mb-2">إجمالي المبيعات</p>
-                    <h4 id="stat-sales" class="text-4xl font-bold gold-text">0 ج</h4>
-                </div>
-                <div class="bg-zinc-900 p-8 rounded-2xl gold-border text-center">
-                    <p class="text-zinc-500 text-sm mb-2">عدد الكوبونات</p>
+                <div class="bg-zinc-900 p-8 rounded-3xl gold-border text-center">
+                    <p class="text-zinc-500 text-sm mb-2">إجمالي الكوبونات</p>
                     <h4 id="stat-coupons" class="text-4xl font-bold gold-text">0</h4>
                 </div>
+                <div class="bg-zinc-900 p-8 rounded-3xl gold-border text-center">
+                    <p class="text-zinc-500 text-sm mb-2">إجمالي المبيعات</p>
+                    <h4 id="stat-sales" class="text-2xl font-bold gold-text">0 ج</h4>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="settings-tab" class="tab-content">
+            <div class="max-w-md mx-auto bg-zinc-900 p-8 rounded-3xl gold-border">
+                <h3 class="text-xl font-bold mb-6 gradient-text">إعدادات المتجر</h3>
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-xs text-zinc-500 mb-2">سعر تغليف الهدايا (ج)</label>
+                        <input type="number" id="gift-price-input" class="w-full p-4 bg-black border border-zinc-700 rounded-xl text-white outline-none focus:border-gold-text">
+                    </div>
+                    <button onclick="saveSettings()" class="w-full p-4 gold-bg text-black font-bold rounded-xl">حفظ الإعدادات</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Invoice Modal -->
-    <div id="invoice-modal" class="modal">
+    <!-- Order Details Modal -->
+    <div id="order-modal" class="modal">
         <div class="modal-content">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold gradient-text">فاتورة الطلب</h2>
-                <button onclick="closeInvoiceModal()" class="text-2xl cursor-pointer">×</button>
+            <div class="flex justify-between items-center mb-6 border-b border-zinc-800 pb-4">
+                <h3 class="text-2xl font-bold gold-text">تفاصيل الطلب</h3>
+                <button onclick="closeOrderModal()" class="text-zinc-500 hover:text-white text-2xl">✕</button>
             </div>
-            <div id="invoice-wrapper" style="background: white; border-radius: 8px; overflow: hidden;">
-                <div id="invoice-content"></div>
-            </div>
-            <div class="mt-6 flex gap-3">
-                <button onclick="downloadInvoice()" class="flex-1 btn-sm btn-primary font-bold">📥 تحميل الفاتورة PDF</button>
-                <button onclick="closeInvoiceModal()" class="flex-1 btn-sm bg-zinc-800 text-white">إغلاق</button>
+            <div id="order-details-content" class="space-y-8"></div>
+            <div class="mt-8 flex gap-3">
+                <button onclick="downloadInvoice()" class="flex-1 bg-zinc-800 text-white py-4 rounded-xl font-bold">تحميل الفاتورة PDF</button>
+                <button onclick="closeOrderModal()" class="flex-1 bg-zinc-700 text-white py-4 rounded-xl font-bold">إغلاق</button>
             </div>
         </div>
     </div>
+
+    <!-- Invoice Modal (Hidden for PDF generation) -->
+    <div id="invoice-modal" class="modal">
+        <div class="modal-content max-w-4xl">
+            <div id="invoice-content"></div>
+            <div class="mt-6 flex gap-4">
+                <button onclick="window.downloadInvoice()" class="flex-1 gold-bg text-black py-3 rounded-xl font-bold">تأكيد التحميل</button>
+                <button onclick="window.closeInvoiceModal()" class="flex-1 bg-zinc-800 text-white py-3 rounded-xl font-bold">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy, limit, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        const firebaseConfig = { apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM", authDomain: "zahraa-store-f4c90.firebaseapp.com", projectId: "zahraa-store-f4c90" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
 
-        const firebaseConfig = { 
-            apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM", 
-            authDomain: "zahraa-store-f4c90.firebaseapp.com", 
-            projectId: "zahraa-store-f4c90" 
-        };
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
         const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload";
-        const CLOUDINARY_PRESET = "zahraa_upload";
-        
-        let currentProductImages = [];
-        let editingProductId = null;
-        let editingCouponId = null;
-        let allOrders = [];
-        let allCoupons = [];
+        const CLOUDINARY_UPLOAD_PRESET = "zahraa_upload";
 
-        // ==================== AUTH ====================
-        window.loginUser = async () => {
+        let allProducts = [], allOrders = [], allCoupons = [], editingProductId = null, editingCouponId = null, productImages = [];
+
+        // Custom Alert System
+        window.showAlert = (title, msg, type = 'success') => {
+            const alert = document.getElementById('custom-alert');
+            const icon = document.getElementById('alert-icon');
+            document.getElementById('alert-title').innerText = title;
+            document.getElementById('alert-msg').innerText = msg;
+            icon.className = `w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl ${type === 'success' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`;
+            icon.innerText = type === 'success' ? '✓' : '✕';
+            alert.classList.add('active');
+        };
+        window.closeAlert = () => document.getElementById('custom-alert').classList.remove('active');
+
+        window.showToast = (msg) => {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.classList.add('active');
+            setTimeout(() => t.classList.remove('active'), 3000);
+        };
+
+        // Auth
+        document.getElementById('login-btn').onclick = async () => {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             try {
-                await signInWithEmailAndPassword(auth, email, password);
-            } catch (e) {
-                document.getElementById('login-error').innerText = "خطأ في البيانات";
-                document.getElementById('login-error').classList.remove('hidden');
-            }
-        };
-
-        document.getElementById('login-btn').onclick = window.loginUser;
-        document.getElementById('logout-btn').onclick = () => signOut(auth);
-
-        onAuthStateChanged(auth, user => {
-            if (user) {
+                await auth.signInWithEmailAndPassword(email, password);
                 document.getElementById('auth-section').classList.add('hidden');
                 document.getElementById('admin-content').classList.remove('hidden');
                 loadAll();
-            } else {
-                document.getElementById('auth-section').classList.remove('hidden');
-                document.getElementById('admin-content').classList.add('hidden');
-            }
-        });
+            } catch (e) { showAlert('خطأ', 'بيانات الدخول غير صحيحة', 'error'); }
+        };
 
-        // ==================== TABS ====================
+        document.getElementById('logout-btn').onclick = () => {
+            auth.signOut();
+            location.reload();
+        };
+
         window.showTab = (tabId) => {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
-            document.querySelectorAll('[id^="btn-"]').forEach(b => {
-                b.classList.remove('tab-active');
-                b.classList.add('text-zinc-500');
-            });
-            document.getElementById('btn-' + tabId).classList.add('tab-active');
-            document.getElementById('btn-' + tabId).classList.remove('text-zinc-500');
+            document.querySelectorAll('[id^="btn-"]').forEach(b => b.classList.replace('tab-active', 'text-zinc-500'));
+            const activeBtn = document.getElementById('btn-' + tabId);
+            if(activeBtn) activeBtn.classList.replace('text-zinc-500', 'tab-active');
         };
 
-        // ==================== VARIANTS ====================
-        window.addVariantField = (name = '', price = '') => {
+        // ==================== PRODUCTS ====================
+        window.addVariantField = () => {
             const container = document.getElementById('variants-container');
             const div = document.createElement('div');
-            div.className = 'flex gap-2 items-center';
+            div.className = 'flex gap-2';
             div.innerHTML = `
-                <input type="text" placeholder="النوع/المقاس" value="${name}" class="v-name flex-1 p-1 bg-black border border-zinc-800 rounded text-[10px]">
-                <input type="number" placeholder="السعر" value="${price}" class="v-price w-20 p-1 bg-black border border-zinc-800 rounded text-[10px]">
-                <button onclick="this.parentElement.remove()" class="text-red-500 text-xs">✕</button>
+                <input type="text" placeholder="النوع/المقاس" class="flex-1 p-2 bg-black border border-zinc-800 rounded text-xs outline-none focus:border-gold-text v-name">
+                <input type="number" placeholder="السعر" class="w-24 p-2 bg-black border border-zinc-800 rounded text-xs outline-none focus:border-gold-text v-price">
+                <button onclick="this.parentElement.remove()" class="text-red-500 px-2">✕</button>
             `;
             container.appendChild(div);
         };
 
-        // ==================== PRODUCTS ====================
         window.uploadToCloudinary = async (input) => {
             const status = document.getElementById('upload-status');
+            const preview = document.getElementById('images-preview');
+            status.innerText = "جاري الرفع...";
             for (let file of input.files) {
-                const fd = new FormData();
-                fd.append('file', file);
-                fd.append('upload_preset', CLOUDINARY_PRESET);
-                status.innerText = 'جاري الرفع...';
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
                 try {
-                    const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: fd });
+                    const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
                     const data = await res.json();
-                    if (data.secure_url) {
-                        currentProductImages.push(data.secure_url);
-                        renderProductPreviews();
-                        status.innerText = 'تم الرفع بنجاح ✓';
-                    }
-                } catch (e) {
-                    status.innerText = 'خطأ في الرفع';
-                }
+                    productImages.push(data.secure_url);
+                    renderImagesPreview();
+                } catch (e) { console.error(e); }
             }
+            status.innerText = "تم الرفع بنجاح ✓";
         };
 
-        window.renderProductPreviews = () => {
-            const container = document.getElementById('images-preview');
-            container.innerHTML = '';
-            currentProductImages.forEach((url, i) => {
-                container.innerHTML += `<div class="relative aspect-square border border-zinc-800 rounded overflow-hidden"><img src="${url}" class="w-full h-full object-cover"><button onclick="window.removeProductImage(${i})" class="absolute top-0 right-0 bg-red-600 text-white w-5 h-5 text-xs">×</button></div>`;
-            });
-        };
-
-        window.removeProductImage = (i) => {
-            currentProductImages.splice(i, 1);
-            window.renderProductPreviews();
-        };
+        function renderImagesPreview() {
+            const preview = document.getElementById('images-preview');
+            preview.innerHTML = productImages.map((img, i) => `
+                <div class="relative group aspect-square">
+                    <img src="${img}" class="w-full h-full object-cover rounded-lg border border-zinc-800">
+                    <button onclick="productImages.splice(${i},1);renderImagesPreview()" class="absolute top-1 right-1 bg-red-600 text-white w-5 h-5 rounded-full text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition">✕</button>
+                </div>
+            `).join('');
+        }
 
         window.saveProduct = async () => {
             const name = document.getElementById('p-name').value;
-            const price = document.getElementById('p-price').value;
+            const price = parseFloat(document.getElementById('p-price').value);
             const category = document.getElementById('p-category').value;
             const desc = document.getElementById('p-desc').value;
-            
-            const variantNames = document.querySelectorAll('.v-name');
-            const variantPrices = document.querySelectorAll('.v-price');
-            const variants = [];
-            variantNames.forEach((v, i) => {
-                if(v.value) variants.push({ name: v.value, price: parseFloat(variantPrices[i].value) || 0 });
-            });
+            const variants = Array.from(document.querySelectorAll('#variants-container > div')).map(div => ({
+                name: div.querySelector('.v-name').value,
+                price: parseFloat(div.querySelector('.v-price').value)
+            })).filter(v => v.name && v.price);
 
-            if (!name || !price) {
-                alert('الرجاء ملء البيانات المطلوبة');
-                return;
-            }
+            if(!name || !price) return showAlert('تنبيه', 'يرجى إدخال الاسم والسعر الأساسي', 'error');
 
-            const productData = {
-                name, price: parseFloat(price), category, desc,
-                variants,
-                images: currentProductImages,
-                updatedAt: new Date(),
-                createdAt: editingProductId ? undefined : new Date()
-            };
-
+            const data = { name, price, category, desc, variants, images: productImages, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
             try {
-                if (editingProductId) {
-                    await updateDoc(doc(db, 'products', editingProductId), productData);
-                    alert('تم تحديث المنتج');
-                } else {
-                    await addDoc(collection(db, 'products'), productData);
-                    alert('تم إضافة المنتج');
-                }
-                window.resetProductForm();
+                if(editingProductId) await db.collection('products').doc(editingProductId).update(data);
+                else await db.collection('products').add({ ...data, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+                showAlert('تم الحفظ', 'تم حفظ المنتج بنجاح');
+                resetProductForm();
                 loadProducts();
-            } catch (e) {
-                alert('خطأ: ' + e.message);
-            }
+            } catch (e) { showAlert('خطأ', e.message, 'error'); }
         };
 
         window.resetProductForm = () => {
+            editingProductId = null;
+            productImages = [];
+            document.getElementById('product-id').value = '';
             document.getElementById('p-name').value = '';
             document.getElementById('p-price').value = '';
             document.getElementById('p-category').value = '';
             document.getElementById('p-desc').value = '';
             document.getElementById('variants-container').innerHTML = '';
-            currentProductImages = [];
-            window.renderProductPreviews();
+            document.getElementById('images-preview').innerHTML = '';
             document.getElementById('form-title').innerText = 'إضافة/تعديل منتج';
             document.getElementById('cancel-btn').classList.add('hidden');
-            editingProductId = null;
         };
 
-        window.editProduct = async (id, product) => {
+        window.editProduct = (id) => {
+            const p = allProducts.find(x => x.id === id);
             editingProductId = id;
-            document.getElementById('p-name').value = product.name;
-            document.getElementById('p-price').value = product.price;
-            document.getElementById('p-category').value = product.category || '';
-            document.getElementById('p-desc').value = product.desc || '';
-            document.getElementById('variants-container').innerHTML = '';
-            if(product.variants) {
-                product.variants.forEach(v => addVariantField(v.name, v.price));
-            }
-            currentProductImages = product.images || [];
-            window.renderProductPreviews();
+            document.getElementById('p-name').value = p.name;
+            document.getElementById('p-price').value = p.price;
+            document.getElementById('p-category').value = p.category || '';
+            document.getElementById('p-desc').value = p.desc || '';
+            productImages = [...(p.images || [])];
+            renderImagesPreview();
+            const container = document.getElementById('variants-container');
+            container.innerHTML = '';
+            (p.variants || []).forEach(v => {
+                const div = document.createElement('div');
+                div.className = 'flex gap-2';
+                div.innerHTML = `<input type="text" value="${v.name}" class="flex-1 p-2 bg-black border border-zinc-800 rounded text-xs v-name"><input type="number" value="${v.price}" class="w-24 p-2 bg-black border border-zinc-800 rounded text-xs v-price"><button onclick="this.parentElement.remove()" class="text-red-500 px-2">✕</button>`;
+                container.appendChild(div);
+            });
             document.getElementById('form-title').innerText = 'تعديل المنتج';
             document.getElementById('cancel-btn').classList.remove('hidden');
-            window.showTab('products-tab');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            window.scrollTo(0,0);
         };
 
         window.deleteProduct = async (id) => {
-            if (confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
-                try {
-                    await deleteDoc(doc(db, 'products', id));
-                    loadProducts();
-                } catch (e) {
-                    alert('خطأ: ' + e.message);
-                }
+            if(confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
+                await db.collection('products').doc(id).delete();
+                loadProducts();
             }
         };
 
         window.loadProducts = async () => {
-            const list = document.getElementById('products-list');
-            try {
-                const snapshot = await getDocs(query(collection(db, 'products'), orderBy('updatedAt', 'desc')));
-                list.innerHTML = '';
-                let count = 0;
-                snapshot.forEach(docData => {
-                    count++;
-                    const p = docData.data();
-                    const id = docData.id;
-                    list.innerHTML += `
-                        <div class="flex items-center justify-between p-4 bg-black rounded border border-zinc-800 hover:border-gold-text transition">
-                            <div class="flex items-center gap-4 flex-1">
-                                <img src="${p.images?.[0] || 'https://via.placeholder.com/40'}" class="w-10 h-10 object-cover rounded">
-                                <div class="flex-1">
-                                    <h4 class="font-bold text-sm">${p.name}</h4>
-                                    <p class="text-[10px] text-zinc-500">${p.category || 'بدون قسم'} | ${p.price} ج | ${p.variants?.length || 0} أنواع</p>
-                                </div>
-                            </div>
-                            <div class="flex gap-2">
-                                <button onclick='window.editProduct("${id}", ${JSON.stringify(p).replace(/"/g, '&quot;')})' class="btn-sm btn-warning">✏️ تعديل</button>
-                                <button onclick="window.deleteProduct('${id}')" class="btn-sm btn-danger">🗑️ حذف</button>
-                            </div>
-                        </div>
-                    `;
-                });
-                document.getElementById('stat-products').innerText = count;
-            } catch (e) {
-                console.error('Error loading products:', e);
-            }
+            const snap = await db.collection('products').orderBy('updatedAt', 'desc').get();
+            allProducts = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            document.getElementById('products-list').innerHTML = allProducts.map(p => `
+                <div class="flex items-center gap-4 p-4 bg-black rounded-2xl border border-zinc-800 hover:border-gold-text transition">
+                    <img src="${p.images?.[0] || ''}" class="w-16 h-16 object-cover rounded-xl">
+                    <div class="flex-1">
+                        <h4 class="font-bold text-sm">${p.name}</h4>
+                        <p class="text-xs gold-text">${p.price} ج | ${p.category || 'بدون قسم'}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="editProduct('${p.id}')" class="btn-sm btn-warning">تعديل</button>
+                        <button onclick="deleteProduct('${p.id}')" class="btn-sm btn-danger">حذف</button>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('stat-products').innerText = allProducts.length;
         };
 
         // ==================== ORDERS ====================
-        window.loadOrders = async () => {
-            const list = document.getElementById('orders-list');
+        window.updateOrderStatus = async (id, status) => {
             try {
-                const snapshot = await getDocs(query(collection(db, 'orders'), orderBy('createdAt', 'desc')));
-                list.innerHTML = '';
-                allOrders = [];
-                let count = 0;
-                let totalSales = 0;
+                await db.collection('orders').doc(id).update({ status });
+                showToast(`تم تغيير الحالة إلى ${status}`);
+                loadOrders();
+            } catch (e) { showAlert('خطأ', 'فشل تحديث الحالة', 'error'); }
+        };
 
-                snapshot.forEach(docData => {
-                    const order = docData.data();
-                    order.id = docData.id;
-                    allOrders.push(order);
-                    count++;
-                    totalSales += order.total || 0;
-
-                    const statusClass = order.status === 'completed' ? 'status-completed' : order.status === 'pending' ? 'status-pending' : 'status-cancelled';
-                    const statusText = order.status === 'completed' ? 'مكتمل' : order.status === 'pending' ? 'قيد الانتظار' : 'ملغى';
-                    const hasImages = order.customerImages && order.customerImages.length > 0;
-
-                    list.innerHTML += `
-                        <div class="bg-black p-4 rounded border border-zinc-800 hover:border-gold-text transition">
-                            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
-                                <div>
-                                    <h4 class="font-bold text-sm mb-2">طلب من: ${order.customerName || 'عميل'}</h4>
-                                    <p class="text-[10px] text-zinc-500">الهاتف: ${order.customerPhone || 'N/A'}</p>
-                                    <p class="text-[10px] text-zinc-500">العنوان: ${order.customerAddress || 'N/A'}</p>
-                                </div>
-                                <div class="text-right">
-                                    <span class="status-badge ${statusClass}">${statusText}</span>
-                                    <p class="text-[10px] text-zinc-500 mt-2">التاريخ: ${new Date(order.createdAt?.toDate?.() || order.createdAt).toLocaleDateString('ar-EG')}</p>
-                                </div>
-                            </div>
-                            <div class="bg-zinc-900 p-3 rounded mb-4 border border-zinc-800">
-                                <p class="text-[12px] font-bold mb-2">🔍 كود التتبع: <span class="gold-text">${order.trackingCode || 'N/A'}</span></p>
-                                <p class="text-[11px] text-zinc-400">المجموع: <span class="gold-text font-bold">${order.total || 0} ج</span></p>
-                                ${hasImages ? `<button onclick="window.downloadCustomerImages('${order.id}')" class="mt-2 text-[10px] bg-blue-600 px-2 py-1 rounded">📥 تحميل صور العميل (${order.customerImages.length})</button>` : ''}
-                            </div>
-                            <div class="flex gap-2 flex-wrap">
-                                <button onclick="window.showInvoice('${order.id}')" class="btn-sm btn-primary">📄 فاتورة</button>
-                                <button onclick="window.updateOrderStatus('${order.id}', 'completed')" class="btn-sm btn-success">✓ مكتمل</button>
-                                <button onclick="window.updateOrderStatus('${order.id}', 'cancelled')" class="btn-sm btn-danger">✕ ملغى</button>
-                            </div>
-                        </div>
-                    `;
-                });
-
-                document.getElementById('orders-count-badge').innerText = count;
-                document.getElementById('orders-count-badge').classList.toggle('hidden', count === 0);
-                document.getElementById('stat-orders').innerText = count;
-                document.getElementById('stat-sales').innerText = totalSales.toFixed(2) + ' ج';
-            } catch (e) {
-                console.error('Error loading orders:', e);
+        window.deleteOrder = async (id) => {
+            if(confirm('هل أنت متأكد من حذف هذا الطلب نهائياً؟')) {
+                try {
+                    await db.collection('orders').doc(id).delete();
+                    showToast('تم حذف الطلب بنجاح');
+                    loadOrders();
+                } catch (e) { showAlert('خطأ', 'فشل حذف الطلب', 'error'); }
             }
         };
 
-        window.downloadCustomerImages = async (orderId) => {
-            const order = allOrders.find(o => o.id === orderId);
-            if(!order || !order.customerImages) return;
+        window.loadOrders = async () => {
+            const snap = await db.collection('orders').orderBy('createdAt', 'desc').get();
+            allOrders = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const list = document.getElementById('orders-list');
+            list.innerHTML = allOrders.map(o => {
+                const statusClass = o.status === 'مكتمل' ? 'status-completed' : (o.status === 'ملغي' ? 'status-cancelled' : 'status-pending');
+                return `
+                    <div class="bg-black p-6 rounded-2xl border border-zinc-800 hover:border-gold-text transition">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h4 class="font-bold gold-text">${o.orderNumber}</h4>
+                                <p class="text-xs text-zinc-500">${o.customerName} - ${o.customerPhone}</p>
+                                <p class="text-[10px] text-zinc-600">${new Date(o.createdAt?.toDate?.() || o.createdAt).toLocaleString('ar-EG')}</p>
+                            </div>
+                            <span class="status-badge ${statusClass}">${o.status}</span>
+                        </div>
+                        <div class="text-xs text-zinc-400 mb-4 border-y border-zinc-900 py-3">
+                            ${o.items.map(i => `<div class="flex justify-between"><span>${i.name} x${i.qty}</span><span>${i.price * i.qty} ج</span></div>`).join('')}
+                            ${o.giftWrap ? `<div class="flex justify-between text-gold-text mt-1"><span>🎁 تغليف كهدية</span><span>${o.giftPrice || 0} ج</span></div>` : ''}
+                            <div class="flex justify-between font-bold gold-text mt-2 pt-2 border-t border-zinc-900"><span>الإجمالي:</span><span>${o.totalPrice} ج</span></div>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="viewOrderDetails('${o.id}')" class="btn-sm btn-primary">عرض التفاصيل والصور</button>
+                            <button onclick="updateOrderStatus('${o.id}', 'مكتمل')" class="btn-sm bg-green-600 text-white">مكتمل</button>
+                            <button onclick="updateOrderStatus('${o.id}', 'ملغي')" class="btn-sm bg-red-600 text-white">ملغي</button>
+                            <button onclick="deleteOrder('${o.id}')" class="btn-sm bg-zinc-800 text-red-500">حذف</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
             
-            const zip = new JSZip();
-            const folder = zip.folder(`Order_${order.trackingCode}_Images`);
+            const badge = document.getElementById('orders-count-badge');
+            const pendingCount = allOrders.filter(o => o.status === 'قيد المراجعة').length;
+            if(pendingCount > 0) { badge.innerText = pendingCount; badge.classList.remove('hidden'); }
+            else badge.classList.add('hidden');
             
-            alert('جاري تجهيز الصور للتحميل، يرجى الانتظار...');
+            document.getElementById('stat-orders').innerText = allOrders.length;
+            document.getElementById('stat-sales').innerText = allOrders.filter(o => o.status === 'مكتمل').reduce((a, b) => a + b.totalPrice, 0) + ' ج';
+        };
+
+        let currentViewingOrder = null;
+        window.viewOrderDetails = (id) => {
+            const o = allOrders.find(x => x.id === id);
+            currentViewingOrder = o;
+            const content = document.getElementById('order-details-content');
             
-            for(let i=0; i<order.customerImages.length; i++) {
-                const url = order.customerImages[i];
-                const response = await fetch(url);
-                const blob = await response.blob();
-                folder.file(`image_${i+1}.jpg`, blob);
+            let groupsHtml = '';
+            if(o.imageGroups && o.imageGroups.length > 0) {
+                groupsHtml = `
+                    <div class="space-y-6">
+                        <h4 class="font-bold border-b border-zinc-800 pb-2">مجموعات الصور المرفوعة:</h4>
+                        ${o.imageGroups.map(g => `
+                            <div class="bg-zinc-900 p-4 rounded-2xl border border-zinc-800">
+                                <div class="flex justify-between items-center mb-3">
+                                    <span class="font-bold text-sm gold-text">${g.name}</span>
+                                    <button onclick="downloadGroupImages('${g.name}', ${JSON.stringify(g.images).replace(/"/g, '&quot;')})" class="text-[10px] bg-gold-bg text-black px-2 py-1 rounded font-bold">تحميل المجموعة ZIP</button>
+                                </div>
+                                <div class="grid grid-cols-4 md:grid-cols-6 gap-2">
+                                    ${g.images.map(img => `<a href="${img}" target="_blank"><img src="${img}" class="w-full aspect-square object-cover rounded-lg border border-zinc-800"></a>`).join('')}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
             }
-            
-            zip.generateAsync({type:"blob"}).then(function(content) {
+
+            content.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="space-y-4">
+                        <h4 class="font-bold border-b border-zinc-800 pb-2">بيانات العميل:</h4>
+                        <p class="text-sm"><span class="text-zinc-500">الاسم:</span> ${o.customerName}</p>
+                        <p class="text-sm"><span class="text-zinc-500">الهاتف:</span> ${o.customerPhone}</p>
+                        <p class="text-sm"><span class="text-zinc-500">العنوان:</span> ${o.customerAddress}</p>
+                    </div>
+                    <div class="space-y-4">
+                        <h4 class="font-bold border-b border-zinc-800 pb-2">ملخص الحساب:</h4>
+                        <p class="text-sm"><span class="text-zinc-500">الإجمالي الفرعي:</span> ${o.subtotal} ج</p>
+                        <p class="text-sm"><span class="text-zinc-500">الخصم:</span> ${o.discountAmount || 0} ج</p>
+                        ${o.giftWrap ? `<p class="text-sm"><span class="text-zinc-500">تغليف هدايا:</span> ${o.giftPrice || 0} ج</p>` : ''}
+                        <p class="text-lg font-bold gold-text"><span class="text-zinc-500">الإجمالي النهائي:</span> ${o.totalPrice} ج</p>
+                    </div>
+                </div>
+                ${groupsHtml}
+            `;
+            document.getElementById('order-modal').classList.add('active');
+        };
+
+        window.closeOrderModal = () => document.getElementById('order-modal').classList.remove('active');
+
+        window.downloadGroupImages = async (name, urls) => {
+            const zip = new JSZip();
+            const folder = zip.folder(name);
+            showToast('جاري تجهيز الصور للتحميل...');
+            for (let i = 0; i < urls.length; i++) {
+                const response = await fetch(urls[i]);
+                const blob = await response.blob();
+                folder.file(`image-${i+1}.jpg`, blob);
+            }
+            zip.generateAsync({type:"blob"}).then(content => {
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(content);
-                link.download = `Zahraa_Order_${order.trackingCode}.zip`;
+                link.download = `${name}.zip`;
                 link.click();
+                showToast('بدأ التحميل ✓');
             });
         };
 
-        window.updateOrderStatus = async (orderId, status) => {
-            try {
-                await updateDoc(doc(db, 'orders', orderId), { status });
-                alert('تم تحديث حالة الطلب');
-                loadOrders();
-            } catch (e) {
-                alert('خطأ: ' + e.message);
-            }
-        };
-
-        window.showInvoice = (orderId) => {
-            const order = allOrders.find(o => o.id === orderId);
-            if (!order) return;
-
-            const items = order.items || [];
-            let itemsHtml = '';
-            items.forEach(item => {
-                itemsHtml += `
-                    <tr>
-                        <td style="border: 1px solid #ddd; padding: 8px;">${item.name} ${item.variant ? '('+item.variant+')' : ''}</td>
-                        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${item.qty || item.quantity}</td>
-                        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${item.price} ج</td>
-                        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${item.price * (item.qty || item.quantity)} ج</td>
-                    </tr>
-                `;
-            });
+        // ==================== INVOICE & PDF ====================
+        window.downloadInvoice = () => {
+            const order = currentViewingOrder;
+            const itemsHtml = order.items.map(item => `
+                <tr>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${item.name}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${item.qty}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${item.price} ج</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${item.price * item.qty} ج</td>
+                </tr>
+            `).join('');
 
             const invoiceHtml = `
                 <div id="printable-invoice" style="padding: 40px; font-family: 'Cairo', sans-serif; direction: rtl; background: white; color: black;">
                     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #d4af37; padding-bottom: 20px; margin-bottom: 20px;">
                         <div>
                             <h1 style="margin: 0; color: #d4af37;">ZAHRAA STUDIO</h1>
-                            <p style="margin: 5px 0; color: #666;">فاتورة طلب رقم: ${order.id.substring(0,8)}</p>
+                            <p style="margin: 5px 0; color: #666;">فاتورة طلب رقم: ${order.orderNumber}</p>
                         </div>
                         <div style="text-align: left;">
                             <p style="margin: 0;">التاريخ: ${new Date(order.createdAt?.toDate?.() || order.createdAt).toLocaleDateString('ar-EG')}</p>
-                            <p style="margin: 5px 0; font-weight: bold; color: #d4af37;">كود التتبع: ${order.trackingCode || 'N/A'}</p>
                         </div>
                     </div>
-
                     <div style="margin-bottom: 30px;">
                         <h3 style="border-bottom: 1px solid #eee; padding-bottom: 10px;">بيانات العميل:</h3>
-                        <p style="margin: 5px 0;"><strong>الاسم:</strong> ${order.customerName || 'N/A'}</p>
-                        <p style="margin: 5px 0;"><strong>الهاتف:</strong> ${order.customerPhone || 'N/A'}</p>
-                        <p style="margin: 5px 0;"><strong>العنوان:</strong> ${order.customerAddress || 'N/A'}</p>
+                        <p style="margin: 5px 0;"><strong>الاسم:</strong> ${order.customerName}</p>
+                        <p style="margin: 5px 0;"><strong>الهاتف:</strong> ${order.customerPhone}</p>
+                        <p style="margin: 5px 0;"><strong>العنوان:</strong> ${order.customerAddress}</p>
                     </div>
-
                     <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
                         <thead>
                             <tr style="background: #f8f9fa;">
@@ -536,193 +563,101 @@
                                 <th style="border: 1px solid #ddd; padding: 12px; text-align: center;">الإجمالي</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            ${itemsHtml}
-                        </tbody>
+                        <tbody>${itemsHtml}</tbody>
                     </table>
-
                     <div style="text-align: left; margin-top: 20px;">
                         <div style="display: inline-block; width: 250px;">
-                            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee;">
-                                <span>الإجمالي الفرعي:</span>
-                                <span>${order.subtotal || order.total} ج</span>
-                            </div>
-                            ${order.discountAmount ? `
-                            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; color: #10b981;">
-                                <span>الخصم:</span>
-                                <span>-${order.discountAmount} ج</span>
-                            </div>
-                            ` : ''}
-                            <div style="display: flex; justify-content: space-between; padding: 15px 0; font-size: 1.2em; font-weight: bold; color: #d4af37;">
-                                <span>الإجمالي النهائي:</span>
-                                <span>${order.total} ج</span>
-                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee;"><span>الإجمالي الفرعي:</span><span>${order.subtotal} ج</span></div>
+                            ${order.discountAmount ? `<div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; color: #10b981;"><span>الخصم:</span><span>-${order.discountAmount} ج</span></div>` : ''}
+                            ${order.giftWrap ? `<div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee;"><span>تغليف هدايا:</span><span>${order.giftPrice || 0} ج</span></div>` : ''}
+                            <div style="display: flex; justify-content: space-between; padding: 15px 0; font-size: 1.2em; font-weight: bold; color: #d4af37;"><span>الإجمالي النهائي:</span><span>${order.totalPrice} ج</span></div>
                         </div>
                     </div>
-
                     <div style="margin-top: 50px; text-align: center; border-top: 1px solid #eee; padding-top: 20px; color: #888; font-size: 0.9em;">
                         <p>شكراً لتعاملك مع استوديو الزهراء</p>
                         <p>بصبيح - ههيا - الشرقية | 01204194540</p>
                     </div>
                 </div>
             `;
-
             document.getElementById('invoice-content').innerHTML = invoiceHtml;
             document.getElementById('invoice-modal').classList.add('active');
         };
 
-        window.downloadInvoice = () => {
+        window.downloadInvoicePDF = () => {
             const element = document.getElementById('printable-invoice');
-            const opt = {
-                margin: 0,
-                filename: 'Zahraa-Studio-Invoice.pdf',
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true },
-                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-            };
+            const opt = { margin: 0, filename: `Zahraa-Studio-Invoice-${currentViewingOrder.orderNumber}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } };
             html2pdf().set(opt).from(element).save();
         };
-
-        window.closeInvoiceModal = () => {
-            document.getElementById('invoice-modal').classList.remove('active');
-        };
+        window.closeInvoiceModal = () => document.getElementById('invoice-modal').classList.remove('active');
 
         // ==================== COUPONS ====================
         window.saveCoupon = async () => {
-            const code = document.getElementById('c-code').value;
-            const discount = document.getElementById('c-discount').value;
+            const code = document.getElementById('c-code').value.toUpperCase();
+            const discount = parseFloat(document.getElementById('c-discount').value);
             const type = document.getElementById('c-type').value;
-            const limit = document.getElementById('c-limit').value;
-            const expiryMs = document.getElementById('c-expiry').value;
-
-            if (!code || !discount) {
-                alert('الرجاء ملء البيانات المطلوبة');
-                return;
-            }
-
-            const couponData = {
-                code: code.toUpperCase(),
-                discount: parseFloat(discount),
-                type,
-                limit: parseInt(limit) || 0,
-                usedCount: editingCouponId ? (allCoupons.find(c => c.id === editingCouponId)?.usedCount || 0) : 0,
-                expiryDate: new Date(Date.now() + parseInt(expiryMs)),
-                isActive: true,
-                createdAt: editingCouponId ? undefined : new Date(),
-                updatedAt: new Date()
-            };
-
+            const limit = parseInt(document.getElementById('c-limit').value) || 0;
+            const expiryMs = parseInt(document.getElementById('c-expiry').value);
+            if(!code || !discount) return showAlert('تنبيه', 'يرجى ملء البيانات المطلوبة', 'error');
+            const data = { code, discount, type, limit, usedCount: 0, expiryDate: new Date(Date.now() + expiryMs), isActive: true, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
             try {
-                if (editingCouponId) {
-                    await updateDoc(doc(db, 'coupons', editingCouponId), couponData);
-                    alert('تم تحديث الكوبون');
-                } else {
-                    await addDoc(collection(db, 'coupons'), couponData);
-                    alert('تم إضافة الكوبون');
-                }
-                window.resetCouponForm();
+                await db.collection('coupons').add(data);
+                showAlert('تم الحفظ', 'تم إضافة الكوبون بنجاح');
+                resetCouponForm();
                 loadCoupons();
-            } catch (e) {
-                alert('خطأ: ' + e.message);
-            }
+            } catch (e) { showAlert('خطأ', e.message, 'error'); }
         };
 
         window.resetCouponForm = () => {
             document.getElementById('c-code').value = '';
             document.getElementById('c-discount').value = '';
-            document.getElementById('c-type').value = 'percentage';
             document.getElementById('c-limit').value = '';
-            document.getElementById('c-expiry').value = '2592000000';
-            document.getElementById('coupon-form-title').innerText = 'إضافة كوبون';
-            document.getElementById('cancel-coupon-btn').classList.add('hidden');
-            editingCouponId = null;
-        };
-
-        window.editCoupon = async (id, coupon) => {
-            editingCouponId = id;
-            document.getElementById('c-code').value = coupon.code;
-            document.getElementById('c-discount').value = coupon.discount;
-            document.getElementById('c-type').value = coupon.type;
-            document.getElementById('c-limit').value = coupon.limit || 0;
-            document.getElementById('coupon-form-title').innerText = 'تعديل الكوبون';
-            document.getElementById('cancel-coupon-btn').classList.remove('hidden');
-            window.showTab('coupons-tab');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        };
-
-        window.deleteCoupon = async (id) => {
-            if (confirm('هل أنت متأكد من حذف هذا الكوبون؟')) {
-                try {
-                    await deleteDoc(doc(db, 'coupons', id));
-                    loadCoupons();
-                } catch (e) {
-                    alert('خطأ: ' + e.message);
-                }
-            }
-        };
-
-        window.toggleCouponStatus = async (id, currentStatus) => {
-            try {
-                await updateDoc(doc(db, 'coupons', id), { isActive: !currentStatus });
-                loadCoupons();
-            } catch (e) {
-                alert('خطأ: ' + e.message);
-            }
         };
 
         window.loadCoupons = async () => {
-            const list = document.getElementById('coupons-list');
-            try {
-                const snapshot = await getDocs(query(collection(db, 'coupons'), orderBy('createdAt', 'desc')));
-                list.innerHTML = '';
-                allCoupons = [];
-                let count = 0;
+            const snap = await db.collection('coupons').orderBy('createdAt', 'desc').get();
+            allCoupons = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            document.getElementById('coupons-list').innerHTML = allCoupons.map(c => `
+                <div class="flex items-center justify-between p-4 bg-black rounded-2xl border border-zinc-800 hover:border-gold-text transition">
+                    <div class="flex-1">
+                        <h4 class="font-bold text-sm gold-text">${c.code}</h4>
+                        <p class="text-[10px] text-zinc-500">${c.type === 'percentage' ? c.discount + '%' : c.discount + ' ج'} | المستخدم: ${c.usedCount || 0}</p>
+                    </div>
+                    <button onclick="deleteCoupon('${c.id}')" class="btn-sm btn-danger">حذف</button>
+                </div>
+            `).join('');
+            document.getElementById('stat-coupons').innerText = allCoupons.length;
+        };
 
-                snapshot.forEach(docData => {
-                    const coupon = docData.data();
-                    coupon.id = docData.id;
-                    allCoupons.push(coupon);
-                    count++;
-
-                    const statusClass = coupon.isActive ? 'bg-green-600' : 'bg-gray-600';
-                    const statusText = coupon.isActive ? '✓ مفعل' : '✕ معطل';
-
-                    list.innerHTML += `
-                        <div class="flex items-center justify-between p-4 bg-black rounded border border-zinc-800 hover:border-gold-text transition">
-                            <div class="flex-1">
-                                <div class="flex items-center gap-3 mb-2">
-                                    <h4 class="font-bold text-sm gold-text">${coupon.code}</h4>
-                                    <span class="text-[10px] bg-zinc-800 px-2 py-1 rounded">${coupon.type === 'percentage' ? coupon.discount + '%' : coupon.discount + ' ج'}</span>
-                                </div>
-                                <p class="text-[10px] text-zinc-500">الحد: ${coupon.limit || 'غير محدود'} | المستخدم: ${coupon.usedCount || 0}</p>
-                            </div>
-                            <div class="flex gap-2">
-                                <button onclick="window.toggleCouponStatus('${coupon.id}', ${coupon.isActive})" class="btn-sm ${statusClass}">${statusText}</button>
-                                <button onclick='window.editCoupon("${coupon.id}", ${JSON.stringify(coupon).replace(/"/g, '&quot;')})' class="btn-sm btn-warning">✏️</button>
-                                <button onclick="window.deleteCoupon('${coupon.id}')" class="btn-sm btn-danger">🗑️</button>
-                            </div>
-                        </div>
-                    `;
-                });
-
-                document.getElementById('stat-coupons').innerText = count;
-            } catch (e) {
-                console.error('Error loading coupons:', e);
+        window.deleteCoupon = async (id) => {
+            if(confirm('هل أنت متأكد من حذف هذا الكوبون؟')) {
+                await db.collection('coupons').doc(id).delete();
+                loadCoupons();
             }
         };
 
-        // ==================== LOAD ALL ====================
-        window.loadAll = async () => {
-            await loadProducts();
-            await loadOrders();
-            await loadCoupons();
+        // ==================== SETTINGS ====================
+        window.saveSettings = async () => {
+            const giftPrice = parseInt(document.getElementById('gift-price-input').value);
+            try {
+                await db.collection('settings').doc('config').set({ giftPrice });
+                showAlert('تم الحفظ', 'تم تحديث إعدادات المتجر بنجاح');
+            } catch (e) { showAlert('خطأ', 'فشل حفظ الإعدادات', 'error'); }
         };
 
-        // Make functions globally available
-        window.loadProducts = loadProducts;
-        window.loadOrders = loadOrders;
-        window.loadCoupons = loadCoupons;
+        async function loadAll() {
+            loadProducts();
+            loadOrders();
+            loadCoupons();
+            const settings = await db.collection('settings').doc('config').get();
+            if(settings.exists) document.getElementById('gift-price-input').value = settings.data().giftPrice;
+        }
+
         window.loadAll = loadAll;
+        window.loadOrders = loadOrders;
+        window.loadProducts = loadProducts;
+        window.loadCoupons = loadCoupons;
+        window.downloadInvoicePDF = downloadInvoicePDF;
+        window.closeInvoiceModal = closeInvoiceModal;
     </script>
 </body>
 </html>
