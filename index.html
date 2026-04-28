@@ -2,14 +2,14 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
   <meta name="description" content="استوديو الزهراء - ZAHRAA STUDIO - متجر فاخر للمنتجات والخدمات. تصاميم عصرية، طباعة فاخرة، وهدايا تليق بأحبابك. بصبيح ههيا الشرقية." />
   <meta name="keywords" content="استوديو الزهراء, متجر, تصاميم, طباعة, هدايا, تابلوهات, ههيا, الشرقية, بصبيح" />
   <meta name="author" content="ZAHRAA STUDIO" />
   <meta property="og:title" content="استوديو الزهراء - ZAHRAA STUDIO" />
   <meta property="og:description" content="متجر فاخر للمنتجات والخدمات. تصاميم عصرية، طباعة فاخرة، وهدايا تليق بأحبابك. بصبيح ههيا الشرقية." />
   <meta property="og:type" content="website" />
-  <title>استوديو الزهراء - ZAHRAA STUDIO - المتجر الاحترافي المتكامل</title>
+  <title>استوديو الزهراء - ZAHRAA STUDIO</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#D4AF37">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -19,6 +19,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet" />
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <!-- Added for PDF and ZIP features -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: 'Cairo', sans-serif; background-color: #0a0a0a; color: #fff; scroll-behavior: smooth; }
@@ -36,9 +37,6 @@
     @keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     .image-modal { backdrop-filter: blur(15px); background: rgba(0,0,0,0.95); z-index: 1500; }
     .image-modal img { max-width: 90vw; max-height: 90vh; object-fit: contain; }
-    .image-group-item { position: relative; overflow: hidden; border-radius: 12px; }
-    .image-group-item:hover .delete-btn { opacity: 1; }
-    .delete-btn { position: absolute; top: 5px; right: 5px; background: rgba(255,0,0,0.8); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; transition: opacity 0.3s; font-size: 14px; }
     
     /* Logo Animation */
     .logo-frame { 
@@ -52,7 +50,6 @@
     .logo-img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.6)); }
     @keyframes logoFloat { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-15px); } }
     
-    /* Cart quantity controls */
     .qty-control { display: flex; align-items: center; gap: 8px; background: #1a1a1a; border-radius: 8px; padding: 4px; }
     .qty-btn { width: 24px; height: 24px; border: none; background: #d4af37; color: black; border-radius: 4px; cursor: pointer; font-weight: bold; transition: all 0.2s; }
     .qty-btn:hover { background: #f9e29c; transform: scale(1.1); }
@@ -60,6 +57,9 @@
 
     /* Multi-select styling */
     .variant-checkbox:checked + .variant-label { border-color: #d4af37; background: rgba(212, 175, 55, 0.1); }
+    .delete-btn { position: absolute; top: 5px; right: 5px; background: rgba(255,0,0,0.8); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; transition: opacity 0.3s; font-size: 14px; }
+    .image-group-item:hover .delete-btn { opacity: 1; }
+    .image-group-item { position: relative; overflow: hidden; border-radius: 12px; }
   </style>
 </head>
 <body class="overflow-x-hidden">
@@ -80,12 +80,8 @@
         <button onclick="showPage('store')" class="px-4 py-2 text-sm rounded-lg hover:bg-zinc-900 transition-colors gold-text font-bold">🛍️ المتجر</button>
         <button onclick="showPage('track')" class="px-4 py-2 text-sm rounded-lg hover:bg-zinc-900 transition-colors">📦 تتبع</button>
         <button onclick="showPage('testimonials')" class="px-4 py-2 text-sm rounded-lg hover:bg-zinc-900 transition-colors">⭐ الآراء</button>
-        <button onclick="showPage('portfolio')" class="px-4 py-2 text-sm rounded-lg hover:bg-zinc-900 transition-colors">📸 أعمالنا</button>
       </div>
       <div class="flex items-center gap-3">
-        <a href="https://facebook.com/StudioZahraa" target="_blank" class="text-zinc-400 hover:text-[#1877F2] transition-colors">
-            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-        </a>
         <div class="relative cursor-pointer ml-2" onclick="toggleCart()">
           <svg class="w-6 h-6 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
           <span id="cart-count" class="cart-badge">0</span>
@@ -116,84 +112,81 @@
   <!-- Page Content -->
   <main>
     <!-- Home Page -->
-    <section data-page="home" class="relative min-h-screen flex items-center justify-center pt-20 hero-gradient overflow-hidden">
-        <div class="absolute inset-0 z-0">
-            <div class="absolute top-1/4 left-1/4 w-64 h-64 bg-gold-bg/10 rounded-full blur-[100px]"></div>
-            <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gold-bg/5 rounded-full blur-[120px]"></div>
+    <section data-page="home" class="relative min-h-screen flex items-center justify-center hero-gradient pt-20">
+      <div class="container mx-auto px-4 text-center">
+        <div class="logo-frame">
+            <!-- Updated Logo -->
+            <img src="https://i.ibb.co/gFbYCVhy/file-000000003d48620a9a545c81b8bf35e5.png" alt="ZAHRAA STUDIO" class="logo-img">
         </div>
-        <div class="container mx-auto px-4 text-center z-10">
-            <div class="logo-frame">
-                <img src="https://i.ibb.co/gFbYCVhy/file-000000003d48620a9a545c81b8bf35e5.png" alt="ZAHRAA STUDIO Logo" class="logo-img">
+        <h2 class="text-5xl md:text-7xl font-bold mb-4 gradient-text">ZAHRAA STUDIO</h2>
+        <p class="text-zinc-400 text-lg md:text-xl mb-12 max-w-2xl mx-auto leading-relaxed">أرقى المنتجات والخدمات المختارة بعناية لتلبية أذواقك الراقية.</p>
+        
+        <div class="flex flex-col gap-4 max-w-xs mx-auto">
+            <div class="grid grid-cols-2 gap-4">
+                <a href="https://wa.me/201204194540" target="_blank" class="bg-[#25D366] text-white py-4 rounded-2xl font-bold shadow-lg hover:scale-105 transition-transform flex items-center justify-center gap-2">واتساب 1</a>
+                <a href="https://wa.me/201286815625" target="_blank" class="bg-[#25D366] text-white py-4 rounded-2xl font-bold shadow-lg hover:scale-105 transition-transform flex items-center justify-center gap-2">واتساب 2</a>
             </div>
-            <h1 class="text-5xl md:text-7xl font-bold mb-4 tracking-tighter">
-                <span class="gradient-text">استوديو الزهراء</span>
-            </h1>
-            <p class="text-zinc-400 text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
-                نحول لحظاتك الجميلة إلى تحف فنية خالدة. تصاميم عصرية، طباعة فاخرة، وهدايا تليق بأحبابك.
-            </p>
-            <div class="flex flex-col md:flex-row justify-center gap-4 mb-12">
-                <button onclick="showPage('store')" class="px-10 py-4 gold-bg text-black font-bold rounded-2xl shadow-xl shadow-gold-bg/20 hover:scale-105 transition">🛍️ تسوق الآن</button>
-                <button onclick="showPage('track')" class="px-10 py-4 bg-zinc-900 border border-zinc-800 text-white font-bold rounded-2xl hover:bg-zinc-800 transition">📦 تتبع طلبك</button>
-            </div>
-            <!-- Social Buttons in Home -->
-            <div class="flex justify-center gap-6">
-                <a href="https://facebook.com/StudioZahraa" target="_blank" class="p-4 bg-zinc-900 rounded-full border border-zinc-800 hover:border-[#1877F2] transition-colors">
-                    <svg class="w-6 h-6 text-[#1877F2]" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                </a>
-                <a href="https://wa.me/201204194540" target="_blank" class="p-4 bg-zinc-900 rounded-full border border-zinc-800 hover:border-[#25D366] transition-colors">
-                    <svg class="w-6 h-6 text-[#25D366]" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                </a>
-            </div>
+            <a href="https://facebook.com/StudioZahraa" target="_blank" class="bg-[#1877F2] text-white py-4 rounded-2xl font-bold shadow-lg hover:scale-105 transition-transform flex items-center justify-center gap-2">فيسبوك</a>
+            <button onclick="showPage('store')" class="gold-bg text-black py-4 rounded-2xl font-bold shadow-lg hover:scale-105 transition-transform">🛍️ تصفح المتجر</button>
         </div>
+      </div>
     </section>
 
     <!-- Store Page -->
     <section data-page="store" class="hidden py-32 px-4">
-        <div class="container mx-auto">
-            <div class="flex flex-col md:flex-row justify-between items-center mb-16 gap-8">
-                <h2 class="text-4xl font-bold gradient-text">🛍️ متجرنا</h2>
-                <div class="relative w-full md:w-96">
-                    <input type="text" id="search-input" oninput="handleSearch()" placeholder="ابحث عن منتج..." class="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 px-6 outline-none focus:border-gold-text transition-all">
-                </div>
-            </div>
-            <div id="products-grid" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8"></div>
+      <div class="container mx-auto">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-16 gap-8">
+          <h2 class="text-4xl font-bold gradient-text">🛍️ متجرنا</h2>
+          <div class="relative w-full md:w-96">
+            <input type="text" id="search-input" oninput="handleSearch()" placeholder="ابحث عن منتج..." class="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 px-6 outline-none focus:border-gold-text transition-all">
+          </div>
         </div>
+        <div id="products-grid" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8"></div>
+      </div>
     </section>
 
     <!-- Track Page -->
     <section data-page="track" class="hidden py-32 px-4">
-        <div class="container mx-auto max-w-2xl">
-            <div class="bg-zinc-950 border border-zinc-800 rounded-3xl p-8 md:p-12 text-center">
-                <h2 class="text-3xl font-bold mb-8 gradient-text">📦 تتبع طلبك</h2>
-                <div class="flex gap-2 mb-8">
-                    <input type="text" id="track-order-input" placeholder="أدخل كود التتبع (مثال: ZS-XXXXXX)" class="flex-1 bg-black border border-zinc-800 rounded-2xl py-4 px-6 outline-none focus:border-gold-text">
-                    <button onclick="trackOrder()" class="gold-bg text-black px-8 rounded-2xl font-bold">بحث</button>
-                </div>
-                <div id="track-result" class="hidden text-right space-y-6 bg-zinc-900 p-8 rounded-2xl border border-zinc-800">
-                    <div class="flex justify-between items-center border-b border-zinc-800 pb-4">
-                        <span class="text-zinc-400">رقم الطلب:</span>
-                        <span id="track-order-num" class="font-bold gold-text"></span>
-                    </div>
-                    <div class="flex justify-between items-center border-b border-zinc-800 pb-4">
-                        <span class="text-zinc-400">العميل:</span>
-                        <span id="track-customer-name" class="font-bold"></span>
-                    </div>
-                    <div class="flex justify-between items-center border-b border-zinc-800 pb-4">
-                        <span class="text-zinc-400">الحالة:</span>
-                        <span id="track-status"></span>
-                    </div>
-                    <div class="flex justify-between items-center border-b border-zinc-800 pb-4">
-                        <span class="text-zinc-400">الإجمالي:</span>
-                        <span id="track-total" class="font-bold gold-text"></span>
-                    </div>
-                    <div>
-                        <p class="text-zinc-400 mb-2">المنتجات:</p>
-                        <div id="track-items" class="text-sm space-y-1"></div>
-                    </div>
-                </div>
-                <div id="track-not-found" class="hidden text-red-500 bg-red-500/10 p-4 rounded-2xl">كود التتبع غير صحيح أو غير موجود</div>
+      <div class="container mx-auto max-w-2xl">
+        <div class="bg-zinc-950 border border-zinc-800 rounded-3xl p-8 md:p-12 text-center">
+          <h2 class="text-3xl font-bold mb-8 gradient-text">📦 تتبع طلبك</h2>
+          <div class="flex gap-2 mb-8">
+            <input type="text" id="track-order-input" placeholder="أدخل كود التتبع (مثال: ZHR-XXXXXX)" class="flex-1 bg-black border border-zinc-800 rounded-2xl py-4 px-6 outline-none focus:border-gold-text">
+            <button onclick="trackOrder()" class="gold-bg text-black px-8 rounded-2xl font-bold">بحث</button>
+          </div>
+          <div id="track-result" class="hidden text-right space-y-6 bg-zinc-900 p-8 rounded-2xl border border-zinc-800">
+            <div class="flex justify-between items-center border-b border-zinc-800 pb-4">
+              <span class="text-zinc-400">رقم الطلب:</span>
+              <span id="track-order-num" class="font-bold gold-text"></span>
             </div>
+            <div class="flex justify-between items-center border-b border-zinc-800 pb-4">
+              <span class="text-zinc-400">العميل:</span>
+              <span id="track-customer-name" class="font-bold"></span>
+            </div>
+            <div class="flex justify-between items-center border-b border-zinc-800 pb-4">
+              <span class="text-zinc-400">الحالة:</span>
+              <span id="track-status"></span>
+            </div>
+            <div class="flex justify-between items-center border-b border-zinc-800 pb-4">
+              <span class="text-zinc-400">الإجمالي:</span>
+              <span id="track-total" class="font-bold gold-text"></span>
+            </div>
+            <div>
+              <p class="text-zinc-400 mb-2 text-sm">المنتجات:</p>
+              <div id="track-items" class="text-xs space-y-1"></div>
+            </div>
+          </div>
+          <div id="track-not-found" class="hidden text-red-500 bg-red-500/10 p-4 rounded-2xl">كود التتبع غير صحيح أو غير موجود</div>
         </div>
+      </div>
+    </section>
+
+    <!-- Testimonials Page -->
+    <section data-page="testimonials" class="hidden py-32 px-4">
+      <div class="container mx-auto">
+        <h2 class="text-4xl font-bold mb-16 text-center gradient-text">⭐ آراء عملائنا</h2>
+        <div id="testimonials-grid" class="grid grid-cols-1 md:grid-cols-3 gap-8"></div>
+      </div>
     </section>
   </main>
 
@@ -215,13 +208,6 @@
         </div>
         <div id="cart-items" class="flex-1 overflow-y-auto space-y-4 no-scrollbar"></div>
         <div class="pt-8 border-t border-zinc-800 space-y-6">
-            <div class="space-y-2">
-                <p class="text-sm text-zinc-500">كود الخصم:</p>
-                <div class="flex gap-2">
-                    <input type="text" id="coupon-input" placeholder="أدخل الكود" class="flex-1 bg-black border border-zinc-800 rounded-xl py-2 px-4 outline-none focus:border-gold-text text-sm">
-                    <button onclick="applyCoupon()" class="gold-bg text-black px-4 rounded-xl font-bold text-xs">تطبيق</button>
-                </div>
-            </div>
             <div class="flex justify-between text-xl font-bold">
                 <span>الإجمالي:</span>
                 <span id="cart-total" class="gold-text">0 ج</span>
@@ -248,6 +234,21 @@
                 <button onclick="addImageGroup()" class="w-full text-sm gold-text underline hover:text-gold-bg transition-colors py-2">+ إضافة مجموعة صور جديدة</button>
             </div>
 
+            <!-- Coupon Code -->
+            <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
+                <p class="text-xs text-zinc-400 mb-2">هل لديك كود خصم؟</p>
+                <div class="flex gap-2">
+                    <input type="text" id="coupon-input" placeholder="أدخل الكود" class="flex-1 bg-black border border-zinc-800 rounded-lg py-2 px-4 outline-none focus:border-gold-text text-xs">
+                    <button onclick="applyCoupon()" class="gold-bg text-black px-4 rounded-lg font-bold text-xs">تطبيق</button>
+                </div>
+                <div id="coupon-msg" class="mt-2"></div>
+            </div>
+
+            <div class="flex justify-between text-xl font-bold border-t border-zinc-800 pt-4">
+                <span>الإجمالي النهائي:</span>
+                <span id="checkout-total" class="gold-text">0 ج</span>
+            </div>
+
             <button onclick="submitOrder()" id="submit-order-btn" class="w-full gold-bg text-black py-4 rounded-2xl font-bold text-lg">تأكيد الطلب</button>
             <button onclick="closeCheckout()" class="w-full text-zinc-500 py-2">إلغاء</button>
         </div>
@@ -261,10 +262,10 @@
         <h2 class="text-2xl font-bold mb-2">تم استلام طلبك بنجاح!</h2>
         <p class="text-zinc-400 mb-6">كود التتبع الخاص بك هو:</p>
         <div class="bg-black p-4 rounded-2xl border border-gold-text mb-6">
-            <span id="success-track-code" class="text-2xl font-bold gold-text tracking-widest"></span>
+            <span id="success-order-code" class="text-2xl font-bold gold-text tracking-widest"></span>
         </div>
         <div class="text-right bg-zinc-900 p-4 rounded-xl border border-zinc-800 mb-6 space-y-2">
-            <p class="text-sm text-zinc-300">المبلغ المستحق: <span id="success-total" class="gold-text font-bold"></span></p>
+            <p class="text-sm text-zinc-300">المبلغ المستحق: <span id="success-total-val" class="gold-text font-bold"></span></p>
             <p class="text-xs text-zinc-500 leading-relaxed">يرجى التواصل معنا عبر الواتساب لتأكيد الطلب ودفع العربون لضمان سرعة التنفيذ.</p>
         </div>
         <div class="grid grid-cols-1 gap-3">
@@ -272,8 +273,7 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                 تحميل الفاتورة (PDF)
             </button>
-            <a id="success-whatsapp-btn" href="#" target="_blank" class="w-full bg-[#25D366] text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            <a id="success-whatsapp-link" href="#" target="_blank" class="w-full bg-[#25D366] text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2">
                 تواصل واتساب الآن
             </a>
             <button onclick="location.reload()" class="w-full text-zinc-500 py-2 text-sm">العودة للمتجر</button>
@@ -296,13 +296,7 @@
     const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload";
     const CLOUDINARY_UPLOAD_PRESET = "zahraa_upload";
 
-    let allProducts = [];
-    let cart = [];
-    let appliedCoupon = null;
-    let selectedCategory = 'all';
-    let searchTerm = '';
-    let imageGroups = [];
-    let currentOrder = null;
+    let allProducts = [], cart = [], appliedCoupon = null, selectedCategory = 'all', searchTerm = '', imageGroups = [], lastOrderTime = 0, currentOrder = null;
 
     // Navigation
     window.showPage = (pageId) => {
@@ -310,14 +304,10 @@
         document.querySelector(`section[data-page="${pageId}"]`).classList.remove('hidden');
         window.scrollTo(0,0);
     };
-
     window.toggleSidebar = () => {
-        const s = document.getElementById('sidebar');
-        const o = document.getElementById('sidebar-overlay');
-        s.classList.toggle('translate-x-full');
-        o.classList.toggle('hidden');
+        document.getElementById('sidebar').classList.toggle('translate-x-full');
+        document.getElementById('sidebar-overlay').classList.toggle('hidden');
     };
-
     window.toggleCart = () => document.getElementById('cart-modal').classList.toggle('hidden');
 
     // Load Data
@@ -326,6 +316,7 @@
         allProducts = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderProducts();
         renderCategories();
+        loadTestimonials();
     }
 
     function renderProducts() {
@@ -339,10 +330,6 @@
                 <div class="p-6">
                     <h3 class="font-bold mb-1 truncate">${p.name}</h3>
                     <p class="gold-text font-bold mb-4">${p.price} ج</p>
-                    <div class="flex gap-2 mb-4">
-                        ${p.type ? `<span class="text-[10px] bg-zinc-800 px-2 py-1 rounded">${p.type}</span>` : ''}
-                        ${p.size ? `<span class="text-[10px] bg-zinc-800 px-2 py-1 rounded">${p.size}</span>` : ''}
-                    </div>
                     <button onclick="openModal('${p.id}')" class="w-full bg-zinc-800 py-3 rounded-xl font-bold text-sm hover:bg-zinc-700 transition">التفاصيل</button>
                 </div>
             </div>
@@ -356,6 +343,21 @@
         cats.forEach(c => list.innerHTML += `<button onclick="filterCategory('${c}')" class="w-full text-right p-3 rounded-xl hover:bg-zinc-900 transition-colors text-zinc-400">${c}</button>`);
     }
 
+    async function loadTestimonials() {
+        const snap = await db.collection('testimonials').get();
+        const grid = document.getElementById('testimonials-grid');
+        grid.innerHTML = snap.docs.map(doc => {
+            const t = doc.data();
+            return `
+                <div class="bg-zinc-900 p-8 rounded-3xl border border-zinc-800">
+                    <div class="flex gap-1 mb-4">${'⭐'.repeat(t.rating || 5)}</div>
+                    <p class="text-zinc-400 mb-6 italic">"${t.text}"</p>
+                    <div class="font-bold">${t.name}</div>
+                </div>
+            `;
+        }).join('');
+    }
+
     window.filterCategory = (cat) => { selectedCategory = cat; renderProducts(); toggleSidebar(); };
     window.handleSearch = () => { searchTerm = document.getElementById('search-input').value; renderProducts(); };
 
@@ -363,8 +365,6 @@
     window.openModal = (id) => {
         const p = allProducts.find(x => x.id === id);
         const content = document.getElementById('modal-content');
-        
-        // Variants HTML (Multi-select)
         let variantsHtml = '';
         if(p.variants && p.variants.length > 0) {
             variantsHtml = `
@@ -384,12 +384,9 @@
                 </div>
             `;
         }
-
         content.innerHTML = `
             <div class="space-y-4">
-                <div class="relative group">
-                    <img id="main-modal-img" src="${p.images?.[0]}" class="w-full h-80 object-cover rounded-2xl cursor-pointer" onclick="openImageViewer(this.src)">
-                </div>
+                <img id="main-modal-img" src="${p.images?.[0]}" class="w-full h-80 object-cover rounded-2xl cursor-pointer" onclick="openImageViewer(this.src)">
                 <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2">
                     ${(p.images || []).map(img => `<img src="${img}" class="w-20 h-20 object-cover rounded-lg cursor-pointer border-2 border-transparent hover:border-gold-text flex-shrink-0" onclick="document.getElementById('main-modal-img').src='${img}'">`).join('')}
                 </div>
@@ -398,140 +395,96 @@
                 <h2 class="text-3xl font-bold">${p.name}</h2>
                 <p class="gold-text text-2xl font-bold">${p.price} ج</p>
                 ${variantsHtml}
-                <p class="text-zinc-500 leading-relaxed text-sm">${p.desc || ''}</p>
+                <p class="text-zinc-500 leading-relaxed text-sm">${p.desc || p.description || ''}</p>
                 <button onclick="addToCartMulti('${p.id}')" class="w-full gold-bg text-black py-4 rounded-2xl font-bold text-lg shadow-lg shadow-gold-bg/20">إضافة للسلة</button>
             </div>
         `;
         document.getElementById('product-modal').classList.remove('hidden');
     };
-
     window.closeModal = () => document.getElementById('product-modal').classList.add('hidden');
 
-    // Cart Multi-select
     window.addToCartMulti = (id) => {
         const p = allProducts.find(x => x.id === id);
         const checkboxes = document.querySelectorAll('.variant-checkbox:checked');
-        
         if(p.variants && p.variants.length > 0) {
             if(checkboxes.length === 0) return alert('يرجى اختيار مقاس أو نوع واحد على الأقل');
             checkboxes.forEach(cb => {
-                const vName = cb.getAttribute('data-name');
-                const vPrice = parseFloat(cb.getAttribute('data-price'));
-                const cartId = id + '-' + vName;
+                const vName = cb.getAttribute('data-name'), vPrice = parseFloat(cb.getAttribute('data-price')), cartId = id + '-' + vName;
                 const existing = cart.find(x => x.cartId === cartId);
-                if(existing) existing.qty++;
-                else cart.push({ ...p, cartId, name: p.name + ' (' + vName + ')', price: vPrice, qty: 1 });
+                if(existing) existing.qty++; else cart.push({ ...p, cartId, name: p.name + ' (' + vName + ')', price: vPrice, qty: 1 });
             });
         } else {
-            const cartId = id;
-            const existing = cart.find(x => x.cartId === cartId);
-            if(existing) existing.qty++;
-            else cart.push({ ...p, cartId, qty: 1 });
+            const cartId = id, existing = cart.find(x => x.cartId === cartId);
+            if(existing) existing.qty++; else cart.push({ ...p, cartId, qty: 1 });
         }
-        
-        updateCartUI();
-        showToast('تمت الإضافة للسلة ✓');
-        // No auto-close as requested
+        updateCartUI(); showToast('تمت الإضافة للسلة ✓');
     };
 
     function updateCartUI() {
         document.getElementById('cart-count').innerText = cart.reduce((a, b) => a + b.qty, 0);
         const list = document.getElementById('cart-items');
         let subtotal = cart.reduce((a, b) => a + (b.price * b.qty), 0);
-        let discount = 0;
-        if(appliedCoupon) {
-            discount = appliedCoupon.type === 'percentage' ? subtotal * (appliedCoupon.discount / 100) : appliedCoupon.discount;
-        }
         list.innerHTML = cart.map((item, i) => `
             <div class="flex items-center gap-4 bg-zinc-900 p-4 rounded-2xl">
                 <img src="${item.images?.[0]}" class="w-16 h-16 object-cover rounded-xl">
                 <div class="flex-1"><h4 class="font-bold text-sm">${item.name}</h4><p class="text-xs gold-text">${item.price} ج</p></div>
-                <div class="qty-control">
-                    <button class="qty-btn" onclick="updateQty(${i}, -1)">−</button>
-                    <span class="qty-display">${item.qty}</span>
-                    <button class="qty-btn" onclick="updateQty(${i}, 1)">+</button>
-                </div>
+                <div class="qty-control"><button class="qty-btn" onclick="updateQty(${i}, -1)">-</button><span class="qty-display">${item.qty}</span><button class="qty-btn" onclick="updateQty(${i}, 1)">+</button></div>
             </div>
         `).join('');
-        document.getElementById('cart-total').innerText = (subtotal - discount) + ' ج';
+        document.getElementById('cart-total').innerText = subtotal + ' ج';
     }
 
-    window.updateQty = (i, delta) => {
-        cart[i].qty += delta;
-        if(cart[i].qty <= 0) cart.splice(i, 1);
-        updateCartUI();
-    };
-
-    window.applyCoupon = async () => {
-        const code = document.getElementById('coupon-input').value.toUpperCase();
-        const snap = await db.collection('coupons').where('code', '==', code).where('isActive', '==', true).get();
-        if(snap.empty) return showToast('كود غير صالح');
-        const data = snap.docs[0].data();
-        if(data.limit > 0 && data.usedCount >= data.limit) return showToast('انتهى حد الاستخدام');
-        appliedCoupon = { id: snap.docs[0].id, ...data };
-        updateCartUI();
-        showToast('تم تطبيق الخصم ✓');
-    };
-
-    window.openCheckout = () => { if(cart.length === 0) return; document.getElementById('checkout-modal').classList.remove('hidden'); };
+    window.updateQty = (i, delta) => { cart[i].qty += delta; if(cart[i].qty <= 0) cart.splice(i, 1); updateCartUI(); };
+    window.openCheckout = () => { if(cart.length === 0) return; document.getElementById('checkout-modal').classList.remove('hidden'); updateCheckoutTotal(); };
     window.closeCheckout = () => document.getElementById('checkout-modal').classList.add('hidden');
 
-    // Image Groups Logic
-    window.addImageGroup = () => {
-        const groupId = Date.now();
-        imageGroups.push({ id: groupId, name: '', images: [] });
-        renderImageGroups();
+    window.applyCoupon = async () => {
+        const code = document.getElementById('coupon-input').value.toUpperCase(), msg = document.getElementById('coupon-msg');
+        const snap = await db.collection('coupons').where('code', '==', code).where('active', '==', true).get();
+        if(snap.empty) { msg.innerText = 'كود غير صالح'; msg.className = 'text-red-500 text-xs'; appliedCoupon = null; }
+        else {
+            const data = snap.docs[0].data();
+            appliedCoupon = { id: snap.docs[0].id, ...data };
+            msg.innerText = `تم تطبيق خصم ${data.discount}${data.type==='percentage'?'%':' ج'}`;
+            msg.className = 'text-green-500 text-xs';
+        }
+        updateCheckoutTotal();
     };
 
+    function updateCheckoutTotal() {
+        let subtotal = cart.reduce((a, b) => a + (b.price * b.qty), 0), discount = 0;
+        if(appliedCoupon) discount = appliedCoupon.type === 'percentage' ? subtotal * (appliedCoupon.discount / 100) : appliedCoupon.discount;
+        document.getElementById('checkout-total').innerText = Math.max(0, subtotal - discount) + ' ج';
+    }
+
+    window.addImageGroup = () => { imageGroups.push({ id: Date.now(), name: '', images: [] }); renderImageGroups(); };
     function renderImageGroups() {
         const container = document.getElementById('image-groups-container');
         container.innerHTML = imageGroups.map((group, idx) => `
-            <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
+            <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 mb-2">
                 <div class="flex gap-2 mb-3">
-                    <input type="text" placeholder="مثال: صور التابلوه" value="${group.name}" onchange="updateGroupName(${idx}, this.value)" class="flex-1 p-2 bg-black border border-zinc-800 rounded-lg text-xs outline-none focus:border-gold-text">
-                    <button onclick="removeImageGroup(${idx})" class="text-red-500 text-xs px-3 py-2 hover:bg-red-500/20 rounded-lg">حذف</button>
+                    <input type="text" placeholder="اسم المجموعة" value="${group.name}" onchange="imageGroups[${idx}].name=this.value" class="flex-1 p-2 bg-black border border-zinc-800 rounded-lg text-xs outline-none focus:border-gold-text">
+                    <button onclick="imageGroups.splice(${idx},1);renderImageGroups()" class="text-red-500 text-xs px-2">حذف</button>
                 </div>
-                <div class="grid grid-cols-3 gap-2 mb-3">
-                    ${group.images.map((img, imgIdx) => `
-                        <div class="image-group-item bg-zinc-800 h-20 relative">
-                            <img src="${img}" class="w-full h-full object-cover rounded-lg cursor-pointer" onclick="openImageViewer('${img}')">
-                            <div class="delete-btn" onclick="removeImageFromGroup(${idx}, ${imgIdx})">✕</div>
-                        </div>
-                    `).join('')}
-                </div>
-                <input type="file" id="group-file-${idx}" multiple accept="image/*" class="hidden" onchange="addImagesToGroup(${idx}, this)">
-                <button onclick="document.getElementById('group-file-${idx}').click()" class="w-full text-xs gold-text border border-gold-text rounded-lg py-2 hover:bg-gold-text/10">+ إضافة صور</button>
+                <div class="grid grid-cols-3 gap-2 mb-3">${group.images.map((img, imgIdx) => `<div class="bg-zinc-800 h-20 relative"><img src="${img}" class="w-full h-full object-cover rounded-lg"><div class="delete-btn" onclick="imageGroups[${idx}].images.splice(${imgIdx},1);renderImageGroups()">✕</div></div>`).join('')}</div>
+                <input type="file" id="group-file-${idx}" multiple accept="image/*" class="hidden" onchange="handleGroupFiles(${idx}, this)">
+                <button onclick="document.getElementById('group-file-${idx}').click()" class="w-full text-xs gold-text border border-gold-text rounded-lg py-2">+ إضافة صور</button>
             </div>
         `).join('');
     }
-
-    window.updateGroupName = (idx, name) => { imageGroups[idx].name = name; };
-    window.removeImageGroup = (idx) => { imageGroups.splice(idx, 1); renderImageGroups(); };
-    window.removeImageFromGroup = (groupIdx, imgIdx) => { imageGroups[groupIdx].images.splice(imgIdx, 1); renderImageGroups(); };
-    window.addImagesToGroup = (groupIdx, input) => {
-        const files = Array.from(input.files);
-        files.forEach(file => {
+    window.handleGroupFiles = (idx, input) => {
+        Array.from(input.files).forEach(file => {
             const reader = new FileReader();
-            reader.onload = (e) => { imageGroups[groupIdx].images.push(e.target.result); renderImageGroups(); };
+            reader.onload = (e) => { imageGroups[idx].images.push(e.target.result); renderImageGroups(); };
             reader.readAsDataURL(file);
         });
     };
 
-    window.openImageViewer = (src) => {
-        document.getElementById('viewer-image').src = src;
-        document.getElementById('image-viewer-modal').classList.remove('hidden');
-    };
-    window.closeImageViewer = () => document.getElementById('image-viewer-modal').classList.add('hidden');
-
     window.submitOrder = async () => {
-        const name = document.getElementById('cust-name').value.trim();
-        const phone = document.getElementById('cust-phone').value.trim();
-        const address = document.getElementById('cust-address').value.trim();
+        const name = document.getElementById('cust-name').value.trim(), phone = document.getElementById('cust-phone').value.trim(), address = document.getElementById('cust-address').value.trim();
         if(!name || !phone || !address) return alert('يرجى ملء البيانات');
-        
         const btn = document.getElementById('submit-order-btn');
         btn.disabled = true; btn.innerText = 'جاري الإرسال...';
-
         try {
             let uploadedGroups = [];
             for(let group of imageGroups) {
@@ -540,109 +493,53 @@
                     for(let imgData of group.images) {
                         const fd = new FormData(); fd.append('file', imgData); fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
                         const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: fd });
-                        const data = await res.json();
-                        if(data.secure_url) urls.push(data.secure_url);
+                        const data = await res.json(); if(data.secure_url) urls.push(data.secure_url);
                     }
                     if(urls.length > 0) uploadedGroups.push({ name: group.name || 'بدون اسم', images: urls });
                 }
             }
-
             const subtotal = cart.reduce((a, b) => a + (b.price * b.qty), 0);
-            let discount = 0;
-            if(appliedCoupon) discount = appliedCoupon.type === 'percentage' ? subtotal * (appliedCoupon.discount / 100) : appliedCoupon.discount;
-
-            const trackingCode = 'ZS-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-            const orderData = {
-                customerName: name, customerPhone: phone, customerAddress: address,
-                items: cart.map(i => ({ name: i.name, price: i.price, qty: i.qty })),
-                imageGroups: uploadedGroups,
-                subtotal, discountAmount: discount, total: subtotal - discount,
-                trackingCode, status: 'pending', createdAt: new Date()
-            };
-
+            let discount = 0; if(appliedCoupon) discount = appliedCoupon.type === 'percentage' ? subtotal * (appliedCoupon.discount / 100) : appliedCoupon.discount;
+            const trackCode = 'ZHR-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+            const orderData = { orderNumber: trackCode, customerName: name, customerPhone: phone, customerAddress: address, items: cart.map(i => ({ name: i.name, price: i.price, qty: i.qty })), imageGroups: uploadedGroups, subtotal, discountAmount: discount, totalPrice: subtotal - discount, status: 'قيد المراجعة', createdAt: Date.now() };
             await db.collection('orders').add(orderData);
             if(appliedCoupon) await db.collection('coupons').doc(appliedCoupon.id).update({ usedCount: firebase.firestore.FieldValue.increment(1) });
-
             currentOrder = orderData;
-            document.getElementById('success-track-code').innerText = trackingCode;
-            document.getElementById('success-total').innerText = orderData.total + ' ج';
-            document.getElementById('success-whatsapp-btn').href = `https://wa.me/201204194540?text=${encodeURIComponent('السلام عليكم، قمت بعمل طلب جديد برقم: ' + trackingCode + '\nالمبلغ المستحق: ' + orderData.total + ' ج\nأريد تأكيد الطلب.')}`;
+            document.getElementById('success-order-code').innerText = trackCode;
+            document.getElementById('success-total-val').innerText = orderData.totalPrice + ' ج';
+            document.getElementById('success-whatsapp-link').href = `https://wa.me/201204194540?text=${encodeURIComponent('السلام عليكم، قمت بعمل طلب جديد برقم: ' + trackCode + '\nالمبلغ: ' + orderData.totalPrice + ' ج')}`;
             document.getElementById('success-modal').classList.remove('hidden');
-            closeCheckout();
-            cart = []; updateCartUI();
-        } catch (e) {
-            console.error(e);
-            alert('حدث خطأ أثناء إرسال الطلب');
-        } finally {
-            btn.disabled = false; btn.innerText = 'تأكيد الطلب';
-        }
+            closeCheckout(); cart = []; updateCartUI();
+        } catch (e) { console.error(e); alert('حدث خطأ'); } finally { btn.disabled = false; btn.innerText = 'تأكيد الطلب'; }
     };
 
     window.downloadInvoice = () => {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-        
-        doc.setFontSize(22);
-        doc.text('ZAHRAA STUDIO - استوديو الزهراء', 105, 20, { align: 'center' });
-        doc.setFontSize(16);
-        doc.text('فاتورة طلب', 105, 30, { align: 'center' });
-        
-        doc.setFontSize(12);
-        doc.text(`رقم التتبع: ${currentOrder.trackingCode}`, 20, 45);
-        doc.text(`العميل: ${currentOrder.customerName}`, 20, 52);
-        doc.text(`الهاتف: ${currentOrder.customerPhone}`, 20, 59);
-        doc.text(`العنوان: ${currentOrder.customerAddress}`, 20, 66);
-        doc.text(`التاريخ: ${new Date().toLocaleDateString('ar-EG')}`, 20, 73);
-        
-        doc.line(20, 80, 190, 80);
-        doc.text('المنتج', 20, 87);
-        doc.text('الكمية', 120, 87);
-        doc.text('السعر', 160, 87);
-        doc.line(20, 90, 190, 90);
-        
-        let y = 97;
-        currentOrder.items.forEach(item => {
-            doc.text(item.name, 20, y);
-            doc.text(item.qty.toString(), 120, y);
-            doc.text(item.price.toString() + ' ج', 160, y);
-            y += 7;
-        });
-        
-        doc.line(20, y, 190, y);
-        y += 10;
-        doc.setFontSize(14);
-        doc.text(`الإجمالي المستحق: ${currentOrder.total} جنيه مصري`, 105, y, { align: 'center' });
-        
-        doc.setFontSize(10);
-        doc.text('شكراً لتعاملك مع استوديو الزهراء', 105, y + 20, { align: 'center' });
-        
-        doc.save(`Invoice-${currentOrder.trackingCode}.pdf`);
+        const { jsPDF } = window.jspdf; const doc = new jsPDF();
+        doc.setFontSize(20); doc.text('ZAHRAA STUDIO', 105, 20, { align: 'center' });
+        doc.setFontSize(12); doc.text(`Order: ${currentOrder.orderNumber}`, 20, 40);
+        doc.text(`Customer: ${currentOrder.customerName}`, 20, 50);
+        doc.text(`Total: ${currentOrder.totalPrice} EGP`, 20, 60);
+        doc.save(`Invoice-${currentOrder.orderNumber}.pdf`);
     };
 
     window.trackOrder = async () => {
         const code = document.getElementById('track-order-input').value.trim().toUpperCase();
-        const snap = await db.collection('orders').where('trackingCode', '==', code).get();
-        const res = document.getElementById('track-result');
-        const err = document.getElementById('track-not-found');
-        res.classList.add('hidden'); err.classList.add('hidden');
-
-        if(snap.empty) return err.classList.remove('hidden');
+        const snap = await db.collection('orders').where('orderNumber', '==', code).get();
+        const res = document.getElementById('track-result'), none = document.getElementById('track-not-found');
+        res.classList.add('hidden'); none.classList.add('hidden');
+        if(snap.empty) return none.classList.remove('hidden');
         const o = snap.docs[0].data();
-        document.getElementById('track-order-num').innerText = code;
+        document.getElementById('track-order-num').innerText = o.orderNumber;
         document.getElementById('track-customer-name').innerText = o.customerName;
-        document.getElementById('track-total').innerText = o.total + ' ج';
-        const statusElem = document.getElementById('track-status');
-        statusElem.innerText = o.status === 'pending' ? 'قيد المراجعة' : o.status === 'completed' ? 'تم التوصيل' : 'ملغي';
-        statusElem.className = `px-4 py-1 rounded-full text-xs font-bold ${o.status === 'pending' ? 'bg-yellow-600' : o.status === 'completed' ? 'bg-green-600' : 'bg-red-600'}`;
-        document.getElementById('track-items').innerHTML = o.items.map(i => `<div>${i.name} × ${i.qty}</div>`).join('');
+        document.getElementById('track-total').innerText = o.totalPrice + ' ج';
+        document.getElementById('track-status').innerText = o.status;
+        document.getElementById('track-items').innerHTML = o.items.map(i => `${i.name} × ${i.qty}`).join('<br>');
         res.classList.remove('hidden');
     };
 
-    function showToast(msg) {
-        const t = document.getElementById('toast');
-        t.innerText = msg; t.classList.remove('hidden');
-        setTimeout(() => t.classList.add('hidden'), 3000);
-    }
+    window.openImageViewer = (src) => { document.getElementById('viewer-image').src = src; document.getElementById('image-viewer-modal').classList.remove('hidden'); };
+    window.closeImageViewer = () => document.getElementById('image-viewer-modal').classList.add('hidden');
+    function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 3000); }
 
     init();
   </script>
