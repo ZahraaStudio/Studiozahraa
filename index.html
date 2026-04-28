@@ -19,34 +19,32 @@
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet" />
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <!-- Added for PDF and ZIP features -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: 'Cairo', sans-serif; background-color: #0a0a0a; color: #fff; scroll-behavior: smooth; }
     .gold-text { color: #d4af37; }
     .gold-bg { background-color: #d4af37; }
+    .gold-border { border: 1px solid #d4af37; }
     .gradient-text { background: linear-gradient(to right, #d4af37, #f9e29c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     .product-card { background: #151515; border-radius: 20px; overflow: hidden; border: 1px solid #222; transition: all 0.3s; }
     .product-card:hover { transform: translateY(-5px); border-color: #d4af37; }
-    .modal { backdrop-filter: blur(15px); background: rgba(0,0,0,0.85); z-index: 100; }
+    .modal { backdrop-filter: blur(15px); background: rgba(0,0,0,0.85); z-index: 100; opacity: 0; pointer-events: none; transition: all 0.3s ease; }
+    .modal.active { opacity: 1; pointer-events: auto; }
+    .modal-content-box { transform: scale(0.9); transition: all 0.3s ease; }
+    .modal.active .modal-content-box { transform: scale(1); }
     .sidebar { transition: transform 0.3s ease; z-index: 1000; }
     .cart-badge { position: absolute; top: -5px; right: -5px; background: #d4af37; color: black; font-size: 10px; font-weight: bold; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .hero-gradient { background: radial-gradient(circle at center, rgba(212, 175, 55, 0.1) 0%, rgba(0, 0, 0, 0) 70%); }
-    .toast { position: fixed; bottom: 20px; right: 20px; background: #d4af37; color: black; padding: 12px 20px; border-radius: 8px; font-weight: bold; z-index: 2000; animation: slideIn 0.3s ease; }
-    @keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    
+    /* Custom Toast */
+    .toast { position: fixed; bottom: 20px; right: 20px; background: #d4af37; color: black; padding: 12px 24px; border-radius: 12px; font-weight: bold; z-index: 3000; transform: translateX(150%); transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .toast.active { transform: translateX(0); }
+    
     .image-modal { backdrop-filter: blur(15px); background: rgba(0,0,0,0.95); z-index: 1500; }
     .image-modal img { max-width: 90vw; max-height: 90vh; object-fit: contain; }
     
-    /* Logo Animation */
-    .logo-frame { 
-      width: 160px; height: 160px; margin: 0 auto 20px; 
-      border: 3px solid #d4af37; border-radius: 20px; 
-      padding: 10px; background: rgba(212, 175, 55, 0.05);
-      display: flex; align-items: center; justify-content: center;
-      animation: logoFloat 3s ease-in-out infinite;
-      box-shadow: 0 0 30px rgba(212, 175, 55, 0.3), inset 0 0 20px rgba(212, 175, 55, 0.1);
-    }
+    .logo-frame { width: 160px; height: 160px; margin: 0 auto 20px; border: 3px solid #d4af37; border-radius: 20px; padding: 10px; background: rgba(212, 175, 55, 0.05); display: flex; align-items: center; justify-content: center; animation: logoFloat 3s ease-in-out infinite; box-shadow: 0 0 30px rgba(212, 175, 55, 0.3), inset 0 0 20px rgba(212, 175, 55, 0.1); }
     .logo-img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.6)); }
     @keyframes logoFloat { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-15px); } }
     
@@ -55,19 +53,33 @@
     .qty-btn:hover { background: #f9e29c; transform: scale(1.1); }
     .qty-display { min-width: 30px; text-align: center; font-weight: bold; }
 
-    /* Multi-select styling */
     .variant-checkbox:checked + .variant-label { border-color: #d4af37; background: rgba(212, 175, 55, 0.1); }
     .delete-btn { position: absolute; top: 5px; right: 5px; background: rgba(255,0,0,0.8); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; transition: opacity 0.3s; font-size: 14px; }
     .image-group-item:hover .delete-btn { opacity: 1; }
     .image-group-item { position: relative; overflow: hidden; border-radius: 12px; }
 
-    /* Slider styling */
     .slider-container { position: relative; overflow: hidden; touch-action: pan-y; }
     .slider-track { display: flex; transition: transform 0.3s ease-out; }
     .slider-item { min-width: 100%; }
+
+    /* Status Badges */
+    .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: bold; }
+    .status-pending { background: #fbbf24; color: #000; }
+    .status-completed { background: #10b981; color: #fff; }
+    .status-cancelled { background: #ef4444; color: #fff; }
   </style>
 </head>
 <body class="overflow-x-hidden">
+  <!-- Custom Alert Modal -->
+  <div id="custom-alert" class="modal fixed inset-0 flex items-center justify-center p-4 z-[5000]">
+    <div class="modal-content-box bg-zinc-950 w-full max-w-sm rounded-3xl border border-zinc-800 p-8 text-center shadow-2xl">
+        <div id="alert-icon" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl"></div>
+        <h3 id="alert-title" class="text-xl font-bold mb-2"></h3>
+        <p id="alert-msg" class="text-zinc-400 mb-6 text-sm"></p>
+        <button onclick="closeAlert()" class="w-full gold-bg text-black py-3 rounded-xl font-bold">حسناً</button>
+    </div>
+  </div>
+
   <!-- Navigation -->
   <nav class="fixed w-full z-[100] bg-black/70 backdrop-blur-md border-b border-zinc-900">
     <div class="container mx-auto px-4 py-3 flex justify-between items-center">
@@ -195,17 +207,17 @@
   </main>
 
   <!-- Product Modal -->
-  <div id="product-modal" class="modal fixed inset-0 hidden flex items-center justify-center p-4 z-[1100]">
-    <div class="bg-zinc-950 w-full max-w-4xl rounded-3xl border border-zinc-800 overflow-hidden flex flex-col md:flex-row max-h-[90vh]">
+  <div id="product-modal" class="modal fixed inset-0 flex items-center justify-center p-4 z-[1100]">
+    <div class="modal-content-box bg-zinc-950 w-full max-w-4xl rounded-3xl border border-zinc-800 overflow-hidden flex flex-col md:flex-row max-h-[90vh]">
         <button onclick="closeModal()" class="absolute top-6 right-6 text-zinc-500 hover:text-white z-10 text-2xl">✕</button>
         <div id="modal-content" class="flex-1 p-8 md:p-12 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-12"></div>
     </div>
   </div>
 
   <!-- Cart Modal -->
-  <div id="cart-modal" class="modal fixed inset-0 hidden flex items-center justify-end z-[1100]">
+  <div id="cart-modal" class="modal fixed inset-0 flex items-center justify-end z-[1100]">
     <div class="absolute inset-0 bg-black/60" onclick="toggleCart()"></div>
-    <div class="bg-zinc-950 w-full max-w-md h-full border-r border-zinc-800 p-8 flex flex-col relative">
+    <div class="modal-content-box bg-zinc-950 w-full max-w-md h-full border-r border-zinc-800 p-8 flex flex-col relative">
         <div class="flex justify-between items-center mb-8">
             <h2 class="text-2xl font-bold gold-text">🛒 سلة المشتريات</h2>
             <button onclick="toggleCart()" class="text-zinc-500 hover:text-white text-2xl">✕</button>
@@ -222,23 +234,35 @@
   </div>
 
   <!-- Checkout Modal -->
-  <div id="checkout-modal" class="modal fixed inset-0 hidden flex items-center justify-center p-4 z-[1200]">
-    <div class="bg-zinc-950 w-full max-w-lg rounded-3xl border border-zinc-800 p-8 md:p-10 max-h-[90vh] overflow-y-auto">
+  <div id="checkout-modal" class="modal fixed inset-0 flex items-center justify-center p-4 z-[1200]">
+    <div class="modal-content-box bg-zinc-950 w-full max-w-lg rounded-3xl border border-zinc-800 p-8 md:p-10 max-h-[90vh] overflow-y-auto">
         <h2 class="text-2xl font-bold mb-8 text-center">بيانات الشحن</h2>
         <div class="space-y-6">
             <input type="text" id="cust-name" placeholder="الاسم بالكامل" class="w-full bg-black border border-zinc-800 rounded-xl py-4 px-6 outline-none focus:border-gold-text">
             <input type="tel" id="cust-phone" placeholder="رقم الهاتف" class="w-full bg-black border border-zinc-800 rounded-xl py-4 px-6 outline-none focus:border-gold-text">
             <textarea id="cust-address" placeholder="العنوان بالتفصيل" class="w-full bg-black border border-zinc-800 rounded-xl py-4 px-6 outline-none focus:border-gold-text h-24"></textarea>
             
-            <!-- Image Groups Upload Section -->
+            <!-- Gift Wrap Option -->
+            <div class="flex items-center justify-between bg-zinc-900 p-4 rounded-xl border border-zinc-800">
+                <div class="flex items-center gap-3">
+                    <span class="text-xl">🎁</span>
+                    <div>
+                        <p class="text-sm font-bold">تغليف كهدية</p>
+                        <p class="text-[10px] text-zinc-500">أضف لمسة جمالية لطلبك</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span id="gift-price-display" class="text-xs gold-text font-bold">+0 ج</span>
+                    <input type="checkbox" id="gift-wrap" onchange="updateCheckoutTotal()" class="w-5 h-5 accent-gold-text">
+                </div>
+            </div>
+
             <div class="border-2 border-dashed border-zinc-800 p-4 rounded-xl">
                 <p class="text-sm font-bold mb-3 text-gold-text">مجموعات الصور للطباعة (اختياري)</p>
-                <p class="text-xs text-zinc-500 mb-3">أضف مجموعات صور لمنتجات مختلفة (مثل تابلوهات بمقاسات مختلفة)</p>
                 <div id="image-groups-container" class="space-y-4 mb-4"></div>
                 <button onclick="addImageGroup()" class="w-full text-sm gold-text underline hover:text-gold-bg transition-colors py-2">+ إضافة مجموعة صور جديدة</button>
             </div>
 
-            <!-- Coupon Code -->
             <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
                 <p class="text-xs text-zinc-400 mb-2">هل لديك كود خصم؟</p>
                 <div class="flex gap-2">
@@ -260,8 +284,8 @@
   </div>
 
   <!-- Success Modal -->
-  <div id="success-modal" class="modal fixed inset-0 hidden flex items-center justify-center p-4 z-[1300]">
-    <div class="bg-zinc-950 w-full max-w-md rounded-3xl border border-zinc-800 p-10 text-center">
+  <div id="success-modal" class="modal fixed inset-0 flex items-center justify-center p-4 z-[1300]">
+    <div class="modal-content-box bg-zinc-950 w-full max-w-md rounded-3xl border border-zinc-800 p-10 text-center">
         <div class="w-20 h-20 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">✓</div>
         <h2 class="text-2xl font-bold mb-2">تم استلام طلبك بنجاح!</h2>
         <p class="text-zinc-400 mb-6">كود التتبع الخاص بك هو:</p>
@@ -286,12 +310,12 @@
   </div>
 
   <!-- Image Viewer Modal -->
-  <div id="image-viewer-modal" class="image-modal fixed inset-0 hidden flex items-center justify-center p-4 z-[2000]" onclick="closeImageViewer()">
+  <div id="image-viewer-modal" class="image-modal fixed inset-0 flex items-center justify-center p-4 z-[2000]" onclick="closeImageViewer()">
     <img id="viewer-image" src="" class="rounded-xl shadow-2xl" onclick="event.stopPropagation()">
     <button class="absolute top-8 right-8 text-white text-4xl" onclick="closeImageViewer()">✕</button>
   </div>
 
-  <div id="toast" class="toast hidden"></div>
+  <div id="toast" class="toast"></div>
 
   <script type="module">
     const firebaseConfig = { apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM", authDomain: "zahraa-store-f4c90.firebaseapp.com", projectId: "zahraa-store-f4c90" };
@@ -300,7 +324,28 @@
     const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload";
     const CLOUDINARY_UPLOAD_PRESET = "zahraa_upload";
 
-    let allProducts = [], cart = [], appliedCoupon = null, selectedCategory = 'all', searchTerm = '', imageGroups = [], lastOrderTime = 0, currentOrder = null;
+    let allProducts = [], cart = [], appliedCoupon = null, selectedCategory = 'all', searchTerm = '', imageGroups = [], lastOrderTime = 0, currentOrder = null, giftPrice = 0;
+
+    // Custom Alert System
+    window.showAlert = (title, msg, type = 'success') => {
+        const alert = document.getElementById('custom-alert');
+        const icon = document.getElementById('alert-icon');
+        document.getElementById('alert-title').innerText = title;
+        document.getElementById('alert-msg').innerText = msg;
+        
+        icon.className = `w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl ${type === 'success' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`;
+        icon.innerText = type === 'success' ? '✓' : '✕';
+        
+        alert.classList.add('active');
+    };
+    window.closeAlert = () => document.getElementById('custom-alert').classList.remove('active');
+
+    window.showToast = (msg) => {
+        const t = document.getElementById('toast');
+        t.innerText = msg;
+        t.classList.add('active');
+        setTimeout(() => t.classList.remove('active'), 3000);
+    };
 
     // Navigation
     window.showPage = (pageId) => {
@@ -312,12 +357,20 @@
         document.getElementById('sidebar').classList.toggle('translate-x-full');
         document.getElementById('sidebar-overlay').classList.toggle('hidden');
     };
-    window.toggleCart = () => document.getElementById('cart-modal').classList.toggle('hidden');
+    window.toggleCart = () => document.getElementById('cart-modal').classList.toggle('active');
 
     // Load Data
     async function init() {
         const snap = await db.collection("products").orderBy("updatedAt", "desc").get();
         allProducts = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // Load Settings (Gift Price)
+        const settings = await db.collection("settings").doc("config").get();
+        if(settings.exists) {
+            giftPrice = settings.data().giftPrice || 0;
+            document.getElementById('gift-price-display').innerText = `+${giftPrice} ج`;
+        }
+
         renderProducts();
         renderCategories();
         loadTestimonials();
@@ -420,7 +473,7 @@
                 <button onclick="addToCartMulti('${p.id}')" class="w-full gold-bg text-black py-4 rounded-2xl font-bold text-lg shadow-lg shadow-gold-bg/20">إضافة للسلة</button>
             </div>
         `;
-        document.getElementById('product-modal').classList.remove('hidden');
+        document.getElementById('product-modal').classList.add('active');
         initSlider();
     };
 
@@ -440,10 +493,11 @@
     window.goToSlide = (n) => {
         const track = document.getElementById('slider-track');
         const items = document.querySelectorAll('.slider-item');
+        if(!track || items.length === 0) return;
         if(n >= items.length) n = 0;
         if(n < 0) n = items.length - 1;
         currentSlide = n;
-        track.style.transform = `translateX(${n * 100}%)`; // RTL logic
+        track.style.transform = `translateX(${n * 100}%)`;
         updateDots();
     };
 
@@ -453,13 +507,13 @@
         });
     }
 
-    window.closeModal = () => document.getElementById('product-modal').classList.add('hidden');
+    window.closeModal = () => document.getElementById('product-modal').classList.remove('active');
 
     window.addToCartMulti = (id) => {
         const p = allProducts.find(x => x.id === id);
         const checkboxes = document.querySelectorAll('.variant-checkbox:checked');
         if(p.variants && p.variants.length > 0) {
-            if(checkboxes.length === 0) return alert('يرجى اختيار مقاس أو نوع واحد على الأقل');
+            if(checkboxes.length === 0) return showAlert('تنبيه', 'يرجى اختيار مقاس أو نوع واحد على الأقل', 'error');
             checkboxes.forEach(cb => {
                 const vName = cb.getAttribute('data-name'), vPrice = parseFloat(cb.getAttribute('data-price')), cartId = id + '-' + vName;
                 const existing = cart.find(x => x.cartId === cartId);
@@ -471,7 +525,6 @@
         }
         updateCartUI(); 
         showToast('تمت الإضافة للسلة ✓');
-        // Note: Modal stays open as requested
     };
 
     function updateCartUI() {
@@ -489,12 +542,12 @@
     }
 
     window.updateQty = (i, delta) => { cart[i].qty += delta; if(cart[i].qty <= 0) cart.splice(i, 1); updateCartUI(); };
-    window.openCheckout = () => { if(cart.length === 0) return; document.getElementById('checkout-modal').classList.remove('hidden'); updateCheckoutTotal(); };
-    window.closeCheckout = () => document.getElementById('checkout-modal').classList.add('hidden');
+    window.openCheckout = () => { if(cart.length === 0) return showAlert('السلة فارغة', 'يرجى إضافة منتجات أولاً', 'error'); document.getElementById('checkout-modal').classList.add('active'); updateCheckoutTotal(); };
+    window.closeCheckout = () => document.getElementById('checkout-modal').classList.remove('active');
 
     window.applyCoupon = async () => {
         const code = document.getElementById('coupon-input').value.toUpperCase(), msg = document.getElementById('coupon-msg');
-        const snap = await db.collection('coupons').where('code', '==', code).where('active', '==', true).get();
+        const snap = await db.collection('coupons').where('code', '==', code).where('isActive', '==', true).get();
         if(snap.empty) { msg.innerText = 'كود غير صالح'; msg.className = 'text-red-500 text-xs'; appliedCoupon = null; }
         else {
             const data = snap.docs[0].data();
@@ -508,7 +561,11 @@
     function updateCheckoutTotal() {
         let subtotal = cart.reduce((a, b) => a + (b.price * b.qty), 0), discount = 0;
         if(appliedCoupon) discount = appliedCoupon.type === 'percentage' ? subtotal * (appliedCoupon.discount / 100) : appliedCoupon.discount;
-        document.getElementById('checkout-total').innerText = Math.max(0, subtotal - discount) + ' ج';
+        
+        let finalTotal = Math.max(0, subtotal - discount);
+        if(document.getElementById('gift-wrap').checked) finalTotal += giftPrice;
+        
+        document.getElementById('checkout-total').innerText = finalTotal + ' ج';
     }
 
     window.addImageGroup = () => { imageGroups.push({ id: Date.now(), name: '', images: [] }); renderImageGroups(); };
@@ -536,7 +593,7 @@
 
     window.submitOrder = async () => {
         const name = document.getElementById('cust-name').value.trim(), phone = document.getElementById('cust-phone').value.trim(), address = document.getElementById('cust-address').value.trim();
-        if(!name || !phone || !address) return alert('يرجى ملء البيانات');
+        if(!name || !phone || !address) return showAlert('بيانات ناقصة', 'يرجى ملء كافة البيانات المطلوبة', 'error');
         const btn = document.getElementById('submit-order-btn');
         btn.disabled = true; btn.innerText = 'جاري الإرسال...';
         try {
@@ -555,16 +612,34 @@
             const subtotal = cart.reduce((a, b) => a + (b.price * b.qty), 0);
             let discount = 0; if(appliedCoupon) discount = appliedCoupon.type === 'percentage' ? subtotal * (appliedCoupon.discount / 100) : appliedCoupon.discount;
             const trackCode = 'ZHR-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-            const orderData = { orderNumber: trackCode, customerName: name, customerPhone: phone, customerAddress: address, items: cart.map(i => ({ name: i.name, price: i.price, qty: i.qty })), imageGroups: uploadedGroups, subtotal, discountAmount: discount, totalPrice: subtotal - discount, status: 'قيد المراجعة', createdAt: Date.now() };
+            
+            const orderData = { 
+                orderNumber: trackCode, 
+                customerName: name, 
+                customerPhone: phone, 
+                customerAddress: address, 
+                items: cart.map(i => ({ name: i.name, price: i.price, qty: i.qty })), 
+                imageGroups: uploadedGroups, 
+                subtotal, 
+                discountAmount: discount, 
+                giftWrap: document.getElementById('gift-wrap').checked,
+                giftPrice: document.getElementById('gift-wrap').checked ? giftPrice : 0,
+                totalPrice: parseInt(document.getElementById('checkout-total').innerText), 
+                status: 'قيد المراجعة', 
+                createdAt: firebase.firestore.FieldValue.serverTimestamp() 
+            };
+            
             await db.collection('orders').add(orderData);
             if(appliedCoupon) await db.collection('coupons').doc(appliedCoupon.id).update({ usedCount: firebase.firestore.FieldValue.increment(1) });
+            
             currentOrder = orderData;
             document.getElementById('success-order-code').innerText = trackCode;
             document.getElementById('success-total-val').innerText = orderData.totalPrice + ' ج';
             document.getElementById('success-whatsapp-link').href = `https://wa.me/201204194540?text=${encodeURIComponent('السلام عليكم، قمت بعمل طلب جديد برقم: ' + trackCode + '\nالمبلغ: ' + orderData.totalPrice + ' ج')}`;
-            document.getElementById('success-modal').classList.remove('hidden');
+            
+            document.getElementById('success-modal').classList.add('active');
             closeCheckout(); cart = []; updateCartUI();
-        } catch (e) { console.error(e); alert('حدث خطأ'); } finally { btn.disabled = false; btn.innerText = 'تأكيد الطلب'; }
+        } catch (e) { console.error(e); showAlert('خطأ', 'حدث خطأ أثناء إرسال الطلب، يرجى المحاولة لاحقاً', 'error'); } finally { btn.disabled = false; btn.innerText = 'تأكيد الطلب'; }
     };
 
     window.downloadInvoice = () => {
@@ -578,6 +653,7 @@
 
     window.trackOrder = async () => {
         const code = document.getElementById('track-order-input').value.trim().toUpperCase();
+        if(!code) return showAlert('تنبيه', 'يرجى إدخال كود التتبع', 'error');
         const snap = await db.collection('orders').where('orderNumber', '==', code).get();
         const res = document.getElementById('track-result'), none = document.getElementById('track-not-found');
         res.classList.add('hidden'); none.classList.add('hidden');
@@ -591,9 +667,8 @@
         res.classList.remove('hidden');
     };
 
-    window.openImageViewer = (src) => { document.getElementById('viewer-image').src = src; document.getElementById('image-viewer-modal').classList.remove('hidden'); };
-    window.closeImageViewer = () => document.getElementById('image-viewer-modal').classList.add('hidden');
-    function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 3000); }
+    window.openImageViewer = (src) => { document.getElementById('viewer-image').src = src; document.getElementById('image-viewer-modal').classList.add('active'); };
+    window.closeImageViewer = () => document.getElementById('image-viewer-modal').classList.remove('active');
 
     init();
   </script>
