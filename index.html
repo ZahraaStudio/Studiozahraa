@@ -90,10 +90,6 @@
     
     /* Swipe gesture indicator */
     .swipe-indicator { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); font-size: 12px; color: #d4af37; opacity: 0.7; }
-    
-    /* Social Cards */
-    .social-card { background: #151515; border: 1px solid #222; border-radius: 16px; padding: 12px; display: flex; align-items: center; gap: 10px; transition: all 0.3s; }
-    .social-card:hover { border-color: #d4af37; transform: translateY(-2px); }
   </style>
 </head>
 <body class="overflow-x-hidden">
@@ -131,7 +127,7 @@
       <div class="flex items-center gap-3">
         <div id="user-profile" class="hidden flex items-center gap-2 text-sm">
           <img id="user-avatar" src="" class="w-8 h-8 rounded-full border border-gold-text">
-          <span id="user-name" class="text-zinc-400 max-w-[80px] truncate"></span>
+          <span id="user-name" class="text-zinc-400"></span>
           <button onclick="logout()" class="text-xs text-red-500 hover:text-red-400">خروج</button>
         </div>
         <button id="login-btn" onclick="showLoginModal()" class="text-xs px-3 py-2 border border-gold-text rounded-lg gold-text hover:bg-gold-text/10 transition-colors">دخول</button>
@@ -156,18 +152,14 @@
       </div>
       <div class="mt-20 pt-8 border-t border-zinc-900 space-y-6">
         <p class="text-xs text-zinc-500 uppercase tracking-widest">تواصل معنا</p>
-        <div class="grid grid-cols-1 gap-3">
-            <a href="https://facebook.com/StudioZahraa" target="_blank" class="social-card">
-                <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                </div>
-                <span class="text-sm font-bold">فيسبوك</span>
+        <div class="space-y-4">
+            <a href="https://facebook.com/StudioZahraa" target="_blank" class="flex items-center gap-3 text-zinc-400 hover:text-white transition-colors">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                <span>فيسبوك</span>
             </a>
-            <a id="sidebar-whatsapp" href="https://wa.me/201204194540" target="_blank" class="social-card">
-                <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
-                </div>
-                <span class="text-sm font-bold">واتساب</span>
+            <a id="sidebar-whatsapp" href="https://wa.me/201204194540" target="_blank" class="flex items-center gap-3 text-zinc-400 hover:text-white transition-colors">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+                <span>واتساب</span>
             </a>
         </div>
       </div>
@@ -432,15 +424,10 @@
     let giftPrice = 50;
     let currentUser = null;
     let visitorId = null;
-    let deviceId = null;
     let storeSettings = { whatsapp: '201204194540', giftPrice: 50, welcomeMsg: '', isOpen: true };
 
     // Initialize on page load
     async function init() {
-        // Device ID for Referral Protection
-        deviceId = localStorage.getItem('deviceId') || 'dev-' + Math.random().toString(36).substring(2, 15);
-        localStorage.setItem('deviceId', deviceId);
-        
         visitorId = localStorage.getItem('visitorId') || 'visitor-' + Date.now();
         localStorage.setItem('visitorId', visitorId);
         
@@ -448,7 +435,6 @@
         const urlParams = new URLSearchParams(window.location.search);
         const ref = urlParams.get('ref');
         if (ref) {
-            // Protection: Don't save if it's the same user (will check again on order)
             localStorage.setItem('referral_by', ref);
         }
 
@@ -493,8 +479,7 @@
             const visitorRef = db.collection('visitors').doc(visitorId);
             await visitorRef.set({ 
                 lastActive: firebase.firestore.FieldValue.serverTimestamp(),
-                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                deviceId: deviceId
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
             }, { merge: true });
         } catch (e) { console.error('Visitor tracking error:', e); }
     }
@@ -510,11 +495,9 @@
             if (user) {
                 loginBtn.classList.add('hidden');
                 userProfile.classList.remove('hidden');
-                document.getElementById('user-name').innerText = user.displayName || user.email.split('@')[0];
+                document.getElementById('user-name').innerText = user.displayName || user.email;
                 if (user.photoURL) {
                     document.getElementById('user-avatar').src = user.photoURL;
-                } else {
-                    document.getElementById('user-avatar').src = 'https://ui-avatars.com/api/?name=' + (user.displayName || user.email);
                 }
                 
                 // Show referral link
@@ -547,11 +530,7 @@
             closeLoginModal();
             showNotification('تم تسجيل الدخول بنجاح', 'success');
         } catch (e) {
-            if (e.code === 'auth/unauthorized-domain') {
-                showAlert('خطأ في الإعدادات', 'يجب إضافة هذا النطاق (Domain) في إعدادات Firebase (Authorized Domains) ليعمل تسجيل الدخول.', 'error');
-            } else {
-                showNotification('خطأ في تسجيل الدخول: ' + e.message, 'error');
-            }
+            showNotification('خطأ في تسجيل الدخول: ' + e.message, 'error');
         }
     };
 
@@ -601,7 +580,7 @@
             renderFeatured(allProducts.slice(0, 3));
         } catch (e) {
             console.error('Error loading products:', e);
-            showAlert('خطأ', 'حدث خطأ في تحميل المنتجات. تأكد من اتصال الإنترنت.', 'error');
+            showAlert('خطأ', 'حدث خطأ في تحميل المنتجات', 'error');
         }
     }
 
@@ -797,39 +776,18 @@
                 }
 
                 // Check expiry
-                const now = new Date();
-                if (data.expiryDate && new Date(data.expiryDate.toDate?.() || data.expiryDate) < now) {
+                if (data.expiryDate && new Date(data.expiryDate.toDate?.() || data.expiryDate) < new Date()) {
                     msg.innerText = 'انتهت صلاحية الكود';
                     msg.className = 'text-red-500 text-[10px]';
                     appliedCoupon = null;
                     return;
                 }
-                
-                // Check start date
-                if (data.startDate && new Date(data.startDate.toDate?.() || data.startDate) > now) {
-                    msg.innerText = 'هذا الكوبون لم يبدأ بعد';
-                    msg.className = 'text-red-500 text-[10px]';
-                    appliedCoupon = null;
-                    return;
-                }
-
                 // Check usage limit
                 if (data.limit && data.usedCount >= data.limit) {
-                    msg.innerText = 'تم استنفاذ حد الاستخدام الكلي';
+                    msg.innerText = 'تم استنفاذ حد الاستخدام';
                     msg.className = 'text-red-500 text-[10px]';
                     appliedCoupon = null;
                     return;
-                }
-                
-                // Check per-user limit
-                if (data.perUserLimit && currentUser) {
-                    const userUsageSnap = await db.collection('coupon_usage').where('couponId', '==', snap.docs[0].id).where('userId', '==', currentUser.uid).get();
-                    if (userUsageSnap.size >= data.perUserLimit) {
-                        msg.innerText = 'لقد استخدمت هذا الكوبون مسبقاً';
-                        msg.className = 'text-red-500 text-[10px]';
-                        appliedCoupon = null;
-                        return;
-                    }
                 }
                 
                 appliedCoupon = { id: snap.docs[0].id, ...data };
@@ -907,12 +865,6 @@
         if (appliedCoupon) discount = appliedCoupon.type === 'percentage' ? subtotal * (appliedCoupon.discount / 100) : appliedCoupon.discount;
         const totalPrice = Math.max(0, subtotal - discount + (giftWrap ? giftPrice : 0));
 
-        // Referral Protection: Check if user is referring themselves
-        let referralBy = localStorage.getItem('referral_by');
-        if (currentUser && referralBy === currentUser.uid) {
-            referralBy = null; // Prevent self-referral
-        }
-
         const orderData = {
             orderNumber,
             customerName: name,
@@ -927,27 +879,16 @@
             status: 'قيد التنفيذ',
             imageGroups,
             userId: currentUser ? currentUser.uid : null,
-            referralBy: referralBy,
-            deviceId: deviceId,
+            referralBy: localStorage.getItem('referral_by') || null,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
         try {
-            const orderRef = await db.collection('orders').add(orderData);
-            
-            // Log coupon usage
+            await db.collection('orders').add(orderData);
             if (appliedCoupon) {
                 await db.collection('coupons').doc(appliedCoupon.id).update({
                     usedCount: firebase.firestore.FieldValue.increment(1)
                 });
-                if (currentUser) {
-                    await db.collection('coupon_usage').add({
-                        couponId: appliedCoupon.id,
-                        userId: currentUser.uid,
-                        orderId: orderRef.id,
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                }
             }
             
             currentOrder = orderData;
@@ -959,7 +900,7 @@
             closeCheckout();
             document.getElementById('success-modal').classList.add('active');
         } catch (e) {
-            showAlert('خطأ', 'حدث خطأ أثناء إرسال الطلب. حاول مرة أخرى.', 'error');
+            showAlert('خطأ', 'حدث خطأ أثناء إرسال الطلب', 'error');
             console.error(e);
         } finally {
             btn.disabled = false;
@@ -1015,7 +956,7 @@
                 grid.innerHTML += `
                     <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl">
                         <div class="flex items-center gap-3 mb-4">
-                            <img src="${t.avatarUrl || 'https://ui-avatars.com/api/?name=' + t.name}" class="w-12 h-12 rounded-full object-cover">
+                            <img src="${t.avatarUrl || 'https://via.placeholder.com/40x40'}" class="w-12 h-12 rounded-full object-cover">
                             <div>
                                 <h4 class="font-bold">${t.name}</h4>
                                 <p class="text-xs gold-text">${'⭐'.repeat(t.rating || 5)}</p>
