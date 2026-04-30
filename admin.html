@@ -132,33 +132,13 @@
                     <input type="hidden" id="coupon-id">
                     <div class="space-y-4">
                         <input type="text" id="c-code" placeholder="كود الكوبون" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
-                        <div class="grid grid-cols-2 gap-2">
-                            <input type="number" id="c-discount" placeholder="قيمة الخصم" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
-                            <select id="c-type" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
-                                <option value="percentage">نسبة %</option>
-                                <option value="fixed">مبلغ ثابت</option>
-                            </select>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="text-[10px] text-zinc-500">الحد الكلي:</label>
-                                <input type="number" id="c-limit" placeholder="مثلاً 100" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
-                            </div>
-                            <div>
-                                <label class="text-[10px] text-zinc-500">لكل مستخدم:</label>
-                                <input type="number" id="c-per-user" placeholder="مثلاً 1" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="text-[10px] text-zinc-500">تاريخ البدء:</label>
-                                <input type="date" id="c-start-date" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
-                            </div>
-                            <div>
-                                <label class="text-[10px] text-zinc-500">تاريخ الانتهاء:</label>
-                                <input type="date" id="c-expiry-date" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
-                            </div>
-                        </div>
+                        <input type="number" id="c-discount" placeholder="قيمة الخصم" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                        <select id="c-type" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                            <option value="percentage">نسبة %</option>
+                            <option value="fixed">مبلغ ثابت</option>
+                        </select>
+                        <input type="number" id="c-limit" placeholder="حد الاستخدام (مثلاً 10)" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                        <input type="date" id="c-expiry-date" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
                         <button id="save-coupon-btn" onclick="saveCoupon()" class="w-full p-3 gold-bg text-black font-bold rounded">حفظ الكوبون</button>
                         <button id="cancel-coupon-btn" onclick="resetCouponForm()" class="w-full p-3 bg-zinc-800 text-white font-bold rounded hidden">إلغاء</button>
                     </div>
@@ -176,7 +156,7 @@
                     <h3 class="text-xl font-bold mb-4 border-b border-zinc-800 pb-2">إعدادات المكافآت</h3>
                     <div class="space-y-4">
                         <div>
-                            <label class="text-xs text-zinc-500 block mb-1">قيمة كوبون المكافأة:</label>
+                            <label class="text-xs text-zinc-500 block mb-1">قيمة كوبون المكافأة (جنية):</label>
                             <input type="number" id="reward-amount" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
                         </div>
                         <div>
@@ -240,10 +220,6 @@
                             <label class="text-sm text-zinc-400 block mb-2">سعر تغليف الهدايا (ج):</label>
                             <input type="number" id="setting-gift-price" placeholder="50" class="w-full p-3 bg-black border border-zinc-700 rounded outline-none focus:border-gold-text">
                         </div>
-                    </div>
-                    <div>
-                        <label class="text-sm text-zinc-400 block mb-2">رابط الفيسبوك:</label>
-                        <input type="text" id="setting-facebook" placeholder="https://facebook.com/..." class="w-full p-3 bg-black border border-zinc-700 rounded outline-none focus:border-gold-text">
                     </div>
                     <div>
                         <label class="text-sm text-zinc-400 block mb-2">رسالة الترحيب في المتجر:</label>
@@ -599,22 +575,15 @@
                     const orderSnap = await getDoc(doc(db, 'orders', id));
                     const order = orderSnap.data();
                     if (order.referralBy && !order.rewardProcessed) {
-                        await processReferralReward(order.referralBy, id, order.deviceId);
+                        await processReferralReward(order.referralBy, id);
                     }
                 }
                 loadOrders();
             } catch (e) { alert(e.message); }
         };
 
-        async function processReferralReward(referrerUid, orderId, deviceId) {
+        async function processReferralReward(referrerUid, orderId) {
             try {
-                // Protection: Check if this device already got a reward
-                const deviceCheck = await getDocs(query(collection(db, 'referrals'), where('deviceId', '==', deviceId)));
-                if (!deviceCheck.empty) {
-                    console.log('Reward blocked: Device already rewarded');
-                    return;
-                }
-
                 // Get reward settings
                 const settingsSnap = await getDoc(doc(db, 'settings', 'rewards'));
                 const settings = settingsSnap.exists() ? settingsSnap.data() : { amount: 50, type: 'fixed' };
@@ -640,7 +609,6 @@
                 await addDoc(collection(db, 'referrals'), {
                     referrerUid,
                     orderId,
-                    deviceId,
                     couponCode,
                     amount: settings.amount,
                     timestamp: serverTimestamp()
@@ -771,8 +739,6 @@
             const discount = document.getElementById('c-discount').value;
             const type = document.getElementById('c-type').value;
             const limit = document.getElementById('c-limit').value;
-            const perUserLimit = document.getElementById('c-per-user').value;
-            const startDate = document.getElementById('c-start-date').value;
             const expiryDate = document.getElementById('c-expiry-date').value;
 
             if (!code || !discount) return alert('الرجاء ملء البيانات');
@@ -782,8 +748,6 @@
                 discount: parseFloat(discount),
                 type,
                 limit: parseInt(limit) || 0,
-                perUserLimit: parseInt(perUserLimit) || 0,
-                startDate: startDate ? new Date(startDate) : null,
                 expiryDate: expiryDate ? new Date(expiryDate) : null,
                 isActive: true,
                 updatedAt: serverTimestamp()
@@ -807,8 +771,6 @@
             document.getElementById('c-code').value = "";
             document.getElementById('c-discount').value = "";
             document.getElementById('c-limit').value = "";
-            document.getElementById('c-per-user').value = "";
-            document.getElementById('c-start-date').value = "";
             document.getElementById('c-expiry-date').value = "";
             document.getElementById('coupon-form-title').innerText = "إضافة كوبون";
             document.getElementById('cancel-coupon-btn').classList.add('hidden');
@@ -891,14 +853,12 @@
         window.saveGeneralSettings = async () => {
             const whatsapp = document.getElementById('setting-whatsapp').value;
             const giftPrice = document.getElementById('setting-gift-price').value;
-            const facebook = document.getElementById('setting-facebook').value;
             const welcomeMsg = document.getElementById('setting-welcome-msg').value;
             const storeStatus = document.getElementById('setting-store-status').checked;
 
             await updateDoc(doc(db, 'settings', 'general'), {
                 whatsapp,
                 giftPrice: parseFloat(giftPrice),
-                facebook,
                 welcomeMsg,
                 isOpen: storeStatus,
                 updatedAt: serverTimestamp()
@@ -918,7 +878,6 @@
                 const g = generalSnap.data();
                 document.getElementById('setting-whatsapp').value = g.whatsapp || "";
                 document.getElementById('setting-gift-price').value = g.giftPrice || 50;
-                document.getElementById('setting-facebook').value = g.facebook || "";
                 document.getElementById('setting-welcome-msg').value = g.welcomeMsg || "";
                 document.getElementById('setting-store-status').checked = g.isOpen ?? true;
             }
@@ -931,7 +890,7 @@
             
             // Online visitors (active in last 5 mins)
             const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000);
-            const onlineSnap = await getDocs(query(collection(db, 'visitors'), where('lastActive', '>=', fiveMinsAgo)));
+            const onlineSnap = await getDocs(query(collection(db, 'visitors'), where('timestamp', '>=', fiveMinsAgo)));
             const list = document.getElementById('online-visitors-list');
             list.innerHTML = "";
             onlineSnap.forEach(v => {
