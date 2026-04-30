@@ -1,0 +1,227 @@
+/**
+ * أنماط الإشعارات المحسّنة
+ */
+
+/* Toast Notifications */
+.toast-notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+    border: 1px solid #d4af37;
+    border-radius: 16px;
+    padding: 20px;
+    min-width: 300px;
+    max-width: 400px;
+    z-index: 3000;
+    box-shadow: 0 10px 40px rgba(212, 175, 55, 0.2);
+    transform: translateX(500px);
+    transition: all 0.3s ease;
+    color: #fff;
+}
+
+.toast-notification.active {
+    transform: translateX(0);
+}
+
+.toast-notification.error {
+    border-color: #ef4444;
+}
+
+.toast-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.toast-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    flex-shrink: 0;
+    font-size: 20px;
+}
+
+.toast-icon.error {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+.toast-body {
+    flex: 1;
+}
+
+.toast-title {
+    font-weight: bold;
+    font-size: 14px;
+    margin: 0;
+    color: #d4af37;
+}
+
+.toast-message {
+    font-size: 13px;
+    color: #9ca3af;
+    margin: 4px 0 0 0;
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    font-size: 20px;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+}
+
+.toast-close:hover {
+    color: #d4af37;
+}
+
+.toast-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.btn-view-cart {
+    background: #d4af37;
+    color: #000;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-view-cart:hover {
+    background: #f9e29c;
+    transform: translateY(-2px);
+}
+
+.btn-close-toast {
+    background: transparent;
+    color: #9ca3af;
+    border: 1px solid #374151;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-close-toast:hover {
+    background: #1f2937;
+    color: #d4af37;
+    border-color: #d4af37;
+}
+
+/* Animations */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(500px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideOut {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(500px);
+    }
+}
+
+/* Cart Icon Animation */
+@keyframes cartBounce {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+}
+
+@keyframes cartShake {
+    0%, 100% {
+        transform: rotate(0deg);
+    }
+    25% {
+        transform: rotate(-5deg);
+    }
+    75% {
+        transform: rotate(5deg);
+    }
+}
+
+/* Badge Animation */
+@keyframes badgePulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.4);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Product Card Hover */
+.product-card-add-animation {
+    animation: cardPop 0.3s ease;
+}
+
+@keyframes cardPop {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+    .toast-notification {
+        min-width: auto;
+        max-width: calc(100vw - 40px);
+        bottom: 10px;
+        right: 10px;
+        left: 10px;
+    }
+
+    .toast-actions {
+        flex-direction: column;
+    }
+
+    .btn-view-cart,
+    .btn-close-toast {
+        width: 100%;
+    }
+}
