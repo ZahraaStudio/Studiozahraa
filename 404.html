@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>ZAHRAA STUDIO - جاري التحويل...</title>
+  <script>
+    // GitHub Pages SPA Redirect
+    // Converts path-based URLs to hash-based URLs for SPA routing
+    (function() {
+      var loc = window.location;
+      var path = loc.pathname;
+      
+      // Find the base path (repo name segment)
+      // e.g., /Studiozahraa/products → base=/Studiozahraa, rest=/products
+      var segments = path.split('/').filter(Boolean);
+      
+      if (segments.length > 1) {
+        // We have a sub-path after the repo name
+        var basePath = '/' + segments[0];
+        var restPath = '/' + segments.slice(1).join('/');
+        loc.replace(basePath + '/#' + restPath + loc.search + loc.hash);
+      } else if (segments.length === 1) {
+        // Just the repo name, redirect to root with hash for home
+        loc.replace('/' + segments[0] + '/' + loc.search + loc.hash);
+      } else {
+        // Root level, just go home
+        loc.replace('/' + loc.search + loc.hash);
+      }
+    })();
+  </script>
+</head>
+<body>
+  <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#0F0F0F;color:#D4AF37;font-family:'Cairo',sans-serif;font-size:1.2rem;">
+    جاري التحويل...
+  </div>
+</body>
+</html>

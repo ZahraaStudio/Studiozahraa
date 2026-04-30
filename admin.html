@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم استوديو الزهراء - ZAHRAA STUDIO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        body { font-family: 'Cairo', sans-serif; background-color: #0a0a0a; color: #fff; }
+        .gold-border { border: 1px solid #d4af37; }
+        .gold-bg { background-color: #d4af37; }
+        .gold-text { color: #d4af37; }
+        .gradient-text { background: linear-gradient(to right, #d4af37, #f9e29c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .tab-active { border-bottom: 3px solid #d4af37; color: #d4af37; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: #1a1a1a; border: 1px solid #d4af37; border-radius: 12px; padding: 24px; max-width: 700px; width: 95%; max-height: 90vh; overflow-y: auto; }
+        .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .status-pending { background: #fbbf24; color: #000; }
+        .status-processing { background: #3b82f6; color: #fff; }
+        .status-shipped { background: #8b5cf6; color: #fff; }
+        .status-delivered { background: #10b981; color: #fff; }
+        .status-completed { background: #10b981; color: #fff; }
+        .status-cancelled { background: #ef4444; color: #fff; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 6px; cursor: pointer; transition: all 0.3s; }
+        .btn-primary { background: #d4af37; color: #000; }
+        .btn-danger { background: #ef4444; color: #fff; }
+        .btn-warning { background: #f59e0b; color: #000; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="p-2 md:p-6">
+    <!-- Auth Section -->
+    <div id="auth-section" class="max-w-md mx-auto mt-20 p-6 bg-zinc-900 rounded-xl gold-border shadow-2xl">
+        <h2 class="text-2xl font-bold mb-6 text-center gradient-text">تسجيل دخول الإدارة</h2>
+        <input type="email" id="email" placeholder="البريد الإلكتروني" class="w-full p-3 mb-4 bg-black border border-zinc-700 rounded text-white outline-none focus:border-gold-text">
+        <input type="password" id="password" placeholder="كلمة المرور" class="w-full p-3 mb-6 bg-black border border-zinc-700 rounded text-white outline-none focus:border-gold-text">
+        <button id="login-btn" class="w-full p-3 gold-bg text-black font-bold rounded hover:opacity-90 transition-all">دخول</button>
+        <p id="login-error" class="text-red-500 mt-4 text-center hidden"></p>
+    </div>
+
+    <!-- Admin Content -->
+    <div id="admin-content" class="hidden max-w-7xl mx-auto">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <h1 class="text-2xl md:text-3xl font-bold gradient-text">ZAHRAA STUDIO Admin</h1>
+            <div class="flex gap-2">
+                <button onclick="loadAll()" class="bg-zinc-800 text-white px-4 py-2 rounded font-bold text-xs hover:bg-zinc-700 transition-all">🔄 تحديث البيانات</button>
+                <button id="logout-btn" class="bg-red-600/20 text-red-500 border border-red-600 px-4 py-2 rounded font-bold text-xs hover:bg-red-600 hover:text-white transition-all">خروج</button>
+            </div>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div class="flex border-b border-zinc-800 mb-8 overflow-x-auto no-scrollbar gap-2">
+            <button onclick="showTab('products-tab')" id="btn-products-tab" class="px-6 py-3 font-bold tab-active whitespace-nowrap">📦 المنتجات</button>
+            <button onclick="showTab('orders-tab')" id="btn-orders-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">🛒 الطلبات <span id="orders-count-badge" class="bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1 hidden">0</span></button>
+            <button onclick="showTab('coupons-tab')" id="btn-coupons-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">🏷️ الكوبونات</button>
+            <button onclick="showTab('referral-tab')" id="btn-referral-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">🎁 الإحالة والمكافآت</button>
+            <button onclick="showTab('stats-tab')" id="btn-stats-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">📊 الإحصائيات</button>
+            <button onclick="showTab('settings-tab')" id="btn-settings-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">⚙️ الإعدادات</button>
+        </div>
+
+        <!-- Products Tab -->
+        <div id="products-tab" class="tab-content active">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-1 bg-zinc-900 p-6 rounded-xl gold-border h-fit sticky top-4">
+                    <h3 id="form-title" class="text-xl font-bold mb-4 border-b border-zinc-800 pb-2">إضافة/تعديل منتج</h3>
+                    <input type="hidden" id="product-id">
+                    <div class="space-y-4">
+                        <input type="text" id="p-name" placeholder="اسم المنتج" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                        <div class="grid grid-cols-2 gap-4">
+                            <input type="number" id="p-price" placeholder="السعر الأساسي" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                            <input type="number" id="p-old-price" placeholder="السعر قبل الخصم" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                        </div>
+                        <input type="text" id="p-category" placeholder="القسم" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                        
+                        <!-- Variants Section -->
+                        <div class="border border-zinc-800 p-3 rounded-lg">
+                            <p class="text-xs font-bold mb-2 gold-text">الأنواع / المقاسات والأسعار الإضافية:</p>
+                            <div id="variants-container" class="space-y-2 mb-2"></div>
+                            <button onclick="addVariantField()" class="text-[10px] bg-zinc-800 px-2 py-1 rounded">+ إضافة نوع/سعر</button>
+                        </div>
+
+                        <textarea id="p-desc" placeholder="وصف المنتج" class="w-full p-2 bg-black border border-zinc-700 rounded h-24 text-sm outline-none focus:border-gold-text"></textarea>
+                        
+                        <div class="border-2 border-dashed border-zinc-700 p-4 rounded-lg text-center">
+                            <input type="file" id="p-file" multiple accept="image/*" class="hidden" onchange="uploadToCloudinary(this)">
+                            <button onclick="document.getElementById('p-file').click()" class="gold-bg text-black px-4 py-2 rounded font-bold text-xs">رفع صور المنتج</button>
+                            <div id="upload-status" class="text-[10px] mt-2 text-zinc-500"></div>
+                        </div>
+                        <div id="images-preview" class="grid grid-cols-3 gap-2"></div>
+                        
+                        <button id="save-btn" onclick="saveProduct()" class="w-full p-3 gold-bg text-black font-bold rounded">حفظ المنتج</button>
+                        <button id="cancel-btn" onclick="resetProductForm()" class="w-full p-3 bg-zinc-800 text-white font-bold rounded hidden">إلغاء</button>
+                    </div>
+                </div>
+                <div class="lg:col-span-2 bg-zinc-900 p-6 rounded-xl gold-border">
+                    <div id="products-list" class="space-y-3"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Orders Tab -->
+        <div id="orders-tab" class="tab-content">
+            <div class="bg-zinc-900 p-6 rounded-xl gold-border">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold">طلبات الأونلاين</h3>
+                    <div class="flex gap-2">
+                        <select id="order-filter-status" onchange="loadOrders()" class="bg-black border border-zinc-700 rounded text-xs p-2 outline-none">
+                            <option value="all">كل الحالات</option>
+                            <option value="قيد التنفيذ">قيد التنفيذ</option>
+                            <option value="تم الشحن">تم الشحن</option>
+                            <option value="تم التوصيل">تم التوصيل</option>
+                            <option value="مكتمل">مكتمل</option>
+                            <option value="ملغي">ملغي</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="orders-list" class="space-y-6"></div>
+            </div>
+        </div>
+
+        <!-- Coupons Tab -->
+        <div id="coupons-tab" class="tab-content">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-1 bg-zinc-900 p-6 rounded-xl gold-border h-fit sticky top-4">
+                    <h3 id="coupon-form-title" class="text-xl font-bold mb-4 border-b border-zinc-800 pb-2">إضافة كوبون</h3>
+                    <input type="hidden" id="coupon-id">
+                    <div class="space-y-4">
+                        <input type="text" id="c-code" placeholder="كود الكوبون" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="number" id="c-discount" placeholder="قيمة الخصم" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                            <select id="c-type" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                                <option value="percentage">نسبة %</option>
+                                <option value="fixed">مبلغ ثابت</option>
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[10px] text-zinc-500">الحد الكلي:</label>
+                                <input type="number" id="c-limit" placeholder="مثلاً 100" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-zinc-500">لكل مستخدم:</label>
+                                <input type="number" id="c-per-user" placeholder="مثلاً 1" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[10px] text-zinc-500">تاريخ البدء:</label>
+                                <input type="date" id="c-start-date" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-zinc-500">تاريخ الانتهاء:</label>
+                                <input type="date" id="c-expiry-date" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                            </div>
+                        </div>
+                        <button id="save-coupon-btn" onclick="saveCoupon()" class="w-full p-3 gold-bg text-black font-bold rounded">حفظ الكوبون</button>
+                        <button id="cancel-coupon-btn" onclick="resetCouponForm()" class="w-full p-3 bg-zinc-800 text-white font-bold rounded hidden">إلغاء</button>
+                    </div>
+                </div>
+                <div class="lg:col-span-2 bg-zinc-900 p-6 rounded-xl gold-border">
+                    <div id="coupons-list" class="space-y-3"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Referral Tab -->
+        <div id="referral-tab" class="tab-content">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-1 bg-zinc-900 p-6 rounded-xl gold-border h-fit">
+                    <h3 class="text-xl font-bold mb-4 border-b border-zinc-800 pb-2">إعدادات المكافآت</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-xs text-zinc-500 block mb-1">قيمة كوبون المكافأة:</label>
+                            <input type="number" id="reward-amount" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                        </div>
+                        <div>
+                            <label class="text-xs text-zinc-500 block mb-1">نوع المكافأة:</label>
+                            <select id="reward-type" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                                <option value="fixed">مبلغ ثابت</option>
+                                <option value="percentage">نسبة %</option>
+                            </select>
+                        </div>
+                        <button onclick="saveRewardSettings()" class="w-full p-3 gold-bg text-black font-bold rounded">حفظ الإعدادات</button>
+                    </div>
+                </div>
+                <div class="lg:col-span-2 bg-zinc-900 p-6 rounded-xl gold-border">
+                    <h3 class="text-xl font-bold mb-4">سجل الإحالات الناجحة</h3>
+                    <div id="referrals-list" class="space-y-3">
+                        <p class="text-center text-zinc-500 py-10">جاري تحميل البيانات...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Tab -->
+        <div id="stats-tab" class="tab-content">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-zinc-900 p-8 rounded-2xl gold-border text-center">
+                    <p class="text-zinc-500 text-sm mb-2">إجمالي المنتجات</p>
+                    <h4 id="stat-products" class="text-4xl font-bold gold-text">0</h4>
+                </div>
+                <div class="bg-zinc-900 p-8 rounded-2xl gold-border text-center">
+                    <p class="text-zinc-500 text-sm mb-2">إجمالي الطلبات</p>
+                    <h4 id="stat-orders" class="text-4xl font-bold gold-text">0</h4>
+                </div>
+                <div class="bg-zinc-900 p-8 rounded-2xl gold-border text-center">
+                    <p class="text-zinc-500 text-sm mb-2">إجمالي الكوبونات</p>
+                    <h4 id="stat-coupons" class="text-4xl font-bold gold-text">0</h4>
+                </div>
+                <div class="bg-zinc-900 p-8 rounded-2xl gold-border text-center">
+                    <p class="text-zinc-500 text-sm mb-2">إجمالي الزوار</p>
+                    <h4 id="stat-visitors" class="text-4xl font-bold gold-text">0</h4>
+                </div>
+            </div>
+            <div class="bg-zinc-900 p-6 rounded-xl gold-border">
+                <h3 class="text-xl font-bold mb-4">الزوار الحاليون (أونلاين)</h3>
+                <div id="online-visitors-list" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    <!-- Online visitors will show here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="settings-tab" class="tab-content">
+            <div class="max-w-2xl bg-zinc-900 p-8 rounded-2xl gold-border mx-auto">
+                <h3 class="text-2xl font-bold mb-6 border-b border-zinc-800 pb-4">إعدادات المتجر العامة</h3>
+                <div class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="text-sm text-zinc-400 block mb-2">رقم واتساب المتجر:</label>
+                            <input type="text" id="setting-whatsapp" placeholder="201204194540" class="w-full p-3 bg-black border border-zinc-700 rounded outline-none focus:border-gold-text">
+                        </div>
+                        <div>
+                            <label class="text-sm text-zinc-400 block mb-2">سعر تغليف الهدايا (ج):</label>
+                            <input type="number" id="setting-gift-price" placeholder="50" class="w-full p-3 bg-black border border-zinc-700 rounded outline-none focus:border-gold-text">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-sm text-zinc-400 block mb-2">رابط الفيسبوك:</label>
+                        <input type="text" id="setting-facebook" placeholder="https://facebook.com/..." class="w-full p-3 bg-black border border-zinc-700 rounded outline-none focus:border-gold-text">
+                    </div>
+                    <div>
+                        <label class="text-sm text-zinc-400 block mb-2">رسالة الترحيب في المتجر:</label>
+                        <textarea id="setting-welcome-msg" class="w-full p-3 bg-black border border-zinc-700 rounded h-24 outline-none focus:border-gold-text"></textarea>
+                    </div>
+                    <div class="flex items-center justify-between p-4 bg-black rounded-xl border border-zinc-800">
+                        <div>
+                            <p class="font-bold">حالة المتجر</p>
+                            <p class="text-xs text-zinc-500">إغلاق المتجر مؤقتاً للصيانة</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="setting-store-status" class="sr-only peer">
+                            <div class="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gold-bg"></div>
+                        </label>
+                    </div>
+                    <button onclick="saveGeneralSettings()" class="w-full p-4 gold-bg text-black font-bold rounded-xl hover:opacity-90 transition-all">حفظ كافة الإعدادات</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invoice Modal -->
+    <div id="invoice-modal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold">فاتورة الطلب</h3>
+                <button onclick="closeInvoiceModal()" class="text-zinc-500 hover:text-white">إغلاق</button>
+            </div>
+            <div id="invoice-content"></div>
+            <div class="mt-8 flex gap-4">
+                <button onclick="downloadInvoice()" class="flex-1 p-3 gold-bg text-black font-bold rounded">تحميل PDF</button>
+                <button onclick="printInvoice()" class="flex-1 p-3 bg-zinc-800 text-white font-bold rounded">طباعة</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Details Modal -->
+    <div id="order-details-modal" class="modal">
+        <div class="modal-content max-w-4xl">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold">تفاصيل الطلب بالكامل</h3>
+                <button onclick="closeOrderDetailsModal()" class="text-zinc-500 hover:text-white">إغلاق</button>
+            </div>
+            <div id="order-details-content" class="space-y-6"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc, query, orderBy, where, serverTimestamp, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
+            authDomain: "zahraa-store-f4c90.firebaseapp.com",
+            projectId: "zahraa-store-f4c90",
+            storageBucket: "zahraa-store-f4c90.firebasestorage.app",
+            messagingSenderId: "885722081307",
+            appId: "1:885722081307:web:7c91e0f8b0ea9b8b4df0be"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload';
+        const CLOUDINARY_UPLOAD_PRESET = 'zahraa_upload';
+
+        let allProducts = [];
+        let allOrders = [];
+        let allCoupons = [];
+        let editingProductId = null;
+        let editingCouponId = null;
+        let productImages = [];
+
+        // ==================== AUTH ====================
+        const loginBtn = document.getElementById('login-btn');
+        if (loginBtn) {
+            loginBtn.addEventListener('click', async () => {
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const errorEl = document.getElementById('login-error');
+                try {
+                    await signInWithEmailAndPassword(auth, email, password);
+                } catch (e) {
+                    errorEl.innerText = "خطأ في تسجيل الدخول: " + e.message;
+                    errorEl.classList.remove('hidden');
+                }
+            });
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('admin-content').classList.remove('hidden');
+                loadAll();
+            } else {
+                document.getElementById('auth-section').classList.remove('hidden');
+                document.getElementById('admin-content').classList.add('hidden');
+            }
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
+
+        // ==================== TABS ====================
+        window.showTab = (tabId) => {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('[id^="btn-"]').forEach(b => {
+                b.classList.remove('tab-active');
+                b.classList.add('text-zinc-500');
+            });
+            document.getElementById(tabId).classList.add('active');
+            document.getElementById('btn-' + tabId).classList.add('tab-active');
+            document.getElementById('btn-' + tabId).classList.remove('text-zinc-500');
+        };
+
+        // ==================== PRODUCTS ====================
+        window.addVariantField = () => {
+            const container = document.getElementById('variants-container');
+            const div = document.createElement('div');
+            div.className = 'flex gap-2';
+            div.innerHTML = `
+                <input type="text" placeholder="النوع/المقاس" class="v-name flex-1 p-2 bg-black border border-zinc-800 rounded text-[10px] outline-none">
+                <input type="number" placeholder="السعر الإضافي" class="v-price w-24 p-2 bg-black border border-zinc-800 rounded text-[10px] outline-none">
+                <button onclick="this.parentElement.remove()" class="text-red-500 px-2">✕</button>
+            `;
+            container.appendChild(div);
+        };
+
+        window.uploadToCloudinary = async (input) => {
+            const files = input.files;
+            const status = document.getElementById('upload-status');
+            status.innerText = "جاري الرفع...";
+            for (let file of files) {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                try {
+                    const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
+                    const data = await res.json();
+                    productImages.push(data.secure_url);
+                    renderImagesPreview();
+                } catch (e) { console.error(e); }
+            }
+            status.innerText = "تم الرفع بنجاح";
+            setTimeout(() => status.innerText = "", 2000);
+        };
+
+        function renderImagesPreview() {
+            const preview = document.getElementById('images-preview');
+            preview.innerHTML = productImages.map((img, i) => `
+                <div class="relative group">
+                    <img src="${img}" class="w-full h-20 object-cover rounded border border-zinc-800">
+                    <button onclick="removeImage(${i})" class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-5 h-5 text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition">✕</button>
+                </div>
+            `).join('');
+        }
+
+        window.removeImage = (i) => { productImages.splice(i, 1); renderImagesPreview(); };
+
+        window.saveProduct = async () => {
+            const name = document.getElementById('p-name').value;
+            const price = document.getElementById('p-price').value;
+            const oldPrice = document.getElementById('p-old-price').value;
+            const category = document.getElementById('p-category').value;
+            const desc = document.getElementById('p-desc').value;
+            
+            const variants = [];
+            document.querySelectorAll('#variants-container > div').forEach(div => {
+                const vName = div.querySelector('.v-name').value;
+                const vPrice = div.querySelector('.v-price').value;
+                if (vName) variants.push({ name: vName, price: parseFloat(vPrice) || 0 });
+            });
+
+            if (!name || !price) return alert('الرجاء إدخال الاسم والسعر');
+
+            const productData = {
+                name,
+                price: parseFloat(price),
+                oldPrice: parseFloat(oldPrice) || 0,
+                category,
+                description: desc,
+                images: productImages,
+                variants,
+                updatedAt: serverTimestamp()
+            };
+
+            try {
+                if (editingProductId) {
+                    await updateDoc(doc(db, 'products', editingProductId), productData);
+                    alert('تم التحديث بنجاح');
+                } else {
+                    productData.createdAt = serverTimestamp();
+                    await addDoc(collection(db, 'products'), productData);
+                    alert('تمت الإضافة بنجاح');
+                }
+                resetProductForm();
+                loadProducts();
+            } catch (e) { alert('خطأ: ' + e.message); }
+        };
+
+        window.resetProductForm = () => {
+            editingProductId = null;
+            document.getElementById('product-id').value = "";
+            document.getElementById('p-name').value = "";
+            document.getElementById('p-price').value = "";
+            document.getElementById('p-old-price').value = "";
+            document.getElementById('p-category').value = "";
+            document.getElementById('p-desc').value = "";
+            document.getElementById('variants-container').innerHTML = "";
+            productImages = [];
+            renderImagesPreview();
+            document.getElementById('form-title').innerText = "إضافة/تعديل منتج";
+            document.getElementById('cancel-btn').classList.add('hidden');
+        };
+
+        window.loadProducts = async () => {
+            const list = document.getElementById('products-list');
+            const snapshot = await getDocs(query(collection(db, 'products'), orderBy('updatedAt', 'desc')));
+            allProducts = [];
+            list.innerHTML = "";
+            snapshot.forEach(docSnap => {
+                const p = docSnap.data();
+                p.id = docSnap.id;
+                allProducts.push(p);
+                list.innerHTML += `
+                    <div class="flex items-center gap-4 p-4 bg-black rounded-xl border border-zinc-800 hover:border-gold-text transition">
+                        <img src="${p.images?.[0] || ''}" class="w-16 h-16 object-cover rounded-lg">
+                        <div class="flex-1">
+                            <h4 class="font-bold text-sm">${p.name}</h4>
+                            <p class="text-xs gold-text">${p.price} ج ${p.oldPrice ? `<span class="text-zinc-500 line-through ml-2">${p.oldPrice} ج</span>` : ''}</p>
+                            <p class="text-[10px] text-zinc-500">${p.category || 'بدون قسم'}</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="editProduct('${p.id}')" class="btn-sm btn-warning">تعديل</button>
+                            <button onclick="deleteProduct('${p.id}')" class="btn-sm btn-danger">حذف</button>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('stat-products').innerText = allProducts.length;
+        };
+
+        window.editProduct = (id) => {
+            const p = allProducts.find(x => x.id === id);
+            if (!p) return;
+            editingProductId = id;
+            document.getElementById('p-name').value = p.name;
+            document.getElementById('p-price').value = p.price;
+            document.getElementById('p-old-price').value = p.oldPrice || "";
+            document.getElementById('p-category').value = p.category || "";
+            document.getElementById('p-desc').value = p.description || "";
+            productImages = [...(p.images || [])];
+            renderImagesPreview();
+            
+            const container = document.getElementById('variants-container');
+            container.innerHTML = "";
+            (p.variants || []).forEach(v => {
+                const div = document.createElement('div');
+                div.className = 'flex gap-2';
+                div.innerHTML = `
+                    <input type="text" value="${v.name}" class="v-name flex-1 p-2 bg-black border border-zinc-800 rounded text-[10px] outline-none">
+                    <input type="number" value="${v.price}" class="v-price w-24 p-2 bg-black border border-zinc-800 rounded text-[10px] outline-none">
+                    <button onclick="this.parentElement.remove()" class="text-red-500 px-2">✕</button>
+                `;
+                container.appendChild(div);
+            });
+
+            document.getElementById('form-title').innerText = "تعديل المنتج";
+            document.getElementById('cancel-btn').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        window.deleteProduct = async (id) => {
+            if (confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
+                await deleteDoc(doc(db, 'products', id));
+                loadProducts();
+            }
+        };
+
+        // ==================== ORDERS ====================
+        window.loadOrders = async () => {
+            const list = document.getElementById('orders-list');
+            const filterStatus = document.getElementById('order-filter-status').value;
+            let q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+            if (filterStatus !== 'all') {
+                q = query(collection(db, 'orders'), where('status', '==', filterStatus), orderBy('createdAt', 'desc'));
+            }
+            const snapshot = await getDocs(q);
+            allOrders = [];
+            list.innerHTML = "";
+            snapshot.forEach(docSnap => {
+                const o = docSnap.data();
+                o.id = docSnap.id;
+                allOrders.push(o);
+                const date = o.createdAt?.toDate ? o.createdAt.toDate().toLocaleString('ar-EG') : 'قيد المعالجة';
+                list.innerHTML += `
+                    <div class="p-6 bg-black rounded-2xl border border-zinc-800 hover:border-zinc-700 transition">
+                        <div class="flex flex-wrap justify-between items-start gap-4 mb-6">
+                            <div>
+                                <div class="flex items-center gap-3 mb-1">
+                                    <h4 class="text-lg font-bold gold-text">${o.orderNumber || o.id.substring(0,8)}</h4>
+                                    <span class="status-badge status-${o.status.replace(/\s+/g, '-').toLowerCase()}">${o.status}</span>
+                                </div>
+                                <p class="text-xs text-zinc-500">${date}</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="viewOrderDetails('${o.id}')" class="btn-sm btn-primary">تفاصيل كاملة</button>
+                                <button onclick="showInvoice('${o.id}')" class="btn-sm bg-zinc-800 text-white">الفاتورة</button>
+                                <a href="https://wa.me/${o.customerPhone}?text=${encodeURIComponent('مرحباً ' + o.customerName + '، بخصوص طلبك رقم ' + (o.orderNumber || o.id.substring(0,8)))}" target="_blank" class="btn-sm bg-[#25D366] text-white">واتساب</a>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+                            <div>
+                                <p class="text-zinc-500 mb-1">العميل:</p>
+                                <p class="font-bold">${o.customerName}</p>
+                                <p class="text-xs text-zinc-400">${o.customerPhone}</p>
+                            </div>
+                            <div>
+                                <p class="text-zinc-500 mb-1">العنوان:</p>
+                                <p class="text-xs">${o.customerAddress}</p>
+                            </div>
+                            <div>
+                                <p class="text-zinc-500 mb-1">تغيير الحالة:</p>
+                                <select onchange="updateOrderStatus('${o.id}', this.value)" class="w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-xs outline-none">
+                                    <option value="قيد التنفيذ" ${o.status === 'قيد التنفيذ' ? 'selected' : ''}>قيد التنفيذ</option>
+                                    <option value="تم الشحن" ${o.status === 'تم الشحن' ? 'selected' : ''}>تم الشحن</option>
+                                    <option value="تم التوصيل" ${o.status === 'تم التوصيل' ? 'selected' : ''}>تم التوصيل</option>
+                                    <option value="مكتمل" ${o.status === 'مكتمل' ? 'selected' : ''}>مكتمل</option>
+                                    <option value="ملغي" ${o.status === 'ملغي' ? 'selected' : ''}>ملغي</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('stat-orders').innerText = allOrders.length;
+            const pendingCount = allOrders.filter(o => o.status === 'قيد التنفيذ').length;
+            const badge = document.getElementById('orders-count-badge');
+            if (pendingCount > 0) {
+                badge.innerText = pendingCount;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        };
+
+        window.updateOrderStatus = async (id, newStatus) => {
+            try {
+                await updateDoc(doc(db, 'orders', id), { status: newStatus });
+                // If completed, check for referral reward
+                if (newStatus === 'مكتمل') {
+                    const orderSnap = await getDoc(doc(db, 'orders', id));
+                    const order = orderSnap.data();
+                    if (order.referralBy && !order.rewardProcessed) {
+                        await processReferralReward(order.referralBy, id, order.deviceId);
+                    }
+                }
+                loadOrders();
+            } catch (e) { alert(e.message); }
+        };
+
+        async function processReferralReward(referrerUid, orderId, deviceId) {
+            try {
+                // Protection: Check if this device already got a reward
+                const deviceCheck = await getDocs(query(collection(db, 'referrals'), where('deviceId', '==', deviceId)));
+                if (!deviceCheck.empty) {
+                    console.log('Reward blocked: Device already rewarded');
+                    return;
+                }
+
+                // Get reward settings
+                const settingsSnap = await getDoc(doc(db, 'settings', 'rewards'));
+                const settings = settingsSnap.exists() ? settingsSnap.data() : { amount: 50, type: 'fixed' };
+                
+                // Create a coupon for the referrer
+                const couponCode = 'REF-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+                await addDoc(collection(db, 'coupons'), {
+                    code: couponCode,
+                    discount: settings.amount,
+                    type: settings.type,
+                    limit: 1,
+                    usedCount: 0,
+                    isActive: true,
+                    linkedUser: referrerUid,
+                    expiryDate: new Date(Date.now() + 2592000000), // 30 days
+                    createdAt: serverTimestamp()
+                });
+
+                // Mark order as reward processed
+                await updateDoc(doc(db, 'orders', orderId), { rewardProcessed: true });
+                
+                // Log referral
+                await addDoc(collection(db, 'referrals'), {
+                    referrerUid,
+                    orderId,
+                    deviceId,
+                    couponCode,
+                    amount: settings.amount,
+                    timestamp: serverTimestamp()
+                });
+                
+                console.log('Reward processed for:', referrerUid);
+            } catch (e) { console.error('Reward error:', e); }
+        }
+
+        window.viewOrderDetails = (id) => {
+            const o = allOrders.find(x => x.id === id);
+            if (!o) return;
+            const content = document.getElementById('order-details-content');
+            const date = o.createdAt?.toDate ? o.createdAt.toDate().toLocaleString('ar-EG') : 'N/A';
+            
+            let itemsHtml = (o.items || []).map(item => `
+                <div class="flex justify-between items-center p-3 bg-black rounded-lg border border-zinc-900">
+                    <div>
+                        <p class="font-bold">${item.name}</p>
+                        <p class="text-xs text-zinc-500">${item.price} ج × ${item.qty}</p>
+                    </div>
+                    <p class="gold-text font-bold">${item.price * item.qty} ج</p>
+                </div>
+            `).join('');
+
+            let imageGroupsHtml = (o.imageGroups || []).map(group => `
+                <div class="bg-black p-4 rounded-xl border border-zinc-900">
+                    <p class="font-bold mb-3 text-sm">${group.name || 'مجموعة بدون اسم'}</p>
+                    <div class="grid grid-cols-4 md:grid-cols-6 gap-2">
+                        ${group.images.map(img => `<img src="${img}" class="w-full h-20 object-cover rounded cursor-pointer" onclick="window.open('${img}', '_blank')">`).join('')}
+                    </div>
+                </div>
+            `).join('');
+
+            content.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="space-y-6">
+                        <div class="bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800">
+                            <h4 class="gold-text font-bold mb-4 border-b border-zinc-800 pb-2">بيانات العميل</h4>
+                            <div class="space-y-2 text-sm">
+                                <p><span class="text-zinc-500">الاسم:</span> ${o.customerName}</p>
+                                <p><span class="text-zinc-500">الهاتف:</span> ${o.customerPhone}</p>
+                                <p><span class="text-zinc-500">العنوان:</span> ${o.customerAddress}</p>
+                                <p><span class="text-zinc-500">التاريخ:</span> ${date}</p>
+                                <p><span class="text-zinc-500">رقم التتبع:</span> <span class="font-mono bg-black px-2 py-1 rounded">${o.orderNumber || o.id.substring(0,8)}</span></p>
+                            </div>
+                        </div>
+                        <div class="bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800">
+                            <h4 class="gold-text font-bold mb-4 border-b border-zinc-800 pb-2">ملخص الحساب</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between"><span>الإجمالي الفرعي:</span> <span>${o.subtotal} ج</span></div>
+                                <div class="flex justify-between text-green-500"><span>الخصم:</span> <span>-${o.discountAmount || 0} ج</span></div>
+                                ${o.giftWrap ? `<div class="flex justify-between"><span>تغليف هدايا:</span> <span>+${o.giftPrice || 50} ج</span></div>` : ''}
+                                <div class="flex justify-between text-lg font-bold border-t border-zinc-800 pt-2 mt-2"><span>الإجمالي النهائي:</span> <span class="gold-text">${o.totalPrice} ج</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="space-y-6">
+                        <h4 class="gold-text font-bold">المنتجات المطلوبة</h4>
+                        <div class="space-y-3">${itemsHtml}</div>
+                        ${imageGroupsHtml ? `<h4 class="gold-text font-bold mt-8">الصور المرفقة للطباعة</h4><div class="space-y-4">${imageGroupsHtml}</div>` : ''}
+                    </div>
+                </div>
+            `;
+            document.getElementById('order-details-modal').classList.add('active');
+        };
+
+        window.closeOrderDetailsModal = () => document.getElementById('order-details-modal').classList.remove('active');
+
+        window.showInvoice = (id) => {
+            const o = allOrders.find(x => x.id === id);
+            if (!o) return;
+            const date = o.createdAt?.toDate ? o.createdAt.toDate().toLocaleDateString('ar-EG') : 'N/A';
+            
+            let itemsHtml = (o.items || []).map(item => `
+                <tr>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${item.name}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${item.qty}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${item.price} ج</td>
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${item.price * item.qty} ج</td>
+                </tr>
+            `).join('');
+
+            document.getElementById('invoice-content').innerHTML = `
+                <div id="printable-invoice" style="padding: 40px; font-family: 'Cairo', sans-serif; direction: rtl; background: white; color: black;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #d4af37; padding-bottom: 20px; margin-bottom: 20px;">
+                        <div><h1 style="margin: 0; color: #d4af37;">ZAHRAA STUDIO</h1><p style="margin: 5px 0; color: #666;">فاتورة طلب رقم: ${o.orderNumber || o.id.substring(0,8)}</p></div>
+                        <div style="text-align: left;"><p style="margin: 0;">التاريخ: ${date}</p></div>
+                    </div>
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="border-bottom: 1px solid #eee; padding-bottom: 10px;">بيانات العميل:</h3>
+                        <p style="margin: 5px 0;"><strong>الاسم:</strong> ${o.customerName}</p>
+                        <p style="margin: 5px 0;"><strong>الهاتف:</strong> ${o.customerPhone}</p>
+                        <p style="margin: 5px 0;"><strong>العنوان:</strong> ${o.customerAddress}</p>
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+                        <thead><tr style="background: #f8f9fa;"><th style="border: 1px solid #ddd; padding: 12px; text-align: right;">المنتج</th><th style="border: 1px solid #ddd; padding: 12px; text-align: center;">الكمية</th><th style="border: 1px solid #ddd; padding: 12px; text-align: center;">السعر</th><th style="border: 1px solid #ddd; padding: 12px; text-align: center;">الإجمالي</th></tr></thead>
+                        <tbody>${itemsHtml}</tbody>
+                    </table>
+                    <div style="text-align: left; margin-top: 20px;">
+                        <div style="display: inline-block; width: 250px;">
+                            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee;"><span>الإجمالي الفرعي:</span> <span>${o.subtotal} ج</span></div>
+                            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; color: #10b981;"><span>الخصم:</span> <span>-${o.discountAmount || 0} ج</span></div>
+                            <div style="display: flex; justify-content: space-between; padding: 15px 0; font-size: 1.2em; font-weight: bold; color: #d4af37;"><span>الإجمالي النهائي:</span> <span>${o.totalPrice} ج</span></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('invoice-modal').classList.add('active');
+        };
+
+        window.closeInvoiceModal = () => document.getElementById('invoice-modal').classList.remove('active');
+        window.downloadInvoice = () => {
+            const element = document.getElementById('printable-invoice');
+            html2pdf().from(element).save('Zahraa-Studio-Invoice.pdf');
+        };
+        window.printInvoice = () => {
+            const content = document.getElementById('printable-invoice').innerHTML;
+            const win = window.open('', '', 'height=700,width=900');
+            win.document.write('<html><head><title>Print Invoice</title></head><body>' + content + '</body></html>');
+            win.document.close();
+            win.print();
+        };
+
+        // ==================== COUPONS ====================
+        window.saveCoupon = async () => {
+            const code = document.getElementById('c-code').value.toUpperCase();
+            const discount = document.getElementById('c-discount').value;
+            const type = document.getElementById('c-type').value;
+            const limit = document.getElementById('c-limit').value;
+            const perUserLimit = document.getElementById('c-per-user').value;
+            const startDate = document.getElementById('c-start-date').value;
+            const expiryDate = document.getElementById('c-expiry-date').value;
+
+            if (!code || !discount) return alert('الرجاء ملء البيانات');
+
+            const couponData = {
+                code,
+                discount: parseFloat(discount),
+                type,
+                limit: parseInt(limit) || 0,
+                perUserLimit: parseInt(perUserLimit) || 0,
+                startDate: startDate ? new Date(startDate) : null,
+                expiryDate: expiryDate ? new Date(expiryDate) : null,
+                isActive: true,
+                updatedAt: serverTimestamp()
+            };
+
+            try {
+                if (editingCouponId) {
+                    await updateDoc(doc(db, 'coupons', editingCouponId), couponData);
+                } else {
+                    couponData.usedCount = 0;
+                    couponData.createdAt = serverTimestamp();
+                    await addDoc(collection(db, 'coupons'), couponData);
+                }
+                resetCouponForm();
+                loadCoupons();
+            } catch (e) { alert(e.message); }
+        };
+
+        window.resetCouponForm = () => {
+            editingCouponId = null;
+            document.getElementById('c-code').value = "";
+            document.getElementById('c-discount').value = "";
+            document.getElementById('c-limit').value = "";
+            document.getElementById('c-per-user').value = "";
+            document.getElementById('c-start-date').value = "";
+            document.getElementById('c-expiry-date').value = "";
+            document.getElementById('coupon-form-title').innerText = "إضافة كوبون";
+            document.getElementById('cancel-coupon-btn').classList.add('hidden');
+        };
+
+        window.loadCoupons = async () => {
+            const list = document.getElementById('coupons-list');
+            const snapshot = await getDocs(query(collection(db, 'coupons'), orderBy('createdAt', 'desc')));
+            allCoupons = [];
+            list.innerHTML = "";
+            snapshot.forEach(docSnap => {
+                const c = docSnap.data();
+                c.id = docSnap.id;
+                allCoupons.push(c);
+                const statusClass = c.isActive ? 'bg-green-600' : 'bg-zinc-700';
+                list.innerHTML += `
+                    <div class="flex items-center justify-between p-4 bg-black rounded-xl border border-zinc-800">
+                        <div>
+                            <h4 class="font-bold gold-text">${c.code}</h4>
+                            <p class="text-xs text-zinc-500">${c.type === 'percentage' ? c.discount + '%' : c.discount + ' ج'} | استخدم: ${c.usedCount}/${c.limit || '∞'}</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="toggleCoupon('${c.id}', ${c.isActive})" class="btn-sm ${statusClass}">${c.isActive ? 'مفعل' : 'معطل'}</button>
+                            <button onclick="deleteCoupon('${c.id}')" class="btn-sm btn-danger">حذف</button>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('stat-coupons').innerText = allCoupons.length;
+        };
+
+        window.toggleCoupon = async (id, current) => {
+            await updateDoc(doc(db, 'coupons', id), { isActive: !current });
+            loadCoupons();
+        };
+
+        window.deleteCoupon = async (id) => {
+            if (confirm('حذف الكوبون؟')) {
+                await deleteDoc(doc(db, 'coupons', id));
+                loadCoupons();
+            }
+        };
+
+        // ==================== REFERRALS ====================
+        window.loadReferrals = async () => {
+            const list = document.getElementById('referrals-list');
+            const snapshot = await getDocs(query(collection(db, 'referrals'), orderBy('timestamp', 'desc')));
+            list.innerHTML = "";
+            if (snapshot.empty) {
+                list.innerHTML = '<p class="text-center text-zinc-500 py-10">لا توجد إحالات ناجحة حتى الآن</p>';
+                return;
+            }
+            snapshot.forEach(docSnap => {
+                const r = docSnap.data();
+                const date = r.timestamp?.toDate ? r.timestamp.toDate().toLocaleString('ar-EG') : 'N/A';
+                list.innerHTML += `
+                    <div class="p-4 bg-black rounded-xl border border-zinc-800 flex justify-between items-center">
+                        <div>
+                            <p class="text-xs text-zinc-500 mb-1">${date}</p>
+                            <p class="text-sm">المُحيل: <span class="gold-text font-bold">${r.referrerUid.substring(0,10)}...</span></p>
+                            <p class="text-[10px] text-zinc-400">كود المكافأة: ${r.couponCode}</p>
+                        </div>
+                        <div class="text-left">
+                            <p class="font-bold text-green-500">+${r.amount} ج</p>
+                            <p class="text-[10px] text-zinc-500">طلب رقم: ${r.orderId.substring(0,8)}</p>
+                        </div>
+                    </div>
+                `;
+            });
+        };
+
+        window.saveRewardSettings = async () => {
+            const amount = document.getElementById('reward-amount').value;
+            const type = document.getElementById('reward-type').value;
+            await updateDoc(doc(db, 'settings', 'rewards'), { amount: parseFloat(amount), type });
+            alert('تم حفظ إعدادات المكافآت');
+        };
+
+        // ==================== SETTINGS ====================
+        window.saveGeneralSettings = async () => {
+            const whatsapp = document.getElementById('setting-whatsapp').value;
+            const giftPrice = document.getElementById('setting-gift-price').value;
+            const facebook = document.getElementById('setting-facebook').value;
+            const welcomeMsg = document.getElementById('setting-welcome-msg').value;
+            const storeStatus = document.getElementById('setting-store-status').checked;
+
+            await updateDoc(doc(db, 'settings', 'general'), {
+                whatsapp,
+                giftPrice: parseFloat(giftPrice),
+                facebook,
+                welcomeMsg,
+                isOpen: storeStatus,
+                updatedAt: serverTimestamp()
+            });
+            alert('تم حفظ الإعدادات العامة بنجاح');
+        };
+
+        async function loadSettings() {
+            const rewardSnap = await getDoc(doc(db, 'settings', 'rewards'));
+            if (rewardSnap.exists()) {
+                const r = rewardSnap.data();
+                document.getElementById('reward-amount').value = r.amount;
+                document.getElementById('reward-type').value = r.type;
+            }
+            const generalSnap = await getDoc(doc(db, 'settings', 'general'));
+            if (generalSnap.exists()) {
+                const g = generalSnap.data();
+                document.getElementById('setting-whatsapp').value = g.whatsapp || "";
+                document.getElementById('setting-gift-price').value = g.giftPrice || 50;
+                document.getElementById('setting-facebook').value = g.facebook || "";
+                document.getElementById('setting-welcome-msg').value = g.welcomeMsg || "";
+                document.getElementById('setting-store-status').checked = g.isOpen ?? true;
+            }
+        }
+
+        // ==================== VISITORS ====================
+        async function loadVisitors() {
+            const snap = await getDocs(collection(db, 'visitors'));
+            document.getElementById('stat-visitors').innerText = snap.size;
+            
+            // Online visitors (active in last 5 mins)
+            const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000);
+            const onlineSnap = await getDocs(query(collection(db, 'visitors'), where('lastActive', '>=', fiveMinsAgo)));
+            const list = document.getElementById('online-visitors-list');
+            list.innerHTML = "";
+            onlineSnap.forEach(v => {
+                list.innerHTML += `
+                    <div class="bg-green-500/10 border border-green-500/30 p-2 rounded text-center">
+                        <div class="w-2 h-2 bg-green-500 rounded-full mx-auto mb-1 animate-pulse"></div>
+                        <p class="text-[10px] text-green-500 font-bold">نشط الآن</p>
+                    </div>
+                `;
+            });
+        }
+
+        // ==================== INIT ====================
+        window.loadAll = async () => {
+            await loadProducts();
+            await loadOrders();
+            await loadCoupons();
+            await loadReferrals();
+            await loadSettings();
+            await loadVisitors();
+        };
+
+        // Expose functions to window
+        window.editProduct = editProduct;
+        window.deleteProduct = deleteProduct;
+        window.updateOrderStatus = updateOrderStatus;
+        window.viewOrderDetails = viewOrderDetails;
+        window.showInvoice = showInvoice;
+        window.toggleCoupon = toggleCoupon;
+        window.deleteCoupon = deleteCoupon;
+        window.saveRewardSettings = saveRewardSettings;
+        window.saveGeneralSettings = saveGeneralSettings;
+        window.loadAll = loadAll;
+
+    </script>
+</body>
+</html>
