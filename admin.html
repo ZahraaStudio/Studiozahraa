@@ -1834,57 +1834,99 @@ window.deletePost = async (id) => {
 
 
         window.searchUserPoints = async () => {
-            const uid = document.getElementById('pts-search-user').value.trim();
-            if (!uid) return alert('يرجى إدخال UID المستخدم أولاً');
-            
-            const list = document.getElementById('pts-history-list');
-            list.innerHTML = '<p class="text-zinc-500 text-sm">جاري البحث...</p>';
-            
-            try {
-                // 1. جلب الرصيد الحالي بنظام getDoc المودرن
-                const balSnap = await getDoc(doc(db, 'points', uid));
-                const balance = balSnap.exists() ? (balSnap.data().balance || 0) : 0;
+    const uid = document.getElementById('pts-search-user').value.trim();
+    if (!uid) return alert('يرجى إدخال UID المستخدم');
+    
+    const list = document.getElementById('pts-history-list');
+    list.innerHTML = '<p class="text-zinc-500 text-sm">جاري البحث...</p>';
+    
+    try {
+        // جلب الوثيقة
+        const balSnap = await db.collection('points').doc(uid).get();
+        
+        // تأكد من قراءة الحقل الصحيح (balance)
+        const data = balSnap.exists ? balSnap.data() : {};
+        const balance = data.balance || 0;
 
-                // 2. جلب تاريخ العمليات بنظام Query المودرن
-                const q = query(
-                    collection(db, 'points_history'), 
-                    where('userId', '==', uid), 
-                    orderBy('createdAt', 'desc'), 
-                    limit(20)
-                );
-                const histSnap = await getDocs(q);
+        // جلب السجل
+        const q = query(collection(db, 'points_history'), where('userId', '==', uid), orderBy('createdAt', 'desc'), limit(20));
+        const histSnap = await getDocs(q);
 
-                let html = `
-                    <div class="mb-4 p-4 bg-zinc-950 rounded-2xl border border-gold-text/30">
-                        <p class="text-zinc-400 text-xs mb-1">الرصيد الحالي للمستخدم:</p>
-                        <p class="text-2xl font-bold gold-text">${balance} <span class="text-sm">نقطة</span></p>
-                    </div>
-                    <h4 class="text-xs font-bold text-zinc-500 uppercase mb-3">آخر 20 عملية:</h4>
-                `;
+        let html = `
+            <div class="mb-4 p-4 bg-zinc-950 rounded-2xl border border-gold-text/30">
+                <p class="text-zinc-400 text-xs mb-1">الرصيد الحالي:</p>
+                <p class="text-3xl font-bold gold-text">${balance} <span class="text-sm">نقطة</span></p>
+                
+                ${balance >= 1000 ? `
+                    <button onclick="redeemPointsToCoupon('${uid}', ${balance})" class="mt-3 w-full bg-green-600 text-white py-2 rounded-xl font-bold text-xs hover:bg-green-500 transition-all">
+                        🎁 تحويل 1000 نقطة لكوبون خصم
+                    </button>
+                ` : balance > 0 ? `<p class="text-[10px] text-zinc-500 mt-2">يحتاج المستخدم إلى 1000 نقطة لتوليد كوبون</p>` : ''}
+            </div>
+        `;
 
-                if (histSnap.empty) {
-                    html += '<p class="text-zinc-500 text-xs text-center py-4">لا يوجد سجل عمليات لهذا المستخدم</p>';
-                } else {
-                    histSnap.forEach(d => {
-                        const h = d.data();
-                        const isEarn = h.type === 'earn';
-                        html += `
-                            <div class="flex justify-between items-center py-3 border-b border-zinc-800">
-                                <div>
-                                    <p class="font-bold text-xs ${isEarn ? 'text-green-400' : 'text-red-400'}">${isEarn ? '⬆️ كسب نقاط' : '⬇️ صرف نقاط'}</p>
-                                    <p class="text-[10px] text-zinc-500">الطلب: ${h.orderNumber || '—'}</p>
-                                    <p class="text-[9px] text-zinc-600">${h.createdAt?.toDate?.()?.toLocaleString('ar-EG') || ''}</p>
-                                </div>
-                                <span class="text-sm font-bold">${isEarn ? '+' : '-'}${h.points}</span>
-                            </div>`;
-                    });
-                }
-                list.innerHTML = html;
-            } catch (e) { 
-                list.innerHTML = `<p class="text-red-400 text-xs">خطأ في البحث: ${e.message}</p>`;
-                console.error(e);
-            }
-        };
+        if (histSnap.empty) {
+            html += '<p class="text-zinc-500 text-center py-4 text-xs">لا يوجد سجل عمليات</p>';
+        } else {
+            histSnap.forEach(d => {
+                const h = d.data();
+                html += `
+                    <div class="flex justify-between items-center py-2 border-b border-zinc-800 text-[10px]">
+                        <div>
+                            <p class="font-bold ${h.type === 'earn' ? 'text-green-400' : 'text-red-400'}">${h.type === 'earn' ? '⬆️ كسب' : '⬇️ صرف'}</p>
+                            <p class="text-zinc-500">الطلب: ${h.orderNumber || '—'}</p>
+                        </div>
+                        <span class="font-bold text-sm">${isEarn ? '+' : '-'}${h.points}</span>
+                    </div>`;
+            });
+        }
+        list.innerHTML = html;
+    } catch (e) { 
+        list.innerHTML = `<p class="text-red-400 text-xs">خطأ: ${e.message}</p>`;
+    }
+};
+        window.redeemPointsToCoupon = async (uid, currentBalance) => {
+    if (currentBalance < 1000) return alert("الرصيد غير كافٍ");
+    if (!confirm("هل تريد خصم 1000 نقطة من المستخدم وتوليد كوبون خصم له؟")) return;
+
+    try {
+        const couponCode = 'GIFT-PTS-' + Math.random().toString(36).substring(2, 7).toUpperCase();
+        const discountValue = 50; // القيمة التي سيعطيها الكوبون (مثلاً 50 جنيه)
+
+        // 1. إنشاء الكوبون في جدول الكوبونات
+        await db.collection('coupons').add({
+            code: couponCode,
+            type: 'fixed',
+            discount: discountValue,
+            isActive: true,
+            limit: 1,
+            usedCount: 0,
+            linkedUser: uid, // الكوبون يعمل لهذا المستخدم فقط
+            note: 'كوبون مقابل استبدال 1000 نقطة',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // 2. خصم النقاط من رصيد المستخدم
+        await db.collection('points').doc(uid).update({
+            balance: currentBalance - 1000,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // 3. تسجيل العملية في السجل
+        await db.collection('points_history').add({
+            userId: uid,
+            points: 1000,
+            type: 'redeem',
+            note: 'استبدال نقاط بكوبون: ' + couponCode,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        alert(`✅ تم التحويل بنجاح!\nكود الكوبون: ${couponCode}\nتم خصم 1000 نقطة.`);
+        window.searchUserPoints(); // تحديث العرض
+    } catch (e) {
+        alert("خطأ أثناء التحويل: " + e.message);
+    }
+};
         // Load points settings on tab open
         document.getElementById('btn-points-tab').addEventListener('click', async () => {
             try {
