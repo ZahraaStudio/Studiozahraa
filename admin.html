@@ -1932,7 +1932,12 @@ window.deletePost = async (id) => {
                 showNotif('تم الحذف ✓', 'success');
             } catch (e) { showNotif('خطأ: ' + e.message, 'error'); }
         };
+        document.getElementById('btn-banners-tab').onclick = () => window.loadAdminBanners();
+        document.getElementById('btn-posts-tab').onclick = () => window.loadAdminPosts();
+        document.getElementById('btn-community-tab').onclick = () => window.loadAdminCommunity();
+        document.getElementById('btn-reports-tab').onclick = () => window.loadAdminReports();
 
+        
     </script>
 </body>
 </html>
