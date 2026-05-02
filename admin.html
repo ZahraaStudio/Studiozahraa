@@ -633,9 +633,13 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
         const db = getFirestore(app);
+        const auth = getAuth(app);
 
+        // السطرين دول هما اللي هيخلوا الزراير "تستجيب" وتشوف الدوال
+        window.auth = auth;
+        window.db = db;
+        
         const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload';
         const CLOUDINARY_UPLOAD_PRESET = 'zahraa_upload';
 
