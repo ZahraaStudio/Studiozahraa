@@ -1802,11 +1802,10 @@ window.deletePost = async (id) => {
         };
 
         window.dismissReport = async (id) => {
-            try {
-                // تعديل الطريقة للنظام الجديد
-                await deleteDoc(doc(db, 'reports', id));
-                loadAdminReports();
-            } catch (e) { alert('خطأ: ' + e.message); }
+            try { 
+                await deleteDoc(doc(db, 'reports', id)); 
+                loadAdminReports(); 
+            } catch (e) { console.error(e); }
         };
         window.viewReportedContent = async (col, docId) => {
             try {
