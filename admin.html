@@ -651,21 +651,24 @@
         let productImages = [];
 
         // ==================== AUTH ====================
-        const loginBtn = document.getElementById('login-btn');
-        if (loginBtn) {
-            loginBtn.addEventListener('click', async () => {
-                const email = document.getElementById('email').value;
-                const password = document.getElementById('password').value;
-                const errorEl = document.getElementById('login-error');
-                try {
-                    await signInWithEmailAndPassword(auth, email, password);
-                } catch (e) {
-                    errorEl.innerText = "خطأ في تسجيل الدخول: " + e.message;
-                    errorEl.classList.remove('hidden');
-                }
-            });
-        }
+        
+        window.handleLogin = async () => {
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const errorEl = document.getElementById('login-error');
+            
+            if (!email || !password) return alert("اكتب البيانات");
 
+            try {
+                // الطريقة الصحيحة للنظام الجديد
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (e) {
+                errorEl.innerText = "بيانات الدخول غلط";
+                errorEl.classList.remove('hidden');
+            }
+        };
+        // نربط الدالة بالزرار فوراً
+        document.getElementById('login-btn').onclick = window.handleLogin;
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 document.getElementById('auth-section').classList.add('hidden');
