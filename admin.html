@@ -33,9 +33,21 @@
         .btn-danger { background: #ef4444; color: #fff; }
         .btn-warning { background: #f59e0b; color: #000; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        /* Custom Notification Styles */
+        #custom-notif { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; display: none; }
+        .notif-content { background: #1a1a1a; border: 1px solid #d4af37; padding: 12px 24px; border-radius: 50px; box-shadow: 0 4px 20px rgba(212, 175, 55, 0.3); display: flex; align-items: center; gap: 10px; }
     </style>
 </head>
 <body class="p-2 md:p-6">
+    <!-- Custom Notification -->
+    <div id="custom-notif">
+        <div class="notif-content">
+            <span id="notif-icon">✨</span>
+            <span id="notif-text">تمت العملية بنجاح</span>
+        </div>
+    </div>
+
     <!-- Auth Section -->
     <div id="auth-section" class="max-w-md mx-auto mt-20 p-6 bg-zinc-900 rounded-xl gold-border shadow-2xl">
         <h2 class="text-2xl font-bold mb-6 text-center gradient-text">تسجيل دخول الإدارة</h2>
@@ -429,7 +441,7 @@
         <div id="points-tab" class="tab-content">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div class="bg-zinc-900 p-6 rounded-2xl gold-border">
-                    <h3 class="text-xl font-bold mb-4">⭐ إعدادات نظام النقاط</h3>
+                    <h3 class="text-xl font-bold mb-4">⭐ إعدادات نظام النقاط والكوبونات التلقائية</h3>
                     <div class="space-y-4">
                         <label class="flex items-center gap-3 cursor-pointer">
                             <input id="pts-enabled" type="checkbox" class="w-5 h-5">
@@ -438,7 +450,26 @@
                         <div>
                             <label class="text-sm text-zinc-400 mb-1 block">نقطة لكل جنيه مدفوع</label>
                             <input id="pts-ratio" type="number" min="0.1" step="0.1" value="1" class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700">
-                            <p class="text-xs text-zinc-500 mt-1">مثلاً: 1 = نقطة لكل جنيه، 0.5 = نصف نقطة لكل جنيه</p>
+                        </div>
+                        <div class="border-t border-zinc-800 pt-4">
+                            <h4 class="gold-text font-bold mb-3">إعدادات الكوبون التلقائي</h4>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-xs text-zinc-400 mb-1 block">النقاط المطلوبة:</label>
+                                    <input id="pts-threshold" type="number" placeholder="مثلاً 1000" class="w-full bg-zinc-800 text-white p-2 rounded border border-zinc-700">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-zinc-400 mb-1 block">قيمة الخصم:</label>
+                                    <input id="pts-coupon-value" type="number" placeholder="مثلاً 50" class="w-full bg-zinc-800 text-white p-2 rounded border border-zinc-700">
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <label class="text-xs text-zinc-400 mb-1 block">نوع الخصم:</label>
+                                <select id="pts-coupon-type" class="w-full bg-zinc-800 text-white p-2 rounded border border-zinc-700">
+                                    <option value="fixed">مبلغ ثابت</option>
+                                    <option value="percentage">نسبة %</option>
+                                </select>
+                            </div>
                         </div>
                         <button onclick="savePointsSettings()" class="w-full gold-bg text-black py-3 rounded-xl font-bold">💾 حفظ الإعدادات</button>
                     </div>
@@ -999,12 +1030,56 @@
 
         window.togglePaid = async (id, currentlyPaid) => {
             try {
-                await updateDoc(doc(db, 'orders', id), { paymentStatus: currentlyPaid ? 'غير مدفوع' : 'مدفوع' });
+                const newStatus = currentlyPaid ? 'غير مدفوع' : 'مدفوع';
+                await updateDoc(doc(db, 'orders', id), { paymentStatus: newStatus });
                 const o = allOrders.find(x => x.id === id);
-                if (o) o.paymentStatus = currentlyPaid ? 'غير مدفوع' : 'مدفوع';
+                if (o) o.paymentStatus = newStatus;
+                
+                if (newStatus === 'مدفوع' && o && o.userId && !o.pointsProcessed) {
+                    await awardPointsForOrder(o.userId, o.totalPrice, id, o.orderNumber);
+                }
+                
+                showNotif('تم تحديث حالة الدفع ✓');
                 renderOrders();
             } catch (e) { alert(e.message); }
         };
+
+        async function awardPointsForOrder(userId, amount, orderId, orderNumber) {
+            try {
+                const ptsSnap = await getDoc(doc(db, 'settings', 'points'));
+                if (!ptsSnap.exists() || !ptsSnap.data().enabled) return;
+                const ratio = ptsSnap.data().ratio || 1;
+                const pointsToEarn = Math.floor(amount * ratio);
+                if (pointsToEarn <= 0) return;
+                const userPtsRef = doc(db, 'points', userId);
+                await setDoc(userPtsRef, { balance: increment(pointsToEarn), updatedAt: serverTimestamp() }, { merge: true });
+                await addDoc(collection(db, 'points_history'), {
+                    userId, points: pointsToEarn, type: 'earn', orderId,
+                    orderNumber: orderNumber || orderId.substring(0,8), createdAt: serverTimestamp()
+                });
+                await updateDoc(doc(db, 'orders', orderId), { pointsProcessed: true });
+                const updatedBal = await getDoc(userPtsRef);
+                const currentBalance = updatedBal.data().balance || 0;
+                const threshold = ptsSnap.data().threshold || 1000;
+                if (currentBalance >= threshold) { await generateAutoCoupon(userId, currentBalance, ptsSnap.data()); }
+            } catch (e) { console.error('Points error:', e); }
+        }
+
+        async function generateAutoCoupon(userId, currentBalance, ptsSettings) {
+            const threshold = ptsSettings.threshold || 1000;
+            const couponVal = ptsSettings.couponValue || 50;
+            const couponType = ptsSettings.couponType || 'fixed';
+            await updateDoc(doc(db, 'points', userId), { balance: increment(-threshold) });
+            const code = 'GIFT-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+            await addDoc(collection(db, 'coupons'), {
+                code, discount: couponVal, type: couponType, limit: 1, usedCount: 0,
+                isActive: true, linkedUser: userId, expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+                createdAt: serverTimestamp()
+            });
+            await addDoc(collection(db, 'points_history'), {
+                userId, points: threshold, type: 'redeem', note: 'كوبون تلقائي: ' + code, createdAt: serverTimestamp()
+            });
+        }
 
         async function fetchAsBlob(url) {
             const res = await fetch(url);
@@ -1534,6 +1609,7 @@
             list.innerHTML = filtered.map(c => {
                 const orders = allOrders.filter(o => o.userId === c.id);
                 const totalSpent = orders.reduce((a, b) => a + (b.totalPrice || 0), 0);
+                const isBlocked = !!c.isBlocked;
                 return `
                     <div class="p-4 bg-black rounded-xl border border-zinc-800">
                         <div class="flex justify-between items-start gap-3 flex-wrap">
@@ -1542,10 +1618,14 @@
                                 <p class="text-xs text-zinc-500">${c.email || ''}</p>
                                 <p class="text-[10px] text-zinc-500 font-mono">كود: ${c.userCode || c.id.substring(0,10)}</p>
                                 ${c.earnedReferralCoupon ? `<p class="text-[10px] text-green-400">✓ كوبون إحالة: ${c.earnedReferralCoupon}</p>` : ''}
+                                ${isBlocked ? '<span class="text-[10px] bg-red-600 px-2 py-0.5 rounded mt-1 inline-block">محظور</span>' : ''}
                             </div>
                             <div class="text-left">
                                 <p class="text-xs text-zinc-500">عدد الطلبات: <span class="text-white font-bold">${orders.length}</span></p>
                                 <p class="text-xs text-zinc-500">إجمالي الإنفاق: <span class="gold-text font-bold">${totalSpent} ج</span></p>
+                                <button onclick="toggleBlockUser('${c.id}', ${isBlocked})" class="mt-2 text-[10px] px-3 py-1 rounded ${isBlocked ? 'bg-green-600' : 'bg-red-600'} text-white">
+                                    ${isBlocked ? 'إلغاء الحظر' : 'حظر العميل'}
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1575,6 +1655,17 @@
         }
 
         // ==================== INIT ====================
+        // ==================== CUSTOM NOTIFICATION ====================
+        window.showNotif = (text, type = 'success') => {
+            const notif = document.getElementById('custom-notif');
+            const notifText = document.getElementById('notif-text');
+            const notifIcon = document.getElementById('notif-icon');
+            notifText.innerText = text;
+            notifIcon.innerText = type === 'success' ? '✨' : '⚠️';
+            notif.style.display = 'block';
+            setTimeout(() => { notif.style.display = 'none'; }, 3000);
+        };
+
         window.loadAll = async () => {
             await loadSettings();
             await loadCategories();
@@ -1783,12 +1874,19 @@
             if (!confirm('حذف نهائي؟')) return;
             try { await deleteDoc(doc(db, 'community_posts', id)); loadAdminCommunity(); } catch (e) {}
         };
-        window.blockUser = async (uid, name) => {
-            if (!confirm(`حظر المستخدم ${name || uid}؟`)) return;
+        window.toggleBlockUser = async (uid, currentlyBlocked) => {
+            if (!confirm(currentlyBlocked ? 'إلغاء حظر هذا العميل؟' : 'هل أنت متأكد من حظر هذا العميل؟ لن يتمكن من الطلب أو تسجيل الدخول.')) return;
             try {
-                await setDoc(doc(db, 'blocked_users', uid), { blockedAt: serverTimestamp(), name: name || '' });
-                alert('✅ تم الحظر');
-            } catch (e) { alert('خطأ: ' + e.message); }
+                await updateDoc(doc(db, 'users', uid), { isBlocked: !currentlyBlocked });
+                if (!currentlyBlocked) { await setDoc(doc(db, 'blocked_users', uid), { blockedAt: serverTimestamp() }); }
+                else { await deleteDoc(doc(db, 'blocked_users', uid)); }
+                showNotif(currentlyBlocked ? 'تم إلغاء الحظر ✓' : 'تم الحظر بنجاح ✓');
+                loadCustomers();
+            } catch (e) { alert(e.message); }
+        };
+
+        window.blockUser = async (uid, name) => {
+            await window.toggleBlockUser(uid, false);
         };
 
         // ============ REPORTS ADMIN ============
@@ -1837,11 +1935,17 @@
 
         // ============ POINTS ADMIN ============
         window.savePointsSettings = async () => {
-            const enabled = document.getElementById('pts-enabled').checked;
-            const ratio = parseFloat(document.getElementById('pts-ratio').value) || 1;
+            const data = {
+                enabled: document.getElementById('pts-enabled').checked,
+                ratio: parseFloat(document.getElementById('pts-ratio').value) || 1,
+                threshold: parseInt(document.getElementById('pts-threshold').value) || 1000,
+                couponValue: parseFloat(document.getElementById('pts-coupon-value').value) || 50,
+                couponType: document.getElementById('pts-coupon-type').value,
+                updatedAt: serverTimestamp()
+            };
             try {
-                await setDoc(doc(db, 'settings', 'points'), { enabled, ratio, updatedAt: serverTimestamp() });
-                alert('✅ تم حفظ إعدادات النقاط');
+                await setDoc(doc(db, 'settings', 'points'), data);
+                showNotif('تم حفظ إعدادات النقاط ✓');
             } catch (e) { alert('خطأ: ' + e.message); }
         };
 
@@ -1878,8 +1982,12 @@
             try {
                 const snap = await getDoc(doc(db, 'settings', 'points'));
                 if (snap.exists()) {
-                    document.getElementById('pts-enabled').checked = !!snap.data().enabled;
-                    document.getElementById('pts-ratio').value = snap.data().ratio || 1;
+                    const d = snap.data();
+                    document.getElementById('pts-enabled').checked = !!d.enabled;
+                    document.getElementById('pts-ratio').value = d.ratio || 1;
+                    document.getElementById('pts-threshold').value = d.threshold || 1000;
+                    document.getElementById('pts-coupon-value').value = d.couponValue || 50;
+                    document.getElementById('pts-coupon-type').value = d.couponType || 'fixed';
                 }
             } catch (e) {}
         });
