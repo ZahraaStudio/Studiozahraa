@@ -820,7 +820,7 @@
             list.innerHTML = "جاري تحميل المنتجات...";
             try {
                 // تعديل: استخدام نظام Compat للوصول للبيانات
-                const snapshot = await db.collection('products').orderBy('updatedAt', 'desc').get();
+                const snapshot = const snapshot = await db.collection('products').orderBy('updatedAt', 'desc').get();
                 allProducts = [];
                 list.innerHTML = "";
 
