@@ -1761,43 +1761,18 @@ window.deleteBanner = async (id) => {
             loadAdminCommunity();
         };
 
-        window.loadAdminCommunity = async () => {
-            const list = document.getElementById('community-list');
-            list.innerHTML = '<p class="text-zinc-500 text-sm">جاري التحميل...</p>';
-            try {
-                let q = db.collection('community_posts').orderBy('createdAt', 'desc').limit(30);
-                const snap = await q.get();
-                if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm">لا توجد مشاركات</p>'; return; }
-                list.innerHTML = '';
-                snap.forEach(d => {
-                    const cp = d.data();
-                    if (communityFilter === 'visible' && cp.isHidden) return;
-                    if (communityFilter === 'hidden' && !cp.isHidden) return;
-                    if (communityFilter === 'reported' && !(cp.reportCount > 0)) return;
-                    list.innerHTML += `
-                        <div class="bg-zinc-800 p-4 rounded-xl ${cp.reportCount > 0 ? 'border border-red-600/40' : ''}">
-                            <div class="flex justify-between items-start gap-2">
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex items-center gap-2 mb-1">
-                                        <span class="font-bold text-sm">${cp.userName || 'مجهول'}</span>
-                                        ${cp.isHidden ? '<span class="text-[10px] bg-red-800 text-white px-2 py-0.5 rounded">مخفي</span>' : '<span class="text-[10px] bg-green-800 text-white px-2 py-0.5 rounded">ظاهر</span>'}
-                                        ${cp.reportCount > 0 ? `<span class="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded">🚨 ${cp.reportCount} بلاغ</span>` : ''}
-                                    </div>
-                                    ${cp.text ? `<p class="text-sm text-zinc-300 mb-1 line-clamp-2">${cp.text}</p>` : ''}
-                                    ${cp.mediaUrls?.length ? `<img src="${cp.mediaUrls[0]}" class="w-16 h-12 rounded-lg object-cover mt-1">` : ''}
-                                    ${cp.productName ? `<p class="text-[10px] text-zinc-500">المنتج: ${cp.productName}</p>` : ''}
-                                </div>
-                            </div>
-                            <div class="flex gap-2 mt-3">
-                                <button onclick="toggleCommunityPost('${d.id}', ${!cp.isHidden})" class="text-xs px-3 py-1 rounded-lg ${cp.isHidden ? 'bg-green-800 text-white' : 'bg-zinc-700 text-zinc-300'}">${cp.isHidden ? 'إظهار' : 'إخفاء'}</button>
-                                <button onclick="deleteCommunityPostAdmin('${d.id}')" class="text-xs px-3 py-1 rounded-lg bg-red-800 text-white">حذف نهائي</button>
-                                ${cp.userId ? `<button onclick="blockUser('${cp.userId}', '${cp.userName || ''}')" class="text-xs px-3 py-1 rounded-lg bg-orange-800 text-white">حظر</button>` : ''}
-                            </div>
-                        </div>`;
-                });
-                if (!list.innerHTML.trim()) list.innerHTML = '<p class="text-zinc-500 text-sm">لا نتائج بهذا الفلتر</p>';
-            } catch (e) { list.innerHTML = `<p class="text-red-400 text-sm">خطأ: ${e.message}</p>`; }
-        };
+        ‏window.loadAdminCommunity = async () => {
+‏    const list = document.getElementById('community-list');
+‏    try {
+‏        const q = query(collection(db, 'community_posts'), orderBy('createdAt', 'desc'));
+‏        const snap = await getDocs(q);
+‏        list.innerHTML = '';
+‏        snap.forEach(d => {
+‏            const p = d.data();
+‏            list.innerHTML += `<div class="bg-zinc-800 p-3 rounded-xl mb-2 text-xs">${p.userName}: ${p.text} <button onclick="deleteDoc(doc(db,'community_posts','${d.id}')).then(loadAdminCommunity)" class="text-red-500">حذف</button></div>`;
+‏        });
+‏    } catch (e) { console.error(e); }
+‏};
 
         window.toggleCommunityPost = async (id, hide) => {
             try { await db.collection('community_posts').doc(id).update({ isHidden: hide }); loadAdminCommunity(); } catch (e) {}
