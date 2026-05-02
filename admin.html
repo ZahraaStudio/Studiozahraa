@@ -1599,50 +1599,31 @@
         window.loadAll = loadAll;
 
         // ============ BANNERS ADMIN ============
-     
         window.loadAdminBanners = async () => {
-    const list = document.getElementById('banners-list');
-    list.innerHTML = '<p class="text-zinc-500 text-sm">جاري التحميل...</p>';
-    try {
-        const q = query(collection(db, 'banners'), orderBy('order', 'asc'));
-        const snap = await getDocs(q);
-        if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm">لا توجد بانرات</p>'; return; }
-        list.innerHTML = '';
-        snap.forEach(d => {
-            const b = d.data();
-            list.innerHTML += `
-                <div class="flex items-center gap-3 bg-zinc-800 p-3 rounded-xl mb-2">
-                    <img src="${b.imageUrl}" class="w-16 h-10 object-cover rounded-lg">
-                    <div class="flex-1">
-                        <p class="font-bold text-sm">${b.title || 'بدون عنوان'}</p>
-                        <p class="text-xs text-zinc-500">${b.isActive ? '✅ نشط' : '⛔ متوقف'}</p>
-                    </div>
-                    <button onclick="deleteBanner('${d.id}')" class="text-xs px-2 py-1 rounded bg-red-800 text-white">حذف</button>
-                </div>`;
-        });
-    } catch (e) { console.error(e); }
-};
+            const list = document.getElementById('banners-list');
+            list.innerHTML = '<p class="text-zinc-500 text-sm">جاري التحميل...</p>';
+            try {
+                const snap = await db.collection('banners').orderBy('order', 'asc').get();
+                if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm">لا توجد بانرات</p>'; return; }
+                list.innerHTML = '';
+                snap.forEach(d => {
+                    const b = d.data();
+                    list.innerHTML += `
+                        <div class="flex items-center gap-3 bg-zinc-800 p-3 rounded-xl">
+                            ${b.imageUrl ? `<img src="${b.imageUrl}" class="w-16 h-10 object-cover rounded-lg flex-shrink-0">` : '<div class="w-16 h-10 bg-zinc-700 rounded-lg flex-shrink-0"></div>'}
+                            <div class="flex-1 min-w-0">
+                                <p class="font-bold text-sm truncate">${b.title || '(بدون عنوان)'}</p>
+                                <p class="text-xs text-zinc-500">${b.isActive ? '✅ نشط' : '⛔ غير نشط'} • ترتيب: ${b.order || 0}</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="toggleBanner('${d.id}', ${!b.isActive})" class="text-xs px-2 py-1 rounded-lg ${b.isActive ? 'bg-zinc-700 text-zinc-300' : 'bg-green-700 text-white'}">${b.isActive ? 'إيقاف' : 'تفعيل'}</button>
+                                <button onclick="deleteBanner('${d.id}')" class="text-xs px-2 py-1 rounded-lg bg-red-800 text-white">حذف</button>
+                            </div>
+                        </div>`;
+                });
+            } catch (e) { list.innerHTML = `<p class="text-red-400 text-sm">خطأ: ${e.message}</p>`; }
+        };
 
-// حفظ بانر جديد
-window.saveBanner = async () => {
-    const title = document.getElementById('banner-title').value;
-    const imageUrl = document.getElementById('banner-image').value;
-    const order = parseInt(document.getElementById('banner-order').value) || 0;
-    if (!imageUrl) return alert('أدخل رابط الصورة');
-    try {
-        await addDoc(collection(db, 'banners'), {
-            title, imageUrl, order, 
-            isActive: document.getElementById('banner-active').checked,
-            createdAt: serverTimestamp()
-        });
-        alert('تم الحفظ بنجاح');
-        loadAdminBanners();
-    } catch (e) { alert('خطأ: ' + e.message); }
-};
-
-window.deleteBanner = async (id) => {
-    if(confirm('حذف؟')) { await deleteDoc(doc(db, 'banners', id)); loadAdminBanners(); }
-};
         window.saveBanner = async () => {
             const title = document.getElementById('banner-title').value.trim();
             const subtitle = document.getElementById('banner-subtitle').value.trim();
@@ -1669,7 +1650,7 @@ window.deleteBanner = async (id) => {
         };
 
         // ============ POSTS ADMIN ============
-          window.loadAdminPosts = async () => {
+        window.loadAdminPosts = async () => {
             const list = document.getElementById('posts-list');
             list.innerHTML = '<p class="text-zinc-500 text-sm">جاري التحميل...</p>';
             try {
@@ -1758,7 +1739,7 @@ window.deleteBanner = async (id) => {
             loadAdminCommunity();
         };
 
-        ‏window.loadAdminCommunity = async () => {
+        window.loadAdminCommunity = async () => {
             const list = document.getElementById('community-list');
             list.innerHTML = '<p class="text-zinc-500 text-sm">جاري التحميل...</p>';
             try {
@@ -1810,6 +1791,7 @@ window.deleteBanner = async (id) => {
                 alert('✅ تم الحظر');
             } catch (e) { alert('خطأ: ' + e.message); }
         };
+
         // ============ REPORTS ADMIN ============
         window.loadAdminReports = async () => {
             const list = document.getElementById('reports-list');
