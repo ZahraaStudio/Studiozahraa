@@ -664,10 +664,12 @@
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
+                currentUser = user; // السطر ده كان ناقص وهو اللي بيعرف البرنامج إنك الأدمن
                 document.getElementById('auth-section').classList.add('hidden');
                 document.getElementById('admin-content').classList.remove('hidden');
                 loadAll();
             } else {
+                currentUser = null;
                 document.getElementById('auth-section').classList.remove('hidden');
                 document.getElementById('admin-content').classList.add('hidden');
             }
