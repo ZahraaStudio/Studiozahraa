@@ -1763,36 +1763,31 @@ window.deletePost = async (id) => {
             } catch (e) { alert('خطأ: ' + e.message); }
         };
 
-      window.loadAdminReports = async () => {
+    window.loadAdminReports = async () => {
             const list = document.getElementById('reports-list');
             list.innerHTML = '<p class="text-zinc-500 text-sm">جاري التحميل...</p>';
             try {
-                const snap = await db.collection('reports').orderBy('createdAt', 'desc').limit(50).get();
+                // تعديل الطريقة للنظام الجديد
+                const q = query(collection(db, 'reports'), orderBy('createdAt', 'desc'), limit(50));
+                const snap = await getDocs(q);
+                
                 if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm">لا توجد بلاغات ✅</p>'; return; }
                 list.innerHTML = '';
+                
                 snap.forEach(d => {
                     const r = d.data();
                     list.innerHTML += `
-                        <div class="bg-zinc-800 p-4 rounded-xl flex gap-3 items-start">
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-center gap-2 mb-1">
-                                    <span class="text-xs bg-zinc-700 px-2 py-0.5 rounded">${r.collection || '?'}</span>
-                                    <span class="text-xs text-zinc-500">${r.createdAt?.toDate?.()?.toLocaleDateString('ar-EG') || ''}</span>
-                                </div>
-                                <p class="text-sm font-bold">السبب: ${r.reason || 'لم يُحدد'}</p>
-                                <p class="text-xs text-zinc-500">الوثيقة: ${r.docId || '—'}</p>
-                                <p class="text-xs text-zinc-500">المُبلَّغ عنه: ${r.targetUserId || '—'}</p>
-                            </div>
-                            <div class="flex flex-col gap-1">
-                                <button onclick="viewReportedContent('${r.collection}','${r.docId}')" class="text-xs px-3 py-1 rounded bg-zinc-700 text-white whitespace-nowrap">عرض المحتوى</button>
-                                <button onclick="dismissReport('${d.id}')" class="text-xs px-3 py-1 rounded bg-zinc-600 text-white">تجاهل</button>
-                                ${r.targetUserId ? `<button onclick="blockUser('${r.targetUserId}','')" class="text-xs px-3 py-1 rounded bg-orange-800 text-white">حظر</button>` : ''}
+                        <div class="bg-zinc-800 p-4 rounded-xl mb-2 border-r-4 border-red-600">
+                            <p class="text-sm font-bold">السبب: ${r.reason || 'محتوى مسيء'}</p>
+                            <p class="text-[10px] text-zinc-500 mt-1">القسم: ${r.collection} | التاريخ: ${r.createdAt?.toDate?.()?.toLocaleString('ar-EG') || ''}</p>
+                            <div class="flex gap-2 mt-2">
+                                <button onclick="dismissReport('${d.id}')" class="text-[10px] px-3 py-1 bg-zinc-700 rounded">تجاهل</button>
                             </div>
                         </div>`;
                 });
-                const badge = document.getElementById('reports-badge');
-                if (badge) { badge.textContent = snap.size; badge.classList.remove('hidden'); }
-            } catch (e) { list.innerHTML = `<p class="text-red-400 text-sm">خطأ: ${e.message}</p>`; }
+            } catch (e) { 
+                list.innerHTML = `<p class="text-red-400 text-sm">خطأ: ${e.message}</p>`; 
+            }
         };
 
         window.dismissReport = async (id) => {
