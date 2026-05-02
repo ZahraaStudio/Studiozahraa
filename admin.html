@@ -1431,7 +1431,7 @@
                 updatedAt: serverTimestamp()
             };
             try {
-                await setDoc(doc(db, 'settings', 'general'), data, { merge: true });
+                await db.collection('settings').doc('general').set(data, { merge: true });
                 alert('تم حفظ الإعدادات بنجاح ✓');
             } catch (e) {
                 alert('خطأ: ' + e.message);
