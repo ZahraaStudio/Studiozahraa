@@ -1722,37 +1722,35 @@ window.deletePost = async (id) => {
             const list = document.getElementById('community-list');
             list.innerHTML = '<p class="text-zinc-500 text-sm">جاري التحميل...</p>';
             try {
-                // تعديل طريقة جلب البيانات للنظام الجديد
                 const q = query(collection(db, 'community_posts'), orderBy('createdAt', 'desc'), limit(30));
                 const snap = await getDocs(q);
-                
                 if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm">لا توجد مشاركات</p>'; return; }
                 list.innerHTML = '';
-                
                 snap.forEach(d => {
                     const cp = d.data();
+                    // الفلترة
                     if (communityFilter === 'visible' && cp.isHidden) return;
                     if (communityFilter === 'hidden' && !cp.isHidden) return;
                     if (communityFilter === 'reported' && !(cp.reportCount > 0)) return;
 
                     list.innerHTML += `
-                        <div class="bg-zinc-800 p-4 rounded-xl mb-3 border border-zinc-700">
+                        <div class="bg-zinc-800 p-4 rounded-xl mb-3 border ${cp.reportCount > 0 ? 'border-red-500' : 'border-zinc-700'}">
                             <div class="flex justify-between items-start mb-2">
                                 <span class="font-bold text-sm text-gold-text">${cp.userName || 'مجهول'}</span>
-                                <span class="text-[10px] text-zinc-500">${cp.isHidden ? '🚫 مخفي' : '✅ ظاهر'}</span>
+                                <span class="text-[10px] bg-zinc-700 px-2 py-0.5 rounded">${cp.isHidden ? '🚫 مخفي' : '✅ ظاهر'}</span>
                             </div>
                             <p class="text-sm text-zinc-300 mb-2">${cp.text || ''}</p>
                             ${cp.mediaUrls?.length ? `<img src="${cp.mediaUrls[0]}" class="w-20 h-20 object-cover rounded mb-2 border border-zinc-600">` : ''}
-                            <div class="flex gap-2 mt-2">
-                                <button onclick="toggleCommunityPost('${d.id}', ${!cp.isHidden})" class="text-[10px] px-2 py-1 bg-zinc-700 rounded">${cp.isHidden ? 'إظهار' : 'إخفاء'}</button>
-                                <button onclick="deleteCommunityPostAdmin('${d.id}')" class="text-[10px] px-2 py-1 bg-red-900 rounded">حذف</button>
-                                ${cp.userId ? `<button onclick="blockUser('${cp.userId}', '${cp.userName || ''}')" class="text-[10px] px-2 py-1 bg-orange-700 rounded">حظر</button>` : ''}
+                            <div class="flex gap-2 mt-2 flex-wrap">
+                                <button onclick="toggleCommunityPost('${d.id}', ${!cp.isHidden})" class="text-[10px] px-3 py-1.5 rounded bg-zinc-700 hover:bg-zinc-600 text-white">
+                                    ${cp.isHidden ? '👁️ إظهار' : '🚫 إخفاء'}
+                                </button>
+                                <button onclick="deleteCommunityPostAdmin('${d.id}')" class="text-[10px] px-3 py-1.5 rounded bg-red-900 text-white">🗑️ حذف نهائي</button>
+                                ${cp.userId ? `<button onclick="blockUser('${cp.userId}', '${cp.userName}')" class="text-[10px] px-3 py-1.5 rounded bg-orange-700 text-white">🔒 حظر العضو</button>` : ''}
                             </div>
                         </div>`;
                 });
-            } catch (e) { 
-                list.innerHTML = `<p class="text-red-400 text-sm">خطأ في التحميل: ${e.message}</p>`; 
-            }
+            } catch (e) { console.error(e); }
         };
      window.toggleCommunityPost = async (id, hide) => {
             try {
