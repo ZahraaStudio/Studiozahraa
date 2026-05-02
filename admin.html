@@ -1603,7 +1603,7 @@
             const list = document.getElementById('banners-list');
             list.innerHTML = '<p class="text-zinc-500 text-sm">جاري التحميل...</p>';
             try {
-                const snap = await db.collection('banners').orderBy('order', 'asc').get();
+                const snap = await getDocs(query(collection(db, 'banners'), orderBy('order', 'asc')));
                 if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm">لا توجد بانرات</p>'; return; }
                 list.innerHTML = '';
                 snap.forEach(d => {
@@ -1634,7 +1634,7 @@
             const isActive = document.getElementById('banner-active').checked;
             if (!title && !imageUrl) return alert('أدخل عنوان البانر أو رابط صورة');
             try {
-                await db.collection('banners').add({ title, subtitle, imageUrl, link, btnText, order, isActive, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+                await addDoc(collection(db, 'banners'), { title, subtitle, imageUrl, link, btnText, order, isActive, createdAt: serverTimestamp() });
                 ['banner-title','banner-subtitle','banner-image','banner-link','banner-btn-text'].forEach(id => document.getElementById(id).value = '');
                 loadAdminBanners();
                 alert('✅ تم حفظ البانر');
@@ -1642,11 +1642,11 @@
         };
 
         window.toggleBanner = async (id, state) => {
-            try { await db.collection('banners').doc(id).update({ isActive: state }); loadAdminBanners(); } catch (e) {}
+            try { await updateDoc(doc(db, 'banners', id), { isActive: state }); loadAdminBanners(); } catch (e) {}
         };
         window.deleteBanner = async (id) => {
             if (!confirm('حذف هذا البانر؟')) return;
-            try { await db.collection('banners').doc(id).delete(); loadAdminBanners(); } catch (e) {}
+            try { await deleteDoc(doc(db, 'banners', id)); loadAdminBanners(); } catch (e) {}
         };
 
         // ============ POSTS ADMIN ============
@@ -1654,7 +1654,7 @@
             const list = document.getElementById('posts-list');
             list.innerHTML = '<p class="text-zinc-500 text-sm">جاري التحميل...</p>';
             try {
-                const snap = await db.collection('posts').orderBy('createdAt', 'desc').limit(20).get();
+                const snap = await getDocs(query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(20)));
                 if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm">لا توجد منشورات</p>'; return; }
                 list.innerHTML = '';
                 snap.forEach(d => {
@@ -1689,16 +1689,16 @@
                 videoUrl: document.getElementById('post-video').value.trim(),
                 link: document.getElementById('post-link').value.trim(),
                 isActive: document.getElementById('post-active').checked,
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                updatedAt: serverTimestamp()
             };
             if (!data.title && !data.body) return alert('أدخل عنواناً أو نصاً');
             try {
                 if (editId) {
-                    await db.collection('posts').doc(editId).update(data);
+                    await updateDoc(doc(db, 'posts', editId), data);
                     document.getElementById('post-edit-id').value = '';
                 } else {
-                    data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-                    await db.collection('posts').add(data);
+                    data.createdAt = serverTimestamp();
+                    await addDoc(collection(db, 'posts'), data);
                 }
                 ['post-title','post-tag','post-body','post-image','post-video','post-link'].forEach(id => document.getElementById(id).value = '');
                 loadAdminPosts();
@@ -1708,7 +1708,7 @@
 
         window.editPost = async (id) => {
             try {
-                const snap = await db.collection('posts').doc(id).get();
+                const snap = await getDoc(doc(db, 'posts', id));
                 if (!snap.exists) return;
                 const p = snap.data();
                 document.getElementById('post-edit-id').value = id;
@@ -1723,11 +1723,11 @@
             } catch (e) {}
         };
         window.togglePost = async (id, state) => {
-            try { await db.collection('posts').doc(id).update({ isActive: state }); loadAdminPosts(); } catch (e) {}
+            try { await updateDoc(doc(db, 'posts', id), { isActive: state }); loadAdminPosts(); } catch (e) {}
         };
         window.deletePost = async (id) => {
             if (!confirm('حذف هذا المنشور؟')) return;
-            try { await db.collection('posts').doc(id).delete(); loadAdminPosts(); } catch (e) {}
+            try { await deleteDoc(doc(db, 'posts', id)); loadAdminPosts(); } catch (e) {}
         };
 
         // ============ COMMUNITY ADMIN ============
@@ -1743,8 +1743,7 @@
             const list = document.getElementById('community-list');
             list.innerHTML = '<p class="text-zinc-500 text-sm">جاري التحميل...</p>';
             try {
-                let q = db.collection('community_posts').orderBy('createdAt', 'desc').limit(30);
-                const snap = await q.get();
+                const snap = await getDocs(query(collection(db, 'community_posts'), orderBy('createdAt', 'desc'), limit(30)));
                 if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm">لا توجد مشاركات</p>'; return; }
                 list.innerHTML = '';
                 snap.forEach(d => {
@@ -1778,16 +1777,16 @@
         };
 
         window.toggleCommunityPost = async (id, hide) => {
-            try { await db.collection('community_posts').doc(id).update({ isHidden: hide }); loadAdminCommunity(); } catch (e) {}
+            try { await updateDoc(doc(db, 'community_posts', id), { isHidden: hide }); loadAdminCommunity(); } catch (e) {}
         };
         window.deleteCommunityPostAdmin = async (id) => {
             if (!confirm('حذف نهائي؟')) return;
-            try { await db.collection('community_posts').doc(id).delete(); loadAdminCommunity(); } catch (e) {}
+            try { await deleteDoc(doc(db, 'community_posts', id)); loadAdminCommunity(); } catch (e) {}
         };
         window.blockUser = async (uid, name) => {
             if (!confirm(`حظر المستخدم ${name || uid}؟`)) return;
             try {
-                await db.collection('blocked_users').doc(uid).set({ blockedAt: firebase.firestore.FieldValue.serverTimestamp(), name: name || '' });
+                await setDoc(doc(db, 'blocked_users', uid), { blockedAt: serverTimestamp(), name: name || '' });
                 alert('✅ تم الحظر');
             } catch (e) { alert('خطأ: ' + e.message); }
         };
@@ -1797,7 +1796,7 @@
             const list = document.getElementById('reports-list');
             list.innerHTML = '<p class="text-zinc-500 text-sm">جاري التحميل...</p>';
             try {
-                const snap = await db.collection('reports').orderBy('createdAt', 'desc').limit(50).get();
+                const snap = await getDocs(query(collection(db, 'reports'), orderBy('createdAt', 'desc'), limit(50)));
                 if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm">لا توجد بلاغات ✅</p>'; return; }
                 list.innerHTML = '';
                 snap.forEach(d => {
@@ -1826,11 +1825,11 @@
         };
 
         window.dismissReport = async (id) => {
-            try { await db.collection('reports').doc(id).delete(); loadAdminReports(); } catch (e) {}
+            try { await deleteDoc(doc(db, 'reports', id)); loadAdminReports(); } catch (e) {}
         };
         window.viewReportedContent = async (col, docId) => {
             try {
-                const snap = await db.collection(col).doc(docId).get();
+                const snap = await getDoc(doc(db, col, docId));
                 if (snap.exists) alert(JSON.stringify(snap.data(), null, 2));
                 else alert('المحتوى محذوف أو غير موجود');
             } catch (e) { alert('خطأ: ' + e.message); }
@@ -1841,7 +1840,7 @@
             const enabled = document.getElementById('pts-enabled').checked;
             const ratio = parseFloat(document.getElementById('pts-ratio').value) || 1;
             try {
-                await db.collection('settings').doc('points').set({ enabled, ratio, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                await setDoc(doc(db, 'settings', 'points'), { enabled, ratio, updatedAt: serverTimestamp() });
                 alert('✅ تم حفظ إعدادات النقاط');
             } catch (e) { alert('خطأ: ' + e.message); }
         };
@@ -1852,9 +1851,9 @@
             const list = document.getElementById('pts-history-list');
             list.innerHTML = '<p class="text-zinc-500 text-sm">جاري البحث...</p>';
             try {
-                const balSnap = await db.collection('points').doc(uid).get();
-                const balance = balSnap.exists ? (balSnap.data().balance || 0) : 0;
-                const histSnap = await db.collection('points_history').where('userId', '==', uid).orderBy('createdAt', 'desc').limit(20).get();
+                const balSnap = await getDoc(doc(db, 'points', uid));
+                const balance = balSnap.exists() ? (balSnap.data().balance || 0) : 0;
+                const histSnap = await getDocs(query(collection(db, 'points_history'), where('userId', '==', uid), orderBy('createdAt', 'desc'), limit(20)));
                 let html = `<div class="mb-3 p-3 bg-zinc-900 rounded-xl"><p class="text-sm">الرصيد الحالي: <span class="gold-text font-bold text-lg">${balance}</span> نقطة</p></div>`;
                 if (histSnap.empty) { html += '<p class="text-zinc-500 text-sm">لا سجل نقاط</p>'; }
                 else {
@@ -1877,8 +1876,8 @@
         // Load points settings on tab open
         document.getElementById('btn-points-tab').addEventListener('click', async () => {
             try {
-                const snap = await db.collection('settings').doc('points').get();
-                if (snap.exists) {
+                const snap = await getDoc(doc(db, 'settings', 'points'));
+                if (snap.exists()) {
                     document.getElementById('pts-enabled').checked = !!snap.data().enabled;
                     document.getElementById('pts-ratio').value = snap.data().ratio || 1;
                 }
