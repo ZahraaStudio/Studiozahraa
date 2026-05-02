@@ -1696,11 +1696,17 @@ window.deletePost = async (id) => {
             } catch (e) {}
         };
         window.togglePost = async (id, state) => {
-            try { await db.collection('posts').doc(id).update({ isActive: state }); loadAdminPosts(); } catch (e) {}
+            try { 
+                await updateDoc(doc(db, 'posts', id), { isActive: state }); 
+                loadAdminPosts(); 
+            } catch (e) { console.error(e); }
         };
         window.deletePost = async (id) => {
             if (!confirm('حذف هذا المنشور؟')) return;
-            try { await db.collection('posts').doc(id).delete(); loadAdminPosts(); } catch (e) {}
+            try { 
+                await deleteDoc(doc(db, 'posts', id)); 
+                loadAdminPosts(); 
+            } catch (e) { console.error(e); }
         };
 
         // ============ COMMUNITY ADMIN ============
