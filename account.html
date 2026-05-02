@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+  <title>حسابي - استوديو الزهراء</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <style>
+    body { font-family: 'Cairo', sans-serif; background-color: #0a0a0a; color: #fff; }
+    .gold-text { color: #d4af37; }
+    .gold-bg { background-color: #d4af37; }
+    .gold-border { border: 1px solid #d4af37; }
+    .gradient-text { background: linear-gradient(to right, #d4af37, #f9e29c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .tab-btn { padding: 10px 20px; border-bottom: 3px solid transparent; font-weight: bold; cursor: pointer; transition: all 0.3s; color: #71717a; white-space: nowrap; }
+    .tab-btn.active { border-color: #d4af37; color: #d4af37; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .card { background: #151515; border: 1px solid #222; border-radius: 16px; padding: 20px; transition: all 0.3s; }
+    .card:hover { border-color: #333; }
+    .input-field { width: 100%; padding: 12px 16px; background: #0a0a0a; border: 1px solid #333; border-radius: 12px; color: #fff; outline: none; font-family: 'Cairo', sans-serif; font-size: 14px; transition: border-color 0.3s; }
+    .input-field:focus { border-color: #d4af37; }
+    .btn-gold { background: #d4af37; color: #000; padding: 12px 24px; border-radius: 12px; font-weight: bold; border: none; cursor: pointer; transition: all 0.2s; }
+    .btn-gold:hover { background: #f9e29c; transform: translateY(-1px); }
+    .btn-secondary { background: #1a1a1a; color: #fff; padding: 12px 24px; border-radius: 12px; font-weight: bold; border: 1px solid #333; cursor: pointer; transition: all 0.2s; }
+    .btn-secondary:hover { background: #222; }
+    .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; }
+    .status-قيد-التنفيذ, .status-pending { background: #fbbf24; color: #000; }
+    .status-تم-الشحن, .status-shipped { background: #8b5cf6; color: #fff; }
+    .status-تم-التوصيل, .status-delivered { background: #10b981; color: #fff; }
+    .status-مكتمل, .status-completed { background: #10b981; color: #fff; }
+    .status-ملغي, .status-cancelled { background: #ef4444; color: #fff; }
+    .status-processing { background: #3b82f6; color: #fff; }
+    .notification { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #1a1a1a; border: 1px solid #d4af37; padding: 14px 24px; border-radius: 12px; z-index: 9999; font-weight: bold; font-size: 14px; transition: all 0.3s; opacity: 0; pointer-events: none; }
+    .notification.show { opacity: 1; }
+    .notification.success { border-color: #10b981; }
+    .notification.error { border-color: #ef4444; }
+    .login-overlay { position: fixed; inset: 0; background: #0a0a0a; z-index: 1000; display: flex; align-items: center; justify-content: center; }
+    .timeline-step { display: flex; align-items: flex-start; gap: 16px; padding-bottom: 20px; position: relative; }
+    .timeline-step:not(:last-child)::before { content: ''; position: absolute; right: 19px; top: 40px; bottom: 0; width: 2px; background: #222; }
+    .timeline-step.done .step-icon { background: #10b981; border-color: #10b981; }
+    .timeline-step.active .step-icon { background: #d4af37; border-color: #d4af37; box-shadow: 0 0 12px rgba(212,175,55,0.4); }
+    .step-icon { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #333; background: #1a1a1a; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+    .order-card { background: #111; border: 1px solid #222; border-radius: 16px; overflow: hidden; transition: all 0.3s; cursor: pointer; }
+    .order-card:hover { border-color: #d4af3780; }
+    .wishlist-item { background: #151515; border: 1px solid #222; border-radius: 16px; overflow: hidden; transition: all 0.3s; }
+    .wishlist-item:hover { border-color: #d4af37; transform: translateY(-3px); }
+    ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+<!-- Login Overlay -->
+<div id="login-overlay" class="login-overlay">
+  <div class="text-center p-8 max-w-sm w-full">
+    <div style="width:80px;height:80px;margin:0 auto 20px;border:2px solid #d4af37;border-radius:16px;display:flex;align-items:center;justify-content:center;">
+      <svg width="40" height="40" fill="#d4af37" viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+    </div>
+    <h2 class="text-2xl font-bold gradient-text mb-2">حسابي</h2>
+    <p class="text-zinc-400 mb-8 text-sm">سجل دخولك لإدارة طلباتك وإعداداتك</p>
+    <div class="space-y-3">
+      <button onclick="loginWithGoogle()" class="w-full bg-white text-black py-3 rounded-xl font-bold flex items-center justify-center gap-3 hover:bg-zinc-200 transition-colors">
+        <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        الدخول بجوجل
+      </button>
+      <a href="/" class="block w-full text-zinc-500 py-2 hover:text-white transition-colors text-center">← العودة للمتجر</a>
+    </div>
+  </div>
+</div>
+
+<!-- Notification -->
+<div id="notif" class="notification"></div>
+
+<!-- Header -->
+<header class="sticky top-0 z-50 bg-black/80 backdrop-blur-md border-b border-zinc-900">
+  <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+    <a href="/" class="text-zinc-400 hover:text-white text-sm flex items-center gap-2">
+      <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+      المتجر
+    </a>
+    <h1 class="font-bold gradient-text text-lg">حسابي</h1>
+    <div class="flex items-center gap-3">
+      <img id="header-avatar" class="w-8 h-8 rounded-full border border-zinc-700 hidden" src="">
+      <button onclick="doLogout()" id="logout-btn" class="hidden text-xs text-red-400 hover:text-red-300 border border-red-900 px-3 py-1.5 rounded-lg">خروج</button>
+    </div>
+  </div>
+</header>
+
+<!-- Profile Summary -->
+<div id="profile-summary" class="hidden max-w-4xl mx-auto px-4 pt-8 pb-4">
+  <div class="card flex items-center gap-5">
+    <div class="relative">
+      <img id="profile-pic" src="" class="w-20 h-20 rounded-full border-2 border-yellow-500 object-cover">
+      <div class="absolute -bottom-1 -left-1 w-6 h-6 bg-green-500 rounded-full border-2 border-black"></div>
+    </div>
+    <div class="flex-1">
+      <h2 id="profile-name" class="text-xl font-bold"></h2>
+      <p id="profile-email" class="text-zinc-400 text-sm"></p>
+      <p id="profile-since" class="text-zinc-500 text-xs mt-1"></p>
+    </div>
+    <div class="text-center hidden md:block">
+      <p id="profile-orders-count" class="text-2xl font-bold gold-text">0</p>
+      <p class="text-zinc-500 text-xs">طلب</p>
+    </div>
+    <div class="text-center hidden md:block">
+      <p id="profile-total-spent" class="text-2xl font-bold gold-text">0</p>
+      <p class="text-zinc-500 text-xs">جنيه إجمالي</p>
+    </div>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div id="main-content" class="hidden max-w-4xl mx-auto px-4">
+  <div class="flex border-b border-zinc-800 overflow-x-auto scrollbar-hide gap-0 mb-6">
+    <button class="tab-btn active" onclick="showTab('orders')">📦 طلباتي</button>
+    <button class="tab-btn" onclick="showTab('track')">🔍 تتبع طلب</button>
+    <button class="tab-btn" onclick="showTab('wishlist')">❤️ المفضلة</button>
+    <button class="tab-btn" onclick="showTab('points')">⭐ نقاطي</button>
+    <button class="tab-btn" onclick="showTab('community')">🌐 منشوراتي</button>
+    <button class="tab-btn" onclick="showTab('profile')">👤 ملفي الشخصي</button>
+    <button class="tab-btn" onclick="showTab('coupons')">🏷️ كوبوناتي</button>
+  </div>
+
+  <!-- ===== ORDERS TAB ===== -->
+  <div id="tab-orders" class="tab-content active pb-20">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-lg font-bold">سجل الطلبات</h3>
+      <select id="order-filter" onchange="filterOrders()" class="input-field w-auto text-sm py-2">
+        <option value="all">جميع الطلبات</option>
+        <option value="قيد التنفيذ">قيد التنفيذ</option>
+        <option value="تم الشحن">تم الشحن</option>
+        <option value="تم التوصيل">تم التوصيل</option>
+        <option value="مكتمل">مكتمل</option>
+        <option value="ملغي">ملغي</option>
+      </select>
+    </div>
+    <div id="orders-loading" class="text-center py-12 text-zinc-500">جاري تحميل طلباتك...</div>
+    <div id="orders-list" class="space-y-4 hidden"></div>
+    <div id="orders-empty" class="hidden text-center py-16">
+      <div class="text-5xl mb-4">📦</div>
+      <p class="text-zinc-400 font-bold mb-2">لا توجد طلبات بعد</p>
+      <p class="text-zinc-500 text-sm mb-6">تسوق الآن واستمتع بمنتجاتنا الفاخرة</p>
+      <a href="/" class="btn-gold inline-block">🛍️ تسوق الآن</a>
+    </div>
+  </div>
+
+  <!-- ===== ORDER DETAIL MODAL ===== -->
+  <div id="order-detail-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div class="sticky top-0 bg-zinc-950 border-b border-zinc-800 px-6 py-4 flex justify-between items-center">
+        <h3 class="font-bold gold-text text-lg">تفاصيل الطلب</h3>
+        <button onclick="closeOrderDetail()" class="text-zinc-400 hover:text-white text-2xl leading-none">×</button>
+      </div>
+      <div id="order-detail-content" class="p-6"></div>
+    </div>
+  </div>
+
+  <!-- ===== TRACK TAB ===== -->
+  <div id="tab-track" class="tab-content pb-20">
+    <div class="card">
+      <h3 class="text-xl font-bold mb-2">تتبع طلبك بالكود</h3>
+      <p class="text-zinc-400 text-sm mb-6">أدخل رقم الطلب الذي وصلك بعد تأكيد الطلب</p>
+      <div class="flex gap-3 mb-6">
+        <input id="track-input" type="text" placeholder="ZHR-123456" class="input-field flex-1 text-center font-bold text-lg uppercase">
+        <button onclick="trackOrder()" class="btn-gold px-6">تتبع</button>
+      </div>
+      <div id="track-loading" class="hidden text-center py-8 text-zinc-500">جاري البحث...</div>
+      <div id="track-not-found" class="hidden text-center py-8">
+        <div class="text-4xl mb-3">❌</div>
+        <p class="text-red-400 font-bold">لم يتم العثور على الطلب</p>
+        <p class="text-zinc-500 text-sm mt-1">تأكد من كود الطلب وحاول مجددًا</p>
+      </div>
+      <div id="track-result" class="hidden space-y-6">
+        <!-- Order info header -->
+        <div class="bg-black border border-zinc-800 rounded-2xl p-5">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <p class="text-xs text-zinc-500 mb-1">رقم الطلب</p>
+              <p id="tr-number" class="text-xl font-bold gold-text"></p>
+            </div>
+            <div id="tr-status-badge" class="text-left"></div>
+          </div>
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div><p class="text-zinc-500 text-xs">العميل</p><p id="tr-name" class="font-bold"></p></div>
+            <div><p class="text-zinc-500 text-xs">الهاتف</p><p id="tr-phone" class="font-bold"></p></div>
+            <div><p class="text-zinc-500 text-xs">المحافظة</p><p id="tr-gov" class="font-bold"></p></div>
+            <div><p class="text-zinc-500 text-xs">إجمالي الطلب</p><p id="tr-total" class="font-bold gold-text"></p></div>
+          </div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="bg-black border border-zinc-800 rounded-2xl p-5">
+          <h4 class="font-bold mb-4">مسار الطلب</h4>
+          <div id="tr-timeline" class="space-y-0"></div>
+        </div>
+
+        <!-- Items -->
+        <div class="bg-black border border-zinc-800 rounded-2xl p-5">
+          <h4 class="font-bold mb-4">المنتجات المطلوبة</h4>
+          <div id="tr-items" class="space-y-3"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== WISHLIST TAB ===== -->
+  <div id="tab-wishlist" class="tab-content pb-20">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-lg font-bold">المنتجات المحفوظة</h3>
+      <button onclick="clearWishlist()" class="text-red-400 text-sm hover:text-red-300 hidden" id="clear-wishlist-btn">حذف الكل</button>
+    </div>
+    <div id="wishlist-empty" class="text-center py-16 hidden">
+      <div class="text-5xl mb-4">❤️</div>
+      <p class="text-zinc-400 font-bold mb-2">قائمة المفضلة فارغة</p>
+      <p class="text-zinc-500 text-sm mb-6">احفظ المنتجات التي تعجبك لترجع إليها لاحقًا</p>
+      <a href="/" class="btn-gold inline-block">🛍️ تصفح المنتجات</a>
+    </div>
+    <div id="wishlist-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4"></div>
+  </div>
+
+  <!-- ===== POINTS TAB ===== -->
+  <div id="tab-points" class="tab-content pb-20">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="card text-center">
+        <div class="text-5xl mb-3">⭐</div>
+        <p class="text-zinc-400 mb-1">رصيد نقاطك الحالي</p>
+        <p id="acc-points-balance" class="text-5xl font-bold gold-text mb-2">0</p>
+        <p class="text-sm text-zinc-500">نقطة</p>
+        <div class="mt-4 p-3 bg-zinc-900 rounded-xl text-xs text-zinc-500">
+          تكسب نقاطاً بكل عملية شراء. النقاط تُضاف تلقائياً بعد تأكيد الطلب.
+        </div>
+      </div>
+      <div class="card">
+        <h3 class="font-bold gold-text mb-4">📋 سجل النقاط</h3>
+        <div id="acc-points-history" class="space-y-2 max-h-80 overflow-y-auto">
+          <p class="text-zinc-500 text-sm text-center">جاري التحميل...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== COMMUNITY TAB ===== -->
+  <div id="tab-community" class="tab-content pb-20">
+    <div class="card mb-4">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold gold-text">🌐 مشاركاتي في المجتمع</h3>
+        <button onclick="loadMyCommunityPosts()" class="text-sm gold-text hover:underline">تحديث</button>
+      </div>
+      <div id="my-community-list" class="space-y-3 max-h-[500px] overflow-y-auto">
+        <p class="text-zinc-500 text-sm text-center">جاري التحميل...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PROFILE TAB ===== -->
+  <div id="tab-profile" class="tab-content pb-20">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Edit Profile -->
+      <div class="card">
+        <h3 class="font-bold gold-text mb-4">✏️ تعديل البيانات الشخصية</h3>
+        <div class="space-y-4">
+          <div>
+            <label class="text-xs text-zinc-400 mb-1 block">الاسم</label>
+            <input id="edit-name" type="text" class="input-field" placeholder="اسمك الكامل">
+          </div>
+          <div>
+            <label class="text-xs text-zinc-400 mb-1 block">رقم الهاتف</label>
+            <input id="edit-phone" type="tel" class="input-field" placeholder="01xxxxxxxxx">
+          </div>
+          <div>
+            <label class="text-xs text-zinc-400 mb-1 block">العنوان الافتراضي</label>
+            <textarea id="edit-address" class="input-field h-20" placeholder="عنوانك للشحن"></textarea>
+          </div>
+          <div>
+            <label class="text-xs text-zinc-400 mb-1 block">المحافظة</label>
+            <select id="edit-governorate" class="input-field">
+              <option value="">-- اختر المحافظة --</option>
+              <option>القاهرة</option><option>الجيزة</option><option>الإسكندرية</option>
+              <option>الدقهلية</option><option>الشرقية</option><option>القليوبية</option>
+              <option>كفر الشيخ</option><option>الغربية</option><option>المنوفية</option>
+              <option>البحيرة</option><option>دمياط</option><option>بورسعيد</option>
+              <option>الإسماعيلية</option><option>السويس</option><option>الفيوم</option>
+              <option>بني سويف</option><option>المنيا</option><option>أسيوط</option>
+              <option>سوهاج</option><option>قنا</option><option>الأقصر</option>
+              <option>أسوان</option><option>البحر الأحمر</option><option>مطروح</option>
+              <option>شمال سيناء</option><option>جنوب سيناء</option><option>الوادي الجديد</option>
+            </select>
+          </div>
+          <button onclick="saveProfile()" class="btn-gold w-full">💾 حفظ البيانات</button>
+        </div>
+      </div>
+
+      <!-- Account Info -->
+      <div class="space-y-4">
+        <div class="card">
+          <h3 class="font-bold gold-text mb-4">🔗 معلومات الحساب</h3>
+          <div class="space-y-3 text-sm">
+            <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
+              <span class="text-zinc-400">البريد الإلكتروني</span>
+              <span id="acc-email" class="font-bold text-right max-w-[200px] break-all"></span>
+            </div>
+            <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
+              <span class="text-zinc-400">نوع الحساب</span>
+              <span id="acc-provider" class="font-bold"></span>
+            </div>
+            <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
+              <span class="text-zinc-400">عضو منذ</span>
+              <span id="acc-since" class="font-bold"></span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-zinc-400">كود العميل</span>
+              <span id="acc-code" class="font-mono text-xs gold-text"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Referral -->
+        <div class="card">
+          <h3 class="font-bold gold-text mb-3">🎁 دعوة الأصدقاء</h3>
+          <p class="text-zinc-400 text-xs mb-3">شارك الرابط وكسب كوبون خصم عند أول طلب لصديقك</p>
+          <div class="flex gap-2">
+            <input id="referral-link" readonly class="input-field flex-1 text-xs" placeholder="">
+            <button onclick="copyReferral()" class="btn-gold text-sm px-3">نسخ</button>
+          </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="card border-red-900/30">
+          <h3 class="font-bold text-red-400 mb-3">⚠️ تسجيل الخروج</h3>
+          <button onclick="doLogout()" class="w-full py-3 border border-red-800 text-red-400 rounded-xl font-bold hover:bg-red-900/20 transition-colors">تسجيل الخروج من الحساب</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== COUPONS TAB ===== -->
+  <div id="tab-coupons" class="tab-content pb-20">
+    <h3 class="text-lg font-bold mb-4">كوبوناتي وخصوماتي</h3>
+    <div id="coupons-loading" class="text-center py-12 text-zinc-500">جاري التحميل...</div>
+    <div id="coupons-list" class="space-y-3 hidden"></div>
+    <div id="coupons-empty" class="hidden text-center py-16">
+      <div class="text-5xl mb-4">🏷️</div>
+      <p class="text-zinc-400 font-bold mb-2">لا توجد كوبونات</p>
+      <p class="text-zinc-500 text-sm">تجمع النقاط وكسب كوبونات عبر الإحالة أو طلبات كبيرة</p>
+    </div>
+  </div>
+
+</div><!-- end main-content -->
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
+    authDomain: "zahraa-store-f4c90.firebaseapp.com",
+    projectId: "zahraa-store-f4c90",
+    storageBucket: "zahraa-store-f4c90.firebasestorage.app",
+    messagingSenderId: "885722081307",
+    appId: "1:885722081307:web:7c91e0f8b0ea9b8b4df0be"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  const auth = firebase.auth();
+
+  let currentUser = null;
+  let allOrders = [];
+  let userDoc = {};
+
+  // ===== NOTIFICATION =====
+  function showNotif(msg, type = 'info') {
+    const n = document.getElementById('notif');
+    n.textContent = msg;
+    n.className = 'notification show ' + type;
+    setTimeout(() => n.className = 'notification', 3000);
+  }
+
+  // ===== AUTH =====
+  auth.onAuthStateChanged(async user => {
+    currentUser = user;
+    if (user) {
+      document.getElementById('login-overlay').style.display = 'none';
+      document.getElementById('profile-summary').classList.remove('hidden');
+      document.getElementById('main-content').classList.remove('hidden');
+      document.getElementById('header-avatar').src = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email)}&background=d4af37&color=000`;
+      document.getElementById('header-avatar').classList.remove('hidden');
+      document.getElementById('logout-btn').classList.remove('hidden');
+      await loadUserData(user);
+      await loadOrders(user.uid);
+      loadWishlist();
+      await loadCoupons(user.uid);
+      loadPoints(user.uid);
+    } else {
+      document.getElementById('login-overlay').style.display = 'flex';
+    }
+  });
+
+  async function loginWithGoogle() {
+    try {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      await auth.signInWithPopup(provider);
+    } catch (e) {
+      if (e.code === 'auth/unauthorized-domain') {
+        alert('خطأ: يجب إضافة هذا النطاق في إعدادات Firebase (Authorized Domains).\n\nافتح Firebase Console → Authentication → Settings → Authorized Domains وأضف النطاق الحالي.');
+      } else {
+        alert('خطأ في تسجيل الدخول: ' + e.message);
+      }
+    }
+  }
+
+  async function doLogout() {
+    await auth.signOut();
+    window.location.href = '/';
+  }
+
+  // ===== LOAD USER DATA =====
+  async function loadUserData(user) {
+    // Profile summary
+    document.getElementById('profile-pic').src = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email)}&background=1a1a1a&color=d4af37&size=80`;
+    document.getElementById('profile-name').textContent = user.displayName || user.email.split('@')[0];
+    document.getElementById('profile-email').textContent = user.email;
+
+    const createdAt = user.metadata?.creationTime;
+    if (createdAt) {
+      const date = new Date(createdAt);
+      document.getElementById('profile-since').textContent = 'عضو منذ ' + date.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long' });
+      document.getElementById('acc-since').textContent = date.toLocaleDateString('ar-EG');
+    }
+
+    // Account info tab
+    document.getElementById('acc-email').textContent = user.email;
+    const providers = { 'google.com': 'جوجل', 'facebook.com': 'فيسبوك', 'password': 'بريد إلكتروني' };
+    const providerName = providers[user.providerData[0]?.providerId] || 'غير محدد';
+    document.getElementById('acc-provider').textContent = providerName;
+    document.getElementById('acc-code').textContent = user.uid.substring(0, 12).toUpperCase();
+
+    // Referral link
+    document.getElementById('referral-link').value = window.location.origin + '/?ref=' + user.uid;
+
+    // Load from Firestore
+    try {
+      const snap = await db.collection('users').doc(user.uid).get();
+      if (snap.exists) {
+        userDoc = snap.data();
+        if (userDoc.phone) document.getElementById('edit-phone').value = userDoc.phone;
+        if (userDoc.address) document.getElementById('edit-address').value = userDoc.address;
+        if (userDoc.governorate) document.getElementById('edit-governorate').value = userDoc.governorate;
+      }
+      // Pre-fill name
+      document.getElementById('edit-name').value = user.displayName || userDoc.name || '';
+    } catch (e) {
+      console.error('loadUserData error:', e);
+    }
+  }
+
+  // ===== SAVE PROFILE =====
+  async function saveProfile() {
+    if (!currentUser) return;
+    const name = document.getElementById('edit-name').value.trim();
+    const phone = document.getElementById('edit-phone').value.trim();
+    const address = document.getElementById('edit-address').value.trim();
+    const governorate = document.getElementById('edit-governorate').value;
+    try {
+      await db.collection('users').doc(currentUser.uid).set({
+        name, phone, address, governorate,
+        email: currentUser.email,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+      showNotif('تم حفظ البيانات بنجاح ✓', 'success');
+      document.getElementById('profile-name').textContent = name || currentUser.displayName || currentUser.email.split('@')[0];
+    } catch (e) {
+      showNotif('خطأ في الحفظ: ' + e.message, 'error');
+    }
+  }
+
+  function copyReferral() {
+    const link = document.getElementById('referral-link');
+    link.select();
+    document.execCommand('copy');
+    showNotif('تم نسخ رابط الإحالة ✓', 'success');
+  }
+
+  // ===== ORDERS =====
+  async function loadOrders(uid) {
+    document.getElementById('orders-loading').classList.remove('hidden');
+    document.getElementById('orders-list').classList.add('hidden');
+    document.getElementById('orders-empty').classList.add('hidden');
+    try {
+      const snap = await db.collection('orders').where('userId', '==', uid).get();
+      allOrders = [];
+      snap.forEach(d => allOrders.push({ id: d.id, ...d.data() }));
+      allOrders.sort((a, b) => {
+        const ta = a.createdAt?.toDate?.() || new Date(0);
+        const tb = b.createdAt?.toDate?.() || new Date(0);
+        return tb - ta;
+      });
+      document.getElementById('profile-orders-count').textContent = allOrders.length;
+      const total = allOrders.reduce((s, o) => s + (o.totalPrice || 0), 0);
+      document.getElementById('profile-total-spent').textContent = total;
+      renderOrders(allOrders);
+    } catch (e) {
+      console.error('loadOrders error:', e);
+      document.getElementById('orders-loading').innerHTML = '<p class="text-red-400">تعذر تحميل الطلبات - تأكد من إعدادات Firebase</p>';
+    }
+  }
+
+  function getStatusClass(status) {
+    const map = {
+      'قيد التنفيذ': 'status-badge status-قيد-التنفيذ',
+      'تم الشحن': 'status-badge' , 'تم التوصيل': 'status-badge',
+      'مكتمل': 'status-badge', 'ملغي': 'status-badge'
+    };
+    const colors = {
+      'قيد التنفيذ': 'background:#fbbf24;color:#000',
+      'تم الشحن': 'background:#8b5cf6;color:#fff',
+      'تم التوصيل': 'background:#10b981;color:#fff',
+      'مكتمل': 'background:#10b981;color:#fff',
+      'ملغي': 'background:#ef4444;color:#fff'
+    };
+    return `status-badge" style="${colors[status] || 'background:#555;color:#fff'}`;
+  }
+
+  function renderOrders(orders) {
+    document.getElementById('orders-loading').classList.add('hidden');
+    if (orders.length === 0) {
+      document.getElementById('orders-empty').classList.remove('hidden');
+      return;
+    }
+    const list = document.getElementById('orders-list');
+    list.classList.remove('hidden');
+    list.innerHTML = orders.map(o => {
+      const date = o.createdAt?.toDate?.()?.toLocaleDateString('ar-EG') || '';
+      const statusColors = {
+        'قيد التنفيذ': 'background:#fbbf2430;border-color:#fbbf24',
+        'تم الشحن': 'background:#8b5cf630;border-color:#8b5cf6',
+        'تم التوصيل': 'background:#10b98130;border-color:#10b981',
+        'مكتمل': 'background:#10b98130;border-color:#10b981',
+        'ملغي': 'background:#ef444430;border-color:#ef4444'
+      };
+      const borderStyle = statusColors[o.status] || '';
+      return `
+        <div class="order-card" onclick="openOrderDetail('${o.id}')" style="border-left:4px solid;${borderStyle}">
+          <div class="p-4">
+            <div class="flex justify-between items-start mb-3">
+              <div>
+                <p class="text-xs text-zinc-500 mb-0.5">رقم الطلب</p>
+                <p class="font-bold gold-text text-sm">${o.orderNumber || o.id.slice(0,8)}</p>
+              </div>
+              <div class="text-left">
+                <span class="status-badge" style="${statusColors[o.status] ? '' : 'background:#555;color:#fff'}"
+                  style="padding:4px 12px;border-radius:20px;font-size:11px;font-weight:bold;${({'قيد التنفيذ':'background:#fbbf24;color:#000','تم الشحن':'background:#8b5cf6;color:#fff','تم التوصيل':'background:#10b981;color:#fff','مكتمل':'background:#10b981;color:#fff','ملغي':'background:#ef4444;color:#fff'})[o.status] || 'background:#555;color:#fff'}">
+                  ${o.status || 'غير محدد'}
+                </span>
+                <p class="text-xs text-zinc-500 mt-1">${date}</p>
+              </div>
+            </div>
+            <div class="text-xs text-zinc-400 mb-3 line-clamp-1">
+              ${(o.items || []).map(i => i.name + ' × ' + i.qty).join(' · ')}
+            </div>
+            <div class="flex justify-between items-center pt-3 border-t border-zinc-800">
+              <span class="text-xs text-zinc-400">الإجمالي: <span class="gold-text font-bold">${o.totalPrice || 0} ج</span></span>
+              <span class="text-xs ${o.paymentStatus === 'مدفوع' ? 'text-green-400' : 'text-yellow-400'}">${o.paymentStatus || 'غير مدفوع'}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function filterOrders() {
+    const filter = document.getElementById('order-filter').value;
+    const filtered = filter === 'all' ? allOrders : allOrders.filter(o => o.status === filter);
+    renderOrders(filtered);
+  }
+
+  function openOrderDetail(orderId) {
+    const o = allOrders.find(x => x.id === orderId);
+    if (!o) return;
+    const modal = document.getElementById('order-detail-modal');
+    const content = document.getElementById('order-detail-content');
+    const date = o.createdAt?.toDate?.()?.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' }) || '';
+    const statusSteps = [
+      { key: 'قيد التنفيذ', label: 'استلام الطلب', icon: '📋', desc: 'تم استلام طلبك وهو قيد المراجعة' },
+      { key: 'جاري التحضير', label: 'تحضير الطلب', icon: '⚙️', desc: 'يتم تحضير منتجاتك بعناية' },
+      { key: 'تم الشحن', label: 'الشحن والتوصيل', icon: '🚚', desc: 'طلبك في الطريق إليك' },
+      { key: 'تم التوصيل', label: 'تم التوصيل', icon: '✅', desc: 'وصل طلبك بنجاح' }
+    ];
+    const statusOrder = ['قيد التنفيذ', 'جاري التحضير', 'تم الشحن', 'تم التوصيل', 'مكتمل'];
+    const currentIdx = statusOrder.indexOf(o.status);
+
+    content.innerHTML = `
+      <div class="space-y-5">
+        <!-- Header info -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-zinc-900 p-3 rounded-xl">
+            <p class="text-xs text-zinc-500 mb-1">رقم الطلب</p>
+            <p class="font-bold gold-text">${o.orderNumber}</p>
+          </div>
+          <div class="bg-zinc-900 p-3 rounded-xl">
+            <p class="text-xs text-zinc-500 mb-1">تاريخ الطلب</p>
+            <p class="font-bold text-sm">${date}</p>
+          </div>
+          <div class="bg-zinc-900 p-3 rounded-xl">
+            <p class="text-xs text-zinc-500 mb-1">الإجمالي</p>
+            <p class="font-bold gold-text">${o.totalPrice} ج</p>
+          </div>
+          <div class="bg-zinc-900 p-3 rounded-xl">
+            <p class="text-xs text-zinc-500 mb-1">الدفع</p>
+            <p class="font-bold ${o.paymentStatus === 'مدفوع' ? 'text-green-400' : 'text-yellow-400'}">${o.paymentStatus || 'غير مدفوع'}</p>
+          </div>
+        </div>
+
+        <!-- Status Timeline -->
+        <div>
+          <h4 class="font-bold mb-4 text-sm gold-text">مسار الطلب</h4>
+          <div class="space-y-0">
+            ${o.status === 'ملغي' ? `
+              <div class="flex items-center gap-4 p-4 bg-red-950/30 border border-red-800/30 rounded-xl">
+                <div class="text-3xl">❌</div>
+                <div><p class="font-bold text-red-400">تم إلغاء الطلب</p><p class="text-xs text-zinc-400">إذا كان لديك استفسار، تواصل معنا عبر واتساب</p></div>
+              </div>
+            ` : statusSteps.map((step, idx) => {
+              const isDone = currentIdx > idx;
+              const isActive = currentIdx === idx || (o.status === 'مكتمل' && idx === 3);
+              const lineColor = isDone ? '#10b981' : '#222';
+              const iconBg = isDone ? '#10b981' : (isActive ? '#d4af37' : '#1a1a1a');
+              const iconBorder = isDone ? '#10b981' : (isActive ? '#d4af37' : '#333');
+              return `
+                <div class="flex items-start gap-4 pb-4 relative">
+                  ${idx < statusSteps.length - 1 ? `<div style="position:absolute;right:19px;top:40px;bottom:0;width:2px;background:${lineColor};z-index:0;"></div>` : ''}
+                  <div style="width:40px;height:40px;border-radius:50%;border:2px solid ${iconBorder};background:${iconBg};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;z-index:1;">
+                    ${isDone ? '✓' : step.icon}
+                  </div>
+                  <div class="pt-1">
+                    <p class="font-bold text-sm ${isActive ? 'text-yellow-400' : (isDone ? 'text-green-400' : 'text-zinc-500')}">${step.label}</p>
+                    <p class="text-xs text-zinc-500">${isActive ? step.desc : (isDone ? 'تم' : 'قادمًا')}</p>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+
+        <!-- Items -->
+        <div>
+          <h4 class="font-bold mb-3 text-sm gold-text">المنتجات</h4>
+          <div class="space-y-2">
+            ${(o.items || []).map(item => `
+              <div class="flex items-center gap-3 bg-zinc-900 p-3 rounded-xl">
+                ${item.image ? `<img src="${item.image}" class="w-12 h-12 rounded-lg object-cover">` : `<div class="w-12 h-12 rounded-lg bg-zinc-800 flex items-center justify-center text-xl">📦</div>`}
+                <div class="flex-1">
+                  <p class="font-bold text-sm line-clamp-1">${item.name}</p>
+                  ${item.code ? `<p class="text-xs text-zinc-500 font-mono">${item.code}</p>` : ''}
+                  <p class="text-xs text-zinc-400">× ${item.qty}</p>
+                </div>
+                <p class="gold-text font-bold text-sm">${item.price * item.qty} ج</p>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Price breakdown -->
+        <div class="bg-zinc-900 p-4 rounded-xl space-y-2 text-sm">
+          <div class="flex justify-between"><span class="text-zinc-400">المجموع الفرعي</span><span>${o.subtotal || 0} ج</span></div>
+          ${o.discountAmount > 0 ? `<div class="flex justify-between"><span class="text-zinc-400">الخصم (${o.couponCode || ''})</span><span class="text-green-400">-${o.discountAmount} ج</span></div>` : ''}
+          <div class="flex justify-between"><span class="text-zinc-400">الشحن</span><span>${o.shippingCost || 0} ج</span></div>
+          ${o.giftWrap ? `<div class="flex justify-between"><span class="text-zinc-400">تغليف هدية</span><span>${o.giftPrice || 0} ج</span></div>` : ''}
+          <div class="flex justify-between font-bold pt-2 border-t border-zinc-800"><span>الإجمالي النهائي</span><span class="gold-text">${o.totalPrice} ج</span></div>
+        </div>
+
+        <!-- Shipping info -->
+        <div class="bg-zinc-900 p-4 rounded-xl text-sm space-y-2">
+          <h4 class="font-bold gold-text mb-2">معلومات الشحن</h4>
+          <div class="flex justify-between"><span class="text-zinc-400">الاسم</span><span>${o.customerName}</span></div>
+          <div class="flex justify-between"><span class="text-zinc-400">الهاتف</span><span>${o.customerPhone}</span></div>
+          <div class="flex justify-between"><span class="text-zinc-400">المحافظة</span><span>${o.customerGovernorate}</span></div>
+          <div class="flex justify-between"><span class="text-zinc-400">العنوان</span><span class="text-right max-w-[200px]">${o.customerAddress}</span></div>
+        </div>
+      </div>
+    `;
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+  }
+
+  function closeOrderDetail() {
+    const modal = document.getElementById('order-detail-modal');
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+  }
+
+  // ===== TRACK ORDER =====
+  async function trackOrder() {
+    const code = document.getElementById('track-input').value.trim().toUpperCase();
+    if (!code) return showNotif('أدخل رقم الطلب', 'error');
+    document.getElementById('track-result').classList.add('hidden');
+    document.getElementById('track-not-found').classList.add('hidden');
+    document.getElementById('track-loading').classList.remove('hidden');
+    try {
+      const snap = await db.collection('orders').where('orderNumber', '==', code).get();
+      document.getElementById('track-loading').classList.add('hidden');
+      if (snap.empty) {
+        document.getElementById('track-not-found').classList.remove('hidden');
+        return;
+      }
+      const o = { id: snap.docs[0].id, ...snap.docs[0].data() };
+      document.getElementById('tr-number').textContent = o.orderNumber;
+      document.getElementById('tr-name').textContent = o.customerName || '-';
+      document.getElementById('tr-phone').textContent = o.customerPhone || '-';
+      document.getElementById('tr-gov').textContent = o.customerGovernorate || '-';
+      document.getElementById('tr-total').textContent = (o.totalPrice || 0) + ' ج';
+      const statusColors = {'قيد التنفيذ':'#fbbf24','تم الشحن':'#8b5cf6','تم التوصيل':'#10b981','مكتمل':'#10b981','ملغي':'#ef4444'};
+      const textColors = {'قيد التنفيذ':'#000','تم الشحن':'#fff','تم التوصيل':'#fff','مكتمل':'#fff','ملغي':'#fff'};
+      document.getElementById('tr-status-badge').innerHTML = `<span style="display:inline-block;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:bold;background:${statusColors[o.status]||'#555'};color:${textColors[o.status]||'#fff'}">${o.status || 'غير محدد'}</span>`;
+      
+      // Timeline
+      const statusOrder = ['قيد التنفيذ', 'تم الشحن', 'تم التوصيل', 'مكتمل'];
+      const statusLabels = { 'قيد التنفيذ': '📋 استلام الطلب', 'تم الشحن': '🚚 تم الشحن', 'تم التوصيل': '✅ تم التوصيل', 'مكتمل': '🎉 مكتمل' };
+      const currentIdx = statusOrder.indexOf(o.status);
+      document.getElementById('tr-timeline').innerHTML = o.status === 'ملغي' ?
+        '<div style="padding:16px;background:#1a0000;border:1px solid #7f1d1d;border-radius:12px;"><p style="color:#f87171;font-weight:bold;">❌ تم إلغاء الطلب</p></div>'
+        : statusOrder.map((s, i) => {
+          const done = currentIdx > i;
+          const active = currentIdx === i;
+          return `<div style="display:flex;gap:12px;align-items:flex-start;padding-bottom:16px;position:relative;">
+            ${i < statusOrder.length - 1 ? `<div style="position:absolute;right:19px;top:40px;bottom:0;width:2px;background:${done?'#10b981':'#222'};"></div>` : ''}
+            <div style="width:40px;height:40px;border-radius:50%;border:2px solid ${active?'#d4af37':(done?'#10b981':'#333')};background:${active?'#d4af37':(done?'#10b981':'#1a1a1a')};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;color:${active||done?'#000':'#666'};">
+              ${done ? '✓' : (i+1)}
+            </div>
+            <div style="padding-top:8px;"><p style="font-weight:bold;font-size:14px;color:${active?'#d4af37':(done?'#10b981':'#6b7280')}">${statusLabels[s]}</p></div>
+          </div>`;
+        }).join('');
+
+      // Items
+      document.getElementById('tr-items').innerHTML = (o.items || []).map(item => `
+        <div style="display:flex;align-items:center;gap:12px;background:#1a1a1a;padding:12px;border-radius:12px;">
+          ${item.image ? `<img src="${item.image}" style="width:48px;height:48px;border-radius:8px;object-fit:cover;">` : '<div style="width:48px;height:48px;border-radius:8px;background:#222;display:flex;align-items:center;justify-content:center;">📦</div>'}
+          <div style="flex:1;"><p style="font-weight:bold;font-size:14px;">${item.name}</p><p style="color:#71717a;font-size:12px;">× ${item.qty}</p></div>
+          <p style="color:#d4af37;font-weight:bold;">${item.price * item.qty} ج</p>
+        </div>
+      `).join('');
+
+      document.getElementById('track-result').classList.remove('hidden');
+    } catch (e) {
+      document.getElementById('track-loading').classList.add('hidden');
+      showNotif('خطأ: ' + e.message, 'error');
+    }
+  }
+
+  // ===== WISHLIST =====
+  function loadWishlist() {
+    const wishlist = JSON.parse(localStorage.getItem('zahraa_wishlist') || '[]');
+    const grid = document.getElementById('wishlist-grid');
+    const empty = document.getElementById('wishlist-empty');
+    const clearBtn = document.getElementById('clear-wishlist-btn');
+    if (wishlist.length === 0) {
+      empty.classList.remove('hidden');
+      clearBtn.classList.add('hidden');
+      return;
+    }
+    clearBtn.classList.remove('hidden');
+    grid.innerHTML = wishlist.map((item, i) => `
+      <div class="wishlist-item">
+        <div style="position:relative;">
+          <img src="${item.images?.[0] || ''}" style="width:100%;height:150px;object-fit:cover;">
+          <button onclick="removeFromWishlist(${i})" style="position:absolute;top:8px;left:8px;width:28px;height:28px;background:rgba(239,68,68,0.9);border-radius:50%;border:none;color:white;cursor:pointer;font-size:14px;">×</button>
+        </div>
+        <div style="padding:12px;">
+          <p style="font-weight:bold;font-size:13px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${item.name}</p>
+          <p style="color:#d4af37;font-weight:bold;font-size:15px;margin-top:4px;">${item.price} ج</p>
+          <a href="/" style="display:block;margin-top:8px;background:#d4af37;color:#000;padding:8px;border-radius:8px;font-weight:bold;font-size:12px;text-align:center;">تسوق الآن</a>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function removeFromWishlist(idx) {
+    const wishlist = JSON.parse(localStorage.getItem('zahraa_wishlist') || '[]');
+    wishlist.splice(idx, 1);
+    localStorage.setItem('zahraa_wishlist', JSON.stringify(wishlist));
+    loadWishlist();
+    showNotif('تم الحذف من المفضلة', 'success');
+  }
+
+  function clearWishlist() {
+    if (!confirm('حذف جميع المنتجات من المفضلة؟')) return;
+    localStorage.removeItem('zahraa_wishlist');
+    loadWishlist();
+    showNotif('تم حذف المفضلة', 'success');
+  }
+
+  // ===== COUPONS =====
+  async function loadCoupons(uid) {
+    try {
+      const snap = await db.collection('coupons').where('linkedUser', '==', uid).get();
+      document.getElementById('coupons-loading').classList.add('hidden');
+      if (snap.empty) {
+        document.getElementById('coupons-empty').classList.remove('hidden');
+        return;
+      }
+      const coupons = [];
+      snap.forEach(d => coupons.push({ id: d.id, ...d.data() }));
+      const list = document.getElementById('coupons-list');
+      list.classList.remove('hidden');
+      list.innerHTML = coupons.map(c => {
+        const expired = c.expiryDate && new Date(c.expiryDate.toDate?.() || c.expiryDate) < new Date();
+        const used = c.limit && c.usedCount >= c.limit;
+        const valid = !expired && !used && c.isActive;
+        return `
+          <div class="card ${valid ? 'border-yellow-700/50' : 'opacity-60'}">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-4">
+                <div style="width:50px;height:50px;border-radius:12px;background:${valid?'#d4af37':'#333'};color:${valid?'#000':'#666'};display:flex;align-items:center;justify-content:center;font-size:24px;">🏷️</div>
+                <div>
+                  <p class="font-bold text-lg gold-text font-mono">${c.code}</p>
+                  <p class="text-xs text-zinc-400">خصم ${c.discount}${c.type === 'percentage' ? '%' : ' ج'}</p>
+                  ${c.note ? `<p class="text-xs text-zinc-500">${c.note}</p>` : ''}
+                </div>
+              </div>
+              <div class="text-left">
+                <span style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:bold;background:${valid?'#10b98130':'#ef444430'};color:${valid?'#10b981':'#ef4444'}">
+                  ${used ? 'مستخدم' : (expired ? 'منتهي الصلاحية' : (c.isActive ? 'نشط ✓' : 'معطل'))}
+                </span>
+                ${c.expiryDate ? `<p class="text-xs text-zinc-500 mt-1">ينتهي: ${new Date(c.expiryDate.toDate?.() || c.expiryDate).toLocaleDateString('ar-EG')}</p>` : ''}
+              </div>
+            </div>
+            ${valid ? `
+              <div class="mt-3 flex gap-2">
+                <input value="${c.code}" readonly class="input-field flex-1 text-center font-mono font-bold gold-text text-sm">
+                <button onclick="navigator.clipboard.writeText('${c.code}').then(()=>showNotif('تم نسخ الكوبون ✓','success'))" class="btn-gold text-sm px-4">نسخ</button>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    } catch (e) {
+      document.getElementById('coupons-loading').innerHTML = '<p class="text-zinc-500 text-sm text-center">لا يمكن تحميل الكوبونات</p>';
+    }
+  }
+
+  // ===== POINTS =====
+  async function loadPoints(uid) {
+    try {
+      const snap = await db.collection('points').doc(uid).get();
+      const balance = snap.exists ? (snap.data().balance || 0) : 0;
+      const balEl = document.getElementById('acc-points-balance');
+      if (balEl) balEl.textContent = balance;
+
+      const histSnap = await db.collection('points_history').where('userId', '==', uid).orderBy('createdAt', 'desc').limit(20).get();
+      const histEl = document.getElementById('acc-points-history');
+      if (!histEl) return;
+      if (histSnap.empty) { histEl.innerHTML = '<p class="text-zinc-500 text-sm text-center">لا سجل نقاط بعد</p>'; return; }
+      histEl.innerHTML = '';
+      histSnap.forEach(d => {
+        const h = d.data();
+        histEl.innerHTML += `
+          <div class="flex justify-between items-center py-2 border-b border-zinc-800">
+            <div>
+              <p class="text-sm font-bold">${h.type === 'earn' ? '⬆️ مكتسب' : '⬇️ مُصرف'}</p>
+              <p class="text-xs text-zinc-500">طلب: ${h.orderNumber || '—'}</p>
+              <p class="text-xs text-zinc-600">${h.createdAt?.toDate?.()?.toLocaleDateString('ar-EG') || ''}</p>
+            </div>
+            <span class="${h.type === 'earn' ? 'text-green-400' : 'text-red-400'} font-bold text-lg">${h.type === 'earn' ? '+' : '-'}${h.points}</span>
+          </div>`;
+      });
+    } catch (e) { console.error('points load error', e); }
+  }
+
+  // ===== COMMUNITY POSTS =====
+  async function loadMyCommunityPosts() {
+    const uid = firebase.auth().currentUser?.uid;
+    if (!uid) return;
+    const list = document.getElementById('my-community-list');
+    list.innerHTML = '<p class="text-zinc-500 text-sm text-center">جاري التحميل...</p>';
+    try {
+      const snap = await db.collection('community_posts').where('userId', '==', uid).orderBy('createdAt', 'desc').limit(20).get();
+      if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm text-center">لم تنشر أي مشاركة بعد</p>'; return; }
+      list.innerHTML = '';
+      snap.forEach(d => {
+        const cp = d.data();
+        list.innerHTML += `
+          <div class="flex gap-3 p-3 bg-zinc-900 rounded-xl border border-zinc-800 ${cp.isHidden ? 'opacity-50' : ''}">
+            ${cp.mediaUrls?.length ? `<img src="${cp.mediaUrls[0]}" class="w-16 h-16 rounded-lg object-cover flex-shrink-0">` : '<div class="w-16 h-16 bg-zinc-800 rounded-lg flex-shrink-0 flex items-center justify-center text-2xl">📝</div>'}
+            <div class="flex-1 min-w-0">
+              ${cp.text ? `<p class="text-sm text-zinc-300 line-clamp-2 mb-1">${cp.text}</p>` : ''}
+              ${cp.productName ? `<p class="text-xs text-zinc-500">🛍️ ${cp.productName}</p>` : ''}
+              <div class="flex items-center gap-2 mt-1">
+                ${cp.isHidden ? '<span class="text-[10px] bg-red-800 text-white px-2 py-0.5 rounded">مخفي من الإدارة</span>' : '<span class="text-[10px] bg-green-800 text-white px-2 py-0.5 rounded">ظاهر</span>'}
+                ${cp.reportCount > 0 ? `<span class="text-[10px] bg-orange-800 text-white px-2 py-0.5 rounded">🚨 ${cp.reportCount} بلاغ</span>` : ''}
+                <span class="text-[10px] text-zinc-600">${cp.createdAt?.toDate?.()?.toLocaleDateString('ar-EG') || ''}</span>
+              </div>
+            </div>
+            <button onclick="deleteMyPost('${d.id}')" class="text-red-400 hover:text-red-300 text-sm flex-shrink-0 self-start">🗑</button>
+          </div>`;
+      });
+    } catch (e) { list.innerHTML = `<p class="text-red-400 text-sm text-center">خطأ في التحميل: ${e.message}</p>`; }
+  }
+
+  window.deleteMyPost = async (id) => {
+    if (!confirm('حذف هذه المشاركة؟')) return;
+    try {
+      await db.collection('community_posts').doc(id).update({ isHidden: true });
+      loadMyCommunityPosts();
+    } catch (e) { alert('خطأ: ' + e.message); }
+  };
+
+  // ===== TABS =====
+  function showTab(name) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    const tabs = ['orders', 'track', 'wishlist', 'points', 'community', 'profile', 'coupons'];
+    const allBtns = document.querySelectorAll('.tab-btn');
+    allBtns.forEach(b => {
+      if (b.getAttribute('onclick')?.includes(`'${name}'`)) b.classList.add('active');
+    });
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    if (name === 'wishlist') loadWishlist();
+    if (name === 'points') { const uid = firebase.auth().currentUser?.uid; if (uid) loadPoints(uid); }
+    if (name === 'community') loadMyCommunityPosts();
+  }
+
+  // Allow Enter key for track input
+  document.getElementById('track-input').addEventListener('keydown', e => { if (e.key === 'Enter') trackOrder(); });
+</script>
+</body>
+</html>

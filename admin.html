@@ -65,6 +65,12 @@
             <button onclick="showTab('customers-tab')" id="btn-customers-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">👥 العملاء</button>
             <button onclick="showTab('referral-tab')" id="btn-referral-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">🎁 الإحالة والمكافآت</button>
             <button onclick="showTab('stats-tab')" id="btn-stats-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">📊 الإحصائيات</button>
+            <button onclick="showTab('banners-tab')" id="btn-banners-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">🖼️ البانرات</button>
+            <button onclick="showTab('posts-tab')" id="btn-posts-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">📝 المنشورات</button>
+            <button onclick="showTab('community-tab')" id="btn-community-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">🌐 المجتمع</button>
+            <button onclick="showTab('reports-tab')" id="btn-reports-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">⚑ البلاغات <span id="reports-badge" class="bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1 hidden">0</span></button>
+            <button onclick="showTab('points-tab')" id="btn-points-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">⭐ النقاط</button>
+            <button onclick="showTab('reviews-tab'); loadAdminReviews();" id="btn-reviews-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">💬 الآراء</button>
             <button onclick="showTab('settings-tab')" id="btn-settings-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">⚙️ الإعدادات</button>
         </div>
 
@@ -156,6 +162,9 @@
                             <option value="مدفوع">مدفوع</option>
                             <option value="غير مدفوع">غير مدفوع</option>
                         </select>
+                        <label class="text-xs text-zinc-500 flex items-center gap-1">من: <input type="date" id="order-date-from" onchange="renderOrders()" class="bg-black border border-zinc-700 rounded text-xs p-2 outline-none"></label>
+                        <label class="text-xs text-zinc-500 flex items-center gap-1">إلى: <input type="date" id="order-date-to" onchange="renderOrders()" class="bg-black border border-zinc-700 rounded text-xs p-2 outline-none"></label>
+                        <button onclick="document.getElementById('order-date-from').value='';document.getElementById('order-date-to').value='';renderOrders();" class="text-xs px-3 py-2 bg-zinc-800 rounded hover:bg-zinc-700">مسح التاريخ</button>
                     </div>
                 </div>
                 <div id="orders-list" class="space-y-6"></div>
@@ -317,6 +326,152 @@
             </div>
         </div>
 
+        <!-- Banners Tab -->
+        <div id="banners-tab" class="tab-content">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-zinc-900 p-6 rounded-2xl gold-border">
+                    <h3 class="text-xl font-bold mb-4">إضافة بانر متحرك</h3>
+                    <div class="space-y-3">
+                        <input id="banner-title" type="text" placeholder="عنوان البانر" class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700">
+                        <input id="banner-subtitle" type="text" placeholder="نص فرعي (اختياري)" class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700">
+                        <input id="banner-image" type="text" placeholder="رابط الصورة (Cloudinary / URL)" class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700">
+                        <input id="banner-link" type="text" placeholder="رابط الزر (اختياري)" class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700">
+                        <input id="banner-btn-text" type="text" placeholder="نص الزر (مثلاً: اعرف أكثر)" class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700">
+                        <div class="flex items-center gap-3">
+                            <input id="banner-order" type="number" placeholder="الترتيب (0=أول)" min="0" class="w-32 bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input id="banner-active" type="checkbox" checked class="w-5 h-5">
+                                <span>نشط</span>
+                            </label>
+                        </div>
+                        <button onclick="saveBanner()" class="w-full gold-bg text-black py-3 rounded-xl font-bold hover:opacity-90">💾 حفظ البانر</button>
+                    </div>
+                </div>
+                <div class="bg-zinc-900 p-6 rounded-2xl gold-border">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold">البانرات الحالية</h3>
+                        <button onclick="loadAdminBanners()" class="text-sm gold-text hover:underline">تحديث</button>
+                    </div>
+                    <div id="banners-list" class="space-y-3 max-h-[400px] overflow-y-auto">
+                        <p class="text-zinc-500 text-sm">جاري التحميل...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Posts Tab -->
+        <div id="posts-tab" class="tab-content">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-zinc-900 p-6 rounded-2xl gold-border">
+                    <h3 class="text-xl font-bold mb-4">إضافة منشور جديد</h3>
+                    <div class="space-y-3">
+                        <input id="post-title" type="text" placeholder="عنوان المنشور" class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700">
+                        <input id="post-tag" type="text" placeholder="وسم / تصنيف (مثلاً: عرض، جديد، خبر)" class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700">
+                        <textarea id="post-body" rows="4" placeholder="نص المنشور..." class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700 resize-none"></textarea>
+                        <input id="post-image" type="text" placeholder="رابط صورة (اختياري)" class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700">
+                        <input id="post-video" type="text" placeholder="رابط فيديو (اختياري)" class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700">
+                        <input id="post-link" type="text" placeholder="رابط 'اقرأ أكثر' (اختياري)" class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700">
+                        <div class="flex items-center gap-3">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input id="post-active" type="checkbox" checked class="w-5 h-5">
+                                <span>نشر فوراً</span>
+                            </label>
+                        </div>
+                        <input type="hidden" id="post-edit-id">
+                        <button onclick="savePost()" class="w-full gold-bg text-black py-3 rounded-xl font-bold hover:opacity-90">💾 نشر المنشور</button>
+                    </div>
+                </div>
+                <div class="bg-zinc-900 p-6 rounded-2xl gold-border">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold">المنشورات الحالية</h3>
+                        <button onclick="loadAdminPosts()" class="text-sm gold-text hover:underline">تحديث</button>
+                    </div>
+                    <div id="posts-list" class="space-y-3 max-h-[500px] overflow-y-auto">
+                        <p class="text-zinc-500 text-sm">جاري التحميل...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Community Moderation Tab -->
+        <div id="community-tab" class="tab-content">
+            <div class="bg-zinc-900 p-6 rounded-2xl gold-border mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold">🌐 مشاركات المجتمع</h3>
+                    <button onclick="loadAdminCommunity()" class="gold-bg text-black px-4 py-2 rounded-lg font-bold text-sm">تحديث</button>
+                </div>
+                <div class="flex gap-3 mb-4 flex-wrap">
+                    <button onclick="filterCommunity('all')" class="comm-filter-btn px-4 py-2 rounded-lg text-sm border border-zinc-700 active">الكل</button>
+                    <button onclick="filterCommunity('visible')" class="comm-filter-btn px-4 py-2 rounded-lg text-sm border border-zinc-700">ظاهر</button>
+                    <button onclick="filterCommunity('hidden')" class="comm-filter-btn px-4 py-2 rounded-lg text-sm border border-zinc-700">مخفي</button>
+                    <button onclick="filterCommunity('reported')" class="comm-filter-btn px-4 py-2 rounded-lg text-sm border border-zinc-700">مُبلَّغ عنه</button>
+                </div>
+                <div id="community-list" class="space-y-3 max-h-[600px] overflow-y-auto">
+                    <p class="text-zinc-500 text-sm">جاري التحميل...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reports Tab -->
+        <div id="reports-tab" class="tab-content">
+            <div class="bg-zinc-900 p-6 rounded-2xl gold-border">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold">⚑ البلاغات الواردة</h3>
+                    <button onclick="loadAdminReports()" class="gold-bg text-black px-4 py-2 rounded-lg font-bold text-sm">تحديث</button>
+                </div>
+                <div id="reports-list" class="space-y-3 max-h-[600px] overflow-y-auto">
+                    <p class="text-zinc-500 text-sm">جاري التحميل...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Points Settings Tab -->
+        <div id="points-tab" class="tab-content">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-zinc-900 p-6 rounded-2xl gold-border">
+                    <h3 class="text-xl font-bold mb-4">⭐ إعدادات نظام النقاط</h3>
+                    <div class="space-y-4">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input id="pts-enabled" type="checkbox" class="w-5 h-5">
+                            <span class="font-bold">تفعيل نظام النقاط</span>
+                        </label>
+                        <div>
+                            <label class="text-sm text-zinc-400 mb-1 block">نقطة لكل جنيه مدفوع</label>
+                            <input id="pts-ratio" type="number" min="0.1" step="0.1" value="1" class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700">
+                            <p class="text-xs text-zinc-500 mt-1">مثلاً: 1 = نقطة لكل جنيه، 0.5 = نصف نقطة لكل جنيه</p>
+                        </div>
+                        <button onclick="savePointsSettings()" class="w-full gold-bg text-black py-3 rounded-xl font-bold">💾 حفظ الإعدادات</button>
+                    </div>
+                </div>
+                <div class="bg-zinc-900 p-6 rounded-2xl gold-border">
+                    <h3 class="text-xl font-bold mb-4">سجل النقاط</h3>
+                    <div class="flex gap-3 mb-3">
+                        <input id="pts-search-user" type="text" placeholder="UID المستخدم..." class="flex-1 bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700 text-sm">
+                        <button onclick="searchUserPoints()" class="gold-bg text-black px-4 py-3 rounded-xl font-bold text-sm">بحث</button>
+                    </div>
+                    <div id="pts-history-list" class="space-y-2 max-h-[400px] overflow-y-auto text-sm">
+                        <p class="text-zinc-500">ابحث عن مستخدم لعرض سجل نقاطه</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reviews Tab -->
+        <div id="reviews-tab" class="tab-content">
+            <div class="space-y-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold">💬 آراء وتقييمات العملاء</h3>
+                    <div class="flex gap-2">
+                        <select id="reviews-filter-type" onchange="loadAdminReviews()" class="bg-black border border-zinc-700 rounded text-xs p-2 outline-none">
+                            <option value="testimonials">آراء المتجر العامة</option>
+                            <option value="product_reviews">تقييمات المنتجات</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="admin-reviews-list" class="space-y-4"></div>
+            </div>
+        </div>
+
         <!-- Settings Tab -->
         <div id="settings-tab" class="tab-content">
             <div class="max-w-3xl bg-zinc-900 p-8 rounded-2xl gold-border mx-auto">
@@ -466,7 +621,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, getDoc, doc, setDoc, updateDoc, deleteDoc, query, orderBy, where, serverTimestamp, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, getDoc, doc, setDoc, updateDoc, deleteDoc, query, orderBy, where, limit, serverTimestamp, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
@@ -752,6 +907,8 @@
             const fStatus = document.getElementById('order-filter-status')?.value || 'all';
             const fPay = document.getElementById('order-filter-payment')?.value || 'all';
             const search = (document.getElementById('order-search')?.value || '').toLowerCase().trim();
+            const dateFrom = document.getElementById('order-date-from')?.value;
+            const dateTo = document.getElementById('order-date-to')?.value;
 
             let filtered = allOrders.slice();
             if (fStatus !== 'all') filtered = filtered.filter(o => o.status === fStatus);
@@ -763,6 +920,20 @@
                     (o.customerPhone || '').toLowerCase().includes(search) ||
                     (o.items || []).some(i => (i.code || '').toLowerCase().includes(search) || (i.name || '').toLowerCase().includes(search))
                 );
+            }
+            if (dateFrom) {
+                const fromTs = new Date(dateFrom).getTime();
+                filtered = filtered.filter(o => {
+                    const d = o.createdAt?.toDate ? o.createdAt.toDate().getTime() : 0;
+                    return d >= fromTs;
+                });
+            }
+            if (dateTo) {
+                const toTs = new Date(dateTo).getTime() + 86400000; // include end of day
+                filtered = filtered.filter(o => {
+                    const d = o.createdAt?.toDate ? o.createdAt.toDate().getTime() : Infinity;
+                    return d <= toTs;
+                });
             }
 
             if (filtered.length === 0) {
@@ -1426,6 +1597,361 @@
         window.saveRewardSettings = saveRewardSettings;
         window.saveGeneralSettings = saveGeneralSettings;
         window.loadAll = loadAll;
+
+        // ============ BANNERS ADMIN ============
+        window.loadAdminBanners = async () => {
+            const list = document.getElementById('banners-list');
+            list.innerHTML = '<p class="text-zinc-500 text-sm">جاري التحميل...</p>';
+            try {
+                const snap = await db.collection('banners').orderBy('order', 'asc').get();
+                if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm">لا توجد بانرات</p>'; return; }
+                list.innerHTML = '';
+                snap.forEach(d => {
+                    const b = d.data();
+                    list.innerHTML += `
+                        <div class="flex items-center gap-3 bg-zinc-800 p-3 rounded-xl">
+                            ${b.imageUrl ? `<img src="${b.imageUrl}" class="w-16 h-10 object-cover rounded-lg flex-shrink-0">` : '<div class="w-16 h-10 bg-zinc-700 rounded-lg flex-shrink-0"></div>'}
+                            <div class="flex-1 min-w-0">
+                                <p class="font-bold text-sm truncate">${b.title || '(بدون عنوان)'}</p>
+                                <p class="text-xs text-zinc-500">${b.isActive ? '✅ نشط' : '⛔ غير نشط'} • ترتيب: ${b.order || 0}</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="toggleBanner('${d.id}', ${!b.isActive})" class="text-xs px-2 py-1 rounded-lg ${b.isActive ? 'bg-zinc-700 text-zinc-300' : 'bg-green-700 text-white'}">${b.isActive ? 'إيقاف' : 'تفعيل'}</button>
+                                <button onclick="deleteBanner('${d.id}')" class="text-xs px-2 py-1 rounded-lg bg-red-800 text-white">حذف</button>
+                            </div>
+                        </div>`;
+                });
+            } catch (e) { list.innerHTML = `<p class="text-red-400 text-sm">خطأ: ${e.message}</p>`; }
+        };
+
+        window.saveBanner = async () => {
+            const title = document.getElementById('banner-title').value.trim();
+            const subtitle = document.getElementById('banner-subtitle').value.trim();
+            const imageUrl = document.getElementById('banner-image').value.trim();
+            const link = document.getElementById('banner-link').value.trim();
+            const btnText = document.getElementById('banner-btn-text').value.trim();
+            const order = parseInt(document.getElementById('banner-order').value) || 0;
+            const isActive = document.getElementById('banner-active').checked;
+            if (!title && !imageUrl) return alert('أدخل عنوان البانر أو رابط صورة');
+            try {
+                await db.collection('banners').add({ title, subtitle, imageUrl, link, btnText, order, isActive, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+                ['banner-title','banner-subtitle','banner-image','banner-link','banner-btn-text'].forEach(id => document.getElementById(id).value = '');
+                loadAdminBanners();
+                alert('✅ تم حفظ البانر');
+            } catch (e) { alert('خطأ: ' + e.message); }
+        };
+
+        window.toggleBanner = async (id, state) => {
+            try { await db.collection('banners').doc(id).update({ isActive: state }); loadAdminBanners(); } catch (e) {}
+        };
+        window.deleteBanner = async (id) => {
+            if (!confirm('حذف هذا البانر؟')) return;
+            try { await db.collection('banners').doc(id).delete(); loadAdminBanners(); } catch (e) {}
+        };
+
+        // ============ POSTS ADMIN ============
+        window.loadAdminPosts = async () => {
+            const list = document.getElementById('posts-list');
+            list.innerHTML = '<p class="text-zinc-500 text-sm">جاري التحميل...</p>';
+            try {
+                const snap = await db.collection('posts').orderBy('createdAt', 'desc').limit(20).get();
+                if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm">لا توجد منشورات</p>'; return; }
+                list.innerHTML = '';
+                snap.forEach(d => {
+                    const p = d.data();
+                    list.innerHTML += `
+                        <div class="bg-zinc-800 p-3 rounded-xl">
+                            <div class="flex justify-between items-start gap-2 mb-1">
+                                <div>
+                                    ${p.tag ? `<span class="text-[10px] gold-text font-bold">${p.tag}</span>` : ''}
+                                    <p class="font-bold text-sm">${p.title || '(بدون عنوان)'}</p>
+                                    <p class="text-xs text-zinc-500 line-clamp-1">${p.body || ''}</p>
+                                </div>
+                                <span class="text-[10px] flex-shrink-0 ${p.isActive ? 'text-green-400' : 'text-red-400'}">${p.isActive ? '✅' : '⛔'}</span>
+                            </div>
+                            <div class="flex gap-2 mt-2">
+                                <button onclick="editPost('${d.id}')" class="text-xs px-2 py-1 rounded bg-zinc-700 text-white">تعديل</button>
+                                <button onclick="togglePost('${d.id}', ${!p.isActive})" class="text-xs px-2 py-1 rounded ${p.isActive ? 'bg-zinc-600' : 'bg-green-800'} text-white">${p.isActive ? 'إخفاء' : 'إظهار'}</button>
+                                <button onclick="deletePost('${d.id}')" class="text-xs px-2 py-1 rounded bg-red-800 text-white">حذف</button>
+                            </div>
+                        </div>`;
+                });
+            } catch (e) { list.innerHTML = `<p class="text-red-400 text-sm">خطأ: ${e.message}</p>`; }
+        };
+
+        window.savePost = async () => {
+            const editId = document.getElementById('post-edit-id').value;
+            const data = {
+                title: document.getElementById('post-title').value.trim(),
+                tag: document.getElementById('post-tag').value.trim(),
+                body: document.getElementById('post-body').value.trim(),
+                imageUrl: document.getElementById('post-image').value.trim(),
+                videoUrl: document.getElementById('post-video').value.trim(),
+                link: document.getElementById('post-link').value.trim(),
+                isActive: document.getElementById('post-active').checked,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            if (!data.title && !data.body) return alert('أدخل عنواناً أو نصاً');
+            try {
+                if (editId) {
+                    await db.collection('posts').doc(editId).update(data);
+                    document.getElementById('post-edit-id').value = '';
+                } else {
+                    data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await db.collection('posts').add(data);
+                }
+                ['post-title','post-tag','post-body','post-image','post-video','post-link'].forEach(id => document.getElementById(id).value = '');
+                loadAdminPosts();
+                alert('✅ تم حفظ المنشور');
+            } catch (e) { alert('خطأ: ' + e.message); }
+        };
+
+        window.editPost = async (id) => {
+            try {
+                const snap = await db.collection('posts').doc(id).get();
+                if (!snap.exists) return;
+                const p = snap.data();
+                document.getElementById('post-edit-id').value = id;
+                document.getElementById('post-title').value = p.title || '';
+                document.getElementById('post-tag').value = p.tag || '';
+                document.getElementById('post-body').value = p.body || '';
+                document.getElementById('post-image').value = p.imageUrl || '';
+                document.getElementById('post-video').value = p.videoUrl || '';
+                document.getElementById('post-link').value = p.link || '';
+                document.getElementById('post-active').checked = !!p.isActive;
+                document.querySelector('#posts-tab h3').textContent = 'تعديل المنشور';
+            } catch (e) {}
+        };
+        window.togglePost = async (id, state) => {
+            try { await db.collection('posts').doc(id).update({ isActive: state }); loadAdminPosts(); } catch (e) {}
+        };
+        window.deletePost = async (id) => {
+            if (!confirm('حذف هذا المنشور؟')) return;
+            try { await db.collection('posts').doc(id).delete(); loadAdminPosts(); } catch (e) {}
+        };
+
+        // ============ COMMUNITY ADMIN ============
+        let communityFilter = 'all';
+        window.filterCommunity = (f) => {
+            communityFilter = f;
+            document.querySelectorAll('.comm-filter-btn').forEach(b => b.classList.remove('active', 'gold-bg', 'text-black'));
+            event.target.classList.add('active', 'gold-bg', 'text-black');
+            loadAdminCommunity();
+        };
+
+        window.loadAdminCommunity = async () => {
+            const list = document.getElementById('community-list');
+            list.innerHTML = '<p class="text-zinc-500 text-sm">جاري التحميل...</p>';
+            try {
+                let q = db.collection('community_posts').orderBy('createdAt', 'desc').limit(30);
+                const snap = await q.get();
+                if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm">لا توجد مشاركات</p>'; return; }
+                list.innerHTML = '';
+                snap.forEach(d => {
+                    const cp = d.data();
+                    if (communityFilter === 'visible' && cp.isHidden) return;
+                    if (communityFilter === 'hidden' && !cp.isHidden) return;
+                    if (communityFilter === 'reported' && !(cp.reportCount > 0)) return;
+                    list.innerHTML += `
+                        <div class="bg-zinc-800 p-4 rounded-xl ${cp.reportCount > 0 ? 'border border-red-600/40' : ''}">
+                            <div class="flex justify-between items-start gap-2">
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="font-bold text-sm">${cp.userName || 'مجهول'}</span>
+                                        ${cp.isHidden ? '<span class="text-[10px] bg-red-800 text-white px-2 py-0.5 rounded">مخفي</span>' : '<span class="text-[10px] bg-green-800 text-white px-2 py-0.5 rounded">ظاهر</span>'}
+                                        ${cp.reportCount > 0 ? `<span class="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded">🚨 ${cp.reportCount} بلاغ</span>` : ''}
+                                    </div>
+                                    ${cp.text ? `<p class="text-sm text-zinc-300 mb-1 line-clamp-2">${cp.text}</p>` : ''}
+                                    ${cp.mediaUrls?.length ? `<img src="${cp.mediaUrls[0]}" class="w-16 h-12 rounded-lg object-cover mt-1">` : ''}
+                                    ${cp.productName ? `<p class="text-[10px] text-zinc-500">المنتج: ${cp.productName}</p>` : ''}
+                                </div>
+                            </div>
+                            <div class="flex gap-2 mt-3">
+                                <button onclick="toggleCommunityPost('${d.id}', ${!cp.isHidden})" class="text-xs px-3 py-1 rounded-lg ${cp.isHidden ? 'bg-green-800 text-white' : 'bg-zinc-700 text-zinc-300'}">${cp.isHidden ? 'إظهار' : 'إخفاء'}</button>
+                                <button onclick="deleteCommunityPostAdmin('${d.id}')" class="text-xs px-3 py-1 rounded-lg bg-red-800 text-white">حذف نهائي</button>
+                                ${cp.userId ? `<button onclick="blockUser('${cp.userId}', '${cp.userName || ''}')" class="text-xs px-3 py-1 rounded-lg bg-orange-800 text-white">حظر</button>` : ''}
+                            </div>
+                        </div>`;
+                });
+                if (!list.innerHTML.trim()) list.innerHTML = '<p class="text-zinc-500 text-sm">لا نتائج بهذا الفلتر</p>';
+            } catch (e) { list.innerHTML = `<p class="text-red-400 text-sm">خطأ: ${e.message}</p>`; }
+        };
+
+        window.toggleCommunityPost = async (id, hide) => {
+            try { await db.collection('community_posts').doc(id).update({ isHidden: hide }); loadAdminCommunity(); } catch (e) {}
+        };
+        window.deleteCommunityPostAdmin = async (id) => {
+            if (!confirm('حذف نهائي؟')) return;
+            try { await db.collection('community_posts').doc(id).delete(); loadAdminCommunity(); } catch (e) {}
+        };
+        window.blockUser = async (uid, name) => {
+            if (!confirm(`حظر المستخدم ${name || uid}؟`)) return;
+            try {
+                await db.collection('blocked_users').doc(uid).set({ blockedAt: firebase.firestore.FieldValue.serverTimestamp(), name: name || '' });
+                alert('✅ تم الحظر');
+            } catch (e) { alert('خطأ: ' + e.message); }
+        };
+
+        // ============ REPORTS ADMIN ============
+        window.loadAdminReports = async () => {
+            const list = document.getElementById('reports-list');
+            list.innerHTML = '<p class="text-zinc-500 text-sm">جاري التحميل...</p>';
+            try {
+                const snap = await db.collection('reports').orderBy('createdAt', 'desc').limit(50).get();
+                if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm">لا توجد بلاغات ✅</p>'; return; }
+                list.innerHTML = '';
+                snap.forEach(d => {
+                    const r = d.data();
+                    list.innerHTML += `
+                        <div class="bg-zinc-800 p-4 rounded-xl flex gap-3 items-start">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-xs bg-zinc-700 px-2 py-0.5 rounded">${r.collection || '?'}</span>
+                                    <span class="text-xs text-zinc-500">${r.createdAt?.toDate?.()?.toLocaleDateString('ar-EG') || ''}</span>
+                                </div>
+                                <p class="text-sm font-bold">السبب: ${r.reason || 'لم يُحدد'}</p>
+                                <p class="text-xs text-zinc-500">الوثيقة: ${r.docId || '—'}</p>
+                                <p class="text-xs text-zinc-500">المُبلَّغ عنه: ${r.targetUserId || '—'}</p>
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <button onclick="viewReportedContent('${r.collection}','${r.docId}')" class="text-xs px-3 py-1 rounded bg-zinc-700 text-white whitespace-nowrap">عرض المحتوى</button>
+                                <button onclick="dismissReport('${d.id}')" class="text-xs px-3 py-1 rounded bg-zinc-600 text-white">تجاهل</button>
+                                ${r.targetUserId ? `<button onclick="blockUser('${r.targetUserId}','')" class="text-xs px-3 py-1 rounded bg-orange-800 text-white">حظر</button>` : ''}
+                            </div>
+                        </div>`;
+                });
+                const badge = document.getElementById('reports-badge');
+                if (badge) { badge.textContent = snap.size; badge.classList.remove('hidden'); }
+            } catch (e) { list.innerHTML = `<p class="text-red-400 text-sm">خطأ: ${e.message}</p>`; }
+        };
+
+        window.dismissReport = async (id) => {
+            try { await db.collection('reports').doc(id).delete(); loadAdminReports(); } catch (e) {}
+        };
+        window.viewReportedContent = async (col, docId) => {
+            try {
+                const snap = await db.collection(col).doc(docId).get();
+                if (snap.exists) alert(JSON.stringify(snap.data(), null, 2));
+                else alert('المحتوى محذوف أو غير موجود');
+            } catch (e) { alert('خطأ: ' + e.message); }
+        };
+
+        // ============ POINTS ADMIN ============
+        window.savePointsSettings = async () => {
+            const enabled = document.getElementById('pts-enabled').checked;
+            const ratio = parseFloat(document.getElementById('pts-ratio').value) || 1;
+            try {
+                await db.collection('settings').doc('points').set({ enabled, ratio, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                alert('✅ تم حفظ إعدادات النقاط');
+            } catch (e) { alert('خطأ: ' + e.message); }
+        };
+
+        window.searchUserPoints = async () => {
+            const uid = document.getElementById('pts-search-user').value.trim();
+            if (!uid) return alert('أدخل UID المستخدم');
+            const list = document.getElementById('pts-history-list');
+            list.innerHTML = '<p class="text-zinc-500 text-sm">جاري البحث...</p>';
+            try {
+                const balSnap = await db.collection('points').doc(uid).get();
+                const balance = balSnap.exists ? (balSnap.data().balance || 0) : 0;
+                const histSnap = await db.collection('points_history').where('userId', '==', uid).orderBy('createdAt', 'desc').limit(20).get();
+                let html = `<div class="mb-3 p-3 bg-zinc-900 rounded-xl"><p class="text-sm">الرصيد الحالي: <span class="gold-text font-bold text-lg">${balance}</span> نقطة</p></div>`;
+                if (histSnap.empty) { html += '<p class="text-zinc-500 text-sm">لا سجل نقاط</p>'; }
+                else {
+                    histSnap.forEach(d => {
+                        const h = d.data();
+                        html += `<div class="flex justify-between items-center py-2 border-b border-zinc-800">
+                            <div>
+                                <p class="text-xs font-bold">${h.type === 'earn' ? '⬆️ مكتسب' : '⬇️ مُصرف'}</p>
+                                <p class="text-[10px] text-zinc-500">طلب: ${h.orderNumber || h.orderId || '—'}</p>
+                                <p class="text-[10px] text-zinc-600">${h.createdAt?.toDate?.()?.toLocaleDateString('ar-EG') || ''}</p>
+                            </div>
+                            <span class="${h.type === 'earn' ? 'text-green-400' : 'text-red-400'} font-bold">${h.type === 'earn' ? '+' : '-'}${h.points}</span>
+                        </div>`;
+                    });
+                }
+                list.innerHTML = html;
+            } catch (e) { list.innerHTML = `<p class="text-red-400 text-sm">خطأ: ${e.message}</p>`; }
+        };
+
+        // Load points settings on tab open
+        document.getElementById('btn-points-tab').addEventListener('click', async () => {
+            try {
+                const snap = await db.collection('settings').doc('points').get();
+                if (snap.exists) {
+                    document.getElementById('pts-enabled').checked = !!snap.data().enabled;
+                    document.getElementById('pts-ratio').value = snap.data().ratio || 1;
+                }
+            } catch (e) {}
+        });
+        document.getElementById('btn-banners-tab').addEventListener('click', loadAdminBanners);
+        document.getElementById('btn-posts-tab').addEventListener('click', loadAdminPosts);
+        document.getElementById('btn-community-tab').addEventListener('click', loadAdminCommunity);
+        document.getElementById('btn-reports-tab').addEventListener('click', loadAdminReports);
+
+        // ============ REVIEWS ADMIN ============
+        window.loadAdminReviews = async () => {
+            const type = document.getElementById('reviews-filter-type')?.value || 'testimonials';
+            const list = document.getElementById('admin-reviews-list');
+            list.innerHTML = '<div class="text-center py-8 text-zinc-500">جارٍ التحميل...</div>';
+            try {
+                const snap = await getDocs(query(collection(db, type), orderBy('createdAt', 'desc'), limit(100)));
+                if (snap.empty) { list.innerHTML = '<div class="text-center py-8 text-zinc-500">لا توجد آراء</div>'; return; }
+                list.innerHTML = snap.docs.map(docSnap => {
+                    const r = docSnap.data();
+                    const id = docSnap.id;
+                    const date = r.createdAt?.toDate ? r.createdAt.toDate().toLocaleDateString('ar-EG') : '';
+                    const stars = '★'.repeat(r.rating || 5) + '☆'.repeat(5 - (r.rating || 5));
+                    return `
+                    <div class="p-5 bg-zinc-900 rounded-2xl border border-zinc-800" id="review-${id}">
+                        <div class="flex justify-between items-start gap-4 mb-3">
+                            <div>
+                                <p class="font-bold">${r.name || r.userName || 'مجهول'}</p>
+                                <p class="text-xs text-zinc-500">${date} ${r.productId ? '| منتج: ' + (r.productName || r.productId) : ''}</p>
+                                <p class="text-yellow-400 text-sm">${stars}</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <span class="text-xs px-2 py-1 rounded ${r.approved !== false ? 'bg-green-900 text-green-400' : 'bg-zinc-700 text-zinc-400'}">${r.approved !== false ? '✓ معتمد' : 'معلق'}</span>
+                                <button onclick="toggleReviewApproval('${type}','${id}',${r.approved !== false})" class="text-xs px-3 py-1 bg-zinc-800 rounded hover:bg-zinc-700">${r.approved !== false ? 'إلغاء الاعتماد' : 'اعتماد'}</button>
+                                <button onclick="deleteReview('${type}','${id}')" class="text-xs px-3 py-1 bg-red-900/40 text-red-400 rounded hover:bg-red-900">حذف</button>
+                            </div>
+                        </div>
+                        <p class="text-sm text-zinc-300 mb-3">${r.text || r.message || ''}</p>
+                        ${r.adminReply ? `<div class="bg-yellow-900/10 border-r-2 border-yellow-400 pr-3 py-2 mb-3 rounded text-sm"><span class="text-yellow-400 font-bold text-xs block mb-1">رد الأدمن:</span>${r.adminReply}</div>` : ''}
+                        <div class="flex gap-2 mt-2">
+                            <input type="text" id="reply-input-${id}" placeholder="اكتب رداً..." value="${r.adminReply || ''}" class="flex-1 bg-black border border-zinc-700 rounded p-2 text-xs outline-none focus:border-yellow-400">
+                            <button onclick="submitReviewReply('${type}','${id}')" class="text-xs px-4 py-2 gold-bg text-black rounded font-bold hover:opacity-90">إرسال الرد</button>
+                        </div>
+                    </div>`;
+                }).join('');
+            } catch (e) { list.innerHTML = `<div class="text-center py-8 text-red-400">خطأ: ${e.message}</div>`; }
+        };
+
+        window.submitReviewReply = async (collName, docId) => {
+            const reply = (document.getElementById(`reply-input-${docId}`)?.value || '').trim();
+            if (!reply) return;
+            try {
+                await updateDoc(doc(db, collName, docId), { adminReply: reply });
+                showNotif('تم إرسال الرد ✓', 'success');
+                loadAdminReviews();
+            } catch (e) { showNotif('خطأ: ' + e.message, 'error'); }
+        };
+
+        window.toggleReviewApproval = async (collName, docId, currentlyApproved) => {
+            try {
+                await updateDoc(doc(db, collName, docId), { approved: !currentlyApproved });
+                loadAdminReviews();
+            } catch (e) { showNotif('خطأ: ' + e.message, 'error'); }
+        };
+
+        window.deleteReview = async (collName, docId) => {
+            if (!confirm('حذف هذا الرأي نهائياً؟')) return;
+            try {
+                await deleteDoc(doc(db, collName, docId));
+                document.getElementById(`review-${docId}`)?.remove();
+                showNotif('تم الحذف ✓', 'success');
+            } catch (e) { showNotif('خطأ: ' + e.message, 'error'); }
+        };
 
     </script>
 </body>

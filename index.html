@@ -96,9 +96,122 @@
     /* Social Cards */
     .social-card { background: #151515; border: 1px solid #222; border-radius: 16px; padding: 12px; display: flex; align-items: center; gap: 10px; transition: all 0.3s; }
     .social-card:hover { border-color: #d4af37; transform: translateY(-2px); }
+
+    /* ====== ANIMATED BANNER ====== */
+    .hero-banner { position: relative; overflow: hidden; border-radius: 20px; margin-bottom: 24px; }
+    .banner-track { display: flex; transition: transform 0.6s ease; }
+    .banner-slide { min-width: 100%; position: relative; }
+    .banner-slide img { width: 100%; height: 180px; object-fit: cover; border-radius: 20px; }
+    @media(min-width:768px){ .banner-slide img { height: 260px; } }
+    .banner-overlay { position: absolute; inset: 0; background: linear-gradient(to left, rgba(0,0,0,0.7), transparent); border-radius: 20px; display: flex; align-items: center; justify-content: flex-start; padding: 24px; }
+    .banner-dots { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
+    .banner-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.4); cursor: pointer; transition: all 0.3s; }
+    .banner-dot.active { background: #d4af37; width: 24px; border-radius: 4px; }
+
+    /* ====== WISHLIST HEART ====== */
+    .heart-btn { position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; background: rgba(0,0,0,0.7); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: all 0.2s; z-index: 10; }
+    .heart-btn:hover { transform: scale(1.2); background: rgba(0,0,0,0.9); }
+    .heart-btn.active { background: rgba(239,68,68,0.2); border: 1px solid #ef4444; }
+
+    /* ====== COMPARE BAR ====== */
+    .compare-btn { background: transparent; border: 1px solid #333; border-radius: 8px; padding: 6px 10px; color: #71717a; font-size: 11px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+    .compare-btn.selected { background: rgba(59,130,246,0.2); border-color: #3b82f6; color: #3b82f6; }
+    #compare-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #111; border-top: 1px solid #d4af37; padding: 12px 16px; z-index: 500; transform: translateY(100%); transition: transform 0.3s ease; }
+    #compare-bar.visible { transform: translateY(0); }
+
+    /* ====== POINTS ====== */
+    .points-badge { background: linear-gradient(135deg, #d4af37, #f9e29c); color: #000; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; display: inline-block; }
+
+    /* ====== SPECIAL POSTS ====== */
+    .post-card { background: #151515; border: 1px solid #222; border-radius: 20px; overflow: hidden; transition: all 0.3s; }
+    .post-card:hover { border-color: #d4af37; transform: translateY(-3px); }
+    .post-card img { width: 100%; height: 200px; object-fit: cover; }
+
+    /* ====== COMMUNITY FEED ====== */
+    .community-card { background: #151515; border: 1px solid #222; border-radius: 16px; overflow: hidden; break-inside: avoid; margin-bottom: 16px; transition: all 0.3s; }
+    .community-card:hover { border-color: #333; }
+    .report-btn { background: transparent; border: none; color: #6b7280; font-size: 12px; cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: all 0.2s; }
+    .report-btn:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
+    .three-dot-menu { position: relative; }
+    .three-dot-menu .menu-dropdown { display: none; position: absolute; top: 100%; left: 0; background: #1a1a1a; border: 1px solid #333; border-radius: 10px; min-width: 140px; z-index: 200; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+    .three-dot-menu:hover .menu-dropdown, .three-dot-menu.open .menu-dropdown { display: block; }
+    .menu-item { display: block; padding: 10px 14px; font-size: 13px; color: #e4e4e7; cursor: pointer; transition: background 0.2s; width: 100%; text-align: right; border: none; background: transparent; }
+    .menu-item:hover { background: #222; }
+    .menu-item.danger { color: #ef4444; }
+
+    /* ====== COMPARE MODAL ====== */
+    .compare-modal-table th { padding: 12px; font-size: 12px; text-align: center; background: #1a1a1a; }
+    .compare-modal-table td { padding: 10px 12px; font-size: 12px; text-align: center; border-bottom: 1px solid #222; }
+
+    /* ====== LIGHT / DARK THEME ====== */
+    :root { --page-bg:#0a0a0a; --card-bg:#151515; --card-border:#222; --nav-bg:rgba(0,0,0,0.7); --text-main:#fff; --text-muted:#71717a; --input-bg:#000; --input-border:#3f3f46; --section-bg:#111; }
+    body.light-theme { --page-bg:#f5f4ef; --card-bg:#ffffff; --card-border:#e2e0d5; --nav-bg:rgba(245,244,239,0.85); --text-main:#1a1a1a; --text-muted:#6b6b6b; --input-bg:#f9f9f6; --input-border:#d4d0c4; --section-bg:#eeeae0; }
+    body { background-color: var(--page-bg) !important; color: var(--text-main); transition: background-color 0.3s, color 0.3s; }
+    body.light-theme nav { background: var(--nav-bg) !important; border-bottom-color: #d4c9a0 !important; }
+    body.light-theme .product-card { background: var(--card-bg) !important; border-color: var(--card-border) !important; color: var(--text-main) !important; }
+    body.light-theme .bg-zinc-950 { background: var(--page-bg) !important; }
+    body.light-theme .bg-zinc-900 { background: var(--section-bg) !important; }
+    body.light-theme .bg-zinc-800 { background: #ddd9cd !important; }
+    body.light-theme .text-zinc-300 { color: #3a3a3a !important; }
+    body.light-theme .text-zinc-400 { color: #555 !important; }
+    body.light-theme .text-zinc-500 { color: #777 !important; }
+    body.light-theme .border-zinc-800 { border-color: #d4d0c4 !important; }
+    body.light-theme .border-zinc-900 { border-color: #e0ddd4 !important; }
+    body.light-theme #sidebar { background: #f5f4ef !important; border-color: #d4c9a0 !important; }
+    body.light-theme .community-card, body.light-theme .post-card { background: var(--card-bg) !important; border-color: var(--card-border) !important; }
+    body.light-theme .modal-content-box { background: #f5f4ef !important; }
+    .theme-toggle { width: 44px; height: 24px; border-radius: 12px; background: #333; border: none; cursor: pointer; position: relative; transition: background 0.3s; }
+    .theme-toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #d4af37; transition: left 0.3s; }
+    body.light-theme .theme-toggle { background: #c0b8a0; }
+    body.light-theme .theme-toggle::after { left: 23px; }
+
+    /* ====== COUNTDOWN TIMER ====== */
+    .countdown-wrap { display: flex; gap: 8px; align-items: center; justify-content: center; margin: 8px 0 16px; }
+    .countdown-unit { text-align: center; min-width: 48px; background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.3); border-radius: 12px; padding: 6px 8px; }
+    .countdown-num { font-size: 22px; font-weight: 800; color: #d4af37; line-height: 1; display: block; font-variant-numeric: tabular-nums; }
+    .countdown-lbl { font-size: 9px; color: #71717a; display: block; margin-top: 2px; }
+    .countdown-sep { color: #d4af37; font-size: 20px; font-weight: bold; margin-bottom: 16px; }
+
+    /* ====== CUSTOM CONFIRM / PROMPT ====== */
+    #custom-confirm, #custom-prompt { z-index: 9999; }
+    #custom-confirm .modal-content-box, #custom-prompt .modal-content-box { max-width: 340px; }
+
+    /* ====== SHARE BUTTON ====== */
+    .share-btn { background: rgba(0,0,0,0.7); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+    .share-btn:hover { background: rgba(212,175,55,0.3); transform: scale(1.15); }
+
+    /* ====== REVIEW REPLY ====== */
+    .review-reply { background: rgba(212,175,55,0.05); border-right: 3px solid #d4af37; padding: 8px 12px; border-radius: 0 8px 8px 0; margin-top: 8px; font-size: 12px; color: #a0a0a0; }
+    .review-reply strong { color: #d4af37; display: block; margin-bottom: 2px; font-size: 11px; }
   </style>
 </head>
 <body class="overflow-x-hidden">
+  <!-- Custom Confirm Modal -->
+  <div id="custom-confirm" class="modal fixed inset-0 flex items-center justify-center p-4">
+    <div class="modal-content-box bg-zinc-950 w-full max-w-sm rounded-3xl border border-zinc-800 p-8 text-center shadow-2xl">
+        <div class="text-4xl mb-4" id="confirm-icon">❓</div>
+        <h3 id="confirm-title" class="text-xl font-bold mb-2"></h3>
+        <p id="confirm-msg" class="text-zinc-400 mb-6 text-sm"></p>
+        <div class="grid grid-cols-2 gap-3">
+            <button onclick="resolveConfirm(false)" class="py-3 rounded-xl border border-zinc-700 text-zinc-400 hover:bg-zinc-900 font-bold">إلغاء</button>
+            <button id="confirm-ok-btn" onclick="resolveConfirm(true)" class="py-3 rounded-xl gold-bg text-black font-bold hover:opacity-90">تأكيد</button>
+        </div>
+    </div>
+  </div>
+
+  <!-- Custom Prompt Modal -->
+  <div id="custom-prompt" class="modal fixed inset-0 flex items-center justify-center p-4">
+    <div class="modal-content-box bg-zinc-950 w-full max-w-sm rounded-3xl border border-zinc-800 p-8 text-center shadow-2xl">
+        <div class="text-4xl mb-4">✏️</div>
+        <h3 id="prompt-title" class="text-xl font-bold mb-4"></h3>
+        <input id="prompt-input" type="text" class="w-full bg-black border border-zinc-700 p-3 rounded-xl outline-none focus:border-gold-text text-sm mb-4" placeholder="">
+        <div class="grid grid-cols-2 gap-3">
+            <button onclick="resolvePrompt(null)" class="py-3 rounded-xl border border-zinc-700 text-zinc-400 hover:bg-zinc-900 font-bold">إلغاء</button>
+            <button onclick="resolvePrompt(document.getElementById('prompt-input').value)" class="py-3 rounded-xl gold-bg text-black font-bold hover:opacity-90">إرسال</button>
+        </div>
+    </div>
+  </div>
+
   <!-- Custom Alert Modal -->
   <div id="custom-alert" class="modal fixed inset-0 flex items-center justify-center p-4 z-[5000]">
     <div class="modal-content-box bg-zinc-950 w-full max-w-sm rounded-3xl border border-zinc-800 p-8 text-center shadow-2xl">
@@ -129,16 +242,20 @@
         <button onclick="showPage('store')" class="px-4 py-2 text-sm rounded-lg hover:bg-zinc-900 transition-colors gold-text font-bold">🛍️ المتجر</button>
         <button onclick="showPage('track')" class="px-4 py-2 text-sm rounded-lg hover:bg-zinc-900 transition-colors">📦 تتبع</button>
         <button id="nav-myorders" onclick="showPage('myorders')" class="hidden px-4 py-2 text-sm rounded-lg hover:bg-zinc-900 transition-colors">📋 طلباتي</button>
+        <a id="nav-account-btn" href="/account.html" class="hidden px-4 py-2 text-sm rounded-lg hover:bg-zinc-900 transition-colors gold-text">👤 حسابي</a>
         <button onclick="showPage('testimonials')" class="px-4 py-2 text-sm rounded-lg hover:bg-zinc-900 transition-colors">⭐ الآراء</button>
       </div>
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2">
+        <button onclick="toggleTheme()" class="theme-toggle" id="theme-toggle-btn" title="تبديل الثيم"></button>
         <div id="user-profile" class="hidden flex items-center gap-2 text-sm">
-          <img id="user-avatar" src="" class="w-8 h-8 rounded-full border border-gold-text">
-          <span id="user-name" class="text-zinc-400 max-w-[80px] truncate"></span>
-          <button onclick="logout()" class="text-xs text-red-500 hover:text-red-400">خروج</button>
+          <a href="/account.html" title="حسابي وطلباتي">
+            <img id="user-avatar" src="" class="w-8 h-8 rounded-full border border-gold-text hover:opacity-80 transition-opacity cursor-pointer">
+          </a>
+          <a href="/account.html" class="text-zinc-400 max-w-[80px] truncate hover:text-yellow-400 transition-colors hidden md:block" id="user-name"></a>
+          <button onclick="logout()" class="text-xs text-red-500 hover:text-red-400 hidden md:block">خروج</button>
         </div>
         <button id="login-btn" onclick="showLoginModal()" class="text-xs px-3 py-2 border border-gold-text rounded-lg gold-text hover:bg-gold-text/10 transition-colors">دخول</button>
-        <div class="relative cursor-pointer ml-2" onclick="toggleCart()">
+        <div class="relative cursor-pointer" onclick="toggleCart()">
           <svg class="w-6 h-6 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
           <span id="cart-count" class="cart-badge">0</span>
         </div>
@@ -148,23 +265,89 @@
 
   <!-- Sidebar -->
   <div id="sidebar-overlay" class="sidebar-overlay fixed inset-0 bg-black z-[890]" onclick="closeSidebar()"></div>
-  <div id="sidebar" class="sidebar fixed top-0 right-0 h-full w-72 bg-zinc-950 border-l border-zinc-800 transform translate-x-full">
+  <div id="sidebar" class="sidebar fixed top-0 right-0 h-full w-72 bg-zinc-950 border-l border-zinc-800 transform translate-x-full overflow-y-auto">
     <button onclick="closeSidebar()" class="absolute top-6 left-6 p-2 text-zinc-400 hover:text-white hover:bg-zinc-900 rounded-lg z-50">
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
     </button>
     <div class="p-6 pt-16">
-      <h2 class="text-2xl font-bold mb-6 gradient-text">الأقسام</h2>
-      <button onclick="filterCategory('__discount__'); showPage('store'); closeSidebar();" class="w-full text-right p-3 rounded-xl bg-red-900/20 border border-red-500/30 hover:bg-red-900/40 transition-colors text-red-400 font-bold mb-3">🔥 منتجات بخصم</button>
-      <button id="sidebar-daily-btn" onclick="filterCategory('__daily__'); showPage('store'); closeSidebar();" class="hidden w-full text-right p-3 rounded-xl bg-yellow-900/10 border border-yellow-700/30 hover:bg-yellow-900/30 transition-colors text-yellow-400 font-bold mb-3">⚡ عروض اليوم</button>
-      <button id="sidebar-weekly-btn" onclick="filterCategory('__weekly__'); showPage('store'); closeSidebar();" class="hidden w-full text-right p-3 rounded-xl bg-blue-900/10 border border-blue-700/30 hover:bg-blue-900/30 transition-colors text-blue-400 font-bold mb-3">📅 عروض الأسبوع</button>
-      <div id="categories-list" class="space-y-2">
-        <button onclick="filterCategory('all')" class="w-full text-right p-3 rounded-xl hover:bg-zinc-900 transition-colors text-gold-text font-bold">كل المنتجات</button>
+      <!-- Main Nav Links -->
+      <div class="grid grid-cols-2 gap-2 mb-5">
+        <button onclick="showPage('home'); closeSidebar();" class="p-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 transition-colors text-sm font-bold text-center">🏠 الرئيسية</button>
+        <button onclick="showPage('store'); closeSidebar();" class="p-3 rounded-xl bg-yellow-900/20 border border-yellow-700/30 hover:bg-yellow-900/40 transition-colors text-sm font-bold text-center gold-text">🛍️ المتجر</button>
+        <button onclick="showPage('track'); closeSidebar();" class="p-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 transition-colors text-sm font-bold text-center">📦 تتبع الطلب</button>
+        <button id="sidebar-myorders-btn" onclick="showPage('myorders'); closeSidebar();" class="hidden p-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 transition-colors text-sm font-bold text-center">📋 طلباتي</button>
+        <button onclick="showPage('testimonials'); closeSidebar();" class="p-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 transition-colors text-sm font-bold text-center col-span-2">⭐ الآراء والتقييمات</button>
       </div>
-      <div class="mt-12 pt-8 border-t border-zinc-900 space-y-4">
+      <div class="border-t border-zinc-800 pt-4 mb-4">
+        <h2 class="text-sm font-bold mb-3 text-zinc-400 uppercase tracking-widest">الأقسام</h2>
+        <button onclick="filterCategory('__discount__'); showPage('store'); closeSidebar();" class="w-full text-right p-3 rounded-xl bg-red-900/20 border border-red-500/30 hover:bg-red-900/40 transition-colors text-red-400 font-bold mb-2">🔥 منتجات بخصم</button>
+        <button id="sidebar-daily-btn" onclick="filterCategory('__daily__'); showPage('store'); closeSidebar();" class="hidden w-full text-right p-3 rounded-xl bg-yellow-900/10 border border-yellow-700/30 hover:bg-yellow-900/30 transition-colors text-yellow-400 font-bold mb-2">⚡ عروض اليوم</button>
+        <button id="sidebar-weekly-btn" onclick="filterCategory('__weekly__'); showPage('store'); closeSidebar();" class="hidden w-full text-right p-3 rounded-xl bg-blue-900/10 border border-blue-700/30 hover:bg-blue-900/30 transition-colors text-blue-400 font-bold mb-2">📅 عروض الأسبوع</button>
+        <div id="categories-list" class="space-y-1">
+          <button onclick="filterCategory('all'); showPage('store'); closeSidebar();" class="w-full text-right p-3 rounded-xl hover:bg-zinc-900 transition-colors gold-text font-bold">كل المنتجات</button>
+        </div>
+      </div>
+      <div id="sidebar-account-wrap" class="hidden mb-4">
+        <a href="/account.html" class="block w-full text-right p-3 rounded-xl bg-yellow-900/10 border border-yellow-700/30 hover:bg-yellow-900/30 transition-colors gold-text font-bold">👤 حسابي وإعداداتي</a>
+      </div>
+      <div class="flex items-center justify-between py-3 border-t border-zinc-900 mb-4">
+        <span class="text-sm text-zinc-400">الوضع الليلي / النهاري</span>
+        <button onclick="toggleTheme()" class="theme-toggle" title="تبديل الثيم"></button>
+      </div>
+      <div class="pt-4 border-t border-zinc-900 space-y-3">
         <p class="text-xs text-zinc-500 uppercase tracking-widest">تواصل معنا</p>
-        <div id="sidebar-social" class="grid grid-cols-1 gap-3">
+        <div id="sidebar-social" class="grid grid-cols-1 gap-2">
             <!-- Social cards filled by JS based on settings -->
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Compare Bar (fixed bottom) -->
+  <div id="compare-bar">
+    <div class="max-w-5xl mx-auto flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-zinc-400 font-bold">مقارنة:</span>
+        <div id="compare-products-preview" class="flex gap-2"></div>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        <button onclick="openCompareModal()" class="gold-bg text-black px-4 py-2 rounded-lg font-bold text-xs">مقارنة الآن</button>
+        <button onclick="clearCompare()" class="text-zinc-400 text-xs px-3 py-2 border border-zinc-700 rounded-lg">مسح</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Compare Modal -->
+  <div id="compare-modal" class="modal fixed inset-0 flex items-center justify-center p-4 z-[3000]">
+    <div class="modal-content-box bg-zinc-950 w-full max-w-5xl rounded-3xl border border-zinc-800 overflow-auto max-h-[90vh]">
+      <div class="sticky top-0 bg-zinc-950 border-b border-zinc-800 px-6 py-4 flex justify-between items-center">
+        <h3 class="font-bold gold-text text-lg">⚖️ مقارنة المنتجات</h3>
+        <button onclick="document.getElementById('compare-modal').classList.remove('active')" class="text-zinc-400 hover:text-white text-2xl">×</button>
+      </div>
+      <div class="p-4 overflow-x-auto">
+        <table class="compare-modal-table w-full" id="compare-table"></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Community Post Modal -->
+  <div id="community-post-modal" class="modal fixed inset-0 flex items-center justify-center p-4 z-[3000]">
+    <div class="modal-content-box bg-zinc-950 w-full max-w-md rounded-3xl border border-zinc-800 p-6">
+      <h3 class="font-bold gold-text text-lg mb-4">📸 شارك تجربتك</h3>
+      <div class="space-y-3">
+        <input type="text" id="cp-name" placeholder="اسمك" class="w-full bg-black border border-zinc-800 p-3 rounded-xl outline-none focus:border-gold-text text-sm">
+        <textarea id="cp-text" placeholder="اكتب تجربتك مع المنتج..." class="w-full bg-black border border-zinc-800 p-3 rounded-xl outline-none focus:border-gold-text text-sm h-24"></textarea>
+        <div id="cp-media-preview" class="hidden grid grid-cols-3 gap-2"></div>
+        <input type="file" id="cp-file" accept="image/*,video/*" multiple class="hidden" onchange="previewCommunityMedia(this)">
+        <button onclick="document.getElementById('cp-file').click()" class="w-full border border-dashed border-zinc-700 p-3 rounded-xl text-zinc-500 text-sm hover:border-gold-text hover:text-gold-text transition-colors">📎 أضف صورة أو فيديو</button>
+        <div id="cp-product-select" class="hidden">
+          <label class="text-xs text-zinc-400">المنتج المرتبط</label>
+          <select id="cp-product" class="w-full bg-black border border-zinc-800 p-3 rounded-xl outline-none text-sm mt-1">
+            <option value="">-- اختر منتجًا (اختياري) --</option>
+          </select>
+        </div>
+        <button onclick="submitCommunityPost()" id="cp-submit-btn" class="w-full gold-bg text-black py-3 rounded-xl font-bold">نشر</button>
+        <button onclick="document.getElementById('community-post-modal').classList.remove('active')" class="w-full text-zinc-500 py-2">إلغاء</button>
       </div>
     </div>
   </div>
@@ -173,6 +356,17 @@
   <main class="pt-20">
     <!-- Home Page -->
     <div data-page="home" class="container mx-auto px-4">
+
+      <!-- Animated Banner -->
+      <div id="hero-banner-wrap" class="hidden mb-6">
+        <div class="hero-banner">
+          <div id="banner-track" class="banner-track"></div>
+          <div id="banner-dots" class="banner-dots"></div>
+          <button onclick="moveBanner(-1)" class="absolute top-1/2 -translate-y-1/2 right-3 bg-black/60 text-white w-9 h-9 rounded-full flex items-center justify-center hover:bg-black z-10">‹</button>
+          <button onclick="moveBanner(1)" class="absolute top-1/2 -translate-y-1/2 left-3 bg-black/60 text-white w-9 h-9 rounded-full flex items-center justify-center hover:bg-black z-10">›</button>
+        </div>
+      </div>
+
       <section class="py-12 text-center hero-gradient rounded-3xl mb-8">
         <div class="logo-frame">
             <img src="icon-512.png" alt="Logo" class="logo-img">
@@ -209,9 +403,17 @@
 
       <!-- Daily Offers -->
       <section id="daily-offers-section" class="hidden mb-12">
-        <div class="flex justify-between items-end mb-6">
+        <div class="flex justify-between items-end mb-3">
             <h2 class="text-2xl md:text-3xl font-bold">⚡ <span id="daily-offers-title">عروض اليوم</span></h2>
             <button onclick="filterCategory('__daily__'); showPage('store');" class="text-gold-text font-bold hover:underline text-sm">عرض الكل ←</button>
+        </div>
+        <!-- Countdown Timer -->
+        <div class="countdown-wrap mb-4">
+          <div class="countdown-unit"><span class="countdown-num" id="cd-hrs">00</span><span class="countdown-lbl">ساعة</span></div>
+          <span class="countdown-sep">:</span>
+          <div class="countdown-unit"><span class="countdown-num" id="cd-min">00</span><span class="countdown-lbl">دقيقة</span></div>
+          <span class="countdown-sep">:</span>
+          <div class="countdown-unit"><span class="countdown-num" id="cd-sec">00</span><span class="countdown-lbl">ثانية</span></div>
         </div>
         <div id="daily-offers-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
       </section>
@@ -252,6 +454,34 @@
         </div>
         <div id="featured-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <!-- Featured products will be loaded here -->
+        </div>
+      </section>
+
+      <!-- Owner Special Posts Section -->
+      <section id="posts-section" class="hidden py-10">
+        <div class="flex justify-between items-end mb-6">
+          <div>
+            <h2 class="text-2xl md:text-3xl font-bold">📢 <span id="posts-section-title">أخبارنا وعروضنا</span></h2>
+            <p class="text-zinc-500 text-sm mt-1">آخر الأخبار والعروض الحصرية من استوديو الزهراء</p>
+          </div>
+        </div>
+        <div id="posts-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+      </section>
+
+      <!-- Community Feed Section -->
+      <section id="community-section" class="py-10 border-t border-zinc-900">
+        <div class="flex justify-between items-center mb-6">
+          <div>
+            <h2 class="text-2xl md:text-3xl font-bold">🌟 مجتمعنا</h2>
+            <p class="text-zinc-500 text-sm mt-1">صور وتقييمات حقيقية من عملائنا</p>
+          </div>
+          <button onclick="document.getElementById('community-post-modal').classList.add('active'); loadCommunityProductSelect()" class="gold-bg text-black px-4 py-2 rounded-xl font-bold text-sm hover:bg-yellow-500 transition-colors">+ شارك تجربتك</button>
+        </div>
+        <div id="community-grid" class="columns-1 md:columns-2 lg:columns-3 gap-4">
+          <div class="text-center text-zinc-500 py-8">جاري التحميل...</div>
+        </div>
+        <div class="text-center mt-6">
+          <button id="load-more-community" onclick="loadMoreCommunity()" class="hidden text-zinc-400 text-sm border border-zinc-700 px-6 py-2 rounded-full hover:border-gold-text hover:text-gold-text transition-colors">تحميل المزيد</button>
         </div>
       </section>
     </div>
@@ -480,6 +710,15 @@
         <h2 class="text-3xl font-bold mb-2">تم استلام طلبك!</h2>
         <p class="text-zinc-400 mb-4">شكراً لثقتك بنا. رقم طلبك هو:</p>
         <div id="success-order-number" class="text-3xl font-bold gold-text mb-4 p-4 bg-black rounded-2xl border border-zinc-900 tracking-widest"></div>
+        <!-- Points Earned Box -->
+        <div id="earned-points-box" class="hidden mb-4 p-4 bg-yellow-900/20 border border-yellow-600/40 rounded-2xl">
+            <p class="text-sm text-zinc-300 mb-1">⭐ نقاط مكتسبة من هذا الطلب:</p>
+            <div class="flex items-center justify-center gap-2">
+                <span id="earned-points-value" class="text-2xl font-bold gold-text">0</span>
+                <span class="text-sm text-zinc-400">نقطة</span>
+            </div>
+            <p class="text-xs text-zinc-500 mt-1">رصيدك الإجمالي: <span id="total-points-display" class="gold-text font-bold">0</span> نقطة</p>
+        </div>
         <div id="earned-coupon-box" class="hidden mb-4 p-4 bg-yellow-900/20 border border-yellow-500/40 rounded-2xl">
             <p class="text-sm text-zinc-300 mb-2">🎉 تهانينا! حصلت على كوبون خصم لطلبك القادم:</p>
             <div id="earned-coupon-code" class="text-xl font-bold gold-text tracking-widest p-2 bg-black rounded-lg"></div>
@@ -611,9 +850,35 @@
         setupAuthListener();
         setupReviewStars();
 
+        // New features
+        loadBanners();
+        loadPosts();
+        loadCommunity();
+        loadPointsSettings();
+
         document.getElementById('cart-modal').classList.remove('active');
         document.getElementById('sidebar-overlay').classList.remove('active');
         document.getElementById('sidebar').classList.add('translate-x-full');
+
+        // Restore theme preference
+        if (localStorage.getItem('zahraa_theme') === 'light') {
+            document.body.classList.add('light-theme');
+        }
+
+        // URL hash navigation: restore page
+        const hash = window.location.hash.slice(1);
+        if (hash && document.querySelector(`[data-page="${hash}"]`)) {
+            showPage(hash, false);
+        }
+
+        // URL param: open product directly (?p=PRODUCT_ID)
+        const pId = new URLSearchParams(window.location.search).get('p');
+        if (pId) {
+            setTimeout(() => { openProductModal(pId); }, 600);
+        }
+
+        // Start 24hr countdown for daily offers
+        startCountdown();
     }
 
     function persistCart() {
@@ -799,6 +1064,10 @@
                 document.getElementById('user-avatar').src = user.photoURL || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(user.displayName || user.email));
                 myOrdersBtn.classList.remove('hidden');
                 navMyOrders.classList.remove('hidden');
+                const navAccountBtn = document.getElementById('nav-account-btn');
+                if (navAccountBtn) navAccountBtn.classList.remove('hidden');
+                const sidebarAccWrap = document.getElementById('sidebar-account-wrap');
+                if (sidebarAccWrap) sidebarAccWrap.classList.remove('hidden');
 
                 // Save user profile
                 try {
@@ -809,6 +1078,9 @@
                         lastLogin: firebase.firestore.FieldValue.serverTimestamp()
                     }, { merge: true });
                 } catch (e) { console.error(e); }
+
+                // Load wishlist from Firestore
+                loadWishlistFromFirestore();
 
                 // Referral banner: hide if user already received earned coupon
                 let hideReferral = false;
@@ -832,6 +1104,10 @@
                 refBanner.classList.add('hidden');
                 myOrdersBtn.classList.add('hidden');
                 navMyOrders.classList.add('hidden');
+                const navAccountBtn = document.getElementById('nav-account-btn');
+                if (navAccountBtn) navAccountBtn.classList.add('hidden');
+                const sidebarAccWrap = document.getElementById('sidebar-account-wrap');
+                if (sidebarAccWrap) sidebarAccWrap.classList.add('hidden');
             }
         });
     }
@@ -973,9 +1249,14 @@
                         </div>
                         <span class="text-[10px] bg-zinc-900 px-2 py-1 rounded border border-zinc-800">${p.category || 'عام'}</span>
                     </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button onclick="event.stopPropagation(); addToCartDirect('${p.id}')" ${oos ? 'disabled' : ''} class="gold-bg text-black py-2 rounded-lg font-bold text-xs hover:bg-yellow-500 transition-colors disabled:bg-zinc-700 disabled:text-zinc-500 disabled:cursor-not-allowed">${oos ? 'غير متاح' : 'سلة'}</button>
+                    <div class="grid grid-cols-2 gap-2 mb-2">
+                        <button onclick="event.stopPropagation(); addToCartDirect('${p.id}')" ${oos ? 'disabled' : ''} class="gold-bg text-black py-2 rounded-lg font-bold text-xs hover:bg-yellow-500 transition-colors disabled:bg-zinc-700 disabled:text-zinc-500 disabled:cursor-not-allowed">${oos ? 'غير متاح' : '🛒 سلة'}</button>
                         <a href="https://wa.me/${cleanPhone(storeSettings.whatsapp1 || storeSettings.whatsapp)}?text=${encodeURIComponent('أريد ' + p.name + (p.code ? ' (' + p.code + ')' : ''))}" target="_blank" onclick="event.stopPropagation()" class="bg-[#25D366] text-white py-2 rounded-lg font-bold text-xs hover:bg-green-600 transition-colors text-center">واتساب</a>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="event.stopPropagation(); toggleWishlist('${p.id}')" id="heart-${p.id}" class="flex-1 text-xs py-1.5 rounded-lg border ${isInWishlist(p.id) ? 'border-red-500 text-red-400 bg-red-500/10' : 'border-zinc-700 text-zinc-400 hover:border-red-400 hover:text-red-400'} transition-colors">${isInWishlist(p.id) ? '❤️ محفوظ' : '🤍 حفظ'}</button>
+                        <button onclick="event.stopPropagation(); toggleCompare('${p.id}')" id="cmp-${p.id}" class="flex-1 text-xs py-1.5 rounded-lg border ${isInCompare(p.id) ? 'border-blue-500 text-blue-400 bg-blue-500/10' : 'border-zinc-700 text-zinc-400 hover:border-blue-400 hover:text-blue-400'} transition-colors">${isInCompare(p.id) ? '✓ مقارنة' : '⚖️ مقارنة'}</button>
+                        <button onclick="event.stopPropagation(); shareProduct('${p.id}')" class="share-btn text-zinc-400 hover:text-yellow-400" title="مشاركة المنتج">🔗</button>
                     </div>
                 </div>
             </div>
@@ -1053,7 +1334,7 @@
                             <label class="flex items-center gap-3 p-3 border border-zinc-800 rounded-lg ${vOOS ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-zinc-900'} variant-label transition-colors">
                                 <input type="checkbox" class="variant-checkbox" ${vOOS ? 'disabled' : ''} data-name="${v.name}" data-price="${v.price || 0}">
                                 <span class="flex-1">${v.name} ${vOOS ? '<span class="text-[10px] text-red-400">(غير متاح)</span>' : ''}</span>
-                                ${v.price ? `<span class="gold-text font-bold text-sm">+${v.price} ج</span>` : ''}
+                                ${v.price ? `<span class="gold-text font-bold text-sm">${v.price} ج</span>` : `<span class="text-zinc-400 text-xs">سعر المنتج</span>`}
                             </label>`;
                         }).join('')}
                     </div>
@@ -1104,6 +1385,7 @@
                         <p class="text-xs gold-text">${'⭐'.repeat(r.rating || 5)}</p>
                     </div>
                     <p class="text-xs text-zinc-300">${r.text}</p>
+                    ${r.adminReply ? `<div class="review-reply"><strong>رد المتجر:</strong>${r.adminReply}</div>` : ''}
                 </div>
             `).join('');
         } catch (e) { wrap.innerHTML = '<p class="text-xs text-red-400">تعذر تحميل التقييمات</p>'; }
@@ -1113,7 +1395,7 @@
         const txt = document.getElementById('prod-review-text').value.trim();
         const rating = parseInt(document.getElementById('prod-review-rating').dataset.value || '5');
         if (!txt) return showAlert('تنبيه', 'اكتب تعليقك أولاً', 'error');
-        const userName = currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : (prompt('اسمك:') || 'زائر');
+        const userName = currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : (await showPrompt('اسمك:') || 'زائر');
         try {
             await db.collection('product_reviews').add({
                 productId: pid, userName, rating, text: txt,
@@ -1151,9 +1433,11 @@
             checkboxes.forEach(cb => {
                 const vName = cb.getAttribute('data-name');
                 const vPrice = parseFloat(cb.getAttribute('data-price')) || 0;
+                // Variant price is ABSOLUTE: if variant has its own price use it, else use base price
+                const finalVariantPrice = vPrice > 0 ? vPrice : fp;
                 const cartId = id + '-' + vName;
                 const existing = cart.find(x => x.cartId === cartId);
-                if (existing) existing.qty++; else cart.push({ id: p.id, code: p.code || '', cartId, name: p.name + ' (' + vName + ')', price: fp + vPrice, images: p.images || [], qty: 1 });
+                if (existing) existing.qty++; else cart.push({ id: p.id, code: p.code || '', cartId, name: p.name + ' (' + vName + ')', price: finalVariantPrice, images: p.images || [], qty: 1 });
             });
         } else {
             const cartId = id, existing = cart.find(x => x.cartId === cartId);
@@ -1470,6 +1754,23 @@
                 ecb.classList.add('hidden');
             }
 
+            // Award points
+            const pointsBox = document.getElementById('earned-points-box');
+            if (currentUser && pointsSettings.enabled) {
+                const earnedPts = await awardPoints(currentUser.uid, Math.round(totalPrice), orderRef.id, orderNumber);
+                if (earnedPts > 0 && pointsBox) {
+                    pointsBox.classList.remove('hidden');
+                    const pvEl = document.getElementById('earned-points-value');
+                    if (pvEl) pvEl.innerText = `+${earnedPts}`;
+                    const totalBal = await getPointsBalance(currentUser.uid);
+                    const totalEl = document.getElementById('total-points-display');
+                    if (totalEl) totalEl.innerText = totalBal;
+                } else if (pointsBox) pointsBox.classList.add('hidden');
+            } else if (pointsBox) pointsBox.classList.add('hidden');
+
+            // Send WhatsApp auto-message to store owner
+            sendWhatsAppOrderConfirm({ ...orderData, orderNumber, items: cart });
+
             cart = [];
             persistCart();
             updateCartUI();
@@ -1633,31 +1934,50 @@
                 return;
             }
             snapshot.forEach(doc => {
-                const t = doc.data();
+                const t = doc.data(); const tid = doc.id;
                 grid.innerHTML += `
-                    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl">
-                        <div class="flex items-center gap-3 mb-4">
-                            <img src="${t.avatarUrl || 'https://ui-avatars.com/api/?name=' + t.name}" class="w-12 h-12 rounded-full object-cover">
-                            <div>
-                                <h4 class="font-bold">${t.name}</h4>
-                                <p class="text-xs gold-text">${'⭐'.repeat(t.rating || 5)}</p>
+                    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl relative">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <img src="${t.avatarUrl || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(t.name || 'User') + '&background=1a1a1a&color=d4af37'}" class="w-12 h-12 rounded-full object-cover">
+                                <div>
+                                    <h4 class="font-bold">${t.name || 'مجهول'}</h4>
+                                    <p class="text-xs gold-text">${'⭐'.repeat(t.rating || 5)}</p>
+                                </div>
+                            </div>
+                            <div class="three-dot-menu" onclick="this.classList.toggle('open')">
+                                <button class="text-zinc-500 hover:text-white p-2 rounded-lg hover:bg-zinc-800 text-lg leading-none">⋮</button>
+                                <div class="menu-dropdown">
+                                    <button class="menu-item" onclick="reportContent('testimonials','${tid}','${t.userId || t.name}')">⚑ إبلاغ عن هذا الرأي</button>
+                                </div>
                             </div>
                         </div>
                         <p class="text-sm text-zinc-300">${t.text}</p>
+                        ${t.adminReply ? `<div class="review-reply"><strong>رد المتجر:</strong>${t.adminReply}</div>` : ''}
                     </div>
                 `;
             });
         } catch (e) { console.error('Error loading testimonials:', e); }
     }
 
-    window.showPage = (page) => {
+    window.showPage = (page, pushState = true) => {
         document.querySelectorAll('[data-page]').forEach(el => el.classList.add('hidden'));
         const target = document.querySelector(`[data-page="${page}"]`);
         if (target) target.classList.remove('hidden');
         closeSidebar();
         window.scrollTo(0, 0);
         if (page === 'myorders') loadMyOrders();
+        if (pushState && window.location.hash !== '#' + page) {
+            history.pushState({ page }, '', '#' + page);
+        }
+        // Update sidebar active state
+        document.querySelectorAll('#sidebar button[onclick*="showPage"]').forEach(btn => btn.classList.remove('ring-1', 'ring-yellow-400'));
     };
+
+    window.addEventListener('popstate', (e) => {
+        const page = e.state?.page || (window.location.hash.slice(1)) || 'home';
+        showPage(page, false);
+    });
 
     window.filterCategory = (cat) => {
         let filtered;
@@ -1838,6 +2158,490 @@
     };
 
     window.closeAlert = () => document.getElementById('custom-alert').classList.remove('active');
+
+    // ============ WISHLIST ============
+    let wishlistIds = new Set(JSON.parse(localStorage.getItem('zahraa_wishlist_ids') || '[]'));
+
+    function isInWishlist(id) { return wishlistIds.has(id); }
+
+    window.toggleWishlist = async (id) => {
+        const p = allProducts.find(x => x.id === id);
+        if (!p) return;
+        const isNow = wishlistIds.has(id);
+        if (isNow) {
+            wishlistIds.delete(id);
+            showNotification('تم حذف المنتج من المفضلة', 'info');
+        } else {
+            wishlistIds.add(id);
+            showNotification('❤️ تمت الإضافة للمفضلة', 'success');
+        }
+        localStorage.setItem('zahraa_wishlist_ids', JSON.stringify([...wishlistIds]));
+        // Save full product data too for account page
+        const wishlistFull = JSON.parse(localStorage.getItem('zahraa_wishlist') || '[]');
+        if (isNow) {
+            const idx = wishlistFull.findIndex(x => x.id === id);
+            if (idx > -1) wishlistFull.splice(idx, 1);
+        } else {
+            wishlistFull.push({ id: p.id, name: p.name, price: effectivePrice(p), images: p.images || [] });
+        }
+        localStorage.setItem('zahraa_wishlist', JSON.stringify(wishlistFull));
+        // Sync to Firestore if logged in
+        if (currentUser) {
+            try {
+                await db.collection('wishlists').doc(currentUser.uid).set({ items: [...wishlistIds], updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+            } catch (e) {}
+        }
+        // Update all heart buttons for this product
+        document.querySelectorAll(`#heart-${id}`).forEach(btn => {
+            const inList = wishlistIds.has(id);
+            btn.textContent = inList ? '❤️ محفوظ' : '🤍 حفظ';
+            btn.className = btn.className.replace(inList ? 'border-zinc-700 text-zinc-400' : 'border-red-500 text-red-400 bg-red-500/10', '');
+        });
+    };
+
+    async function loadWishlistFromFirestore() {
+        if (!currentUser) return;
+        try {
+            const snap = await db.collection('wishlists').doc(currentUser.uid).get();
+            if (snap.exists && snap.data().items) {
+                snap.data().items.forEach(id => wishlistIds.add(id));
+                localStorage.setItem('zahraa_wishlist_ids', JSON.stringify([...wishlistIds]));
+            }
+        } catch (e) {}
+    }
+
+    // ============ COMPARE ============
+    let compareList = [];
+
+    function isInCompare(id) { return compareList.includes(id); }
+
+    window.toggleCompare = (id) => {
+        const p = allProducts.find(x => x.id === id);
+        if (!p) return;
+        const idx = compareList.indexOf(id);
+        if (idx > -1) {
+            compareList.splice(idx, 1);
+        } else {
+            if (compareList.length >= 3) return showNotification('يمكنك مقارنة ٣ منتجات كحد أقصى', 'error');
+            compareList.push(id);
+        }
+        updateCompareBar();
+        // Update button states
+        allProducts.forEach(prod => {
+            const btn = document.getElementById('cmp-' + prod.id);
+            if (!btn) return;
+            const selected = compareList.includes(prod.id);
+            btn.textContent = selected ? '✓ مقارنة' : '⚖️ مقارنة';
+        });
+    };
+
+    function updateCompareBar() {
+        const bar = document.getElementById('compare-bar');
+        const preview = document.getElementById('compare-products-preview');
+        if (compareList.length === 0) {
+            bar.classList.remove('visible');
+            return;
+        }
+        bar.classList.add('visible');
+        preview.innerHTML = compareList.map(id => {
+            const p = allProducts.find(x => x.id === id);
+            return p ? `<span class="text-xs bg-zinc-800 px-2 py-1 rounded-lg truncate max-w-[100px]">${p.name}</span>` : '';
+        }).join('');
+    }
+
+    window.clearCompare = () => {
+        compareList = [];
+        updateCompareBar();
+        document.querySelectorAll('[id^="cmp-"]').forEach(btn => {
+            btn.textContent = '⚖️ مقارنة';
+            btn.classList.remove('border-blue-500', 'text-blue-400', 'bg-blue-500/10');
+            btn.classList.add('border-zinc-700', 'text-zinc-400');
+        });
+    };
+
+    window.openCompareModal = () => {
+        if (compareList.length < 2) return showNotification('اختر منتجين على الأقل', 'error');
+        const products = compareList.map(id => allProducts.find(x => x.id === id)).filter(Boolean);
+        const rows = [
+            ['المنتج', p => `<img src="${p.images?.[0] || ''}" class="w-20 h-20 object-cover rounded-lg mx-auto mb-2"><br><strong>${p.name}</strong>`],
+            ['السعر', p => `<span class="text-yellow-400 font-bold">${effectivePrice(p)} ج</span>${p.oldPrice ? `<br><span class="text-zinc-500 text-xs line-through">${p.oldPrice} ج</span>` : ''}`],
+            ['القسم', p => p.category || '—'],
+            ['الوصف', p => `<span class="text-xs text-zinc-400">${(p.description || '—').slice(0, 80)}</span>`],
+            ['الخيارات', p => p.variants?.length ? p.variants.map(v => v.name).join(', ') : '—'],
+            ['الحالة', p => isOutOfStock(p) ? '<span class="text-red-400">نفذ</span>' : '<span class="text-green-400">متوفر</span>'],
+            ['', p => `<button onclick="addToCartDirect('${p.id}'); document.getElementById('compare-modal').classList.remove('active')" class="gold-bg text-black px-4 py-2 rounded-lg font-bold text-xs">إضافة للسلة</button>`],
+        ];
+        const colCount = products.length;
+        document.getElementById('compare-table').innerHTML = rows.map(([label, fn]) => `
+            <tr>
+                <th class="bg-zinc-900 text-right px-3 py-2 text-xs text-zinc-400 w-24">${label}</th>
+                ${products.map(p => `<td class="text-center px-3 py-3">${fn(p)}</td>`).join('')}
+            </tr>
+        `).join('');
+        document.getElementById('compare-modal').classList.add('active');
+    };
+
+    // ============ POINTS SYSTEM ============
+    let pointsSettings = { enabled: true, ratio: 1 }; // 1 point per EGP
+
+    async function loadPointsSettings() {
+        try {
+            const snap = await db.collection('settings').doc('points').get();
+            if (snap.exists) pointsSettings = Object.assign(pointsSettings, snap.data());
+        } catch (e) {}
+    }
+
+    async function awardPoints(userId, amount, orderId, orderNum) {
+        if (!pointsSettings.enabled || !userId) return 0;
+        const pts = Math.floor(amount * (pointsSettings.ratio || 1));
+        if (pts <= 0) return 0;
+        try {
+            const ref = db.collection('points').doc(userId);
+            const snap = await ref.get();
+            const current = snap.exists ? (snap.data().balance || 0) : 0;
+            await ref.set({ balance: current + pts, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+            await db.collection('points_history').add({
+                userId, orderId, orderNumber: orderNum, points: pts,
+                type: 'earn', createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            return pts;
+        } catch (e) { console.error('points error', e); return 0; }
+    }
+
+    async function getPointsBalance(userId) {
+        try {
+            const snap = await db.collection('points').doc(userId).get();
+            return snap.exists ? (snap.data().balance || 0) : 0;
+        } catch (e) { return 0; }
+    }
+
+    // ============ ANIMATED BANNER ============
+    let bannerSlides = [], currentBanner = 0, bannerInterval = null;
+
+    async function loadBanners() {
+        try {
+            const snap = await db.collection('banners').where('isActive', '==', true).orderBy('order', 'asc').get();
+            bannerSlides = [];
+            snap.forEach(d => bannerSlides.push({ id: d.id, ...d.data() }));
+            if (bannerSlides.length === 0) return;
+            const wrap = document.getElementById('hero-banner-wrap');
+            const track = document.getElementById('banner-track');
+            const dots = document.getElementById('banner-dots');
+            wrap.classList.remove('hidden');
+            track.innerHTML = bannerSlides.map((b, i) => `
+                <div class="banner-slide">
+                    ${b.imageUrl ? `<img src="${b.imageUrl}" alt="${b.title || ''}">` : `<div style="height:180px;background:linear-gradient(135deg,#1a1a1a,#2a2a2a);border-radius:20px;"></div>`}
+                    <div class="banner-overlay">
+                        <div class="max-w-xs">
+                            ${b.title ? `<h3 class="text-xl md:text-3xl font-bold mb-2 gold-text">${b.title}</h3>` : ''}
+                            ${b.subtitle ? `<p class="text-sm text-zinc-300 mb-4">${b.subtitle}</p>` : ''}
+                            ${b.link ? `<a href="${b.link}" class="gold-bg text-black px-5 py-2 rounded-xl font-bold text-sm inline-block hover:bg-yellow-500">${b.btnText || 'اعرف أكثر'}</a>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            dots.innerHTML = bannerSlides.map((_, i) => `<div class="banner-dot ${i === 0 ? 'active' : ''}" onclick="goBanner(${i})"></div>`).join('');
+            bannerInterval = setInterval(() => moveBanner(1), 4000);
+        } catch (e) { console.error('banner error', e); }
+    }
+
+    window.moveBanner = (dir) => {
+        currentBanner = (currentBanner + dir + bannerSlides.length) % bannerSlides.length;
+        goBanner(currentBanner);
+    };
+    window.goBanner = (n) => {
+        currentBanner = n;
+        document.getElementById('banner-track').style.transform = `translateX(${n * 100}%)`;
+        document.querySelectorAll('.banner-dot').forEach((d, i) => d.classList.toggle('active', i === n));
+    };
+
+    // ============ SPECIAL POSTS ============
+    async function loadPosts() {
+        try {
+            const snap = await db.collection('posts').where('isActive', '==', true).orderBy('createdAt', 'desc').limit(9).get();
+            if (snap.empty) return;
+            const sec = document.getElementById('posts-section');
+            sec.classList.remove('hidden');
+            document.getElementById('posts-grid').innerHTML = '';
+            snap.forEach(d => {
+                const p = d.data();
+                document.getElementById('posts-grid').innerHTML += `
+                    <div class="post-card">
+                        ${p.imageUrl ? `<img src="${p.imageUrl}" alt="${p.title || ''}">` : ''}
+                        ${p.videoUrl ? `<video src="${p.videoUrl}" controls class="w-full max-h-48 object-cover"></video>` : ''}
+                        <div class="p-4">
+                            ${p.tag ? `<span class="text-[10px] gold-text font-bold uppercase tracking-widest">${p.tag}</span>` : ''}
+                            ${p.title ? `<h3 class="font-bold text-sm mt-1 mb-2">${p.title}</h3>` : ''}
+                            ${p.body ? `<p class="text-xs text-zinc-400 line-clamp-3">${p.body}</p>` : ''}
+                            ${p.link ? `<a href="${p.link}" target="_blank" class="inline-block mt-3 text-xs gold-text font-bold hover:underline">اقرأ أكثر ←</a>` : ''}
+                            <p class="text-[10px] text-zinc-600 mt-2">${p.createdAt?.toDate?.().toLocaleDateString('ar-EG') || ''}</p>
+                        </div>
+                    </div>
+                `;
+            });
+        } catch (e) { console.error('posts error', e); }
+    }
+
+    // ============ COMMUNITY FEED ============
+    let communityLastDoc = null, communityLoading = false;
+    let communityMediaFiles = [];
+
+    async function loadCommunity(loadMore = false) {
+        if (communityLoading) return;
+        communityLoading = true;
+        const grid = document.getElementById('community-grid');
+        if (!loadMore) {
+            grid.innerHTML = '<div class="text-center text-zinc-500 py-8 col-span-3">جاري التحميل...</div>';
+            communityLastDoc = null;
+        }
+        try {
+            let q = db.collection('community_posts').where('isHidden', '==', false).orderBy('createdAt', 'desc').limit(9);
+            if (loadMore && communityLastDoc) q = q.startAfter(communityLastDoc);
+            const snap = await q.get();
+            if (!loadMore) grid.innerHTML = '';
+            if (snap.empty && !loadMore) {
+                grid.innerHTML = '<div class="text-center text-zinc-500 py-8">كن أول من يشارك تجربته!</div>';
+                communityLoading = false; return;
+            }
+            snap.forEach(d => {
+                communityLastDoc = d;
+                const cp = d.data(); const cpid = d.id;
+                const isOwner = currentUser && currentUser.uid === cp.userId;
+                grid.innerHTML += `
+                    <div class="community-card" id="cp-card-${cpid}">
+                        ${cp.mediaUrls && cp.mediaUrls.length > 0 ? (
+                            cp.mediaUrls[0].includes('.mp4') || cp.mediaUrls[0].includes('video') ?
+                            `<video src="${cp.mediaUrls[0]}" controls class="w-full max-h-60 object-cover"></video>` :
+                            `<img src="${cp.mediaUrls[0]}" class="w-full object-cover max-h-72" loading="lazy">`
+                        ) : ''}
+                        <div class="p-4">
+                            <div class="flex items-start justify-between gap-2 mb-2">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-sm font-bold gold-text flex-shrink-0">${(cp.userName || '?')[0]}</div>
+                                    <div>
+                                        <p class="text-sm font-bold">${cp.userName || 'عميل'}</p>
+                                        ${cp.productName ? `<p class="text-[10px] text-zinc-500">🛍️ ${cp.productName}</p>` : ''}
+                                    </div>
+                                </div>
+                                <div class="three-dot-menu" onclick="this.classList.toggle('open')">
+                                    <button class="text-zinc-500 hover:text-white px-2 py-1 rounded-lg hover:bg-zinc-800 text-lg">⋮</button>
+                                    <div class="menu-dropdown">
+                                        <button class="menu-item" onclick="reportContent('community_posts','${cpid}','${cp.userId || cp.userName}')">⚑ إبلاغ</button>
+                                        ${isOwner ? `<button class="menu-item danger" onclick="deleteCommunityPost('${cpid}')">🗑 حذف</button>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                            ${cp.text ? `<p class="text-sm text-zinc-300 mb-2">${cp.text}</p>` : ''}
+                            ${cp.mediaUrls && cp.mediaUrls.length > 1 ? `
+                                <div class="flex gap-1 flex-wrap mt-1">${cp.mediaUrls.slice(1).map(url => `<img src="${url}" class="w-14 h-14 rounded-lg object-cover cursor-pointer" onclick="openImageViewer('${url}')">`).join('')}</div>
+                            ` : ''}
+                            <p class="text-[10px] text-zinc-600 mt-2">${cp.createdAt?.toDate?.().toLocaleDateString('ar-EG') || ''}</p>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('load-more-community').classList.toggle('hidden', snap.size < 9);
+        } catch (e) {
+            console.error('community error', e);
+            if (!loadMore) grid.innerHTML = '<div class="text-center text-zinc-500 py-4">لا يمكن تحميل المجتمع حالياً</div>';
+        }
+        communityLoading = false;
+    }
+
+    window.loadMoreCommunity = () => loadCommunity(true);
+
+    window.loadCommunityProductSelect = () => {
+        const wrap = document.getElementById('cp-product-select');
+        const sel = document.getElementById('cp-product');
+        if (allProducts.length > 0) {
+            wrap.classList.remove('hidden');
+            sel.innerHTML = '<option value="">-- اختر منتجًا (اختياري) --</option>' +
+                allProducts.map(p => `<option value="${p.id}" data-name="${p.name}">${p.name}</option>`).join('');
+        }
+        if (currentUser) document.getElementById('cp-name').value = currentUser.displayName || '';
+    };
+
+    window.previewCommunityMedia = (input) => {
+        communityMediaFiles = [...input.files];
+        const preview = document.getElementById('cp-media-preview');
+        preview.innerHTML = '';
+        preview.classList.remove('hidden');
+        communityMediaFiles.forEach(file => {
+            const reader = new FileReader();
+            reader.onload = e => {
+                preview.innerHTML += file.type.startsWith('video') ?
+                    `<video src="${e.target.result}" class="w-full h-24 object-cover rounded-lg" controls></video>` :
+                    `<img src="${e.target.result}" class="w-full h-24 object-cover rounded-lg">`;
+            };
+            reader.readAsDataURL(file);
+        });
+    };
+
+    window.submitCommunityPost = async () => {
+        const name = document.getElementById('cp-name').value.trim();
+        const text = document.getElementById('cp-text').value.trim();
+        if (!name) return showNotification('أدخل اسمك', 'error');
+        if (!text && communityMediaFiles.length === 0) return showNotification('أضف نص أو صورة', 'error');
+        const btn = document.getElementById('cp-submit-btn');
+        btn.disabled = true; btn.textContent = 'جاري النشر...';
+        try {
+            const mediaUrls = [];
+            for (const file of communityMediaFiles) {
+                const fd = new FormData();
+                fd.append('file', file);
+                fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data.secure_url) mediaUrls.push(data.secure_url);
+            }
+            const selEl = document.getElementById('cp-product');
+            const selectedOpt = selEl.options[selEl.selectedIndex];
+            await db.collection('community_posts').add({
+                userName: name, text, mediaUrls,
+                productId: selEl.value || null,
+                productName: selEl.value && selectedOpt ? selectedOpt.dataset.name : null,
+                userId: currentUser ? currentUser.uid : null,
+                deviceId: deviceId,
+                isHidden: false,
+                reportCount: 0,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            document.getElementById('community-post-modal').classList.remove('active');
+            document.getElementById('cp-text').value = '';
+            communityMediaFiles = [];
+            document.getElementById('cp-media-preview').innerHTML = '';
+            document.getElementById('cp-media-preview').classList.add('hidden');
+            showNotification('تم نشر مشاركتك ✓', 'success');
+            loadCommunity();
+        } catch (e) { showNotification('خطأ في النشر: ' + e.message, 'error'); }
+        btn.disabled = false; btn.textContent = 'نشر';
+    };
+
+    window.deleteCommunityPost = async (id) => {
+        if (!currentUser) return;
+        if (!await showConfirm('حذف المشاركة', 'هل تريد حذف هذه المشاركة؟', '🗑️')) return;
+        try {
+            await db.collection('community_posts').doc(id).update({ isHidden: true });
+            document.getElementById('cp-card-' + id)?.remove();
+            showNotification('تم الحذف', 'success');
+        } catch (e) { showNotification('خطأ: ' + e.message, 'error'); }
+    };
+
+    // ============ REPORT SYSTEM ============
+    window.reportContent = async (collection, id, userId) => {
+        const reason = (await showPrompt('سبب الإبلاغ (اختياري):')) ?? '';
+        try {
+            await db.collection('reports').add({
+                collection, docId: id, targetUserId: userId,
+                reason: reason || 'محتوى مسيء',
+                reportedBy: currentUser ? currentUser.uid : deviceId,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            // Increment report count
+            try { await db.collection(collection).doc(id).update({ reportCount: firebase.firestore.FieldValue.increment(1) }); } catch (e) {}
+            showNotification('تم الإبلاغ وسيتم مراجعته ✓', 'success');
+        } catch (e) { showNotification('تم تسجيل بلاغك ✓', 'success'); }
+    };
+
+    // ============ WHATSAPP AUTO MESSAGE ============
+    function sendWhatsAppOrderConfirm(order) {
+        const phone = cleanPhone(storeSettings.whatsapp1 || storeSettings.whatsapp);
+        if (!phone) return;
+        const items = (order.items || []).map(i => `• ${i.name} × ${i.qty} = ${i.price * i.qty} ج`).join('\n');
+        const msg = `🛍️ *طلب جديد - ${storeSettings.storeName || 'ZAHRAA STUDIO'}*\n\n` +
+            `🔢 رقم الطلب: *${order.orderNumber}*\n` +
+            `👤 العميل: ${order.customerName}\n` +
+            `📱 الهاتف: ${order.customerPhone}\n` +
+            `📍 المحافظة: ${order.customerGovernorate}\n` +
+            `🏠 العنوان: ${order.customerAddress}\n\n` +
+            `📦 المنتجات:\n${items}\n\n` +
+            `💰 الإجمالي: *${order.totalPrice} ج*`;
+        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+    }
+
+    // ============ THEME TOGGLE ============
+    window.toggleTheme = () => {
+        document.body.classList.toggle('light-theme');
+        const isLight = document.body.classList.contains('light-theme');
+        localStorage.setItem('zahraa_theme', isLight ? 'light' : 'dark');
+    };
+
+    // ============ 24H COUNTDOWN ============
+    function startCountdown() {
+        const updateTimer = () => {
+            const now = new Date();
+            const end = new Date(now);
+            end.setHours(23, 59, 59, 0);
+            const diff = Math.max(0, end - now);
+            const hrs = Math.floor(diff / 3600000);
+            const min = Math.floor((diff % 3600000) / 60000);
+            const sec = Math.floor((diff % 60000) / 1000);
+            const pad = n => String(n).padStart(2, '0');
+            const hEl = document.getElementById('cd-hrs');
+            const mEl = document.getElementById('cd-min');
+            const sEl = document.getElementById('cd-sec');
+            if (hEl) hEl.textContent = pad(hrs);
+            if (mEl) mEl.textContent = pad(min);
+            if (sEl) sEl.textContent = pad(sec);
+        };
+        updateTimer();
+        setInterval(updateTimer, 1000);
+    }
+
+    // ============ CUSTOM CONFIRM ============
+    let _confirmResolve = null;
+    window.showConfirm = (title, msg, icon = '❓', okLabel = 'تأكيد', okClass = 'gold-bg text-black') => {
+        return new Promise(resolve => {
+            _confirmResolve = resolve;
+            document.getElementById('confirm-title').textContent = title;
+            document.getElementById('confirm-msg').textContent = msg;
+            document.getElementById('confirm-icon').textContent = icon;
+            const okBtn = document.getElementById('confirm-ok-btn');
+            okBtn.className = `py-3 rounded-xl font-bold hover:opacity-90 ${okClass}`;
+            okBtn.textContent = okLabel;
+            document.getElementById('custom-confirm').classList.add('active');
+        });
+    };
+    window.resolveConfirm = (val) => {
+        document.getElementById('custom-confirm').classList.remove('active');
+        if (_confirmResolve) { _confirmResolve(val); _confirmResolve = null; }
+    };
+
+    // ============ CUSTOM PROMPT ============
+    let _promptResolve = null;
+    window.showPrompt = (title, defaultVal = '') => {
+        return new Promise(resolve => {
+            _promptResolve = resolve;
+            document.getElementById('prompt-title').textContent = title;
+            const inp = document.getElementById('prompt-input');
+            inp.value = defaultVal;
+            inp.placeholder = title;
+            document.getElementById('custom-prompt').classList.add('active');
+            setTimeout(() => inp.focus(), 100);
+            inp.onkeydown = (e) => { if (e.key === 'Enter') resolvePrompt(inp.value); };
+        });
+    };
+    window.resolvePrompt = (val) => {
+        document.getElementById('custom-prompt').classList.remove('active');
+        if (_promptResolve) { _promptResolve(val); _promptResolve = null; }
+    };
+
+    // ============ SHARE PRODUCT ============
+    window.shareProduct = async (productId) => {
+        const p = allProducts.find(x => x.id === productId);
+        if (!p) return;
+        const url = `${location.origin}${location.pathname}?p=${productId}`;
+        const text = `${p.name} - ${effectivePrice(p)} ج\n${url}`;
+        if (navigator.share) {
+            try { await navigator.share({ title: p.name, text: p.description || '', url }); return; } catch (e) {}
+        }
+        try {
+            await navigator.clipboard.writeText(url);
+            showNotification('تم نسخ رابط المنتج ✓', 'success');
+        } catch (e) {
+            showAlert('رابط المنتج', url, 'info');
+        }
+    };
 
     init();
   </script>
