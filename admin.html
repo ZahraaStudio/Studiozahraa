@@ -1817,13 +1817,20 @@ window.deletePost = async (id) => {
         };
         // ============ POINTS ADMIN ============
        window.savePointsSettings = async () => {
-    const enabled = document.getElementById('pts-enabled').checked;
-    const ratio = parseFloat(document.getElementById('pts-ratio').value) || 1;
-    try {
-        await setDoc(doc(db, 'settings', 'points'), { enabled, ratio, updatedAt: serverTimestamp() });
-        alert('تم حفظ إعدادات النقاط');
-    } catch (e) { alert(e.message); }
-};
+            const enabled = document.getElementById('pts-enabled').checked;
+            const ratio = parseFloat(document.getElementById('pts-ratio').value) || 1;
+            try {
+                // الطريقة المودرن لحفظ إعدادات النقاط
+                await setDoc(doc(db, 'settings', 'points'), { 
+                    enabled, 
+                    ratio, 
+                    updatedAt: serverTimestamp() 
+                }, { merge: true });
+                alert('✅ تم حفظ إعدادات النقاط بنجاح');
+            } catch (e) { 
+                alert('خطأ في الحفظ: ' + e.message); 
+            }
+        };
 
 
         window.searchUserPoints = async () => {
