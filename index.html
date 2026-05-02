@@ -242,16 +242,16 @@
         <button onclick="showPage('store')" class="px-4 py-2 text-sm rounded-lg hover:bg-zinc-900 transition-colors gold-text font-bold">🛍️ المتجر</button>
         <button onclick="showPage('track')" class="px-4 py-2 text-sm rounded-lg hover:bg-zinc-900 transition-colors">📦 تتبع</button>
         <button id="nav-myorders" onclick="showPage('myorders')" class="hidden px-4 py-2 text-sm rounded-lg hover:bg-zinc-900 transition-colors">📋 طلباتي</button>
-        <a id="nav-account-btn" href="/account.html" class="hidden px-4 py-2 text-sm rounded-lg hover:bg-zinc-900 transition-colors gold-text">👤 حسابي</a>
+        <a id="nav-account-btn" href="account.html" class="hidden px-4 py-2 text-sm rounded-lg hover:bg-zinc-900 transition-colors gold-text">👤 حسابي</a>
         <button onclick="showPage('testimonials')" class="px-4 py-2 text-sm rounded-lg hover:bg-zinc-900 transition-colors">⭐ الآراء</button>
       </div>
       <div class="flex items-center gap-2">
         <button onclick="toggleTheme()" class="theme-toggle" id="theme-toggle-btn" title="تبديل الثيم"></button>
         <div id="user-profile" class="hidden flex items-center gap-2 text-sm">
-          <a href="/account.html" title="حسابي وطلباتي">
+          <a href="account.html" title="حسابي وطلباتي">
             <img id="user-avatar" src="" class="w-8 h-8 rounded-full border border-gold-text hover:opacity-80 transition-opacity cursor-pointer">
           </a>
-          <a href="/account.html" class="text-zinc-400 max-w-[80px] truncate hover:text-yellow-400 transition-colors hidden md:block" id="user-name"></a>
+          <a href="account.html" class="text-zinc-400 max-w-[80px] truncate hover:text-yellow-400 transition-colors hidden md:block" id="user-name"></a>
           <button onclick="logout()" class="text-xs text-red-500 hover:text-red-400 hidden md:block">خروج</button>
         </div>
         <button id="login-btn" onclick="showLoginModal()" class="text-xs px-3 py-2 border border-gold-text rounded-lg gold-text hover:bg-gold-text/10 transition-colors">دخول</button>
