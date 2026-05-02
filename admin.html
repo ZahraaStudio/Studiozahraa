@@ -1708,7 +1708,7 @@
 
         window.editPost = async (id) => {
             try {
-                const snap = await db.collection('posts').doc(id).get();
+               const snap = await getDocs(query(collection(db, 'posts'), orderBy('createdAt', 'desc')));
                 if (!snap.exists) return;
                 const p = snap.data();
                 document.getElementById('post-edit-id').value = id;
