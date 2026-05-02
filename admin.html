@@ -1669,34 +1669,37 @@ window.deleteBanner = async (id) => {
         };
 
         // ============ POSTS ADMIN ============
-        window.loadAdminPosts = async () => {
-            const list = document.getElementById('posts-list');
-            list.innerHTML = '<p class="text-zinc-500 text-sm">جاري التحميل...</p>';
-            try {
-                const snap = await db.collection('posts').orderBy('createdAt', 'desc').limit(20).get();
-                if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm">لا توجد منشورات</p>'; return; }
-                list.innerHTML = '';
-                snap.forEach(d => {
-                    const p = d.data();
-                    list.innerHTML += `
-                        <div class="bg-zinc-800 p-3 rounded-xl">
-                            <div class="flex justify-between items-start gap-2 mb-1">
-                                <div>
-                                    ${p.tag ? `<span class="text-[10px] gold-text font-bold">${p.tag}</span>` : ''}
-                                    <p class="font-bold text-sm">${p.title || '(بدون عنوان)'}</p>
-                                    <p class="text-xs text-zinc-500 line-clamp-1">${p.body || ''}</p>
-                                </div>
-                                <span class="text-[10px] flex-shrink-0 ${p.isActive ? 'text-green-400' : 'text-red-400'}">${p.isActive ? '✅' : '⛔'}</span>
-                            </div>
-                            <div class="flex gap-2 mt-2">
-                                <button onclick="editPost('${d.id}')" class="text-xs px-2 py-1 rounded bg-zinc-700 text-white">تعديل</button>
-                                <button onclick="togglePost('${d.id}', ${!p.isActive})" class="text-xs px-2 py-1 rounded ${p.isActive ? 'bg-zinc-600' : 'bg-green-800'} text-white">${p.isActive ? 'إخفاء' : 'إظهار'}</button>
-                                <button onclick="deletePost('${d.id}')" class="text-xs px-2 py-1 rounded bg-red-800 text-white">حذف</button>
-                            </div>
-                        </div>`;
-                });
-            } catch (e) { list.innerHTML = `<p class="text-red-400 text-sm">خطأ: ${e.message}</p>`; }
-        };
+        
+         window.loadAdminPosts = async () => {
+    const list = document.getElementById('posts-list');
+    try {
+        const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
+        const snap = await getDocs(q);
+        list.innerHTML = '';
+        snap.forEach(d => {
+            list.innerHTML += `
+                <div class="bg-zinc-800 p-3 rounded-xl mb-2 text-xs">
+                    <p class="font-bold">${d.data().title}</p>
+                    <button onclick="deletePost('${d.id}')" class="text-red-400 mt-1">حذف</button>
+                </div>`;
+        });
+    } catch (e) { console.error(e); }
+};
+
+        window.savePost = async () => {
+    const title = document.getElementById('post-title').value;
+    const body = document.getElementById('post-body').value;
+    try {
+        await addDoc(collection(db, 'posts'), {
+            title, body, isActive: true, createdAt: serverTimestamp()
+        });
+        alert('تم النشر'); loadAdminPosts();
+    } catch (e) { alert('خطأ: ' + e.message); }
+};
+
+         window.deletePost = async (id) => {
+    if(confirm('حذف؟')) { await deleteDoc(doc(db, 'posts', id)); loadAdminPosts(); }
+};
 
         window.savePost = async () => {
             const editId = document.getElementById('post-edit-id').value;
