@@ -1603,7 +1603,7 @@
             const list = document.getElementById('banners-list');
             list.innerHTML = '<p class="text-zinc-500 text-sm">جاري التحميل...</p>';
             try {
-                const snap = await db.collection('banners').orderBy('order', 'asc').get();
+               const snap = await getDocs(query(collection(db, 'banners'), orderBy('order', 'asc')));
                 if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm">لا توجد بانرات</p>'; return; }
                 list.innerHTML = '';
                 snap.forEach(d => {
