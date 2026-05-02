@@ -657,7 +657,7 @@
                 const password = document.getElementById('password').value;
                 const errorEl = document.getElementById('login-error');
                 try {
-                    await signInWithEmailAndPassword(auth, email, password);
+                    await auth.signInWithEmailAndPassword(email, password);
                 } catch (e) {
                     errorEl.innerText = "خطأ في تسجيل الدخول: " + e.message;
                     errorEl.classList.remove('hidden');
@@ -665,7 +665,7 @@
             });
         }
 
-        onAuthStateChanged(auth, (user) => {
+        auth.onAuthStateChanged((user) => {
             if (user) {
                 document.getElementById('auth-section').classList.add('hidden');
                 document.getElementById('admin-content').classList.remove('hidden');
