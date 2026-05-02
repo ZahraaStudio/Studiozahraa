@@ -1746,7 +1746,7 @@ window.deletePost = async (id) => {
                 list.innerHTML = `<p class="text-red-400 text-sm">خطأ في التحميل: ${e.message}</p>`; 
             }
         };
-      window.toggleCommunityPost = async (id, hide) => {
+     window.toggleCommunityPost = async (id, hide) => {
             try {
                 // تعديل: استخدام doc و updateDoc للنظام الجديد
                 await updateDoc(doc(db, 'community_posts', id), { isHidden: hide });
