@@ -1763,16 +1763,12 @@ window.deletePost = async (id) => {
             } catch (e) { alert('خطأ: ' + e.message); }
         };
 
-        // ============ REPORTS ADMIN ============
-       window.loadAdminReports = async () => {
-    const list = document.getElementById('reports-list');
-    try {
-        const q = query(collection(db, 'reports'), orderBy('createdAt', 'desc'));
-        const snap = await getDocs(q);
-        list.innerHTML = '';
-        snap.forEach(d => {
-            const r = d.data();
-            list.innerHTML += `<div class="bg-zinc-800 p-3 rounded-xl mb-2 text-xs">بلاغ عن: ${r.collection} - السبب: ${r.reason}</
+      window.loadAdminReports = async () => {
+            const list = document.getElementById('reports-list');
+            list.innerHTML = '<p class="text-zinc-500 text-sm">جاري التحميل...</p>';
+            try {
+                const snap = await db.collection('reports').orderBy('createdAt', 'desc').limit(50).get();
+                if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm">لا توجد بلاغات ✅</p>'; return; }
                 list.innerHTML = '';
                 snap.forEach(d => {
                     const r = d.data();
