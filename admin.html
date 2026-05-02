@@ -664,12 +664,10 @@
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                currentUser = user; // السطر ده كان ناقص وهو اللي بيعرف البرنامج إنك الأدمن
                 document.getElementById('auth-section').classList.add('hidden');
                 document.getElementById('admin-content').classList.remove('hidden');
                 loadAll();
             } else {
-                currentUser = null;
                 document.getElementById('auth-section').classList.remove('hidden');
                 document.getElementById('admin-content').classList.add('hidden');
             }
@@ -1601,87 +1599,116 @@
         window.loadAll = loadAll;
 
         // ============ BANNERS ADMIN ============
-     window.loadAdminBanners = async () => {
+        window.loadAdminBanners = async () => {
             const list = document.getElementById('banners-list');
-            list.innerHTML = 'جاري التحميل...';
+            list.innerHTML = '<p class="text-zinc-500 text-sm">جاري التحميل...</p>';
             try {
-                const q = query(collection(db, 'banners'), orderBy('order', 'asc'));
-                const snap = await getDocs(q);
+                const snap = await db.collection('banners').orderBy('order', 'asc').get();
+                if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm">لا توجد بانرات</p>'; return; }
                 list.innerHTML = '';
-                if (snap.empty) { list.innerHTML = 'لا توجد بانرات'; return; }
                 snap.forEach(d => {
                     const b = d.data();
                     list.innerHTML += `
-                        <div class="flex items-center gap-3 bg-zinc-800 p-3 rounded-xl mb-2">
-                            <img src="${b.imageUrl}" class="w-16 h-10 object-cover rounded-lg">
-                            <div class="flex-1 text-xs">
-                                <p class="font-bold">${b.title || 'بانر'}</p>
-                                <p>${b.isActive ? '✅ نشط' : '⛔ معطل'}</p>
+                        <div class="flex items-center gap-3 bg-zinc-800 p-3 rounded-xl">
+                            ${b.imageUrl ? `<img src="${b.imageUrl}" class="w-16 h-10 object-cover rounded-lg flex-shrink-0">` : '<div class="w-16 h-10 bg-zinc-700 rounded-lg flex-shrink-0"></div>'}
+                            <div class="flex-1 min-w-0">
+                                <p class="font-bold text-sm truncate">${b.title || '(بدون عنوان)'}</p>
+                                <p class="text-xs text-zinc-500">${b.isActive ? '✅ نشط' : '⛔ غير نشط'} • ترتيب: ${b.order || 0}</p>
                             </div>
-                            <button onclick="deleteBanner('${d.id}')" class="text-red-500 text-xs">حذف</button>
+                            <div class="flex gap-2">
+                                <button onclick="toggleBanner('${d.id}', ${!b.isActive})" class="text-xs px-2 py-1 rounded-lg ${b.isActive ? 'bg-zinc-700 text-zinc-300' : 'bg-green-700 text-white'}">${b.isActive ? 'إيقاف' : 'تفعيل'}</button>
+                                <button onclick="deleteBanner('${d.id}')" class="text-xs px-2 py-1 rounded-lg bg-red-800 text-white">حذف</button>
+                            </div>
                         </div>`;
                 });
-            } catch (e) { console.error(e); }
+            } catch (e) { list.innerHTML = `<p class="text-red-400 text-sm">خطأ: ${e.message}</p>`; }
         };
-
 
         window.saveBanner = async () => {
-            const title = document.getElementById('banner-title').value;
-            const imageUrl = document.getElementById('banner-image').value;
+            const title = document.getElementById('banner-title').value.trim();
+            const subtitle = document.getElementById('banner-subtitle').value.trim();
+            const imageUrl = document.getElementById('banner-image').value.trim();
+            const link = document.getElementById('banner-link').value.trim();
+            const btnText = document.getElementById('banner-btn-text').value.trim();
             const order = parseInt(document.getElementById('banner-order').value) || 0;
-            if(!imageUrl) return alert("أدخل رابط الصورة");
+            const isActive = document.getElementById('banner-active').checked;
+            if (!title && !imageUrl) return alert('أدخل عنوان البانر أو رابط صورة');
             try {
-                await addDoc(collection(db, 'banners'), { 
-                    title, imageUrl, order, 
-                    isActive: document.getElementById('banner-active').checked, 
-                    createdAt: serverTimestamp() 
-                });
-                alert("✅ تم الحفظ"); loadAdminBanners();
-            } catch (e) { alert(e.message); }
+                await db.collection('banners').add({ title, subtitle, imageUrl, link, btnText, order, isActive, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+                ['banner-title','banner-subtitle','banner-image','banner-link','banner-btn-text'].forEach(id => document.getElementById(id).value = '');
+                loadAdminBanners();
+                alert('✅ تم حفظ البانر');
+            } catch (e) { alert('خطأ: ' + e.message); }
         };
 
-window.deleteBanner = async (id) => {
-    if(confirm('حذف؟')) { await deleteDoc(doc(db, 'banners', id)); loadAdminBanners(); }
-};
+        window.toggleBanner = async (id, state) => {
+            try { await db.collection('banners').doc(id).update({ isActive: state }); loadAdminBanners(); } catch (e) {}
+        };
+        window.deleteBanner = async (id) => {
+            if (!confirm('حذف هذا البانر؟')) return;
+            try { await db.collection('banners').doc(id).delete(); loadAdminBanners(); } catch (e) {}
+        };
+
         // ============ POSTS ADMIN ============
-       window.loadAdminPosts = async () => {
-    const list = document.getElementById('posts-list');
-    try {
-        const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
-        const snap = await getDocs(q);
-        list.innerHTML = '';
-        snap.forEach(d => {
-            const p = d.data();
-            list.innerHTML += `
-                <div class="bg-zinc-800 p-3 rounded-xl mb-2">
-                    <p class="font-bold text-sm">${p.title}</p>
-                    <button onclick="deletePost('${d.id}')" class="text-xs text-red-400 mt-2">حذف المنشور</button>
-                </div>`;
-        });
-    } catch (e) { console.error(e); }
-};
+        window.loadAdminPosts = async () => {
+            const list = document.getElementById('posts-list');
+            list.innerHTML = '<p class="text-zinc-500 text-sm">جاري التحميل...</p>';
+            try {
+                const snap = await db.collection('posts').orderBy('createdAt', 'desc').limit(20).get();
+                if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm">لا توجد منشورات</p>'; return; }
+                list.innerHTML = '';
+                snap.forEach(d => {
+                    const p = d.data();
+                    list.innerHTML += `
+                        <div class="bg-zinc-800 p-3 rounded-xl">
+                            <div class="flex justify-between items-start gap-2 mb-1">
+                                <div>
+                                    ${p.tag ? `<span class="text-[10px] gold-text font-bold">${p.tag}</span>` : ''}
+                                    <p class="font-bold text-sm">${p.title || '(بدون عنوان)'}</p>
+                                    <p class="text-xs text-zinc-500 line-clamp-1">${p.body || ''}</p>
+                                </div>
+                                <span class="text-[10px] flex-shrink-0 ${p.isActive ? 'text-green-400' : 'text-red-400'}">${p.isActive ? '✅' : '⛔'}</span>
+                            </div>
+                            <div class="flex gap-2 mt-2">
+                                <button onclick="editPost('${d.id}')" class="text-xs px-2 py-1 rounded bg-zinc-700 text-white">تعديل</button>
+                                <button onclick="togglePost('${d.id}', ${!p.isActive})" class="text-xs px-2 py-1 rounded ${p.isActive ? 'bg-zinc-600' : 'bg-green-800'} text-white">${p.isActive ? 'إخفاء' : 'إظهار'}</button>
+                                <button onclick="deletePost('${d.id}')" class="text-xs px-2 py-1 rounded bg-red-800 text-white">حذف</button>
+                            </div>
+                        </div>`;
+                });
+            } catch (e) { list.innerHTML = `<p class="text-red-400 text-sm">خطأ: ${e.message}</p>`; }
+        };
 
-       window.savePost = async () => {
-    const title = document.getElementById('post-title').value;
-    const body = document.getElementById('post-body').value;
-    try {
-        await addDoc(collection(db, 'posts'), {
-            title, body, 
-            isActive: document.getElementById('post-active').checked,
-            createdAt: serverTimestamp()
-        });
-        alert('تم النشر');
-        loadAdminPosts();
-    } catch (e) { alert(e.message); }
-};
-
-window.deletePost = async (id) => {
-    if(confirm('حذف؟')) { await deleteDoc(doc(db, 'posts', id)); loadAdminPosts(); }
-};
+        window.savePost = async () => {
+            const editId = document.getElementById('post-edit-id').value;
+            const data = {
+                title: document.getElementById('post-title').value.trim(),
+                tag: document.getElementById('post-tag').value.trim(),
+                body: document.getElementById('post-body').value.trim(),
+                imageUrl: document.getElementById('post-image').value.trim(),
+                videoUrl: document.getElementById('post-video').value.trim(),
+                link: document.getElementById('post-link').value.trim(),
+                isActive: document.getElementById('post-active').checked,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            if (!data.title && !data.body) return alert('أدخل عنواناً أو نصاً');
+            try {
+                if (editId) {
+                    await db.collection('posts').doc(editId).update(data);
+                    document.getElementById('post-edit-id').value = '';
+                } else {
+                    data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await db.collection('posts').add(data);
+                }
+                ['post-title','post-tag','post-body','post-image','post-video','post-link'].forEach(id => document.getElementById(id).value = '');
+                loadAdminPosts();
+                alert('✅ تم حفظ المنشور');
+            } catch (e) { alert('خطأ: ' + e.message); }
+        };
 
         window.editPost = async (id) => {
             try {
-               const snap = await getDocs(query(collection(db, 'banners'), orderBy('order', 'asc')));
+                const snap = await db.collection('posts').doc(id).get();
                 if (!snap.exists) return;
                 const p = snap.data();
                 document.getElementById('post-edit-id').value = id;
@@ -1696,17 +1723,11 @@ window.deletePost = async (id) => {
             } catch (e) {}
         };
         window.togglePost = async (id, state) => {
-            try { 
-                await updateDoc(doc(db, 'posts', id), { isActive: state }); 
-                loadAdminPosts(); 
-            } catch (e) { console.error(e); }
+            try { await db.collection('posts').doc(id).update({ isActive: state }); loadAdminPosts(); } catch (e) {}
         };
         window.deletePost = async (id) => {
             if (!confirm('حذف هذا المنشور؟')) return;
-            try { 
-                await deleteDoc(doc(db, 'posts', id)); 
-                loadAdminPosts(); 
-            } catch (e) { console.error(e); }
+            try { await db.collection('posts').doc(id).delete(); loadAdminPosts(); } catch (e) {}
         };
 
         // ============ COMMUNITY ADMIN ============
@@ -1718,48 +1739,47 @@ window.deletePost = async (id) => {
             loadAdminCommunity();
         };
 
-       window.loadAdminCommunity = async () => {
+        window.loadAdminCommunity = async () => {
             const list = document.getElementById('community-list');
             list.innerHTML = '<p class="text-zinc-500 text-sm">جاري التحميل...</p>';
             try {
-                const q = query(collection(db, 'community_posts'), orderBy('createdAt', 'desc'), limit(30));
-                const snap = await getDocs(q);
+                let q = db.collection('community_posts').orderBy('createdAt', 'desc').limit(30);
+                const snap = await q.get();
                 if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm">لا توجد مشاركات</p>'; return; }
                 list.innerHTML = '';
                 snap.forEach(d => {
                     const cp = d.data();
-                    // الفلترة
                     if (communityFilter === 'visible' && cp.isHidden) return;
                     if (communityFilter === 'hidden' && !cp.isHidden) return;
                     if (communityFilter === 'reported' && !(cp.reportCount > 0)) return;
-
                     list.innerHTML += `
-                        <div class="bg-zinc-800 p-4 rounded-xl mb-3 border ${cp.reportCount > 0 ? 'border-red-500' : 'border-zinc-700'}">
-                            <div class="flex justify-between items-start mb-2">
-                                <span class="font-bold text-sm text-gold-text">${cp.userName || 'مجهول'}</span>
-                                <span class="text-[10px] bg-zinc-700 px-2 py-0.5 rounded">${cp.isHidden ? '🚫 مخفي' : '✅ ظاهر'}</span>
+                        <div class="bg-zinc-800 p-4 rounded-xl ${cp.reportCount > 0 ? 'border border-red-600/40' : ''}">
+                            <div class="flex justify-between items-start gap-2">
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="font-bold text-sm">${cp.userName || 'مجهول'}</span>
+                                        ${cp.isHidden ? '<span class="text-[10px] bg-red-800 text-white px-2 py-0.5 rounded">مخفي</span>' : '<span class="text-[10px] bg-green-800 text-white px-2 py-0.5 rounded">ظاهر</span>'}
+                                        ${cp.reportCount > 0 ? `<span class="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded">🚨 ${cp.reportCount} بلاغ</span>` : ''}
+                                    </div>
+                                    ${cp.text ? `<p class="text-sm text-zinc-300 mb-1 line-clamp-2">${cp.text}</p>` : ''}
+                                    ${cp.mediaUrls?.length ? `<img src="${cp.mediaUrls[0]}" class="w-16 h-12 rounded-lg object-cover mt-1">` : ''}
+                                    ${cp.productName ? `<p class="text-[10px] text-zinc-500">المنتج: ${cp.productName}</p>` : ''}
+                                </div>
                             </div>
-                            <p class="text-sm text-zinc-300 mb-2">${cp.text || ''}</p>
-                            ${cp.mediaUrls?.length ? `<img src="${cp.mediaUrls[0]}" class="w-20 h-20 object-cover rounded mb-2 border border-zinc-600">` : ''}
-                            <div class="flex gap-2 mt-2 flex-wrap">
-                                <button onclick="toggleCommunityPost('${d.id}', ${!cp.isHidden})" class="text-[10px] px-3 py-1.5 rounded bg-zinc-700 hover:bg-zinc-600 text-white">
-                                    ${cp.isHidden ? '👁️ إظهار' : '🚫 إخفاء'}
-                                </button>
-                                <button onclick="deleteCommunityPostAdmin('${d.id}')" class="text-[10px] px-3 py-1.5 rounded bg-red-900 text-white">🗑️ حذف نهائي</button>
-                                ${cp.userId ? `<button onclick="blockUser('${cp.userId}', '${cp.userName}')" class="text-[10px] px-3 py-1.5 rounded bg-orange-700 text-white">🔒 حظر العضو</button>` : ''}
+                            <div class="flex gap-2 mt-3">
+                                <button onclick="toggleCommunityPost('${d.id}', ${!cp.isHidden})" class="text-xs px-3 py-1 rounded-lg ${cp.isHidden ? 'bg-green-800 text-white' : 'bg-zinc-700 text-zinc-300'}">${cp.isHidden ? 'إظهار' : 'إخفاء'}</button>
+                                <button onclick="deleteCommunityPostAdmin('${d.id}')" class="text-xs px-3 py-1 rounded-lg bg-red-800 text-white">حذف نهائي</button>
+                                ${cp.userId ? `<button onclick="blockUser('${cp.userId}', '${cp.userName || ''}')" class="text-xs px-3 py-1 rounded-lg bg-orange-800 text-white">حظر</button>` : ''}
                             </div>
                         </div>`;
                 });
-            } catch (e) { console.error(e); }
-        };
-     window.toggleCommunityPost = async (id, hide) => {
-            try {
-                // تعديل: استخدام doc و updateDoc للنظام الجديد
-                await updateDoc(doc(db, 'community_posts', id), { isHidden: hide });
-                loadAdminCommunity();
-            } catch (e) { alert('خطأ: ' + e.message); }
+                if (!list.innerHTML.trim()) list.innerHTML = '<p class="text-zinc-500 text-sm">لا نتائج بهذا الفلتر</p>';
+            } catch (e) { list.innerHTML = `<p class="text-red-400 text-sm">خطأ: ${e.message}</p>`; }
         };
 
+        window.toggleCommunityPost = async (id, hide) => {
+            try { await db.collection('community_posts').doc(id).update({ isHidden: hide }); loadAdminCommunity(); } catch (e) {}
+        };
         window.deleteCommunityPostAdmin = async (id) => {
             if (!confirm('حذف نهائي؟')) return;
             try { await db.collection('community_posts').doc(id).delete(); loadAdminCommunity(); } catch (e) {}
@@ -1772,155 +1792,88 @@ window.deletePost = async (id) => {
             } catch (e) { alert('خطأ: ' + e.message); }
         };
 
-      window.loadAdminReports = async () => {
+        // ============ REPORTS ADMIN ============
+        window.loadAdminReports = async () => {
             const list = document.getElementById('reports-list');
             list.innerHTML = '<p class="text-zinc-500 text-sm">جاري التحميل...</p>';
             try {
-                const q = query(collection(db, 'reports'), orderBy('createdAt', 'desc'), limit(50));
-                const snap = await getDocs(q);
+                const snap = await db.collection('reports').orderBy('createdAt', 'desc').limit(50).get();
                 if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm">لا توجد بلاغات ✅</p>'; return; }
                 list.innerHTML = '';
                 snap.forEach(d => {
                     const r = d.data();
                     list.innerHTML += `
-                        <div class="bg-zinc-800 p-4 rounded-xl mb-3 flex gap-3 items-start border-r-4 border-red-600">
+                        <div class="bg-zinc-800 p-4 rounded-xl flex gap-3 items-start">
                             <div class="flex-1 min-w-0">
-                                <p class="text-xs bg-zinc-700 inline-block px-2 py-0.5 rounded mb-2">${r.collection || 'عام'}</p>
-                                <p class="text-sm font-bold">السبب: ${r.reason || 'محتوى مسيء'}</p>
-                                <p class="text-[10px] text-zinc-500 mt-1">تاريخ البلاغ: ${r.createdAt?.toDate?.()?.toLocaleString('ar-EG') || ''}</p>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-xs bg-zinc-700 px-2 py-0.5 rounded">${r.collection || '?'}</span>
+                                    <span class="text-xs text-zinc-500">${r.createdAt?.toDate?.()?.toLocaleDateString('ar-EG') || ''}</span>
+                                </div>
+                                <p class="text-sm font-bold">السبب: ${r.reason || 'لم يُحدد'}</p>
+                                <p class="text-xs text-zinc-500">الوثيقة: ${r.docId || '—'}</p>
+                                <p class="text-xs text-zinc-500">المُبلَّغ عنه: ${r.targetUserId || '—'}</p>
                             </div>
-                            <div class="flex flex-col gap-2">
-                                <button onclick="viewReportedContent('${r.collection}','${r.docId}')" class="text-[10px] px-3 py-1.5 bg-blue-600 rounded font-bold">👁️ عرض</button>
-                                <button onclick="dismissReport('${d.id}')" class="text-[10px] px-3 py-1.5 bg-zinc-700 rounded font-bold">✖ تجاهل</button>
-                                ${r.targetUserId ? `<button onclick="blockUser('${r.targetUserId}','${r.targetUserId}')" class="text-[10px] px-3 py-1.5 bg-red-900 rounded font-bold">🔒 حظر</button>` : ''}
+                            <div class="flex flex-col gap-1">
+                                <button onclick="viewReportedContent('${r.collection}','${r.docId}')" class="text-xs px-3 py-1 rounded bg-zinc-700 text-white whitespace-nowrap">عرض المحتوى</button>
+                                <button onclick="dismissReport('${d.id}')" class="text-xs px-3 py-1 rounded bg-zinc-600 text-white">تجاهل</button>
+                                ${r.targetUserId ? `<button onclick="blockUser('${r.targetUserId}','')" class="text-xs px-3 py-1 rounded bg-orange-800 text-white">حظر</button>` : ''}
                             </div>
                         </div>`;
                 });
-            } catch (e) { console.error(e); }
+                const badge = document.getElementById('reports-badge');
+                if (badge) { badge.textContent = snap.size; badge.classList.remove('hidden'); }
+            } catch (e) { list.innerHTML = `<p class="text-red-400 text-sm">خطأ: ${e.message}</p>`; }
         };
 
         window.dismissReport = async (id) => {
-            try { 
-                await deleteDoc(doc(db, 'reports', id)); 
-                loadAdminReports(); 
-            } catch (e) { console.error(e); }
+            try { await db.collection('reports').doc(id).delete(); loadAdminReports(); } catch (e) {}
         };
-         window.viewReportedContent = async (col, docId) => {
+        window.viewReportedContent = async (col, docId) => {
             try {
-                const snap = await getDoc(doc(db, col, docId));
-                if (snap.exists()) {
-                    const data = snap.data();
-                    alert("المحتوى:\n" + (data.text || data.name || "لا يوجد نص"));
-                } else { alert("المحتوى تم حذفه بالفعل"); }
-            } catch (e) { alert("خطأ في جلب المحتوى: " + e.message); }
+                const snap = await db.collection(col).doc(docId).get();
+                if (snap.exists) alert(JSON.stringify(snap.data(), null, 2));
+                else alert('المحتوى محذوف أو غير موجود');
+            } catch (e) { alert('خطأ: ' + e.message); }
         };
+
         // ============ POINTS ADMIN ============
-       window.savePointsSettings = async () => {
+        window.savePointsSettings = async () => {
             const enabled = document.getElementById('pts-enabled').checked;
             const ratio = parseFloat(document.getElementById('pts-ratio').value) || 1;
             try {
-                // الطريقة المودرن لحفظ إعدادات النقاط
-                await setDoc(doc(db, 'settings', 'points'), { 
-                    enabled, 
-                    ratio, 
-                    updatedAt: serverTimestamp() 
-                }, { merge: true });
-                alert('✅ تم حفظ إعدادات النقاط بنجاح');
-            } catch (e) { 
-                alert('خطأ في الحفظ: ' + e.message); 
-            }
+                await db.collection('settings').doc('points').set({ enabled, ratio, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                alert('✅ تم حفظ إعدادات النقاط');
+            } catch (e) { alert('خطأ: ' + e.message); }
         };
 
-
-       window.searchUserPoints = async () => {
+        window.searchUserPoints = async () => {
             const uid = document.getElementById('pts-search-user').value.trim();
-            if (!uid) return alert('يرجى إدخال UID المستخدم');
-            
+            if (!uid) return alert('أدخل UID المستخدم');
             const list = document.getElementById('pts-history-list');
             list.innerHTML = '<p class="text-zinc-500 text-sm">جاري البحث...</p>';
-            
             try {
-                // جلب الرصيد بنظام getDoc المودرن
-                const balSnap = await getDoc(doc(db, 'points', uid));
-                const balance = balSnap.exists() ? (balSnap.data().balance || 0) : 0;
-
-                // جلب السجل بنظام Query المودرن
-                const q = query(collection(db, 'points_history'), where('userId', '==', uid), orderBy('createdAt', 'desc'), limit(20));
-                const histSnap = await getDocs(q);
-
-                let html = `
-                    <div class="mb-4 p-4 bg-zinc-950 rounded-2xl border border-gold-text/30">
-                        <p class="text-zinc-400 text-xs mb-1">الرصيد الحالي:</p>
-                        <p class="text-3xl font-bold gold-text">${balance} <span class="text-sm">نقطة</span></p>
-                        ${balance >= 1000 ? `<button onclick="redeemPointsToCoupon('${uid}', ${balance})" class="mt-3 w-full bg-green-600 text-white py-2 rounded-xl font-bold text-xs hover:bg-green-500 transition-all">🎁 تحويل 1000 نقطة لكوبون</button>` : ''}
-                    </div>`;
-
-                if (histSnap.empty) {
-                    html += '<p class="text-zinc-500 text-center py-4 text-xs">لا يوجد سجل عمليات</p>';
-                } else {
+                const balSnap = await db.collection('points').doc(uid).get();
+                const balance = balSnap.exists ? (balSnap.data().balance || 0) : 0;
+                const histSnap = await db.collection('points_history').where('userId', '==', uid).orderBy('createdAt', 'desc').limit(20).get();
+                let html = `<div class="mb-3 p-3 bg-zinc-900 rounded-xl"><p class="text-sm">الرصيد الحالي: <span class="gold-text font-bold text-lg">${balance}</span> نقطة</p></div>`;
+                if (histSnap.empty) { html += '<p class="text-zinc-500 text-sm">لا سجل نقاط</p>'; }
+                else {
                     histSnap.forEach(d => {
                         const h = d.data();
-                        html += `
-                            <div class="flex justify-between items-center py-2 border-b border-zinc-800 text-[10px]">
-                                <div>
-                                    <p class="font-bold ${h.type === 'earn' ? 'text-green-400' : 'text-red-400'}">${h.type === 'earn' ? '⬆️ كسب' : '⬇️ صرف'}</p>
-                                    <p class="text-zinc-500">الطلب: ${h.orderNumber || '—'}</p>
-                                </div>
-                                <span class="font-bold text-sm">${h.type === 'earn' ? '+' : '-'}${h.points}</span>
-                            </div>`;
+                        html += `<div class="flex justify-between items-center py-2 border-b border-zinc-800">
+                            <div>
+                                <p class="text-xs font-bold">${h.type === 'earn' ? '⬆️ مكتسب' : '⬇️ مُصرف'}</p>
+                                <p class="text-[10px] text-zinc-500">طلب: ${h.orderNumber || h.orderId || '—'}</p>
+                                <p class="text-[10px] text-zinc-600">${h.createdAt?.toDate?.()?.toLocaleDateString('ar-EG') || ''}</p>
+                            </div>
+                            <span class="${h.type === 'earn' ? 'text-green-400' : 'text-red-400'} font-bold">${h.type === 'earn' ? '+' : '-'}${h.points}</span>
+                        </div>`;
                     });
                 }
                 list.innerHTML = html;
-            } catch (e) { 
-                list.innerHTML = `<p class="text-red-400 text-xs">خطأ: ${e.message}</p>`;
-            }
+            } catch (e) { list.innerHTML = `<p class="text-red-400 text-sm">خطأ: ${e.message}</p>`; }
         };
-        
-        window.redeemPointsToCoupon = async (uid, currentBalance) => {
-            if (currentBalance < 1000) return alert("الرصيد غير كافٍ للاستبدال");
-            if (!confirm("هل تريد خصم 1000 نقطة من المستخدم وتوليد كوبون خصم بقيمة 50 جنيه له؟")) return;
 
-            try {
-                // توليد كود كوبون عشوائي
-                const couponCode = 'PTS-' + Math.random().toString(36).substring(2, 7).toUpperCase();
-                
-                // 1. إضافة الكوبون لجدول الكوبونات (Modular Style)
-                await addDoc(collection(db, 'coupons'), {
-                    code: couponCode,
-                    type: 'fixed',
-                    discount: 50, // القيمة اللي هيخصمها الكوبون
-                    isActive: true,
-                    limit: 1,
-                    usedCount: 0,
-                    linkedUser: uid, // الكوبون يظهر للمستخدم ده بس في حسابه
-                    note: 'كوبون استبدال 1000 نقطة',
-                    createdAt: serverTimestamp()
-                });
-
-                // 2. خصم النقاط من رصيد المستخدم (استخدام increment للسالب بيطرح)
-                await updateDoc(doc(db, 'points', uid), {
-                    balance: increment(-1000),
-                    updatedAt: serverTimestamp()
-                });
-
-                // 3. تسجيل العملية في سجل النقاط
-                await addDoc(collection(db, 'points_history'), {
-                    userId: uid,
-                    points: 1000,
-                    type: 'redeem',
-                    note: 'استبدال بنقاط لكوبون: ' + couponCode,
-                    createdAt: serverTimestamp()
-                });
-
-                alert(`✅ تم التحويل بنجاح!\nكود الكوبون: ${couponCode}\nسيظهر الكوبون الآن في صفحة "حسابي" الخاصة بالعميل.`);
-                
-                // تحديث الشاشة بعد التحويل
-                window.searchUserPoints(); 
-            } catch (e) {
-                alert("حدث خطأ أثناء العملية: " + e.message);
-                console.error(e);
-            }
-        };
         // Load points settings on tab open
         document.getElementById('btn-points-tab').addEventListener('click', async () => {
             try {
@@ -1931,10 +1884,10 @@ window.deletePost = async (id) => {
                 }
             } catch (e) {}
         });
-        document.getElementById('btn-banners-tab').addEventListener('click', () => window.loadAdminBanners());
-        document.getElementById('btn-posts-tab').addEventListener('click', () => window.loadAdminPosts());
-        document.getElementById('btn-community-tab').addEventListener('click', () => window.loadAdminCommunity());
-        document.getElementById('btn-reports-tab').addEventListener('click', () => window.loadAdminReports());
+        document.getElementById('btn-banners-tab').addEventListener('click', loadAdminBanners);
+        document.getElementById('btn-posts-tab').addEventListener('click', loadAdminPosts);
+        document.getElementById('btn-community-tab').addEventListener('click', loadAdminCommunity);
+        document.getElementById('btn-reports-tab').addEventListener('click', loadAdminReports);
 
         // ============ REVIEWS ADMIN ============
         window.loadAdminReviews = async () => {
@@ -1999,12 +1952,7 @@ window.deletePost = async (id) => {
                 showNotif('تم الحذف ✓', 'success');
             } catch (e) { showNotif('خطأ: ' + e.message, 'error'); }
         };
-        document.getElementById('btn-banners-tab').onclick = () => window.loadAdminBanners();
-        document.getElementById('btn-posts-tab').onclick = () => window.loadAdminPosts();
-        document.getElementById('btn-community-tab').onclick = () => window.loadAdminCommunity();
-        document.getElementById('btn-reports-tab').onclick = () => window.loadAdminReports();
 
-        
     </script>
 </body>
 </html>
