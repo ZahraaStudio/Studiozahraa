@@ -1367,7 +1367,7 @@
         let currentSettings = {};
 
         async function loadSettings() {
-            const rewardSnap = await getDoc(doc(db, 'settings', 'rewards'));
+            const rewardSnap = await db.collection('settings').doc('rewards').get();
             if (rewardSnap.exists()) {
                 const r = rewardSnap.data();
                 document.getElementById('reward-amount').value = r.amount;
