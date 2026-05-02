@@ -1610,8 +1610,7 @@
             const list = document.getElementById('banners-list');
             list.innerHTML = '<p class="text-zinc-500 text-sm">جاري التحميل...</p>';
             try {
-                const q = query(collection(db, 'banners'), orderBy('order', 'asc'));
-const snap = await getDocs(q);
+            const snap = await getDocs(query(collection(db, 'banners'), orderBy('order', 'asc')));
                 if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm">لا توجد بانرات</p>'; return; }
                 list.innerHTML = '';
                 snap.forEach(d => {
