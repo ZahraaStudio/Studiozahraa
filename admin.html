@@ -1710,44 +1710,42 @@ window.deletePost = async (id) => {
             loadAdminCommunity();
         };
 
-        window.loadAdminCommunity = async () => {
+       window.loadAdminCommunity = async () => {
             const list = document.getElementById('community-list');
             list.innerHTML = '<p class="text-zinc-500 text-sm">جاري التحميل...</p>';
             try {
-                let q = db.collection('community_posts').orderBy('createdAt', 'desc').limit(30);
-                const snap = await q.get();
+                // تعديل طريقة جلب البيانات للنظام الجديد
+                const q = query(collection(db, 'community_posts'), orderBy('createdAt', 'desc'), limit(30));
+                const snap = await getDocs(q);
+                
                 if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm">لا توجد مشاركات</p>'; return; }
                 list.innerHTML = '';
+                
                 snap.forEach(d => {
                     const cp = d.data();
                     if (communityFilter === 'visible' && cp.isHidden) return;
                     if (communityFilter === 'hidden' && !cp.isHidden) return;
                     if (communityFilter === 'reported' && !(cp.reportCount > 0)) return;
+
                     list.innerHTML += `
-                        <div class="bg-zinc-800 p-4 rounded-xl ${cp.reportCount > 0 ? 'border border-red-600/40' : ''}">
-                            <div class="flex justify-between items-start gap-2">
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex items-center gap-2 mb-1">
-                                        <span class="font-bold text-sm">${cp.userName || 'مجهول'}</span>
-                                        ${cp.isHidden ? '<span class="text-[10px] bg-red-800 text-white px-2 py-0.5 rounded">مخفي</span>' : '<span class="text-[10px] bg-green-800 text-white px-2 py-0.5 rounded">ظاهر</span>'}
-                                        ${cp.reportCount > 0 ? `<span class="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded">🚨 ${cp.reportCount} بلاغ</span>` : ''}
-                                    </div>
-                                    ${cp.text ? `<p class="text-sm text-zinc-300 mb-1 line-clamp-2">${cp.text}</p>` : ''}
-                                    ${cp.mediaUrls?.length ? `<img src="${cp.mediaUrls[0]}" class="w-16 h-12 rounded-lg object-cover mt-1">` : ''}
-                                    ${cp.productName ? `<p class="text-[10px] text-zinc-500">المنتج: ${cp.productName}</p>` : ''}
-                                </div>
+                        <div class="bg-zinc-800 p-4 rounded-xl mb-3 border border-zinc-700">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="font-bold text-sm text-gold-text">${cp.userName || 'مجهول'}</span>
+                                <span class="text-[10px] text-zinc-500">${cp.isHidden ? '🚫 مخفي' : '✅ ظاهر'}</span>
                             </div>
-                            <div class="flex gap-2 mt-3">
-                                <button onclick="toggleCommunityPost('${d.id}', ${!cp.isHidden})" class="text-xs px-3 py-1 rounded-lg ${cp.isHidden ? 'bg-green-800 text-white' : 'bg-zinc-700 text-zinc-300'}">${cp.isHidden ? 'إظهار' : 'إخفاء'}</button>
-                                <button onclick="deleteCommunityPostAdmin('${d.id}')" class="text-xs px-3 py-1 rounded-lg bg-red-800 text-white">حذف نهائي</button>
-                                ${cp.userId ? `<button onclick="blockUser('${cp.userId}', '${cp.userName || ''}')" class="text-xs px-3 py-1 rounded-lg bg-orange-800 text-white">حظر</button>` : ''}
+                            <p class="text-sm text-zinc-300 mb-2">${cp.text || ''}</p>
+                            ${cp.mediaUrls?.length ? `<img src="${cp.mediaUrls[0]}" class="w-20 h-20 object-cover rounded mb-2 border border-zinc-600">` : ''}
+                            <div class="flex gap-2 mt-2">
+                                <button onclick="toggleCommunityPost('${d.id}', ${!cp.isHidden})" class="text-[10px] px-2 py-1 bg-zinc-700 rounded">${cp.isHidden ? 'إظهار' : 'إخفاء'}</button>
+                                <button onclick="deleteCommunityPostAdmin('${d.id}')" class="text-[10px] px-2 py-1 bg-red-900 rounded">حذف</button>
+                                ${cp.userId ? `<button onclick="blockUser('${cp.userId}', '${cp.userName || ''}')" class="text-[10px] px-2 py-1 bg-orange-700 rounded">حظر</button>` : ''}
                             </div>
                         </div>`;
                 });
-                if (!list.innerHTML.trim()) list.innerHTML = '<p class="text-zinc-500 text-sm">لا نتائج بهذا الفلتر</p>';
-            } catch (e) { list.innerHTML = `<p class="text-red-400 text-sm">خطأ: ${e.message}</p>`; }
+            } catch (e) { 
+                list.innerHTML = `<p class="text-red-400 text-sm">خطأ في التحميل: ${e.message}</p>`; 
+            }
         };
-
         window.toggleCommunityPost = async (id, hide) => {
             try { await db.collection('community_posts').doc(id).update({ isHidden: hide }); loadAdminCommunity(); } catch (e) {}
         };
