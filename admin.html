@@ -1773,31 +1773,31 @@ window.deletePost = async (id) => {
             } catch (e) { alert('خطأ: ' + e.message); }
         };
 
-    window.loadAdminReports = async () => {
+      window.loadAdminReports = async () => {
             const list = document.getElementById('reports-list');
             list.innerHTML = '<p class="text-zinc-500 text-sm">جاري التحميل...</p>';
             try {
-                // تعديل الطريقة للنظام الجديد
                 const q = query(collection(db, 'reports'), orderBy('createdAt', 'desc'), limit(50));
                 const snap = await getDocs(q);
-                
                 if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm">لا توجد بلاغات ✅</p>'; return; }
                 list.innerHTML = '';
-                
                 snap.forEach(d => {
                     const r = d.data();
                     list.innerHTML += `
-                        <div class="bg-zinc-800 p-4 rounded-xl mb-2 border-r-4 border-red-600">
-                            <p class="text-sm font-bold">السبب: ${r.reason || 'محتوى مسيء'}</p>
-                            <p class="text-[10px] text-zinc-500 mt-1">القسم: ${r.collection} | التاريخ: ${r.createdAt?.toDate?.()?.toLocaleString('ar-EG') || ''}</p>
-                            <div class="flex gap-2 mt-2">
-                                <button onclick="dismissReport('${d.id}')" class="text-[10px] px-3 py-1 bg-zinc-700 rounded">تجاهل</button>
+                        <div class="bg-zinc-800 p-4 rounded-xl mb-3 flex gap-3 items-start border-r-4 border-red-600">
+                            <div class="flex-1 min-w-0">
+                                <p class="text-xs bg-zinc-700 inline-block px-2 py-0.5 rounded mb-2">${r.collection || 'عام'}</p>
+                                <p class="text-sm font-bold">السبب: ${r.reason || 'محتوى مسيء'}</p>
+                                <p class="text-[10px] text-zinc-500 mt-1">تاريخ البلاغ: ${r.createdAt?.toDate?.()?.toLocaleString('ar-EG') || ''}</p>
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <button onclick="viewReportedContent('${r.collection}','${r.docId}')" class="text-[10px] px-3 py-1.5 bg-blue-600 rounded font-bold">👁️ عرض</button>
+                                <button onclick="dismissReport('${d.id}')" class="text-[10px] px-3 py-1.5 bg-zinc-700 rounded font-bold">✖ تجاهل</button>
+                                ${r.targetUserId ? `<button onclick="blockUser('${r.targetUserId}','${r.targetUserId}')" class="text-[10px] px-3 py-1.5 bg-red-900 rounded font-bold">🔒 حظر</button>` : ''}
                             </div>
                         </div>`;
                 });
-            } catch (e) { 
-                list.innerHTML = `<p class="text-red-400 text-sm">خطأ: ${e.message}</p>`; 
-            }
+            } catch (e) { console.error(e); }
         };
 
         window.dismissReport = async (id) => {
@@ -1806,14 +1806,15 @@ window.deletePost = async (id) => {
                 loadAdminReports(); 
             } catch (e) { console.error(e); }
         };
-        window.viewReportedContent = async (col, docId) => {
+         window.viewReportedContent = async (col, docId) => {
             try {
-                const snap = await db.collection(col).doc(docId).get();
-                if (snap.exists) alert(JSON.stringify(snap.data(), null, 2));
-                else alert('المحتوى محذوف أو غير موجود');
-            } catch (e) { alert('خطأ: ' + e.message); }
+                const snap = await getDoc(doc(db, col, docId));
+                if (snap.exists()) {
+                    const data = snap.data();
+                    alert("المحتوى:\n" + (data.text || data.name || "لا يوجد نص"));
+                } else { alert("المحتوى تم حذفه بالفعل"); }
+            } catch (e) { alert("خطأ في جلب المحتوى: " + e.message); }
         };
-
         // ============ POINTS ADMIN ============
        window.savePointsSettings = async () => {
     const enabled = document.getElementById('pts-enabled').checked;
