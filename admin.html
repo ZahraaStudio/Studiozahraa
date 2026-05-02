@@ -1864,10 +1864,10 @@ window.deletePost = async (id) => {
                 }
             } catch (e) {}
         });
-        document.getElementById('btn-banners-tab').addEventListener('click', loadAdminBanners);
-        document.getElementById('btn-posts-tab').addEventListener('click', loadAdminPosts);
-        document.getElementById('btn-community-tab').addEventListener('click', loadAdminCommunity);
-        document.getElementById('btn-reports-tab').addEventListener('click', loadAdminReports);
+        document.getElementById('btn-banners-tab').addEventListener('click', () => window.loadAdminBanners());
+        document.getElementById('btn-posts-tab').addEventListener('click', () => window.loadAdminPosts());
+        document.getElementById('btn-community-tab').addEventListener('click', () => window.loadAdminCommunity());
+        document.getElementById('btn-reports-tab').addEventListener('click', () => window.loadAdminReports());
 
         // ============ REVIEWS ADMIN ============
         window.loadAdminReviews = async () => {
