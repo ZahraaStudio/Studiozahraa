@@ -816,40 +816,58 @@
 
         window.loadProducts = async () => {
             const list = document.getElementById('products-list');
-            const snapshot = await getDocs(query(collection(db, 'products'), orderBy('updatedAt', 'desc')));
-            allProducts = [];
-            list.innerHTML = "";
-            snapshot.forEach(docSnap => {
-                const p = docSnap.data();
-                p.id = docSnap.id;
-                allProducts.push(p);
-                const oos = p.outOfStock || p.inStock === false;
-                const badges = [
-                    oos ? '<span class="bg-red-600 text-white text-[9px] px-1.5 py-0.5 rounded">نفذ</span>' : '<span class="bg-green-600 text-white text-[9px] px-1.5 py-0.5 rounded">متوفر</span>',
-                    p.isDailyOffer ? '<span class="bg-orange-600 text-white text-[9px] px-1.5 py-0.5 rounded">يومي</span>' : '',
-                    p.isWeeklyOffer ? '<span class="bg-purple-600 text-white text-[9px] px-1.5 py-0.5 rounded">أسبوعي</span>' : '',
-                    p.discountValue ? `<span class="bg-yellow-600 text-black text-[9px] px-1.5 py-0.5 rounded">خصم ${p.discountValue}${p.discountType === 'percentage' ? '%' : 'ج'}</span>` : ''
-                ].filter(Boolean).join(' ');
-                list.innerHTML += `
-                    <div class="flex items-center gap-4 p-4 bg-black rounded-xl border border-zinc-800 hover:border-gold-text transition">
-                        <img src="${p.images?.[0] || ''}" class="w-16 h-16 object-cover rounded-lg">
-                        <div class="flex-1">
-                            <div class="flex items-center gap-2 mb-1">
-                                <h4 class="font-bold text-sm">${p.name}</h4>
-                                ${p.code ? `<span class="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded">${p.code}</span>` : ''}
+            if(!list) return;
+            list.innerHTML = "جاري تحميل المنتجات...";
+            try {
+                // تعديل: استخدام نظام Compat للوصول للبيانات
+                const snapshot = await db.collection('products').orderBy('updatedAt', 'desc').get();
+                allProducts = [];
+                list.innerHTML = "";
+
+                snapshot.forEach(docSnap => {
+                    const p = docSnap.data();
+                    p.id = docSnap.id;
+                    allProducts.push(p);
+
+                    // حساب حالة التوفر والخصومات (نفس منطق الكود الأصلي بتاعك)
+                    const oos = p.outOfStock || p.inStock === false;
+                    const badges = [
+                        oos ? '<span class="bg-red-600 text-white text-[9px] px-1.5 py-0.5 rounded">نفذ</span>' : '<span class="bg-green-600 text-white text-[9px] px-1.5 py-0.5 rounded">متوفر</span>',
+                        p.isDailyOffer ? '<span class="bg-orange-600 text-white text-[9px] px-1.5 py-0.5 rounded">يومي</span>' : '',
+                        p.isWeeklyOffer ? '<span class="bg-purple-600 text-white text-[9px] px-1.5 py-0.5 rounded">أسبوعي</span>' : '',
+                        p.discountValue ? `<span class="bg-yellow-600 text-black text-[9px] px-1.5 py-0.5 rounded">خصم ${p.discountValue}${p.discountType === 'percentage' ? '%' : 'ج'}</span>` : ''
+                    ].filter(Boolean).join(' ');
+
+                    list.innerHTML += `
+                        <div class="flex items-center gap-4 p-4 bg-black rounded-xl border border-zinc-800 hover:border-gold-text transition mb-2">
+                            <img src="${p.images?.[0] || ''}" class="w-16 h-16 object-cover rounded-lg">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <h4 class="font-bold text-sm">${p.name}</h4>
+                                    ${p.code ? `<span class="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded">${p.code}</span>` : ''}
+                                </div>
+                                <p class="text-xs gold-text">${p.price} ج ${p.oldPrice ? `<span class="text-zinc-500 line-through ml-2">${p.oldPrice} ج</span>` : ''}</p>
+                                <p class="text-[10px] text-zinc-500">${p.category || 'بدون قسم'}</p>
+                                <div class="mt-1 flex gap-1 flex-wrap">${badges}</div>
                             </div>
-                            <p class="text-xs gold-text">${p.price} ج ${p.oldPrice ? `<span class="text-zinc-500 line-through ml-2">${p.oldPrice} ج</span>` : ''}</p>
-                            <p class="text-[10px] text-zinc-500">${p.category || 'بدون قسم'}</p>
-                            <div class="mt-1 flex gap-1 flex-wrap">${badges}</div>
+                            <div class="flex gap-2">
+                                <button onclick="editProduct('${p.id}')" class="text-xs bg-orange-600 px-2 py-1 rounded text-white">تعديل</button>
+                                <button onclick="deleteProduct('${p.id}')" class="text-xs bg-red-600 px-2 py-1 rounded text-white">حذف</button>
+                            </div>
                         </div>
-                        <div class="flex gap-2">
-                            <button onclick="editProduct('${p.id}')" class="btn-sm btn-warning">تعديل</button>
-                            <button onclick="deleteProduct('${p.id}')" class="btn-sm btn-danger">حذف</button>
-                        </div>
-                    </div>
-                `;
-            });
-            document.getElementById('stat-products').innerText = allProducts.length;
+                    `;
+                });
+
+                // تحديث رقم الإحصائيات فوق
+                const statElem = document.getElementById('stat-products');
+                if(statElem) statElem.innerText = allProducts.length;
+
+                if(allProducts.length === 0) list.innerHTML = "لا توجد منتجات حالياً";
+
+            } catch (e) {
+                console.error("Error loading products:", e);
+                list.innerHTML = "<p class='text-red-500'>خطأ في تحميل المنتجات</p>";
+            }
         };
 
         window.editProduct = (id) => {
