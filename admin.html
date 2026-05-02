@@ -1599,56 +1599,48 @@
         window.loadAll = loadAll;
 
         // ============ BANNERS ADMIN ============
-        window.loadAdminBanners = async () => {
-            const list = document.getElementById('banners-list');
-            list.innerHTML = '<p class="text-zinc-500 text-sm">جاري التحميل...</p>';
-            try {
-               const snap = await getDocs(query(collection(db, 'banners'), orderBy('order', 'asc')));
-                if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm">لا توجد بانرات</p>'; return; }
-                list.innerHTML = '';
-                snap.forEach(d => {
-                    const b = d.data();
-                    list.innerHTML += `
-                        <div class="flex items-center gap-3 bg-zinc-800 p-3 rounded-xl">
-                            ${b.imageUrl ? `<img src="${b.imageUrl}" class="w-16 h-10 object-cover rounded-lg flex-shrink-0">` : '<div class="w-16 h-10 bg-zinc-700 rounded-lg flex-shrink-0"></div>'}
-                            <div class="flex-1 min-w-0">
-                                <p class="font-bold text-sm truncate">${b.title || '(بدون عنوان)'}</p>
-                                <p class="text-xs text-zinc-500">${b.isActive ? '✅ نشط' : '⛔ غير نشط'} • ترتيب: ${b.order || 0}</p>
-                            </div>
-                            <div class="flex gap-2">
-                                <button onclick="toggleBanner('${d.id}', ${!b.isActive})" class="text-xs px-2 py-1 rounded-lg ${b.isActive ? 'bg-zinc-700 text-zinc-300' : 'bg-green-700 text-white'}">${b.isActive ? 'إيقاف' : 'تفعيل'}</button>
-                                <button onclick="deleteBanner('${d.id}')" class="text-xs px-2 py-1 rounded-lg bg-red-800 text-white">حذف</button>
-                            </div>
-                        </div>`;
-                });
-            } catch (e) { list.innerHTML = `<p class="text-red-400 text-sm">خطأ: ${e.message}</p>`; }
-        };
+       window.loadAdminBanners = async () => {
+    const list = document.getElementById('banners-list');
+    list.innerHTML = '<p class="text-zinc-500 text-sm">جاري التحميل...</p>';
+    try {
+        const q = query(collection(db, 'banners'), orderBy('order', 'asc'));
+        const snap = await getDocs(q);
+        if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm">لا توجد بانرات</p>'; return; }
+        list.innerHTML = '';
+        snap.forEach(d => {
+            const b = d.data();
+            list.innerHTML += `
+                <div class="flex items-center gap-3 bg-zinc-800 p-3 rounded-xl mb-2">
+                    <img src="${b.imageUrl}" class="w-16 h-10 object-cover rounded-lg">
+                    <div class="flex-1">
+                        <p class="font-bold text-sm">${b.title || 'بدون عنوان'}</p>
+                        <p class="text-xs text-zinc-500">${b.isActive ? '✅ نشط' : '⛔ متوقف'}</p>
+                    </div>
+                    <button onclick="deleteBanner('${d.id}')" class="text-xs px-2 py-1 rounded bg-red-800 text-white">حذف</button>
+                </div>`;
+        });
+    } catch (e) { console.error(e); }
+};
 
         window.saveBanner = async () => {
-            const title = document.getElementById('banner-title').value.trim();
-            const subtitle = document.getElementById('banner-subtitle').value.trim();
-            const imageUrl = document.getElementById('banner-image').value.trim();
-            const link = document.getElementById('banner-link').value.trim();
-            const btnText = document.getElementById('banner-btn-text').value.trim();
-            const order = parseInt(document.getElementById('banner-order').value) || 0;
-            const isActive = document.getElementById('banner-active').checked;
-            if (!title && !imageUrl) return alert('أدخل عنوان البانر أو رابط صورة');
-            try {
-                await db.collection('banners').add({ title, subtitle, imageUrl, link, btnText, order, isActive, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-                ['banner-title','banner-subtitle','banner-image','banner-link','banner-btn-text'].forEach(id => document.getElementById(id).value = '');
-                loadAdminBanners();
-                alert('✅ تم حفظ البانر');
-            } catch (e) { alert('خطأ: ' + e.message); }
-        };
+    const title = document.getElementById('banner-title').value;
+    const imageUrl = document.getElementById('banner-image').value;
+    const order = parseInt(document.getElementById('banner-order').value) || 0;
+    if (!imageUrl) return alert('أدخل رابط الصورة');
+    try {
+        await addDoc(collection(db, 'banners'), {
+            title, imageUrl, order, 
+            isActive: document.getElementById('banner-active').checked,
+            createdAt: serverTimestamp()
+        });
+        alert('تم الحفظ بنجاح');
+        loadAdminBanners();
+    } catch (e) { alert('خطأ: ' + e.message); }
+};
 
-        window.toggleBanner = async (id, state) => {
-            try { await db.collection('banners').doc(id).update({ isActive: state }); loadAdminBanners(); } catch (e) {}
-        };
-        window.deleteBanner = async (id) => {
-            if (!confirm('حذف هذا البانر؟')) return;
-            try { await db.collection('banners').doc(id).delete(); loadAdminBanners(); } catch (e) {}
-        };
-
+window.deleteBanner = async (id) => {
+    if(confirm('حذف؟')) { await deleteDoc(doc(db, 'banners', id)); loadAdminBanners(); }
+};
         // ============ POSTS ADMIN ============
         window.loadAdminPosts = async () => {
             const list = document.getElementById('posts-list');
@@ -1708,7 +1700,7 @@
 
         window.editPost = async (id) => {
             try {
-               const snap = await getDocs(query(collection(db, 'posts'), orderBy('createdAt', 'desc')));
+               const snap = await getDocs(query(collection(db, 'banners'), orderBy('order', 'asc')));
                 if (!snap.exists) return;
                 const p = snap.data();
                 document.getElementById('post-edit-id').value = id;
