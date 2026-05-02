@@ -633,13 +633,9 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
         const auth = getAuth(app);
+        const db = getFirestore(app);
 
-        // السطرين دول هما اللي هيخلوا الزراير "تستجيب" وتشوف الدوال
-        window.auth = auth;
-        window.db = db;
-        
         const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload';
         const CLOUDINARY_UPLOAD_PRESET = 'zahraa_upload';
 
@@ -651,24 +647,21 @@
         let productImages = [];
 
         // ==================== AUTH ====================
-        
-        window.handleLogin = async () => {
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value.trim();
-            const errorEl = document.getElementById('login-error');
-            
-            if (!email || !password) return alert("اكتب البيانات");
+        const loginBtn = document.getElementById('login-btn');
+        if (loginBtn) {
+            loginBtn.addEventListener('click', async () => {
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const errorEl = document.getElementById('login-error');
+                try {
+                    await signInWithEmailAndPassword(auth, email, password);
+                } catch (e) {
+                    errorEl.innerText = "خطأ في تسجيل الدخول: " + e.message;
+                    errorEl.classList.remove('hidden');
+                }
+            });
+        }
 
-            try {
-                // الطريقة الصحيحة للنظام الجديد
-                await signInWithEmailAndPassword(auth, email, password);
-            } catch (e) {
-                errorEl.innerText = "بيانات الدخول غلط";
-                errorEl.classList.remove('hidden');
-            }
-        };
-        // نربط الدالة بالزرار فوراً
-        document.getElementById('login-btn').onclick = window.handleLogin;
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 document.getElementById('auth-section').classList.add('hidden');
@@ -1610,7 +1603,7 @@
             const list = document.getElementById('banners-list');
             list.innerHTML = '<p class="text-zinc-500 text-sm">جاري التحميل...</p>';
             try {
-            const snap = await getDocs(query(collection(db, 'banners'), orderBy('order', 'asc')));
+                const snap = await db.collection('banners').orderBy('order', 'asc').get();
                 if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm">لا توجد بانرات</p>'; return; }
                 list.innerHTML = '';
                 snap.forEach(d => {
@@ -1641,7 +1634,7 @@
             const isActive = document.getElementById('banner-active').checked;
             if (!title && !imageUrl) return alert('أدخل عنوان البانر أو رابط صورة');
             try {
-                await addDoc(collection(db, 'banners'), { title, imageUrl, order, isActive, createdAt: serverTimestamp() });
+                await db.collection('banners').add({ title, subtitle, imageUrl, link, btnText, order, isActive, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
                 ['banner-title','banner-subtitle','banner-image','banner-link','banner-btn-text'].forEach(id => document.getElementById(id).value = '');
                 loadAdminBanners();
                 alert('✅ تم حفظ البانر');
@@ -1750,8 +1743,7 @@
             const list = document.getElementById('community-list');
             list.innerHTML = '<p class="text-zinc-500 text-sm">جاري التحميل...</p>';
             try {
-                const q = query(collection(db, 'community_posts'), orderBy('createdAt', 'desc'), limit(30));
-const snap = await getDocs(q);
+                let q = db.collection('community_posts').orderBy('createdAt', 'desc').limit(30);
                 const snap = await q.get();
                 if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm">لا توجد مشاركات</p>'; return; }
                 list.innerHTML = '';
@@ -1805,8 +1797,7 @@ const snap = await getDocs(q);
             const list = document.getElementById('reports-list');
             list.innerHTML = '<p class="text-zinc-500 text-sm">جاري التحميل...</p>';
             try {
-                const q = query(collection(db, 'reports'), orderBy('createdAt', 'desc'), limit(50));
-const snap = await getDocs(q);
+                const snap = await db.collection('reports').orderBy('createdAt', 'desc').limit(50).get();
                 if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm">لا توجد بلاغات ✅</p>'; return; }
                 list.innerHTML = '';
                 snap.forEach(d => {
@@ -1850,7 +1841,7 @@ const snap = await getDocs(q);
             const enabled = document.getElementById('pts-enabled').checked;
             const ratio = parseFloat(document.getElementById('pts-ratio').value) || 1;
             try {
-                await setDoc(doc(db, 'settings', 'points'), { enabled, ratio, updatedAt: serverTimestamp() }, { merge: true });
+                await db.collection('settings').doc('points').set({ enabled, ratio, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
                 alert('✅ تم حفظ إعدادات النقاط');
             } catch (e) { alert('خطأ: ' + e.message); }
         };
@@ -1861,7 +1852,7 @@ const snap = await getDocs(q);
             const list = document.getElementById('pts-history-list');
             list.innerHTML = '<p class="text-zinc-500 text-sm">جاري البحث...</p>';
             try {
-                const balSnap = await getDoc(doc(db, 'points', uid));
+                const balSnap = await db.collection('points').doc(uid).get();
                 const balance = balSnap.exists ? (balSnap.data().balance || 0) : 0;
                 const histSnap = await db.collection('points_history').where('userId', '==', uid).orderBy('createdAt', 'desc').limit(20).get();
                 let html = `<div class="mb-3 p-3 bg-zinc-900 rounded-xl"><p class="text-sm">الرصيد الحالي: <span class="gold-text font-bold text-lg">${balance}</span> نقطة</p></div>`;
