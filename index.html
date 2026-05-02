@@ -21,6 +21,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <style>
@@ -242,16 +243,16 @@
         <button onclick="showPage('store')" class="px-4 py-2 text-sm rounded-lg hover:bg-zinc-900 transition-colors gold-text font-bold">🛍️ المتجر</button>
         <button onclick="showPage('track')" class="px-4 py-2 text-sm rounded-lg hover:bg-zinc-900 transition-colors">📦 تتبع</button>
         <button id="nav-myorders" onclick="showPage('myorders')" class="hidden px-4 py-2 text-sm rounded-lg hover:bg-zinc-900 transition-colors">📋 طلباتي</button>
-        <a id="nav-account-btn" href="account.html" class="hidden px-4 py-2 text-sm rounded-lg hover:bg-zinc-900 transition-colors gold-text">👤 حسابي</a>
+        <a id="nav-account-btn" href="/account.html" class="hidden px-4 py-2 text-sm rounded-lg hover:bg-zinc-900 transition-colors gold-text">👤 حسابي</a>
         <button onclick="showPage('testimonials')" class="px-4 py-2 text-sm rounded-lg hover:bg-zinc-900 transition-colors">⭐ الآراء</button>
       </div>
       <div class="flex items-center gap-2">
         <button onclick="toggleTheme()" class="theme-toggle" id="theme-toggle-btn" title="تبديل الثيم"></button>
         <div id="user-profile" class="hidden flex items-center gap-2 text-sm">
-          <a href="account.html" title="حسابي وطلباتي">
+          <a href="/account.html" title="حسابي وطلباتي">
             <img id="user-avatar" src="" class="w-8 h-8 rounded-full border border-gold-text hover:opacity-80 transition-opacity cursor-pointer">
           </a>
-          <a href="account.html" class="text-zinc-400 max-w-[80px] truncate hover:text-yellow-400 transition-colors hidden md:block" id="user-name"></a>
+          <a href="/account.html" class="text-zinc-400 max-w-[80px] truncate hover:text-yellow-400 transition-colors hidden md:block" id="user-name"></a>
           <button onclick="logout()" class="text-xs text-red-500 hover:text-red-400 hidden md:block">خروج</button>
         </div>
         <button id="login-btn" onclick="showLoginModal()" class="text-xs px-3 py-2 border border-gold-text rounded-lg gold-text hover:bg-gold-text/10 transition-colors">دخول</button>
@@ -288,7 +289,7 @@
         </div>
       </div>
       <div id="sidebar-account-wrap" class="hidden mb-4">
-        <a href="account.html" class="block w-full text-right p-3 rounded-xl bg-yellow-900/10 border border-yellow-700/30 hover:bg-yellow-900/30 transition-colors gold-text font-bold">👤 حسابي وإعداداتي</a>
+        <a href="/account.html" class="block w-full text-right p-3 rounded-xl bg-yellow-900/10 border border-yellow-700/30 hover:bg-yellow-900/30 transition-colors gold-text font-bold">👤 حسابي وإعداداتي</a>
       </div>
       <div class="flex items-center justify-between py-3 border-t border-zinc-900 mb-4">
         <span class="text-sm text-zinc-400">الوضع الليلي / النهاري</span>
@@ -973,7 +974,14 @@
             document.getElementById('daily-offers-grid').innerHTML = dailyArr.map(p => renderProductCard(p)).join('');
             document.getElementById('sidebar-daily-btn').classList.remove('hidden');
         }
-        const weeklyArr = allProducts.filter(p => p.isWeeklyOffer).slice(0, 6);
+        const weeklyArr = allProducts.filter(p => {
+            if (!p.isWeeklyOffer) return false;
+            if (p.weeklyOfferEnd) {
+                const end = p.weeklyOfferEnd.toDate ? p.weeklyOfferEnd.toDate() : new Date(p.weeklyOfferEnd);
+                if (new Date() > end) return false;
+            }
+            return true;
+        }).slice(0, 6);
         if (weeklyArr.length > 0) {
             document.getElementById('weekly-offers-section').classList.remove('hidden');
             document.getElementById('weekly-offers-grid').innerHTML = weeklyArr.map(p => renderProductCard(p)).join('');
@@ -1786,121 +1794,126 @@
     };
 
     // ============ Cashier-style PDF Invoice ============
-    window.downloadInvoice = () => {
-        if (!currentOrder) return;
+    window.downloadInvoice = async (orderData = null) => {
+        const o = orderData || currentOrder;
+        if (!o) return;
+        
         const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        const o = currentOrder;
-        const pageWidth = doc.internal.pageSize.getWidth();
-
-        // Header
-        doc.setFillColor(212, 175, 55);
-        doc.rect(0, 0, pageWidth, 25, 'F');
-        doc.setTextColor(0, 0, 0);
-        doc.setFontSize(18);
-        doc.setFont(undefined, 'bold');
-        doc.text(storeSettings.storeName || 'ZAHRAA STUDIO', pageWidth / 2, 12, { align: 'center' });
-        doc.setFontSize(9);
-        doc.setFont(undefined, 'normal');
-        if (storeSettings.storeAddress) doc.text(storeSettings.storeAddress, pageWidth / 2, 18, { align: 'center' });
-        if (storeSettings.storePhone || storeSettings.whatsapp1) doc.text('Tel: ' + (storeSettings.storePhone || storeSettings.whatsapp1 || ''), pageWidth / 2, 22, { align: 'center' });
-
-        doc.setTextColor(0, 0, 0);
-        doc.setFontSize(13);
-        doc.setFont(undefined, 'bold');
-        doc.text('INVOICE / فاتورة', pageWidth / 2, 35, { align: 'center' });
-
-        // Order info box
-        doc.setDrawColor(180, 180, 180);
-        doc.rect(10, 40, pageWidth - 20, 30);
-        doc.setFontSize(10);
-        doc.setFont(undefined, 'normal');
-        const dt = (o.createdAt && o.createdAt.toDate) ? o.createdAt.toDate() : (o.createdAt || new Date());
-        doc.text('Order #: ' + o.orderNumber, 14, 47);
-        doc.text('Date: ' + dt.toLocaleString(), 14, 53);
-        doc.text('Status: ' + (o.status || ''), 14, 59);
-        doc.text('Payment: ' + (o.paymentStatus || ''), 14, 65);
-        doc.text('Customer: ' + (o.customerName || ''), pageWidth - 14, 47, { align: 'right' });
-        doc.text('Phone: ' + (o.customerPhone || ''), pageWidth - 14, 53, { align: 'right' });
-        doc.text('Gov: ' + (o.customerGovernorate || ''), pageWidth - 14, 59, { align: 'right' });
-        doc.text('Address: ' + ((o.customerAddress || '').slice(0, 35)), pageWidth - 14, 65, { align: 'right' });
-
-        // Items header
-        let y = 80;
-        doc.setFillColor(40, 40, 40);
-        doc.rect(10, y - 5, pageWidth - 20, 8, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFont(undefined, 'bold');
-        doc.text('#', 14, y);
-        doc.text('Code', 22, y);
-        doc.text('Item', 50, y);
-        doc.text('Qty', pageWidth - 60, y, { align: 'right' });
-        doc.text('Price', pageWidth - 35, y, { align: 'right' });
-        doc.text('Total', pageWidth - 12, y, { align: 'right' });
-        y += 8;
-        doc.setTextColor(0, 0, 0);
-        doc.setFont(undefined, 'normal');
-
-        (o.items || []).forEach((it, i) => {
-            if (y > 250) { doc.addPage(); y = 20; }
-            doc.text(String(i + 1), 14, y);
-            doc.text(String(it.code || '-').slice(0, 10), 22, y);
-            const nm = String(it.name || '').slice(0, 30);
-            doc.text(nm, 50, y);
-            doc.text(String(it.qty), pageWidth - 60, y, { align: 'right' });
-            doc.text(String(it.price), pageWidth - 35, y, { align: 'right' });
-            doc.text(String(it.price * it.qty), pageWidth - 12, y, { align: 'right' });
-            y += 7;
-            doc.setDrawColor(220, 220, 220);
-            doc.line(10, y - 2, pageWidth - 10, y - 2);
-        });
-
-        // Totals
-        y += 5;
-        const labelX = pageWidth - 70;
-        const valX = pageWidth - 12;
-        doc.setFontSize(10);
-        doc.text('Subtotal:', labelX, y, { align: 'right' });
-        doc.text(String(o.subtotal || 0) + ' EGP', valX, y, { align: 'right' });
-        y += 6;
-        if (o.discountAmount) {
-            doc.text('Discount' + (o.couponCode ? ' (' + o.couponCode + ')' : '') + ':', labelX, y, { align: 'right' });
-            doc.text('-' + (o.discountAmount) + ' EGP', valX, y, { align: 'right' });
-            y += 6;
+        
+        // Create a temporary div for the invoice HTML
+        const invoiceDiv = document.createElement('div');
+        invoiceDiv.style.position = 'fixed';
+        invoiceDiv.style.top = '-10000px';
+        invoiceDiv.style.left = '-10000px';
+        invoiceDiv.style.width = '800px';
+        invoiceDiv.style.padding = '40px';
+        invoiceDiv.style.backgroundColor = '#ffffff';
+        invoiceDiv.style.color = '#000000';
+        invoiceDiv.style.fontFamily = "'Cairo', sans-serif";
+        invoiceDiv.style.direction = 'rtl';
+        
+        const dt = (o.createdAt && o.createdAt.toDate) ? o.createdAt.toDate() : (o.createdAt instanceof Date ? o.createdAt : new Date());
+        
+        invoiceDiv.innerHTML = `
+            <div style="border: 2px solid #d4af37; padding: 30px; border-radius: 20px;">
+                <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #f0f0f0; padding-bottom: 20px;">
+                    <h1 style="color: #d4af37; margin: 0; font-size: 32px;">${storeSettings.storeName || 'ZAHRAA STUDIO'}</h1>
+                    <p style="margin: 5px 0; color: #666;">${storeSettings.storeAddress || ''}</p>
+                    <p style="margin: 5px 0; color: #666;">هاتف: ${storeSettings.storePhone || storeSettings.whatsapp1 || ''}</p>
+                </div>
+                
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h2 style="background: #f9f9f9; display: inline-block; padding: 10px 40px; border-radius: 10px; margin: 0;">فاتورة طلب</h2>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; margin-bottom: 30px; gap: 20px;">
+                    <div style="flex: 1; background: #fdfdfd; padding: 15px; border-radius: 10px; border: 1px solid #eee;">
+                        <p><strong>رقم الطلب:</strong> ${o.orderNumber}</p>
+                        <p><strong>التاريخ:</strong> ${dt.toLocaleString('ar-EG')}</p>
+                        <p><strong>الحالة:</strong> ${o.status || ''}</p>
+                        <p><strong>الدفع:</strong> ${o.paymentStatus || ''}</p>
+                    </div>
+                    <div style="flex: 1; background: #fdfdfd; padding: 15px; border-radius: 10px; border: 1px solid #eee; text-align: right;">
+                        <p><strong>العميل:</strong> ${o.customerName || ''}</p>
+                        <p><strong>الهاتف:</strong> ${o.customerPhone || ''}</p>
+                        <p><strong>المحافظة:</strong> ${o.customerGovernorate || ''}</p>
+                        <p><strong>العنوان:</strong> ${o.customerAddress || ''}</p>
+                    </div>
+                </div>
+                
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+                    <thead>
+                        <tr style="background: #333; color: #fff;">
+                            <th style="padding: 12px; border: 1px solid #444; text-align: center;">#</th>
+                            <th style="padding: 12px; border: 1px solid #444; text-align: right;">المنتج</th>
+                            <th style="padding: 12px; border: 1px solid #444; text-align: center;">الكمية</th>
+                            <th style="padding: 12px; border: 1px solid #444; text-align: center;">السعر</th>
+                            <th style="padding: 12px; border: 1px solid #444; text-align: center;">الإجمالي</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${(o.items || []).map((it, i) => `
+                            <tr>
+                                <td style="padding: 10px; border: 1px solid #eee; text-align: center;">${i + 1}</td>
+                                <td style="padding: 10px; border: 1px solid #eee; text-align: right;">${it.name}</td>
+                                <td style="padding: 10px; border: 1px solid #eee; text-align: center;">${it.qty}</td>
+                                <td style="padding: 10px; border: 1px solid #eee; text-align: center;">${it.price} ج</td>
+                                <td style="padding: 10px; border: 1px solid #eee; text-align: center;">${it.price * it.qty} ج</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                
+                <div style="width: 300px; margin-right: auto; background: #f9f9f9; padding: 20px; border-radius: 10px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span>المجموع الفرعي:</span>
+                        <span>${o.subtotal || 0} ج</span>
+                    </div>
+                    ${o.discountAmount ? `
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px; color: #e53e3e;">
+                            <span>الخصم:</span>
+                            <span>-${o.discountAmount} ج</span>
+                        </div>
+                    ` : ''}
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span>الشحن:</span>
+                        <span>${o.shippingCost || 0} ج</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 2px solid #d4af37; font-weight: bold; font-size: 20px; color: #d4af37;">
+                        <span>الإجمالي:</span>
+                        <span>${o.totalPrice || 0} ج</span>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 40px; text-align: center; color: #999; font-size: 14px;">
+                    شكراً لتسوقكم معنا! نتمنى رؤيتكم مرة أخرى.
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(invoiceDiv);
+        
+        try {
+            const canvas = await html2canvas(invoiceDiv, {
+                scale: 2,
+                useCORS: true,
+                logging: false
+            });
+            
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const imgProps = pdf.getImageProperties(imgData);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+            
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.save(`Invoice-${o.orderNumber}.pdf`);
+        } catch (err) {
+            console.error('Invoice generation error:', err);
+            showAlert('خطأ', 'فشل إنشاء الفاتورة، يرجى المحاولة مرة أخرى.', 'error');
+        } finally {
+            document.body.removeChild(invoiceDiv);
         }
-        if (o.giftPrice) {
-            doc.text('Gift wrap:', labelX, y, { align: 'right' });
-            doc.text(String(o.giftPrice) + ' EGP', valX, y, { align: 'right' });
-            y += 6;
-        }
-        doc.text('Shipping (' + (o.customerGovernorate || '') + '):', labelX, y, { align: 'right' });
-        doc.text(String(o.shippingCost || 0) + ' EGP', valX, y, { align: 'right' });
-        y += 8;
-        doc.setDrawColor(0, 0, 0);
-        doc.line(labelX - 5, y - 4, valX, y - 4);
-        doc.setFontSize(13);
-        doc.setFont(undefined, 'bold');
-        doc.setTextColor(212, 175, 55);
-        doc.text('TOTAL:', labelX, y, { align: 'right' });
-        doc.text(String(o.totalPrice || 0) + ' EGP', valX, y, { align: 'right' });
-
-        if (o.isSurpriseGift) {
-            y += 12;
-            doc.setTextColor(0, 0, 0);
-            doc.setFontSize(10);
-            doc.text('🎁 Surprise Gift to: ' + (o.recipientName || ''), 14, y);
-            y += 6;
-            doc.text('Recipient phone: ' + (o.recipientPhone || ''), 14, y);
-            y += 6;
-            if (o.giftMessage) doc.text('Message: ' + o.giftMessage, 14, y);
-        }
-
-        y += 14;
-        doc.setFontSize(9);
-        doc.setTextColor(100, 100, 100);
-        doc.text('Thank you for shopping with us! - شكراً لتسوقكم معنا', pageWidth / 2, y, { align: 'center' });
-
-        doc.save(`Invoice-${o.orderNumber}.pdf`);
     };
 
     window.closeSuccessModal = () => document.getElementById('success-modal').classList.remove('active');
@@ -2048,6 +2061,10 @@
                         <span class="text-zinc-500">حالة الدفع:</span>
                         <span class="${o.paymentStatus === 'مدفوع' ? 'text-green-400' : 'text-yellow-400'}">${o.paymentStatus || 'غير مدفوع'}</span>
                     </div>
+                    <button onclick='downloadInvoice(${JSON.stringify(o)})' class="w-full mt-4 bg-zinc-800 text-white py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-zinc-700 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        تحميل الفاتورة
+                    </button>
                 </div>
             `).join('');
         } catch (e) {
@@ -2351,7 +2368,7 @@
     };
     window.goBanner = (n) => {
         currentBanner = n;
-        document.getElementById('banner-track').style.transform = `translateX(${n * 100}%)`;
+        document.getElementById('banner-track').style.transform = `translateX(${-n * 100}%)`;
         document.querySelectorAll('.banner-dot').forEach((d, i) => d.classList.toggle('active', i === n));
     };
 
@@ -2572,7 +2589,15 @@
             const now = new Date();
             const end = new Date(now);
             end.setHours(23, 59, 59, 0);
-            const diff = Math.max(0, end - now);
+            const diff = end - now;
+            
+            if (diff <= 0) {
+                // Hide daily offers when time is up
+                document.getElementById('daily-offers-section').classList.add('hidden');
+                document.getElementById('sidebar-daily-btn').classList.add('hidden');
+                return;
+            }
+
             const hrs = Math.floor(diff / 3600000);
             const min = Math.floor((diff % 3600000) / 60000);
             const sec = Math.floor((diff % 60000) / 1000);
