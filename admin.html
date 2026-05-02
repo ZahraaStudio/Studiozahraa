@@ -1373,7 +1373,7 @@
                 document.getElementById('reward-amount').value = r.amount;
                 document.getElementById('reward-type').value = r.type;
             }
-            const generalSnap = const generalSnap = await db.collection('settings').doc('general').get();
+            const generalSnap = await db.collection('settings').doc('general').get();
             const g = generalSnap.exists() ? generalSnap.data() : {};
             currentSettings = g;
 
