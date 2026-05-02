@@ -1841,11 +1841,11 @@ window.deletePost = async (id) => {
             list.innerHTML = '<p class="text-zinc-500 text-sm">جاري البحث...</p>';
             
             try {
-                // 1. جلب الرصيد الحالي (Modular Style)
+                // 1. جلب الرصيد الحالي بنظام Modular
                 const balSnap = await getDoc(doc(db, 'points', uid));
                 const balance = balSnap.exists() ? (balSnap.data().balance || 0) : 0;
 
-                // 2. جلب السجل (Modular Style)
+                // 2. جلب سجل العمليات بنظام Modular
                 const q = query(
                     collection(db, 'points_history'), 
                     where('userId', '==', uid), 
@@ -1856,28 +1856,28 @@ window.deletePost = async (id) => {
 
                 let html = `
                     <div class="mb-4 p-4 bg-zinc-950 rounded-2xl border border-gold-text/30">
-                        <p class="text-zinc-400 text-xs mb-1">الرصيد الحالي:</p>
+                        <p class="text-zinc-400 text-xs mb-1">الرصيد الحالي للمستخدم:</p>
                         <p class="text-3xl font-bold gold-text">${balance} <span class="text-sm">نقطة</span></p>
                         
                         ${balance >= 1000 ? `
-                            <button onclick="redeemPointsToCoupon('${uid}', ${balance})" class="mt-3 w-full bg-green-600 text-white py-2 rounded-xl font-bold text-xs hover:bg-green-500 transition-all">
-                                🎁 تحويل 1000 نقطة لكوبون خصم
+                            <button onclick="redeemPointsToCoupon('${uid}', ${balance})" class="mt-3 w-full bg-green-600 text-white py-2 rounded-xl font-bold text-xs hover:bg-green-500 transition-all shadow-lg shadow-green-900/20">
+                                🎁 تحويل 1000 نقطة لكوبون خصم (50ج)
                             </button>
-                        ` : balance > 0 ? `<p class="text-[10px] text-zinc-500 mt-2 text-center">يحتاج المستخدم إلى 1000 نقطة لتوليد كوبون</p>` : ''}
+                        ` : balance > 0 ? `<p class="text-[10px] text-zinc-500 mt-2 text-center">يحتاج المستخدم إلى 1000 نقطة على الأقل لاستبدالها</p>` : ''}
                     </div>
                 `;
 
                 if (histSnap.empty) {
-                    html += '<p class="text-zinc-500 text-center py-4 text-xs">لا يوجد سجل عمليات</p>';
+                    html += '<p class="text-zinc-500 text-center py-4 text-xs">لا يوجد سجل عمليات لهذا المستخدم</p>';
                 } else {
                     histSnap.forEach(d => {
                         const h = d.data();
                         const isEarn = h.type === 'earn';
                         html += `
-                            <div class="flex justify-between items-center py-2 border-b border-zinc-800 text-[10px]">
+                            <div class="flex justify-between items-center py-3 border-b border-zinc-800 text-[10px]">
                                 <div>
-                                    <p class="font-bold ${isEarn ? 'text-green-400' : 'text-red-400'}">${isEarn ? '⬆️ كسب' : '⬇️ صرف'}</p>
-                                    <p class="text-zinc-500">طلب: ${h.orderNumber || '—'}</p>
+                                    <p class="font-bold text-xs ${isEarn ? 'text-green-400' : 'text-red-400'}">${isEarn ? '⬆️ كسب نقاط' : '⬇️ استبدال/صرف'}</p>
+                                    <p class="text-zinc-500">الطلب: ${h.orderNumber || '—'}</p>
                                     <p class="text-[9px] text-zinc-600">${h.createdAt?.toDate?.()?.toLocaleString('ar-EG') || ''}</p>
                                 </div>
                                 <span class="font-bold text-sm">${isEarn ? '+' : '-'}${h.points}</span>
@@ -1890,48 +1890,52 @@ window.deletePost = async (id) => {
                 console.error(e);
             }
         };
+        
         window.redeemPointsToCoupon = async (uid, currentBalance) => {
-    if (currentBalance < 1000) return alert("الرصيد غير كافٍ");
-    if (!confirm("هل تريد خصم 1000 نقطة من المستخدم وتوليد كوبون خصم له؟")) return;
+            if (currentBalance < 1000) return alert("الرصيد غير كافٍ للاستبدال");
+            if (!confirm("هل تريد خصم 1000 نقطة من المستخدم وتوليد كوبون خصم بقيمة 50 جنيه له؟")) return;
 
-    try {
-        const couponCode = 'GIFT-PTS-' + Math.random().toString(36).substring(2, 7).toUpperCase();
-        const discountValue = 50; // القيمة التي سيعطيها الكوبون (مثلاً 50 جنيه)
+            try {
+                // توليد كود كوبون عشوائي
+                const couponCode = 'PTS-' + Math.random().toString(36).substring(2, 7).toUpperCase();
+                
+                // 1. إضافة الكوبون لجدول الكوبونات (Modular Style)
+                await addDoc(collection(db, 'coupons'), {
+                    code: couponCode,
+                    type: 'fixed',
+                    discount: 50, // القيمة اللي هيخصمها الكوبون
+                    isActive: true,
+                    limit: 1,
+                    usedCount: 0,
+                    linkedUser: uid, // الكوبون يظهر للمستخدم ده بس في حسابه
+                    note: 'كوبون استبدال 1000 نقطة',
+                    createdAt: serverTimestamp()
+                });
 
-        // 1. إنشاء الكوبون في جدول الكوبونات
-        await db.collection('coupons').add({
-            code: couponCode,
-            type: 'fixed',
-            discount: discountValue,
-            isActive: true,
-            limit: 1,
-            usedCount: 0,
-            linkedUser: uid, // الكوبون يعمل لهذا المستخدم فقط
-            note: 'كوبون مقابل استبدال 1000 نقطة',
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
+                // 2. خصم النقاط من رصيد المستخدم (استخدام increment للسالب بيطرح)
+                await updateDoc(doc(db, 'points', uid), {
+                    balance: increment(-1000),
+                    updatedAt: serverTimestamp()
+                });
 
-        // 2. خصم النقاط من رصيد المستخدم
-        await db.collection('points').doc(uid).update({
-            balance: currentBalance - 1000,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
+                // 3. تسجيل العملية في سجل النقاط
+                await addDoc(collection(db, 'points_history'), {
+                    userId: uid,
+                    points: 1000,
+                    type: 'redeem',
+                    note: 'استبدال بنقاط لكوبون: ' + couponCode,
+                    createdAt: serverTimestamp()
+                });
 
-        // 3. تسجيل العملية في السجل
-        await db.collection('points_history').add({
-            userId: uid,
-            points: 1000,
-            type: 'redeem',
-            note: 'استبدال نقاط بكوبون: ' + couponCode,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-
-        alert(`✅ تم التحويل بنجاح!\nكود الكوبون: ${couponCode}\nتم خصم 1000 نقطة.`);
-        window.searchUserPoints(); // تحديث العرض
-    } catch (e) {
-        alert("خطأ أثناء التحويل: " + e.message);
-    }
-};
+                alert(`✅ تم التحويل بنجاح!\nكود الكوبون: ${couponCode}\nسيظهر الكوبون الآن في صفحة "حسابي" الخاصة بالعميل.`);
+                
+                // تحديث الشاشة بعد التحويل
+                window.searchUserPoints(); 
+            } catch (e) {
+                alert("حدث خطأ أثناء العملية: " + e.message);
+                console.error(e);
+            }
+        };
         // Load points settings on tab open
         document.getElementById('btn-points-tab').addEventListener('click', async () => {
             try {
