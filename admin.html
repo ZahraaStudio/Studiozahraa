@@ -1794,7 +1794,11 @@ window.deletePost = async (id) => {
         };
 
         window.dismissReport = async (id) => {
-            try { await db.collection('reports').doc(id).delete(); loadAdminReports(); } catch (e) {}
+            try {
+                // تعديل الطريقة للنظام الجديد
+                await deleteDoc(doc(db, 'reports', id));
+                loadAdminReports();
+            } catch (e) { alert('خطأ: ' + e.message); }
         };
         window.viewReportedContent = async (col, docId) => {
             try {
