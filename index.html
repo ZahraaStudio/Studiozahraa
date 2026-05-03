@@ -2747,7 +2747,8 @@ function moveAdSlide(dir) {
   if (!track) return;
   currentAdSlide = (currentAdSlide + dir + adImages.length) % adImages.length;
   track.style.transform = `translateX(${-currentAdSlide * 100}%)`;
-}
+setTimeout(() => loadAd(), 3000)}
+    }
   </script>
 
   <!-- Ad Modal - الإعلان المنبثق -->
