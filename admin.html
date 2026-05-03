@@ -625,6 +625,48 @@
         </div>
     </div>
 
+    <!-- Ads Tab -->
+<div id="ads-tab" class="tab-content">
+    <div class="bg-zinc-900 p-6 rounded-2xl gold-border">
+        <h3 class="text-xl font-bold mb-4">📢 إدارة الإعلانات المنبثقة</h3>
+        <div class="space-y-4">
+            <input type="text" id="ad-title" placeholder="عنوان الإعلان" class="w-full p-3 bg-black border border-zinc-700 rounded">
+            <div class="grid grid-cols-3 gap-3">
+                <input type="number" id="ad-duration" placeholder="المدة (ثانية)" class="p-3 bg-black border border-zinc-700 rounded">
+                <input type="number" id="ad-skip-delay" placeholder="تأخير التخطي (ث)" class="p-3 bg-black border border-zinc-700 rounded">
+                <input type="text" id="ad-button-text" placeholder="نص الزر" class="p-3 bg-black border border-zinc-700 rounded">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <input type="text" id="ad-button-link" placeholder="رابط الزر" class="p-3 bg-black border border-zinc-700 rounded">
+                <select id="ad-button-type" class="p-3 bg-black border border-zinc-700 rounded">
+                    <option value="custom">مخصص (ذهبي)</option>
+                    <option value="facebook">فيسبوك (أزرق)</option>
+                    <option value="instagram">إنستجرام (متدرج)</option>
+                </select>
+            </div>
+            <input type="file" id="ad-images" multiple accept="image/*" class="w-full p-2 bg-black border border-zinc-700 rounded">
+            <div id="ad-images-preview" class="flex gap-2 flex-wrap"></div>
+            <button onclick="saveAd()" class="gold-bg w-full py-3 rounded-xl font-bold">💾 حفظ الإعلان</button>
+        </div>
+    </div>
+    <div id="ads-list" class="mt-6 space-y-3"></div>
+</div>
+
+<!-- Push Notifications Tab -->
+<div id="push-tab" class="tab-content">
+    <div class="bg-zinc-900 p-6 rounded-2xl gold-border">
+        <h3 class="text-xl font-bold mb-4">🔔 إرسال إشعارات دفع</h3>
+        <div class="space-y-4">
+            <input type="text" id="push-title" placeholder="عنوان الإشعار" class="w-full p-3 bg-black border border-zinc-700 rounded">
+            <textarea id="push-body" placeholder="نص الإشعار" class="w-full p-3 bg-black border border-zinc-700 rounded" rows="3"></textarea>
+            <input type="text" id="push-link" placeholder="رابط عند الضغط (اختياري)" class="w-full p-3 bg-black border border-zinc-700 rounded">
+            <input type="text" id="push-server-key" placeholder="مفتاح الخادم (Server Key) من Firebase Console" class="w-full p-3 bg-black border border-zinc-700 rounded">
+            <button onclick="sendPushNotification()" class="gold-bg w-full py-3 rounded-xl font-bold">📨 إرسال الإشعار</button>
+        </div>
+    </div>
+    <div id="tokens-list" class="mt-6 text-sm text-zinc-400"></div>
+</div>
+    
     <!-- Invoice Modal -->
     <div id="invoice-modal" class="modal">
         <div class="modal-content">
