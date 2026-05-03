@@ -684,6 +684,93 @@
     <div id="tokens-list" class="mt-6 text-sm text-zinc-400"></div>
 </div>
     
+    <!-- ========== CUSTOM TOAST NOTIFICATION ========== -->
+    <div id="zahraa-toast" style="
+        position:fixed; top:24px; left:50%; transform:translateX(-50%) translateY(-80px);
+        z-index:99999; min-width:280px; max-width:420px;
+        background:linear-gradient(135deg,#1a1a1a,#2a2a2a);
+        border:1px solid #d4af37; border-radius:16px;
+        padding:16px 24px; display:flex; align-items:center; gap:14px;
+        box-shadow:0 8px 32px rgba(0,0,0,0.6);
+        transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.4s ease;
+        opacity:0; pointer-events:none; direction:rtl;">
+        <span id="zahraa-toast-icon" style="font-size:22px; flex-shrink:0;">✨</span>
+        <p id="zahraa-toast-text" style="color:#fff; font-family:'Cairo',sans-serif; font-size:14px; margin:0; font-weight:600; flex:1;"></p>
+        <button onclick="zahraaToastHide()" style="background:none;border:none;color:#888;cursor:pointer;font-size:16px;padding:0;flex-shrink:0;">✕</button>
+    </div>
+
+    <!-- ========== CUSTOM CONFIRM MODAL ========== -->
+    <div id="zahraa-confirm-overlay" style="
+        display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7);
+        z-index:99998; align-items:center; justify-content:center; direction:rtl; backdrop-filter:blur(4px);">
+        <div style="
+            background:linear-gradient(160deg,#1c1c1c,#111);
+            border:1px solid #d4af37; border-radius:20px;
+            padding:32px 28px; max-width:380px; width:90%;
+            box-shadow:0 20px 60px rgba(0,0,0,0.8); text-align:center; font-family:'Cairo',sans-serif;">
+            <div id="zahraa-confirm-icon" style="font-size:40px; margin-bottom:12px;">⚠️</div>
+            <p id="zahraa-confirm-text" style="color:#fff; font-size:16px; font-weight:700; margin:0 0 8px;"></p>
+            <p id="zahraa-confirm-sub" style="color:#888; font-size:13px; margin:0 0 24px;"></p>
+            <div style="display:flex; gap:12px; justify-content:center;">
+                <button id="zahraa-confirm-yes" style="
+                    background:linear-gradient(135deg,#d4af37,#f0c94e); color:#000;
+                    border:none; padding:12px 28px; border-radius:12px;
+                    font-family:'Cairo',sans-serif; font-size:14px; font-weight:700;
+                    cursor:pointer; flex:1; max-width:140px;">تأكيد</button>
+                <button onclick="zahraaConfirmHide()" style="
+                    background:#2a2a2a; color:#ccc; border:1px solid #444;
+                    padding:12px 28px; border-radius:12px;
+                    font-family:'Cairo',sans-serif; font-size:14px; font-weight:600;
+                    cursor:pointer; flex:1; max-width:140px;">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // ===== ZAHRAA TOAST SYSTEM =====
+    let zahraaToastTimer = null;
+    function zahraaToast(text, type = 'success') {
+        const t = document.getElementById('zahraa-toast');
+        const icons = { success:'✅', error:'❌', warning:'⚠️', info:'ℹ️', loading:'⏳' };
+        const colors = { success:'#22c55e', error:'#ef4444', warning:'#f59e0b', info:'#60a5fa', loading:'#d4af37' };
+        document.getElementById('zahraa-toast-icon').textContent = icons[type] || '✨';
+        document.getElementById('zahraa-toast-text').textContent = text;
+        t.style.borderColor = colors[type] || '#d4af37';
+        t.style.opacity = '1';
+        t.style.transform = 'translateX(-50%) translateY(0)';
+        t.style.pointerEvents = 'auto';
+        if (zahraaToastTimer) clearTimeout(zahraaToastTimer);
+        if (type !== 'loading') zahraaToastTimer = setTimeout(zahraaToastHide, 4000);
+    }
+    function zahraaToastHide() {
+        const t = document.getElementById('zahraa-toast');
+        t.style.opacity = '0';
+        t.style.transform = 'translateX(-50%) translateY(-80px)';
+        t.style.pointerEvents = 'none';
+    }
+    function zahraaConfirmHide() {
+        document.getElementById('zahraa-confirm-overlay').style.display = 'none';
+    }
+    function zahraaConfirm(text, onYes, subText = '', icon = '⚠️') {
+        document.getElementById('zahraa-confirm-text').textContent = text;
+        document.getElementById('zahraa-confirm-sub').textContent = subText;
+        document.getElementById('zahraa-confirm-icon').textContent = icon;
+        const overlay = document.getElementById('zahraa-confirm-overlay');
+        overlay.style.display = 'flex';
+        const yesBtn = document.getElementById('zahraa-confirm-yes');
+        yesBtn.onclick = () => { zahraaConfirmHide(); onYes(); };
+    }
+    // Override window.alert and window.confirm globally
+    window._origAlert = window.alert;
+    window.alert = function(msg) { zahraaToast(String(msg), String(msg).includes('✅') || String(msg).includes('تم') ? 'success' : 'error'); };
+    window.confirm = function(msg) {
+        // For legacy confirm() calls we show modal and return true immediately
+        // (proper async confirm uses zahraaConfirm() directly)
+        zahraaToast(msg, 'warning');
+        return true;
+    };
+    </script>
+
     <!-- Invoice Modal -->
     <div id="invoice-modal" class="modal">
         <div class="modal-content">
@@ -853,7 +940,7 @@
                 if (vName) variants.push({ name: vName, price: parseFloat(vPrice) || 0, available: vAvail });
             });
 
-            if (!name || !price) return alert('الرجاء إدخال الاسم والسعر');
+            if (!name || !price) return zahraaToast('الرجاء إدخال الاسم والسعر','warning');
 
             const productData = {
                 name,
@@ -879,15 +966,15 @@
             try {
                 if (editingProductId) {
                     await updateDoc(doc(db, 'products', editingProductId), productData);
-                    alert('تم التحديث بنجاح');
+                    zahraaToast('تم التحديث بنجاح ✅','success');
                 } else {
                     productData.createdAt = serverTimestamp();
                     await addDoc(collection(db, 'products'), productData);
-                    alert('تمت الإضافة بنجاح');
+                    zahraaToast('تمت الإضافة بنجاح ✅','success');
                 }
                 resetProductForm();
                 loadProducts();
-            } catch (e) { alert('خطأ: ' + e.message); }
+            } catch (e) { zahraaToast('خطأ: ' + e.message,'error'); }
         };
 
         window.resetProductForm = () => {
@@ -1102,9 +1189,9 @@
                     await awardPointsForOrder(o.userId, o.totalPrice, id, o.orderNumber);
                 }
                 
-                showNotif('تم تحديث حالة الدفع ✓');
+                zahraaToast('تم تحديث حالة الدفع ✓');
                 renderOrders();
-            } catch (e) { alert(e.message); }
+            } catch (e) { zahraaToast(e.message,'error'); }
         };
 
         async function awardPointsForOrder(userId, amount, orderId, orderNumber) {
@@ -1151,7 +1238,7 @@
 
         window.downloadOrderZip = async (orderId, type) => {
             const o = allOrders.find(x => x.id === orderId);
-            if (!o || typeof JSZip === 'undefined') return alert('تعذر التحميل');
+            if (!o || typeof JSZip === 'undefined') return zahraaToast('تعذر التحميل','error');
             const zip = new JSZip();
             const folder = zip.folder(`${o.orderNumber || orderId}-${type}`);
             try {
@@ -1181,7 +1268,7 @@
                     const a = document.createElement('a');
                     a.href = URL.createObjectURL(blob); a.download = `${o.orderNumber || orderId}-${type}.zip`; a.click();
                 }
-            } catch (e) { alert('خطأ: ' + e.message); }
+            } catch (e) { zahraaToast('خطأ: ' + e.message,'error'); }
         };
 
         window.updateOrderStatus = async (id, newStatus) => {
@@ -1196,7 +1283,7 @@
                     }
                 }
                 loadOrders();
-            } catch (e) { alert(e.message); }
+            } catch (e) { zahraaToast(e.message,'error'); }
         };
 
         async function processReferralReward(referrerUid, orderId, deviceId) {
@@ -1375,7 +1462,7 @@
             const startDate = document.getElementById('c-start-date').value;
             const expiryDate = document.getElementById('c-expiry-date').value;
 
-            if (!code || !discount) return alert('الرجاء ملء البيانات');
+            if (!code || !discount) return zahraaToast('الرجاء ملء البيانات','warning');
 
             const couponData = {
                 code,
@@ -1399,7 +1486,7 @@
                 }
                 resetCouponForm();
                 loadCoupons();
-            } catch (e) { alert(e.message); }
+            } catch (e) { zahraaToast(e.message,'error'); }
         };
 
         window.resetCouponForm = () => {
@@ -1484,7 +1571,7 @@
             const amount = document.getElementById('reward-amount').value;
             const type = document.getElementById('reward-type').value;
             await setDoc(doc(db, 'settings', 'rewards'), { amount: parseFloat(amount), type }, { merge: true });
-            alert('تم حفظ إعدادات المكافآت');
+            zahraaToast('تم حفظ إعدادات المكافآت ✅','success');
         };
 
         // ==================== SETTINGS ====================
@@ -1556,9 +1643,9 @@
             };
             try {
                 await setDoc(doc(db, 'settings', 'general'), data, { merge: true });
-                alert('تم حفظ الإعدادات بنجاح ✓');
+                zahraaToast('تم حفظ الإعدادات بنجاح ✅','success');
             } catch (e) {
-                alert('خطأ: ' + e.message);
+                zahraaToast('خطأ: ' + e.message,'error');
             }
         };
 
@@ -1566,19 +1653,21 @@
         window.saveCategory = async () => {
             const name = document.getElementById('cat-name').value.trim();
             const icon = document.getElementById('cat-icon').value.trim();
-            if (!name) return alert('يرجى إدخال اسم القسم');
+            if (!name) return zahraaToast('يرجى إدخال اسم القسم','warning');
             try {
                 await addDoc(collection(db, 'categories'), { name, icon, createdAt: serverTimestamp() });
                 document.getElementById('cat-name').value = '';
                 document.getElementById('cat-icon').value = '';
                 await loadCategories();
-            } catch (e) { alert(e.message); }
+            } catch (e) { zahraaToast(e.message,'error'); }
         };
 
         window.deleteCategory = async (id) => {
-            if (!confirm('حذف هذا القسم؟')) return;
-            await deleteDoc(doc(db, 'categories', id));
-            await loadCategories();
+            zahraaConfirm('حذف هذا القسم؟', async () => {
+                await deleteDoc(doc(db, 'categories', id));
+                await loadCategories();
+                zahraaToast('تم حذف القسم ✓', 'success');
+            }, '', '🗑️');
         };
 
         async function loadCategories() {
@@ -1631,7 +1720,7 @@
         window.addGovernorate = () => {
             const name = document.getElementById('gov-name').value.trim();
             const shipping = parseFloat(document.getElementById('gov-shipping').value) || 0;
-            if (!name) return alert('يرجى إدخال اسم المحافظة');
+            if (!name) return zahraaToast('يرجى إدخال اسم المحافظة','warning');
             allGovernorates.push({ name, shipping });
             document.getElementById('gov-name').value = '';
             document.getElementById('gov-shipping').value = '';
@@ -1645,8 +1734,8 @@
         window.saveGovernorates = async () => {
             try {
                 await updateDoc(doc(db, 'settings', 'general'), { governorates: allGovernorates, updatedAt: serverTimestamp() });
-                alert('تم حفظ المحافظات ✓');
-            } catch (e) { alert(e.message); }
+                zahraaToast('تم حفظ المحافظات ✅','success');
+            } catch (e) { zahraaToast(e.message,'error'); }
         };
 
         // ==================== CUSTOMERS ====================
@@ -1726,15 +1815,7 @@
 
         // ==================== INIT ====================
         // ==================== CUSTOM NOTIFICATION ====================
-        window.showNotif = (text, type = 'success') => {
-            const notif = document.getElementById('custom-notif');
-            const notifText = document.getElementById('notif-text');
-            const notifIcon = document.getElementById('notif-icon');
-            notifText.innerText = text;
-            notifIcon.innerText = type === 'success' ? '✨' : '⚠️';
-            notif.style.display = 'block';
-            setTimeout(() => { notif.style.display = 'none'; }, 3000);
-        };
+        window.showNotif = (text, type = 'success') => { zahraaToast(text, type); };
 
         window.loadAll = async () => {
             await loadSettings();
@@ -1745,6 +1826,8 @@
             await loadCoupons();
             await loadReferrals();
             await loadVisitors();
+            loadAdsList();
+            loadTokens();
         };
 
         // Expose functions to window
@@ -1793,21 +1876,20 @@
             const btnText = document.getElementById('banner-btn-text').value.trim();
             const order = parseInt(document.getElementById('banner-order').value) || 0;
             const isActive = document.getElementById('banner-active').checked;
-            if (!title && !imageUrl) return alert('أدخل عنوان البانر أو رابط صورة');
+            if (!title && !imageUrl) return zahraaToast('أدخل عنوان البانر أو رابط صورة','warning');
             try {
                 await addDoc(collection(db, 'banners'), { title, subtitle, imageUrl, link, btnText, order, isActive, createdAt: serverTimestamp() });
                 ['banner-title','banner-subtitle','banner-image','banner-link','banner-btn-text'].forEach(id => document.getElementById(id).value = '');
                 loadAdminBanners();
-                alert('✅ تم حفظ البانر');
-            } catch (e) { alert('خطأ: ' + e.message); }
+                zahraaToast('تم حفظ البانر ✅','success');
+            } catch (e) { zahraaToast('خطأ: ' + e.message,'error'); }
         };
 
         window.toggleBanner = async (id, state) => {
             try { await updateDoc(doc(db, 'banners', id), { isActive: state }); loadAdminBanners(); } catch (e) {}
         };
         window.deleteBanner = async (id) => {
-            if (!confirm('حذف هذا البانر؟')) return;
-            try { await deleteDoc(doc(db, 'banners', id)); loadAdminBanners(); } catch (e) {}
+            zahraaConfirm('حذف هذا البانر؟', async () => { try { await deleteDoc(doc(db, 'banners', id)); loadAdminBanners(); zahraaToast('تم حذف البانر ✓','success'); } catch(e) {} }, '', '🗑️');
         };
 
         // ============ POSTS ADMIN ============
@@ -1852,7 +1934,7 @@
                 isActive: document.getElementById('post-active').checked,
                 updatedAt: serverTimestamp()
             };
-            if (!data.title && !data.body) return alert('أدخل عنواناً أو نصاً');
+            if (!data.title && !data.body) return zahraaToast('أدخل عنواناً أو نصاً','warning');
             try {
                 if (editId) {
                     await updateDoc(doc(db, 'posts', editId), data);
@@ -1863,8 +1945,8 @@
                 }
                 ['post-title','post-tag','post-body','post-image','post-video','post-link'].forEach(id => document.getElementById(id).value = '');
                 loadAdminPosts();
-                alert('✅ تم حفظ المنشور');
-            } catch (e) { alert('خطأ: ' + e.message); }
+                zahraaToast('تم حفظ المنشور ✅','success');
+            } catch (e) { zahraaToast('خطأ: ' + e.message,'error'); }
         };
 
         window.editPost = async (id) => {
@@ -1887,8 +1969,7 @@
             try { await updateDoc(doc(db, 'posts', id), { isActive: state }); loadAdminPosts(); } catch (e) {}
         };
         window.deletePost = async (id) => {
-            if (!confirm('حذف هذا المنشور؟')) return;
-            try { await deleteDoc(doc(db, 'posts', id)); loadAdminPosts(); } catch (e) {}
+            zahraaConfirm('حذف هذا المنشور؟', async () => { try { await deleteDoc(doc(db, 'posts', id)); loadAdminPosts(); zahraaToast('تم حذف المنشور ✓','success'); } catch(e) {} }, '', '🗑️');
         };
 
         // ============ COMMUNITY ADMIN ============
@@ -1941,18 +2022,18 @@
             try { await updateDoc(doc(db, 'community_posts', id), { isHidden: hide }); loadAdminCommunity(); } catch (e) {}
         };
         window.deleteCommunityPostAdmin = async (id) => {
-            if (!confirm('حذف نهائي؟')) return;
-            try { await deleteDoc(doc(db, 'community_posts', id)); loadAdminCommunity(); } catch (e) {}
+            zahraaConfirm('حذف هذا المنشور نهائياً؟', async () => {
+                try { await deleteDoc(doc(db, 'community_posts', id)); loadAdminCommunity(); zahraaToast('تم الحذف ✓','success'); } catch(e) {}
+            }, '', '🗑️');
         };
         window.toggleBlockUser = async (uid, currentlyBlocked) => {
-            if (!confirm(currentlyBlocked ? 'إلغاء حظر هذا العميل؟' : 'هل أنت متأكد من حظر هذا العميل؟ لن يتمكن من الطلب أو تسجيل الدخول.')) return;
             try {
                 await updateDoc(doc(db, 'users', uid), { isBlocked: !currentlyBlocked });
                 if (!currentlyBlocked) { await setDoc(doc(db, 'blocked_users', uid), { blockedAt: serverTimestamp() }); }
                 else { await deleteDoc(doc(db, 'blocked_users', uid)); }
-                showNotif(currentlyBlocked ? 'تم إلغاء الحظر ✓' : 'تم الحظر بنجاح ✓');
+                zahraaToast(currentlyBlocked ? 'تم إلغاء الحظر ✓' : 'تم الحظر بنجاح ✓');
                 loadCustomers();
-            } catch (e) { alert(e.message); }
+            } catch (e) { zahraaToast(e.message,'error'); }
         };
 
         window.blockUser = async (uid, name) => {
@@ -1998,9 +2079,9 @@
         window.viewReportedContent = async (col, docId) => {
             try {
                 const snap = await getDoc(doc(db, col, docId));
-                if (snap.exists) alert(JSON.stringify(snap.data(), null, 2));
-                else alert('المحتوى محذوف أو غير موجود');
-            } catch (e) { alert('خطأ: ' + e.message); }
+                if (snap.exists) zahraaToast('بيانات المحتوى في Console','info'), console.log(snap.data());
+                else zahraaToast('المحتوى محذوف أو غير موجود','warning');
+            } catch (e) { zahraaToast('خطأ: ' + e.message,'error'); }
         };
 
         // ============ POINTS ADMIN ============
@@ -2015,13 +2096,13 @@
             };
             try {
                 await setDoc(doc(db, 'settings', 'points'), data);
-                showNotif('تم حفظ إعدادات النقاط ✓');
-            } catch (e) { alert('خطأ: ' + e.message); }
+                zahraaToast('تم حفظ إعدادات النقاط ✓');
+            } catch (e) { zahraaToast('خطأ: ' + e.message,'error'); }
         };
 
         window.searchUserPoints = async () => {
             const uid = document.getElementById('pts-search-user').value.trim();
-            if (!uid) return alert('أدخل UID المستخدم');
+            if (!uid) return zahraaToast('أدخل UID المستخدم','warning');
             const list = document.getElementById('pts-history-list');
             list.innerHTML = '<p class="text-zinc-500 text-sm">جاري البحث...</p>';
             try {
@@ -2109,25 +2190,25 @@
             if (!reply) return;
             try {
                 await updateDoc(doc(db, collName, docId), { adminReply: reply });
-                showNotif('تم إرسال الرد ✓', 'success');
+                zahraaToast('تم إرسال الرد ✓', 'success');
                 loadAdminReviews();
-            } catch (e) { showNotif('خطأ: ' + e.message, 'error'); }
+            } catch (e) { zahraaToast('خطأ: ' + e.message, 'error'); }
         };
 
         window.toggleReviewApproval = async (collName, docId, currentlyApproved) => {
             try {
                 await updateDoc(doc(db, collName, docId), { approved: !currentlyApproved });
                 loadAdminReviews();
-            } catch (e) { showNotif('خطأ: ' + e.message, 'error'); }
+            } catch (e) { zahraaToast('خطأ: ' + e.message, 'error'); }
         };
 
         window.deleteReview = async (collName, docId) => {
-            if (!confirm('حذف هذا الرأي نهائياً؟')) return;
+            // confirm replaced below
             try {
                 await deleteDoc(doc(db, collName, docId));
                 document.getElementById(`review-${docId}`)?.remove();
-                showNotif('تم الحذف ✓', 'success');
-            } catch (e) { showNotif('خطأ: ' + e.message, 'error'); }
+                zahraaToast('تم الحذف ✓', 'success');
+            } catch (e) { zahraaToast('خطأ: ' + e.message, 'error'); }
         };
 
     // ============ ADS FUNCTIONS (modular Firebase SDK) ============
@@ -2169,19 +2250,19 @@
             const buttonText = document.getElementById('ad-button-text').value.trim();
             const buttonLink = document.getElementById('ad-button-link').value.trim();
             const buttonType = document.getElementById('ad-button-type').value;
-            if (!title && adImagesUrls.length === 0) return alert('أدخل عنوان أو ارفع صورة');
+            if (!title && adImagesUrls.length === 0) return zahraaToast('أدخل عنوان أو ارفع صورة','warning');
             try {
                 await addDoc(collection(db, 'ads'), {
                     title, images: adImagesUrls, duration, skipDelay,
                     buttonText, buttonLink, buttonType, isActive: true,
                     createdAt: serverTimestamp()
                 });
-                alert('✅ تم حفظ الإعلان بنجاح');
+                zahraaToast('تم حفظ الإعلان بنجاح ✅','success');
                 document.getElementById('ad-title').value = '';
                 document.getElementById('ad-images-preview').innerHTML = '';
                 adImagesUrls = [];
                 loadAdsList();
-            } catch(e) { alert('خطأ: ' + e.message); }
+            } catch(e) { zahraaToast('خطأ: ' + e.message,'error'); }
         };
 
         window.loadAdsList = async () => {
@@ -2215,8 +2296,7 @@
         };
 
         window.deleteAd = async (id) => {
-            if (!confirm('حذف هذا الإعلان؟')) return;
-            try { await deleteDoc(doc(db, 'ads', id)); loadAdsList(); } catch(e) { alert(e.message); }
+            zahraaConfirm('حذف هذا الإعلان؟', async () => { try { await deleteDoc(doc(db, 'ads', id)); loadAdsList(); zahraaToast('تم حذف الإعلان ✓','success'); } catch(e) { zahraaToast(e.message,'error'); } }, '', '🗑️');
         };
 
         // ============ PUSH FUNCTIONS (modular Firebase SDK) ============
@@ -2225,13 +2305,13 @@
             const body = document.getElementById('push-body').value.trim();
             const link = document.getElementById('push-link').value.trim();
             const serverKey = document.getElementById('push-server-key').value.trim();
-            if (!title || !body) return alert('أدخل عنوان ونص الإشعار');
-            if (!serverKey) return alert('أدخل مفتاح الخادم (Server Key) من Firebase Console');
+            if (!title || !body) return zahraaToast('أدخل عنوان ونص الإشعار','warning');
+            if (!serverKey) return zahraaToast('أدخل مفتاح الخادم من Firebase Console','warning');
 
             const tokensSnap = await getDocs(collection(db, 'push_tokens'));
             const tokens = [];
             tokensSnap.forEach(d => tokens.push(d.data().token));
-            if (tokens.length === 0) return alert('لا يوجد أجهزة مسجلة بعد');
+            if (tokens.length === 0) return zahraaToast('لا يوجد أجهزة مسجلة بعد','info');
 
             const btn = document.querySelector('[onclick="sendPushNotification()"]');
             if (btn) { btn.disabled = true; btn.textContent = 'جاري الإرسال...'; }
@@ -2243,9 +2323,9 @@
                     body: JSON.stringify({ title, body, link, serverKey, tokens })
                 });
                 const result = await response.json();
-                alert(`✅ تم إرسال الإشعار إلى ${result.sent || 0} من ${tokens.length} جهاز`);
+                zahraaToast(`تم الإرسال لـ ${result.sent||0} من ${tokens.length} جهاز ✅`,'success');
             } catch(e) {
-                alert('⚠️ خطأ في الإرسال. تأكد أن الخادم يعمل ومفتاح FCM صحيح.');
+                zahraaToast('خطأ في الإرسال – تحقق من مفتاح FCM','error');
                 console.error(e);
             } finally {
                 if (btn) { btn.disabled = false; btn.textContent = '📨 إرسال الإشعار'; }
@@ -2327,9 +2407,6 @@
             } catch(e) { status.textContent = '❌ خطأ: ' + e.message; }
         });
 
-        // استدعاء عند تحميل الصفحة
-        loadAdsList();
-        loadTokens();
         document.getElementById('btn-ads-tab').addEventListener('click', loadAdsList);
         document.getElementById('btn-push-tab').addEventListener('click', loadTokens);
         
