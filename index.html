@@ -936,6 +936,7 @@
                 document.getElementById('daily-offers-title').innerText = storeSettings.dailyOffersTitle || 'عروض اليوم';
                 document.getElementById('weekly-offers-title').innerText = storeSettings.weeklyOffersTitle || 'عروض الأسبوع';
             }
+        } setTimeout(() => loadAd(), 3000)
         } catch (e) { console.error(e); }
     }
 
