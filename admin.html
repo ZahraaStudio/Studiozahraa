@@ -348,7 +348,13 @@
                     <div class="space-y-3">
                         <input id="banner-title" type="text" placeholder="عنوان البانر" class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700">
                         <input id="banner-subtitle" type="text" placeholder="نص فرعي (اختياري)" class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700">
-                        <input id="banner-image" type="text" placeholder="رابط الصورة (Cloudinary / URL)" class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700">
+                        <div class="space-y-2">
+                            <label class="text-xs text-zinc-400">صورة البانر</label>
+                            <input type="file" id="banner-image-file" accept="image/*,video/*" class="w-full bg-zinc-800 text-white p-2 rounded-xl border border-zinc-700 text-sm">
+                            <div id="banner-image-preview" class="hidden"><img id="banner-img-thumb" class="w-full h-24 object-cover rounded-xl mt-1"></div>
+                            <div id="banner-upload-status" class="text-xs text-zinc-500"></div>
+                            <input id="banner-image" type="hidden">
+                        </div>
                         <input id="banner-link" type="text" placeholder="رابط الزر (اختياري)" class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700">
                         <input id="banner-btn-text" type="text" placeholder="نص الزر (مثلاً: اعرف أكثر)" class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700">
                         <div class="flex items-center gap-3">
@@ -382,8 +388,19 @@
                         <input id="post-title" type="text" placeholder="عنوان المنشور" class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700">
                         <input id="post-tag" type="text" placeholder="وسم / تصنيف (مثلاً: عرض، جديد، خبر)" class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700">
                         <textarea id="post-body" rows="4" placeholder="نص المنشور..." class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700 resize-none"></textarea>
-                        <input id="post-image" type="text" placeholder="رابط صورة (اختياري)" class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700">
-                        <input id="post-video" type="text" placeholder="رابط فيديو (اختياري)" class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700">
+                        <div class="space-y-2">
+                            <label class="text-xs text-zinc-400">صورة المنشور (اختياري)</label>
+                            <input type="file" id="post-image-file" accept="image/*" class="w-full bg-zinc-800 text-white p-2 rounded-xl border border-zinc-700 text-sm">
+                            <div id="post-image-preview" class="hidden"><img id="post-img-thumb" class="w-full h-20 object-cover rounded-xl mt-1"></div>
+                            <input id="post-image" type="hidden">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-xs text-zinc-400">فيديو المنشور (اختياري)</label>
+                            <input type="file" id="post-video-file" accept="video/*" class="w-full bg-zinc-800 text-white p-2 rounded-xl border border-zinc-700 text-sm">
+                            <div id="post-video-preview" class="hidden"><video id="post-vid-thumb" controls class="w-full h-20 rounded-xl mt-1"></video></div>
+                            <div id="post-upload-status" class="text-xs text-zinc-500"></div>
+                            <input id="post-video" type="hidden">
+                        </div>
                         <input id="post-link" type="text" placeholder="رابط 'اقرأ أكثر' (اختياري)" class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700">
                         <div class="flex items-center gap-3">
                             <label class="flex items-center gap-2 cursor-pointer">
@@ -855,7 +872,6 @@
                 isDailyOffer,
                 isWeeklyOffer,
                 dailyOfferSetAt: isDailyOffer ? serverTimestamp() : null,
-                weeklyOfferSetAt: isWeeklyOffer ? serverTimestamp() : null,
                 weeklyOfferEnd: isWeeklyOffer ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) : null,
                 updatedAt: serverTimestamp()
             };
@@ -1252,14 +1268,21 @@
                 </div>
             `).join('');
 
+            const paidStatus = o.paymentStatus === 'مدفوع';
             content.innerHTML = `
+                <div class="flex gap-3 mb-4 flex-wrap">
+                    <span class="px-3 py-1 rounded-full text-sm font-bold ${paidStatus ? 'bg-green-600 text-white' : 'bg-yellow-500 text-black'}">${paidStatus ? '✅ مدفوع' : '⏳ غير مدفوع'}</span>
+                    <span class="px-3 py-1 rounded-full text-sm font-bold bg-zinc-800 text-white">حالة الطلب: ${o.status || 'قيد التنفيذ'}</span>
+                    ${o.couponCode ? `<span class="px-3 py-1 rounded-full text-sm bg-zinc-700 text-yellow-400">كوبون: ${o.couponCode}</span>` : ''}
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div class="space-y-6">
                         <div class="bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800">
                             <h4 class="gold-text font-bold mb-4 border-b border-zinc-800 pb-2">بيانات العميل</h4>
                             <div class="space-y-2 text-sm">
                                 <p><span class="text-zinc-500">الاسم:</span> ${o.customerName}</p>
-                                <p><span class="text-zinc-500">الهاتف:</span> ${o.customerPhone}</p>
+                                <p><span class="text-zinc-500">الهاتف:</span> <a href="tel:${o.customerPhone}" class="text-yellow-400 hover:underline">${o.customerPhone}</a></p>
+                                <p><span class="text-zinc-500">المحافظة:</span> ${o.customerGovernorate || '-'}</p>
                                 <p><span class="text-zinc-500">العنوان:</span> ${o.customerAddress}</p>
                                 <p><span class="text-zinc-500">التاريخ:</span> ${date}</p>
                                 <p><span class="text-zinc-500">رقم التتبع:</span> <span class="font-mono bg-black px-2 py-1 rounded">${o.orderNumber || o.id.substring(0,8)}</span></p>
@@ -2107,118 +2130,208 @@
             } catch (e) { showNotif('خطأ: ' + e.message, 'error'); }
         };
 
-    // ============ ADS FUNCTIONS ============
-let adImagesUrls = [];
+    // ============ ADS FUNCTIONS (modular Firebase SDK) ============
+        const CLOUDINARY_URL_ADS = 'https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload';
+        const CLOUDINARY_PRESET_ADS = 'zahraa_upload';
+        let adImagesUrls = [];
 
-document.getElementById('ad-images')?.addEventListener('change', async (e) => {
-    const files = e.target.files;
-    const preview = document.getElementById('ad-images-preview');
-    preview.innerHTML = '';
-    adImagesUrls = [];
-    for (let file of files) {
-        const fd = new FormData();
-        fd.append('file', file);
-        fd.append('upload_preset', 'zahraa_upload');
-        try {
-            const res = await fetch('https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload', { method: 'POST', body: fd });
+        async function uploadToCloudinaryAds(file) {
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('upload_preset', CLOUDINARY_PRESET_ADS);
+            const res = await fetch(CLOUDINARY_URL_ADS, { method: 'POST', body: fd });
             const data = await res.json();
-            adImagesUrls.push(data.secure_url);
-            preview.innerHTML += `<img src="${data.secure_url}" class="w-16 h-16 object-cover rounded">`;
-        } catch(e) { console.error(e); }
-    }
-});
+            return data.secure_url || null;
+        }
 
-async function saveAd() {
-    const title = document.getElementById('ad-title').value;
-    const duration = parseInt(document.getElementById('ad-duration').value) || 30;
-    const skipDelay = parseInt(document.getElementById('ad-skip-delay').value) || 5;
-    const buttonText = document.getElementById('ad-button-text').value;
-    const buttonLink = document.getElementById('ad-button-link').value;
-    const buttonType = document.getElementById('ad-button-type').value;
-    if (!title && adImagesUrls.length === 0) return alert('أدخل عنوان أو ارفع صورة');
-    await db.collection('ads').add({
-        title, images: adImagesUrls, duration, skipDelay,
-        buttonText, buttonLink, buttonType, isActive: true,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    alert('✅ تم حفظ الإعلان');
-    document.getElementById('ad-title').value = '';
-    document.getElementById('ad-images-preview').innerHTML = '';
-    adImagesUrls = [];
-    loadAdsList();
-}
-
-async function loadAdsList() {
-    const snap = await db.collection('ads').orderBy('createdAt', 'desc').get();
-    const list = document.getElementById('ads-list');
-    list.innerHTML = '';
-    snap.forEach(d => {
-        const ad = d.data();
-        list.innerHTML += `<div class="bg-zinc-800 p-4 rounded-xl flex justify-between"><div><p class="font-bold">${ad.title || 'بدون عنوان'}</p><p class="text-xs">${ad.images?.length || 0} صورة | ${ad.duration} ثانية</p></div><button onclick="deleteAd('${d.id}')" class="text-red-500">حذف</button></div>`;
-    });
-}
-
-async function deleteAd(id) {
-    if (!confirm('حذف الإعلان؟')) return;
-    await db.collection('ads').doc(id).delete();
-    loadAdsList();
-}
-
-// ============ PUSH FUNCTIONS ============
-async function sendPushNotification() {
-    const title = document.getElementById('push-title').value;
-    const body = document.getElementById('push-body').value;
-    const link = document.getElementById('push-link').value;
-    const serverKey = document.getElementById('push-server-key').value;
-    if (!title || !body) return alert('أدخل عنوان ونص الإشعار');
-    if (!serverKey) return alert('أدخل مفتاح الخادم (Server Key) من Firebase Console');
-    
-    const tokensSnap = await db.collection('push_tokens').get();
-    const tokens = [];
-    tokensSnap.forEach(d => tokens.push(d.data().token));
-    
-    if (tokens.length === 0) return alert('لا يوجد أجهزة مسجلة للاستقبال');
-    
-    try {
-        // Route through API proxy to avoid CORS issues
-        const response = await fetch('/api/send-push', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title, body, link, serverKey, tokens })
+        document.getElementById('ad-images')?.addEventListener('change', async (e) => {
+            const files = e.target.files;
+            const preview = document.getElementById('ad-images-preview');
+            preview.innerHTML = '<p class="text-xs text-zinc-500">جاري الرفع...</p>';
+            adImagesUrls = [];
+            for (let file of files) {
+                try {
+                    const url = await uploadToCloudinaryAds(file);
+                    if (url) {
+                        adImagesUrls.push(url);
+                        preview.innerHTML += `<img src="${url}" class="w-16 h-16 object-cover rounded">`;
+                    }
+                } catch(err) { console.error(err); }
+            }
+            const p = preview.querySelector('p');
+            if (p) p.remove();
         });
-        const result = await response.json();
-        if (result.success) {
-            alert(`✅ تم إرسال الإشعار إلى ${result.sent} من ${tokens.length} جهاز`);
-        } else {
-            alert('⚠️ خطأ في الإرسال: ' + (result.error || 'تحقق من مفتاح الخادم'));
-        }
-    } catch(e) {
-        // Fallback: direct FCM attempt
-        console.error('Push proxy failed, trying direct:', e);
-        let success = 0;
-        for (const token of tokens) {
+
+        window.saveAd = async () => {
+            const title = document.getElementById('ad-title').value.trim();
+            const duration = parseInt(document.getElementById('ad-duration').value) || 30;
+            const skipDelay = parseInt(document.getElementById('ad-skip-delay').value) || 5;
+            const buttonText = document.getElementById('ad-button-text').value.trim();
+            const buttonLink = document.getElementById('ad-button-link').value.trim();
+            const buttonType = document.getElementById('ad-button-type').value;
+            if (!title && adImagesUrls.length === 0) return alert('أدخل عنوان أو ارفع صورة');
             try {
-                const r = await fetch('https://fcm.googleapis.com/fcm/send', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `key=${serverKey}` },
-                    body: JSON.stringify({ to: token, notification: { title, body, click_action: link || '/' } })
+                await addDoc(collection(db, 'ads'), {
+                    title, images: adImagesUrls, duration, skipDelay,
+                    buttonText, buttonLink, buttonType, isActive: true,
+                    createdAt: serverTimestamp()
                 });
-                if (r.ok) success++;
-            } catch(err) { console.error(err); }
-        }
-        alert(`✅ تم الإرسال إلى ${success} من ${tokens.length} جهاز`);
-    }
-}
+                alert('✅ تم حفظ الإعلان بنجاح');
+                document.getElementById('ad-title').value = '';
+                document.getElementById('ad-images-preview').innerHTML = '';
+                adImagesUrls = [];
+                loadAdsList();
+            } catch(e) { alert('خطأ: ' + e.message); }
+        };
 
-async function loadTokens() {
-    const snap = await db.collection('push_tokens').limit(20).get();
-    const list = document.getElementById('tokens-list');
-    list.innerHTML = `<p class="text-zinc-500">📱 عدد الأجهزة المسجلة: ${snap.size}</p>`;
-}
+        window.loadAdsList = async () => {
+            const list = document.getElementById('ads-list');
+            if (!list) return;
+            try {
+                const snap = await getDocs(query(collection(db, 'ads'), orderBy('createdAt', 'desc')));
+                list.innerHTML = '';
+                if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm p-4">لا توجد إعلانات</p>'; return; }
+                snap.forEach(d => {
+                    const ad = d.data();
+                    list.innerHTML += `
+                        <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 flex items-center gap-4">
+                            ${ad.images?.[0] ? `<img src="${ad.images[0]}" class="w-16 h-16 object-cover rounded-lg flex-shrink-0">` : '<div class="w-16 h-16 bg-zinc-800 rounded-lg flex-shrink-0 flex items-center justify-center text-2xl">📢</div>'}
+                            <div class="flex-1">
+                                <p class="font-bold">${ad.title || 'بدون عنوان'}</p>
+                                <p class="text-xs text-zinc-500">${ad.images?.length || 0} صورة • ${ad.duration} ثانية • تخطي بعد: ${ad.skipDelay} ث</p>
+                                <span class="text-xs px-2 py-0.5 rounded ${ad.isActive ? 'bg-green-700 text-white' : 'bg-zinc-700 text-zinc-300'}">${ad.isActive ? '✅ نشط' : '⛔ متوقف'}</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="toggleAd('${d.id}', ${!ad.isActive})" class="text-xs px-3 py-1 rounded-lg ${ad.isActive ? 'bg-zinc-700' : 'bg-green-700 text-white'}">${ad.isActive ? 'إيقاف' : 'تفعيل'}</button>
+                                <button onclick="deleteAd('${d.id}')" class="text-xs px-3 py-1 rounded-lg bg-red-800 text-white">حذف</button>
+                            </div>
+                        </div>`;
+                });
+            } catch(e) { list.innerHTML = `<p class="text-red-400 text-sm p-4">خطأ: ${e.message}</p>`; }
+        };
 
-// استدعاء عند تحميل الصفحة
-if (document.getElementById('ads-tab')) loadAdsList();
-if (document.getElementById('push-tab')) loadTokens();
+        window.toggleAd = async (id, state) => {
+            try { await updateDoc(doc(db, 'ads', id), { isActive: state }); loadAdsList(); } catch(e) {}
+        };
+
+        window.deleteAd = async (id) => {
+            if (!confirm('حذف هذا الإعلان؟')) return;
+            try { await deleteDoc(doc(db, 'ads', id)); loadAdsList(); } catch(e) { alert(e.message); }
+        };
+
+        // ============ PUSH FUNCTIONS (modular Firebase SDK) ============
+        window.sendPushNotification = async () => {
+            const title = document.getElementById('push-title').value.trim();
+            const body = document.getElementById('push-body').value.trim();
+            const link = document.getElementById('push-link').value.trim();
+            const serverKey = document.getElementById('push-server-key').value.trim();
+            if (!title || !body) return alert('أدخل عنوان ونص الإشعار');
+            if (!serverKey) return alert('أدخل مفتاح الخادم (Server Key) من Firebase Console');
+
+            const tokensSnap = await getDocs(collection(db, 'push_tokens'));
+            const tokens = [];
+            tokensSnap.forEach(d => tokens.push(d.data().token));
+            if (tokens.length === 0) return alert('لا يوجد أجهزة مسجلة بعد');
+
+            const btn = document.querySelector('[onclick="sendPushNotification()"]');
+            if (btn) { btn.disabled = true; btn.textContent = 'جاري الإرسال...'; }
+
+            try {
+                const response = await fetch('/api/send-push', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, body, link, serverKey, tokens })
+                });
+                const result = await response.json();
+                alert(`✅ تم إرسال الإشعار إلى ${result.sent || 0} من ${tokens.length} جهاز`);
+            } catch(e) {
+                alert('⚠️ خطأ في الإرسال. تأكد أن الخادم يعمل ومفتاح FCM صحيح.');
+                console.error(e);
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = '📨 إرسال الإشعار'; }
+            }
+        };
+
+        window.loadTokens = async () => {
+            const list = document.getElementById('tokens-list');
+            if (!list) return;
+            try {
+                const snap = await getDocs(query(collection(db, 'push_tokens'), limit(50)));
+                list.innerHTML = `
+                    <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
+                        <p class="text-zinc-300 font-bold">📱 الأجهزة المسجلة: <span class="gold-text text-xl">${snap.size}</span></p>
+                        <p class="text-xs text-zinc-500 mt-1">الأجهزة التي فعّلت الإشعارات من متجرك</p>
+                    </div>`;
+            } catch(e) { if (list) list.innerHTML = `<p class="text-red-400 text-sm">خطأ: ${e.message}</p>`; }
+        };
+
+        // ============ BANNER CLOUDINARY UPLOAD ============
+        document.getElementById('banner-image-file')?.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const status = document.getElementById('banner-upload-status');
+            status.textContent = 'جاري الرفع...';
+            try {
+                const fd = new FormData();
+                fd.append('file', file);
+                fd.append('upload_preset', 'zahraa_upload');
+                const res = await fetch('https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data.secure_url) {
+                    document.getElementById('banner-image').value = data.secure_url;
+                    document.getElementById('banner-img-thumb').src = data.secure_url;
+                    document.getElementById('banner-image-preview').classList.remove('hidden');
+                    status.textContent = '✅ تم الرفع بنجاح';
+                } else { status.textContent = '❌ فشل الرفع'; }
+            } catch(e) { status.textContent = '❌ خطأ في الرفع: ' + e.message; }
+        });
+
+        // ============ POST CLOUDINARY UPLOAD ============
+        document.getElementById('post-image-file')?.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const status = document.getElementById('post-upload-status');
+            status.textContent = 'جاري رفع الصورة...';
+            try {
+                const fd = new FormData();
+                fd.append('file', file);
+                fd.append('upload_preset', 'zahraa_upload');
+                const res = await fetch('https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data.secure_url) {
+                    document.getElementById('post-image').value = data.secure_url;
+                    document.getElementById('post-img-thumb').src = data.secure_url;
+                    document.getElementById('post-image-preview').classList.remove('hidden');
+                    status.textContent = '✅ صورة جاهزة';
+                }
+            } catch(e) { status.textContent = '❌ خطأ: ' + e.message; }
+        });
+
+        document.getElementById('post-video-file')?.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const status = document.getElementById('post-upload-status');
+            status.textContent = 'جاري رفع الفيديو (قد يستغرق دقيقة)...';
+            try {
+                const fd = new FormData();
+                fd.append('file', file);
+                fd.append('upload_preset', 'zahraa_upload');
+                const res = await fetch('https://api.cloudinary.com/v1_1/dxlxwe55b/video/upload', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data.secure_url) {
+                    document.getElementById('post-video').value = data.secure_url;
+                    document.getElementById('post-vid-thumb').src = data.secure_url;
+                    document.getElementById('post-video-preview').classList.remove('hidden');
+                    status.textContent = '✅ فيديو جاهز';
+                }
+            } catch(e) { status.textContent = '❌ خطأ: ' + e.message; }
+        });
+
+        // استدعاء عند تحميل الصفحة
+        loadAdsList();
+        loadTokens();
+        document.getElementById('btn-ads-tab').addEventListener('click', loadAdsList);
+        document.getElementById('btn-push-tab').addEventListener('click', loadTokens);
         
     </script>
 </body>

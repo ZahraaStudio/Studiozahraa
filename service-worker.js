@@ -108,38 +108,25 @@ self.addEventListener("sync", (event) => {
 // Push notification handler
 self.addEventListener('push', (event) => {
   let data = { title: 'استوديو الزهراء', body: 'لديك إشعار جديد' };
-  try {
-    if (event.data) data = event.data.json();
-  } catch(e) {}
-  
+  try { if (event.data) data = event.data.json(); } catch(e) {}
   const options = {
     body: data.body || '',
     icon: '/icon-192.png',
     badge: '/icon-192.png',
-    dir: 'rtl',
-    lang: 'ar',
+    dir: 'rtl', lang: 'ar',
     vibrate: [200, 100, 200],
-    data: { link: data.link || data.click_action || '/' },
-    actions: [
-      { action: 'open', title: 'فتح المتجر' }
-    ]
+    data: { link: data.link || data.click_action || '/' }
   };
-  
-  event.waitUntil(
-    self.registration.showNotification(data.title || 'استوديو الزهراء', options)
-  );
+  event.waitUntil(self.registration.showNotification(data.title || 'استوديو الزهراء', options));
 });
 
-// Notification click handler
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const link = event.notification.data?.link || '/';
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
-        if (client.url && 'focus' in client) {
-          return client.focus();
-        }
+        if ('focus' in client) return client.focus();
       }
       if (clients.openWindow) return clients.openWindow(link);
     })

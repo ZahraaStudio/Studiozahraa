@@ -16,8 +16,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="استوديو الزهراء">
-  <script>/* Tailwind CDN - configured for production use */</script>
-  <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet" />
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -986,13 +985,12 @@
         } else {
             off.classList.add('hidden');
         }
-        const now = new Date();
+        const _now = new Date();
         const dailyArr = allProducts.filter(p => {
             if (!p.isDailyOffer) return false;
             if (p.dailyOfferSetAt) {
                 const setAt = p.dailyOfferSetAt.toDate ? p.dailyOfferSetAt.toDate() : new Date(p.dailyOfferSetAt);
-                const expiresAt = new Date(setAt.getTime() + 24 * 60 * 60 * 1000);
-                return now < expiresAt;
+                return _now < new Date(setAt.getTime() + 24 * 60 * 60 * 1000);
             }
             return true;
         }).slice(0, 6);
@@ -2024,12 +2022,12 @@
         if (cat === 'all') filtered = allProducts;
         else if (cat === '__discount__') filtered = allProducts.filter(p => productDiscount(p) > 0);
         else if (cat === '__daily__') {
-            const _now = new Date();
+            const _fn = new Date();
             filtered = allProducts.filter(p => {
                 if (!p.isDailyOffer) return false;
                 if (p.dailyOfferSetAt) {
-                    const _setAt = p.dailyOfferSetAt.toDate ? p.dailyOfferSetAt.toDate() : new Date(p.dailyOfferSetAt);
-                    return _now < new Date(_setAt.getTime() + 24 * 60 * 60 * 1000);
+                    const _s = p.dailyOfferSetAt.toDate ? p.dailyOfferSetAt.toDate() : new Date(p.dailyOfferSetAt);
+                    return _fn < new Date(_s.getTime() + 24 * 60 * 60 * 1000);
                 }
                 return true;
             });
