@@ -2104,6 +2104,100 @@
             } catch (e) { showNotif('خطأ: ' + e.message, 'error'); }
         };
 
+    // ============ ADS FUNCTIONS ============
+let adImagesUrls = [];
+
+document.getElementById('ad-images')?.addEventListener('change', async (e) => {
+    const files = e.target.files;
+    const preview = document.getElementById('ad-images-preview');
+    preview.innerHTML = '';
+    adImagesUrls = [];
+    for (let file of files) {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('upload_preset', 'zahraa_upload');
+        try {
+            const res = await fetch('https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload', { method: 'POST', body: fd });
+            const data = await res.json();
+            adImagesUrls.push(data.secure_url);
+            preview.innerHTML += `<img src="${data.secure_url}" class="w-16 h-16 object-cover rounded">`;
+        } catch(e) { console.error(e); }
+    }
+});
+
+async function saveAd() {
+    const title = document.getElementById('ad-title').value;
+    const duration = parseInt(document.getElementById('ad-duration').value) || 30;
+    const skipDelay = parseInt(document.getElementById('ad-skip-delay').value) || 5;
+    const buttonText = document.getElementById('ad-button-text').value;
+    const buttonLink = document.getElementById('ad-button-link').value;
+    const buttonType = document.getElementById('ad-button-type').value;
+    if (!title && adImagesUrls.length === 0) return alert('أدخل عنوان أو ارفع صورة');
+    await db.collection('ads').add({
+        title, images: adImagesUrls, duration, skipDelay,
+        buttonText, buttonLink, buttonType, isActive: true,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    alert('✅ تم حفظ الإعلان');
+    document.getElementById('ad-title').value = '';
+    document.getElementById('ad-images-preview').innerHTML = '';
+    adImagesUrls = [];
+    loadAdsList();
+}
+
+async function loadAdsList() {
+    const snap = await db.collection('ads').orderBy('createdAt', 'desc').get();
+    const list = document.getElementById('ads-list');
+    list.innerHTML = '';
+    snap.forEach(d => {
+        const ad = d.data();
+        list.innerHTML += `<div class="bg-zinc-800 p-4 rounded-xl flex justify-between"><div><p class="font-bold">${ad.title || 'بدون عنوان'}</p><p class="text-xs">${ad.images?.length || 0} صورة | ${ad.duration} ثانية</p></div><button onclick="deleteAd('${d.id}')" class="text-red-500">حذف</button></div>`;
+    });
+}
+
+async function deleteAd(id) {
+    if (!confirm('حذف الإعلان؟')) return;
+    await db.collection('ads').doc(id).delete();
+    loadAdsList();
+}
+
+// ============ PUSH FUNCTIONS ============
+async function sendPushNotification() {
+    const title = document.getElementById('push-title').value;
+    const body = document.getElementById('push-body').value;
+    const link = document.getElementById('push-link').value;
+    const serverKey = document.getElementById('push-server-key').value;
+    if (!title || !body) return alert('أدخل عنوان ونص الإشعار');
+    if (!serverKey) return alert('أدخل مفتاح الخادم من Firebase Console');
+    
+    const tokensSnap = await db.collection('push_tokens').get();
+    const tokens = [];
+    tokensSnap.forEach(d => tokens.push(d.data().token));
+    
+    let success = 0;
+    for (const token of tokens) {
+        try {
+            await fetch('https://fcm.googleapis.com/fcm/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `key=${serverKey}` },
+                body: JSON.stringify({ to: token, notification: { title, body, click_action: link || '/' } })
+            });
+            success++;
+        } catch(e) { console.error(e); }
+    }
+    alert(`✅ تم الإرسال إلى ${success} من ${tokens.length} جهاز`);
+}
+
+async function loadTokens() {
+    const snap = await db.collection('push_tokens').limit(20).get();
+    const list = document.getElementById('tokens-list');
+    list.innerHTML = `<p class="text-zinc-500">📱 عدد الأجهزة المسجلة: ${snap.size}</p>`;
+}
+
+// استدعاء عند تحميل الصفحة
+if (document.getElementById('ads-tab')) loadAdsList();
+if (document.getElementById('push-tab')) loadTokens();
+        
     </script>
 </body>
 </html>
