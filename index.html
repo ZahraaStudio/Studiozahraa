@@ -2687,6 +2687,67 @@
     };
 
     init();
+  // ============ AD SYSTEM ============
+   let adTimer = null, adImages = [], currentAdSlide = 0, adDuration = 30, adSkipDelay = 5;
+
+  async function loadAd() {
+  try {
+    const snap = await db.collection('ads').where('isActive', '==', true).limit(1).get();
+    if (snap.empty) return;
+    const ad = snap.docs[0].data();
+    adImages = ad.images || [];
+    adDuration = ad.duration || 30;
+    adSkipDelay = ad.skipDelay || 5;
+    document.getElementById('ad-title').innerText = ad.title || '';
+    const track = document.getElementById('ad-track');
+    if (track) {
+      track.innerHTML = adImages.map(img => `<div class="min-w-full"><img src="${img}" class="w-full h-48 object-cover rounded-xl"></div>`).join('');
+    }
+    if (adImages.length > 1) {
+      document.getElementById('ad-prev')?.classList.remove('hidden');
+      document.getElementById('ad-next')?.classList.remove('hidden');
+    }
+    if (ad.buttonText && ad.buttonLink) {
+      const btn = document.getElementById('ad-button');
+      if (btn) {
+        btn.classList.remove('hidden');
+        btn.innerText = ad.buttonText;
+        btn.href = ad.buttonLink;
+        if (ad.buttonType === 'facebook') btn.className = 'w-full mt-3 py-3 rounded-xl font-bold text-center block bg-[#1877F2] text-white';
+        else if (ad.buttonType === 'instagram') btn.className = 'w-full mt-3 py-3 rounded-xl font-bold text-center block bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 text-white';
+        else btn.className = 'w-full mt-3 py-3 rounded-xl font-bold text-center block gold-bg text-black';
+      }
+    }
+    document.getElementById('ad-modal')?.classList.add('active');
+    let seconds = 0;
+    adTimer = setInterval(() => {
+      seconds++;
+      const timerEl = document.getElementById('ad-timer');
+      if (timerEl) timerEl.innerText = adDuration - seconds;
+      if (seconds >= adSkipDelay) {
+        const skipBtn = document.getElementById('ad-skip');
+        if (skipBtn) {
+          skipBtn.classList.remove('hidden', 'opacity-50', 'cursor-not-allowed');
+          skipBtn.classList.add('gold-bg', 'text-black', 'cursor-pointer');
+          skipBtn.onclick = () => closeAd();
+        }
+      }
+      if (seconds >= adDuration) closeAd();
+    }, 1000);
+  } catch(e) { console.error('Ad error:', e); }
+}
+
+function closeAd() {
+  if (adTimer) clearInterval(adTimer);
+  document.getElementById('ad-modal')?.classList.remove('active');
+}
+
+function moveAdSlide(dir) {
+  const track = document.getElementById('ad-track');
+  if (!track) return;
+  currentAdSlide = (currentAdSlide + dir + adImages.length) % adImages.length;
+  track.style.transform = `translateX(${-currentAdSlide * 100}%)`;
+}
   </script>
 </body>
 </html>
