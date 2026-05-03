@@ -705,6 +705,21 @@
   </div>
 
   <!-- Success Modal -->
+<div id="ad-modal" class="modal fixed inset-0 flex items-center justify-center p-4 z-[2000]">
+  <div class="bg-zinc-950 rounded-3xl border border-gold-text max-w-md w-full p-6">
+    <div class="relative overflow-hidden rounded-xl">
+      <div id="ad-track" class="flex transition-transform duration-300"></div>
+      <button id="ad-prev" onclick="moveAdSlide(-1)" class="absolute top-1/2 right-2 bg-black/60 text-white w-8 h-8 rounded-full hidden">‹</button>
+      <button id="ad-next" onclick="moveAdSlide(1)" class="absolute top-1/2 left-2 bg-black/60 text-white w-8 h-8 rounded-full hidden">›</button>
+    </div>
+    <h3 id="ad-title" class="text-xl font-bold mt-4 text-center"></h3>
+    <div class="mt-4 text-center text-sm text-zinc-400">
+      يغلق بعد <span id="ad-timer">0</span> ثانية
+    </div>
+    <button id="ad-skip" class="w-full mt-3 py-2 rounded-xl font-bold hidden opacity-50 cursor-not-allowed">تخطي الإعلان</button>
+    <a id="ad-button" href="#" target="_blank" class="w-full mt-3 py-3 rounded-xl font-bold text-center hidden"></a>
+  </div>
+</div>
   <div id="success-modal" class="modal fixed inset-0 flex items-center justify-center p-4 z-[4000]">
     <div class="modal-content-box bg-zinc-950 w-full max-w-md rounded-3xl border border-zinc-800 p-8 text-center max-h-[90vh] overflow-y-auto">
         <div class="w-20 h-20 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">✓</div>
