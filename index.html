@@ -13,9 +13,11 @@
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#D4AF37">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="استوديو الزهراء">
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script>/* Tailwind CDN - configured for production use */</script>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet" />
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -869,10 +871,6 @@
         setupAuthListener();
         setupReviewStars();
 
-        // New features
-        loadBanners();
-        loadPosts();
-        loadCommunity();
         loadPointsSettings();
 
         document.getElementById('cart-modal').classList.remove('active');
@@ -898,6 +896,8 @@
 
         // Start 24hr countdown for daily offers
         startCountdown();
+        // Load popup ad after 3 seconds
+        setTimeout(() => { try { loadAd(); } catch(e) { console.error('Ad load error:', e); } }, 3000);
     }
 
     function persistCart() {
@@ -986,7 +986,16 @@
         } else {
             off.classList.add('hidden');
         }
-        const dailyArr = allProducts.filter(p => p.isDailyOffer).slice(0, 6);
+        const now = new Date();
+        const dailyArr = allProducts.filter(p => {
+            if (!p.isDailyOffer) return false;
+            if (p.dailyOfferSetAt) {
+                const setAt = p.dailyOfferSetAt.toDate ? p.dailyOfferSetAt.toDate() : new Date(p.dailyOfferSetAt);
+                const expiresAt = new Date(setAt.getTime() + 24 * 60 * 60 * 1000);
+                return now < expiresAt;
+            }
+            return true;
+        }).slice(0, 6);
         if (dailyArr.length > 0) {
             document.getElementById('daily-offers-section').classList.remove('hidden');
             document.getElementById('daily-offers-grid').innerHTML = dailyArr.map(p => renderProductCard(p)).join('');
@@ -2014,7 +2023,17 @@
         let filtered;
         if (cat === 'all') filtered = allProducts;
         else if (cat === '__discount__') filtered = allProducts.filter(p => productDiscount(p) > 0);
-        else if (cat === '__daily__') filtered = allProducts.filter(p => p.isDailyOffer);
+        else if (cat === '__daily__') {
+            const _now = new Date();
+            filtered = allProducts.filter(p => {
+                if (!p.isDailyOffer) return false;
+                if (p.dailyOfferSetAt) {
+                    const _setAt = p.dailyOfferSetAt.toDate ? p.dailyOfferSetAt.toDate() : new Date(p.dailyOfferSetAt);
+                    return _now < new Date(_setAt.getTime() + 24 * 60 * 60 * 1000);
+                }
+                return true;
+            });
+        }
         else if (cat === '__weekly__') filtered = allProducts.filter(p => p.isWeeklyOffer);
         else filtered = allProducts.filter(p => p.category === cat);
         renderProducts(filtered);
@@ -2355,9 +2374,10 @@
 
     async function loadBanners() {
         try {
-            const snap = await db.collection('banners').where('isActive', '==', true).orderBy('order', 'asc').get();
+            const snap = await db.collection('banners').get();
             bannerSlides = [];
-            snap.forEach(d => bannerSlides.push({ id: d.id, ...d.data() }));
+            snap.forEach(d => { const data = d.data(); if (data.isActive) bannerSlides.push({ id: d.id, ...data }); });
+            bannerSlides.sort((a, b) => (a.order || 0) - (b.order || 0));
             if (bannerSlides.length === 0) return;
             const wrap = document.getElementById('hero-banner-wrap');
             const track = document.getElementById('banner-track');
@@ -2393,12 +2413,13 @@
     // ============ SPECIAL POSTS ============
     async function loadPosts() {
         try {
-            const snap = await db.collection('posts').where('isActive', '==', true).orderBy('createdAt', 'desc').limit(9).get();
-            if (snap.empty) return;
+            const snap = await db.collection('posts').orderBy('createdAt', 'desc').limit(20).get();
+            const activePosts = snap.docs.filter(d => d.data().isActive);
+            if (activePosts.length === 0) return;
             const sec = document.getElementById('posts-section');
             sec.classList.remove('hidden');
             document.getElementById('posts-grid').innerHTML = '';
-            snap.forEach(d => {
+            activePosts.forEach(d => {
                 const p = d.data();
                 document.getElementById('posts-grid').innerHTML += `
                     <div class="post-card">
@@ -2430,15 +2451,16 @@
             communityLastDoc = null;
         }
         try {
-            let q = db.collection('community_posts').where('isHidden', '==', false).orderBy('createdAt', 'desc').limit(9);
+            let q = db.collection('community_posts').orderBy('createdAt', 'desc').limit(15);
             if (loadMore && communityLastDoc) q = q.startAfter(communityLastDoc);
             const snap = await q.get();
+            const visibleDocs = snap.docs.filter(d => !d.data().isHidden);
             if (!loadMore) grid.innerHTML = '';
-            if (snap.empty && !loadMore) {
+            if (visibleDocs.length === 0 && !loadMore) {
                 grid.innerHTML = '<div class="text-center text-zinc-500 py-8">كن أول من يشارك تجربته!</div>';
                 communityLoading = false; return;
             }
-            snap.forEach(d => {
+            visibleDocs.forEach(d => {
                 communityLastDoc = d;
                 const cp = d.data(); const cpid = d.id;
                 const isOwner = currentUser && currentUser.uid === cp.userId;
@@ -2475,7 +2497,7 @@
                     </div>
                 `;
             });
-            document.getElementById('load-more-community').classList.toggle('hidden', snap.size < 9);
+            document.getElementById('load-more-community').classList.toggle('hidden', snap.size < 15);
         } catch (e) {
             console.error('community error', e);
             if (!loadMore) grid.innerHTML = '<div class="text-center text-zinc-500 py-4">لا يمكن تحميل المجتمع حالياً</div>';

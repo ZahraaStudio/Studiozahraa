@@ -84,8 +84,8 @@
             <button onclick="showTab('points-tab')" id="btn-points-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">⭐ النقاط</button>
             <button onclick="showTab('reviews-tab'); loadAdminReviews();" id="btn-reviews-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">💬 الآراء</button>
             <button onclick="showTab('settings-tab')" id="btn-settings-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">⚙️ الإعدادات</button>
-            <button onclick="showTab('ads-tab')" class="px-4 py-2 font-bold text-zinc-500 whitespace-nowrap">📢 الإعلانات</button>
-            <button onclick="showTab('push-tab')" class="px-4 py-2 font-bold text-zinc-500 whitespace-nowrap">🔔 الإشعارات</button>
+            <button onclick="showTab('ads-tab')" id="btn-ads-tab" class="px-4 py-2 font-bold text-zinc-500 whitespace-nowrap">📢 الإعلانات</button>
+            <button onclick="showTab('push-tab')" id="btn-push-tab" class="px-4 py-2 font-bold text-zinc-500 whitespace-nowrap">🔔 الإشعارات</button>
         </div>
 
         <!-- Products Tab -->
@@ -854,6 +854,9 @@
                 videoUrl: videoUrl || null,
                 isDailyOffer,
                 isWeeklyOffer,
+                dailyOfferSetAt: isDailyOffer ? serverTimestamp() : null,
+                weeklyOfferSetAt: isWeeklyOffer ? serverTimestamp() : null,
+                weeklyOfferEnd: isWeeklyOffer ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) : null,
                 updatedAt: serverTimestamp()
             };
 
@@ -2168,24 +2171,43 @@ async function sendPushNotification() {
     const link = document.getElementById('push-link').value;
     const serverKey = document.getElementById('push-server-key').value;
     if (!title || !body) return alert('أدخل عنوان ونص الإشعار');
-    if (!serverKey) return alert('أدخل مفتاح الخادم من Firebase Console');
+    if (!serverKey) return alert('أدخل مفتاح الخادم (Server Key) من Firebase Console');
     
     const tokensSnap = await db.collection('push_tokens').get();
     const tokens = [];
     tokensSnap.forEach(d => tokens.push(d.data().token));
     
-    let success = 0;
-    for (const token of tokens) {
-        try {
-            await fetch('https://fcm.googleapis.com/fcm/send', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `key=${serverKey}` },
-                body: JSON.stringify({ to: token, notification: { title, body, click_action: link || '/' } })
-            });
-            success++;
-        } catch(e) { console.error(e); }
+    if (tokens.length === 0) return alert('لا يوجد أجهزة مسجلة للاستقبال');
+    
+    try {
+        // Route through API proxy to avoid CORS issues
+        const response = await fetch('/api/send-push', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, body, link, serverKey, tokens })
+        });
+        const result = await response.json();
+        if (result.success) {
+            alert(`✅ تم إرسال الإشعار إلى ${result.sent} من ${tokens.length} جهاز`);
+        } else {
+            alert('⚠️ خطأ في الإرسال: ' + (result.error || 'تحقق من مفتاح الخادم'));
+        }
+    } catch(e) {
+        // Fallback: direct FCM attempt
+        console.error('Push proxy failed, trying direct:', e);
+        let success = 0;
+        for (const token of tokens) {
+            try {
+                const r = await fetch('https://fcm.googleapis.com/fcm/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `key=${serverKey}` },
+                    body: JSON.stringify({ to: token, notification: { title, body, click_action: link || '/' } })
+                });
+                if (r.ok) success++;
+            } catch(err) { console.error(err); }
+        }
+        alert(`✅ تم الإرسال إلى ${success} من ${tokens.length} جهاز`);
     }
-    alert(`✅ تم الإرسال إلى ${success} من ${tokens.length} جهاز`);
 }
 
 async function loadTokens() {
