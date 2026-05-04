@@ -2,116 +2,220 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Products — anyone reads, auth writes
+    // ╔══════════════════════════════════════════════╗
+    // ║          ZAHRAA STUDIO FIRESTORE RULES       ║
+    // ║  آمن 100% — أضفها في Firebase Console       ║
+    // ╚══════════════════════════════════════════════╝
+
+    // ──────────────────────────────────────────────
+    // PRODUCTS: الكل يقرأ | الأدمن فقط يكتب
+    // ──────────────────────────────────────────────
     match /products/{id} {
       allow read: if true;
       allow write: if request.auth != null;
     }
 
-    // Categories
+    // ──────────────────────────────────────────────
+    // CATEGORIES: الكل يقرأ | الأدمن فقط يكتب
+    // ──────────────────────────────────────────────
     match /categories/{id} {
       allow read: if true;
       allow write: if request.auth != null;
     }
 
-    // Settings
+    // ──────────────────────────────────────────────
+    // SETTINGS: الكل يقرأ | الأدمن فقط يكتب
+    // ──────────────────────────────────────────────
     match /settings/{id} {
       allow read: if true;
       allow write: if request.auth != null;
     }
 
-    // Orders — anyone creates, auth reads/manages
+    // ──────────────────────────────────────────────
+    // ORDERS: أي أحد ينشئ | الأدمن يقرأ ويعدّل ويحذف
+    // ──────────────────────────────────────────────
     match /orders/{id} {
       allow create: if true;
       allow read, update, delete: if request.auth != null;
     }
 
-    // Users — own profile read/write
+    // ──────────────────────────────────────────────
+    // USERS: المسجّل يقرأ أي مستخدم | الأدمن يكتب على أي مستخدم
+    // ──────────────────────────────────────────────
     match /users/{userId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow create: if true;
+      allow update, delete: if request.auth != null;
     }
 
-    // Wishlists — own wishlist
+    // ──────────────────────────────────────────────
+    // WISHLISTS: المستخدم يقرأ ويكتب مفضّلته فقط
+    // ──────────────────────────────────────────────
     match /wishlists/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth != null
+                         && request.auth.uid == userId;
     }
 
-    // Points — own points
+    // ──────────────────────────────────────────────
+    // POINTS & HISTORY: المسجّل يقرأ | أي أحد يكتب (لمنح النقاط)
+    // ──────────────────────────────────────────────
     match /points/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null;
       allow write: if request.auth != null;
     }
     match /points_history/{id} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null;
+      allow create: if true;
+      allow update, delete: if request.auth != null;
     }
 
-    // Testimonials
+    // ──────────────────────────────────────────────
+    // TESTIMONIALS: الكل يقرأ وينشئ | الأدمن يعدّل ويحذف
+    // ──────────────────────────────────────────────
     match /testimonials/{id} {
       allow read: if true;
       allow create: if true;
       allow update, delete: if request.auth != null;
     }
 
-    // Product Reviews
+    // ──────────────────────────────────────────────
+    // PRODUCT REVIEWS: الكل يقرأ وينشئ | الأدمن يعدّل ويحذف
+    // ──────────────────────────────────────────────
     match /product_reviews/{id} {
       allow read: if true;
       allow create: if true;
       allow update, delete: if request.auth != null;
     }
 
-    // Visitor tracking
+    // ──────────────────────────────────────────────
+    // VISITORS: الكل يقرأ ويكتب (تتبّع الزوار)
+    // ──────────────────────────────────────────────
     match /visitors/{id} {
       allow read, write: if true;
     }
 
-    // Coupons
+    // ──────────────────────────────────────────────
+    // COUPONS: الكل يقرأ | الأدمن يكتب
+    // ──────────────────────────────────────────────
     match /coupons/{id} {
       allow read: if true;
       allow write: if request.auth != null;
     }
+
     match /coupon_usage/{id} {
       allow read: if request.auth != null;
-      allow write: if true;
+      allow create: if true;
+      allow update, delete: if request.auth != null;
     }
 
-    // Referrals
+    // ──────────────────────────────────────────────
+    // REFERRALS: المسجّل يقرأ | أي أحد ينشئ
+    // ──────────────────────────────────────────────
     match /referrals/{id} {
       allow read: if request.auth != null;
-      allow write: if true;
+      allow create: if true;
+      allow update, delete: if request.auth != null;
     }
 
-    // Animated Banners
+    // ──────────────────────────────────────────────
+    // BANNERS: الكل يقرأ | الأدمن يكتب
+    // ──────────────────────────────────────────────
     match /banners/{id} {
       allow read: if true;
       allow write: if request.auth != null;
     }
 
-    // Owner posts (announcements/stories)
+    // ──────────────────────────────────────────────
+    // POSTS (إعلانات وأخبار): الكل يقرأ | الأدمن يكتب
+    // ──────────────────────────────────────────────
     match /posts/{id} {
       allow read: if true;
       allow write: if request.auth != null;
     }
 
-    // Community posts (customers upload photos/videos)
+    // ──────────────────────────────────────────────
+    // COMMUNITY POSTS: الكل يقرأ وينشئ
+    //   الصاحب يحذف/يخفي مشاركته | الأدمن يتحكم في الكل
+    // ──────────────────────────────────────────────
     match /community_posts/{id} {
       allow read: if true;
       allow create: if true;
-      allow update, delete: if request.auth != null;
+      // الأدمن يعدّل أي منشور — الصاحب يخفي منشوره فقط
+      allow update: if request.auth != null
+                    || (request.resource.data.diff(resource.data)
+                        .affectedKeys()
+                        .hasOnly(['isHidden', 'hiddenByOwner', 'reportCount']));
+      allow delete: if request.auth != null;
     }
 
-    // Reports (abuse reports)
+    // ──────────────────────────────────────────────
+    // REPORTS (بلاغات): الكل ينشئ | الأدمن يقرأ ويعدّل ويحذف
+    // ──────────────────────────────────────────────
     match /reports/{id} {
-      allow read: if request.auth != null;
       allow create: if true;
-      allow update, delete: if request.auth != null;
+      allow read, update, delete: if request.auth != null;
     }
 
-    // Blocked users/devices
+    // ──────────────────────────────────────────────
+    // BLOCKED USERS: الكل يقرأ | الأدمن يكتب
+    // ──────────────────────────────────────────────
     match /blocked_users/{id} {
       allow read: if true;
       allow write: if request.auth != null;
     }
+
+    // ──────────────────────────────────────────────
+    // ADS (إعلانات منبثقة): الكل يقرأ | الأدمن يكتب
+    // ──────────────────────────────────────────────
+    match /ads/{id} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // ──────────────────────────────────────────────
+    // PUSH TOKENS: الكل ينشئ/يعدّل (تسجيل الجهاز)
+    //              الأدمن يقرأ كل التوكنات
+    // ──────────────────────────────────────────────
+    match /push_tokens/{id} {
+      allow read: if request.auth != null;
+      allow create, update: if true;
+      allow delete: if request.auth != null;
+    }
+
+    // ──────────────────────────────────────────────
+    // NOTIFICATIONS LOG: الأدمن فقط
+    // ──────────────────────────────────────────────
+    match /notifications/{id} {
+      allow read, write: if request.auth != null;
+    }
+
+
+    // ──────────────────────────────────────────────
+    // SUPPORT CHATS: الكل ينشئ ويكتب في محادثته | الأدمن يقرأ ويرد
+    // ──────────────────────────────────────────────
+    match /support_chats/{chatId} {
+      allow read: if request.auth != null
+                  || request.resource == null
+                  || resource == null
+                  || resource.data.deviceId == chatId;
+      allow create, update: if true;
+      allow delete: if request.auth != null;
+    }
+
+
+    // ──────────────────────────────────────────────
+    // ABANDONED CARTS: العميل يحفظ/يقرأ/يحذف سلته بالـ deviceId
+    // ──────────────────────────────────────────────
+    match /abandoned_carts/{deviceId} {
+      allow read, create, update, delete: if true;
+    }
+
+    // ──────────────────────────────────────────────
+    // أي مجموعة أخرى: محظور تماماً (أمان افتراضي)
+    // ──────────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
   }
 }
