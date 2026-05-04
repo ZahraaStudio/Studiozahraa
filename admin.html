@@ -86,6 +86,7 @@
             <button onclick="showTab('settings-tab')" id="btn-settings-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">⚙️ الإعدادات</button>
             <button onclick="showTab('ads-tab')" id="btn-ads-tab" class="px-4 py-2 font-bold text-zinc-500 whitespace-nowrap">📢 الإعلانات</button>
             <button onclick="showTab('push-tab')" id="btn-push-tab" class="px-4 py-2 font-bold text-zinc-500 whitespace-nowrap">🔔 الإشعارات</button>
+            <button onclick="showTab('chat-tab')" id="btn-chat-tab" class="px-4 py-2 font-bold text-zinc-500 whitespace-nowrap relative">💬 الدعم <span id="chat-unread-count" class="hidden absolute top-1 right-1 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">0</span></button>
         </div>
 
         <!-- Products Tab -->
@@ -349,9 +350,9 @@
                         <input id="banner-title" type="text" placeholder="عنوان البانر" class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700">
                         <input id="banner-subtitle" type="text" placeholder="نص فرعي (اختياري)" class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700">
                         <div class="space-y-2">
-                            <label class="text-xs text-zinc-400">صورة البانر</label>
-                            <input type="file" id="banner-image-file" accept="image/*,video/*" class="w-full bg-zinc-800 text-white p-2 rounded-xl border border-zinc-700 text-sm">
-                            <div id="banner-image-preview" class="hidden"><img id="banner-img-thumb" class="w-full h-24 object-cover rounded-xl mt-1"></div>
+                            <label class="text-xs text-zinc-400">📸 صورة البانر</label>
+                            <input type="file" id="banner-image-file" accept="image/*,video/*" class="w-full bg-zinc-800 text-white p-2 rounded-xl border border-zinc-700 text-sm cursor-pointer">
+                            <div id="banner-image-preview" class="hidden"><img id="banner-img-thumb" class="w-full h-24 object-cover rounded-xl mt-1 border border-zinc-700"></div>
                             <div id="banner-upload-status" class="text-xs text-zinc-500"></div>
                             <input id="banner-image" type="hidden">
                         </div>
@@ -389,15 +390,15 @@
                         <input id="post-tag" type="text" placeholder="وسم / تصنيف (مثلاً: عرض، جديد، خبر)" class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700">
                         <textarea id="post-body" rows="4" placeholder="نص المنشور..." class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700 resize-none"></textarea>
                         <div class="space-y-2">
-                            <label class="text-xs text-zinc-400">صورة المنشور (اختياري)</label>
-                            <input type="file" id="post-image-file" accept="image/*" class="w-full bg-zinc-800 text-white p-2 rounded-xl border border-zinc-700 text-sm">
-                            <div id="post-image-preview" class="hidden"><img id="post-img-thumb" class="w-full h-20 object-cover rounded-xl mt-1"></div>
+                            <label class="text-xs text-zinc-400">📸 صورة المنشور (اختياري)</label>
+                            <input type="file" id="post-image-file" accept="image/*" class="w-full bg-zinc-800 text-white p-2 rounded-xl border border-zinc-700 text-sm cursor-pointer">
+                            <div id="post-image-preview" class="hidden"><img id="post-img-thumb" class="w-full h-20 object-cover rounded-xl mt-1 border border-zinc-700"></div>
                             <input id="post-image" type="hidden">
                         </div>
                         <div class="space-y-2">
-                            <label class="text-xs text-zinc-400">فيديو المنشور (اختياري)</label>
-                            <input type="file" id="post-video-file" accept="video/*" class="w-full bg-zinc-800 text-white p-2 rounded-xl border border-zinc-700 text-sm">
-                            <div id="post-video-preview" class="hidden"><video id="post-vid-thumb" controls class="w-full h-20 rounded-xl mt-1"></video></div>
+                            <label class="text-xs text-zinc-400">🎬 فيديو المنشور (اختياري)</label>
+                            <input type="file" id="post-video-file" accept="video/*" class="w-full bg-zinc-800 text-white p-2 rounded-xl border border-zinc-700 text-sm cursor-pointer">
+                            <div id="post-video-preview" class="hidden"><video id="post-vid-thumb" controls class="w-full h-24 rounded-xl mt-1 border border-zinc-700"></video></div>
                             <div id="post-upload-status" class="text-xs text-zinc-500"></div>
                             <input id="post-video" type="hidden">
                         </div>
@@ -684,91 +685,50 @@
     <div id="tokens-list" class="mt-6 text-sm text-zinc-400"></div>
 </div>
     
-    <!-- ========== CUSTOM TOAST NOTIFICATION ========== -->
-    <div id="zahraa-toast" style="
-        position:fixed; top:24px; left:50%; transform:translateX(-50%) translateY(-80px);
-        z-index:99999; min-width:280px; max-width:420px;
-        background:linear-gradient(135deg,#1a1a1a,#2a2a2a);
-        border:1px solid #d4af37; border-radius:16px;
-        padding:16px 24px; display:flex; align-items:center; gap:14px;
-        box-shadow:0 8px 32px rgba(0,0,0,0.6);
-        transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.4s ease;
-        opacity:0; pointer-events:none; direction:rtl;">
-        <span id="zahraa-toast-icon" style="font-size:22px; flex-shrink:0;">✨</span>
-        <p id="zahraa-toast-text" style="color:#fff; font-family:'Cairo',sans-serif; font-size:14px; margin:0; font-weight:600; flex:1;"></p>
-        <button onclick="zahraaToastHide()" style="background:none;border:none;color:#888;cursor:pointer;font-size:16px;padding:0;flex-shrink:0;">✕</button>
+    <!-- ===== ZAHRAA CUSTOM TOAST ===== -->
+    <div id="zahraa-toast" style="position:fixed;top:24px;left:50%;transform:translateX(-50%) translateY(-100px);z-index:99999;min-width:280px;max-width:420px;background:linear-gradient(135deg,#1a1a1a,#2a2a2a);border:1px solid #d4af37;border-radius:16px;padding:14px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,0.7);transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1),opacity 0.35s;opacity:0;pointer-events:none;direction:rtl;">
+        <span id="zt-icon" style="font-size:20px;flex-shrink:0">✅</span>
+        <p id="zt-text" style="color:#fff;font-family:'Cairo',sans-serif;font-size:14px;margin:0;font-weight:600;flex:1"></p>
+        <button onclick="ztHide()" style="background:none;border:none;color:#777;cursor:pointer;font-size:16px;padding:0;flex-shrink:0">✕</button>
     </div>
-
-    <!-- ========== CUSTOM CONFIRM MODAL ========== -->
-    <div id="zahraa-confirm-overlay" style="
-        display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7);
-        z-index:99998; align-items:center; justify-content:center; direction:rtl; backdrop-filter:blur(4px);">
-        <div style="
-            background:linear-gradient(160deg,#1c1c1c,#111);
-            border:1px solid #d4af37; border-radius:20px;
-            padding:32px 28px; max-width:380px; width:90%;
-            box-shadow:0 20px 60px rgba(0,0,0,0.8); text-align:center; font-family:'Cairo',sans-serif;">
-            <div id="zahraa-confirm-icon" style="font-size:40px; margin-bottom:12px;">⚠️</div>
-            <p id="zahraa-confirm-text" style="color:#fff; font-size:16px; font-weight:700; margin:0 0 8px;"></p>
-            <p id="zahraa-confirm-sub" style="color:#888; font-size:13px; margin:0 0 24px;"></p>
-            <div style="display:flex; gap:12px; justify-content:center;">
-                <button id="zahraa-confirm-yes" style="
-                    background:linear-gradient(135deg,#d4af37,#f0c94e); color:#000;
-                    border:none; padding:12px 28px; border-radius:12px;
-                    font-family:'Cairo',sans-serif; font-size:14px; font-weight:700;
-                    cursor:pointer; flex:1; max-width:140px;">تأكيد</button>
-                <button onclick="zahraaConfirmHide()" style="
-                    background:#2a2a2a; color:#ccc; border:1px solid #444;
-                    padding:12px 28px; border-radius:12px;
-                    font-family:'Cairo',sans-serif; font-size:14px; font-weight:600;
-                    cursor:pointer; flex:1; max-width:140px;">إلغاء</button>
+    <!-- ===== ZAHRAA CUSTOM CONFIRM ===== -->
+    <div id="zahraa-confirm" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:99998;align-items:center;justify-content:center;backdrop-filter:blur(4px);direction:rtl;">
+        <div style="background:linear-gradient(160deg,#1c1c1c,#111);border:1px solid #d4af37;border-radius:20px;padding:32px 28px;max-width:360px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.8);text-align:center;font-family:'Cairo',sans-serif;">
+            <div id="zc-icon" style="font-size:42px;margin-bottom:12px">⚠️</div>
+            <p id="zc-title" style="color:#fff;font-size:17px;font-weight:700;margin:0 0 6px"></p>
+            <p id="zc-sub" style="color:#888;font-size:13px;margin:0 0 24px"></p>
+            <div style="display:flex;gap:12px;justify-content:center">
+                <button id="zc-yes" style="background:linear-gradient(135deg,#d4af37,#f0c94e);color:#000;border:none;padding:12px 0;border-radius:12px;font-family:'Cairo',sans-serif;font-size:14px;font-weight:700;cursor:pointer;width:130px">تأكيد</button>
+                <button onclick="zcHide()" style="background:#2a2a2a;color:#ccc;border:1px solid #444;padding:12px 0;border-radius:12px;font-family:'Cairo',sans-serif;font-size:14px;font-weight:600;cursor:pointer;width:130px">إلغاء</button>
             </div>
         </div>
     </div>
-
     <script>
-    // ===== ZAHRAA TOAST SYSTEM =====
-    let zahraaToastTimer = null;
-    function zahraaToast(text, type = 'success') {
-        const t = document.getElementById('zahraa-toast');
-        const icons = { success:'✅', error:'❌', warning:'⚠️', info:'ℹ️', loading:'⏳' };
-        const colors = { success:'#22c55e', error:'#ef4444', warning:'#f59e0b', info:'#60a5fa', loading:'#d4af37' };
-        document.getElementById('zahraa-toast-icon').textContent = icons[type] || '✨';
-        document.getElementById('zahraa-toast-text').textContent = text;
-        t.style.borderColor = colors[type] || '#d4af37';
-        t.style.opacity = '1';
-        t.style.transform = 'translateX(-50%) translateY(0)';
-        t.style.pointerEvents = 'auto';
-        if (zahraaToastTimer) clearTimeout(zahraaToastTimer);
-        if (type !== 'loading') zahraaToastTimer = setTimeout(zahraaToastHide, 4000);
+    let _ztTimer=null;
+    function zahraaToast(t,type='success'){
+        const icons={success:'✅',error:'❌',warning:'⚠️',info:'ℹ️',loading:'⏳'};
+        const colors={success:'#22c55e',error:'#ef4444',warning:'#f59e0b',info:'#60a5fa',loading:'#d4af37'};
+        const el=document.getElementById('zahraa-toast');
+        document.getElementById('zt-icon').textContent=icons[type]||'✅';
+        document.getElementById('zt-text').textContent=t;
+        el.style.borderColor=colors[type]||'#d4af37';
+        el.style.opacity='1';el.style.transform='translateX(-50%) translateY(0)';el.style.pointerEvents='auto';
+        if(_ztTimer)clearTimeout(_ztTimer);
+        if(type!=='loading')_ztTimer=setTimeout(ztHide,4500);
     }
-    function zahraaToastHide() {
-        const t = document.getElementById('zahraa-toast');
-        t.style.opacity = '0';
-        t.style.transform = 'translateX(-50%) translateY(-80px)';
-        t.style.pointerEvents = 'none';
+    function ztHide(){const el=document.getElementById('zahraa-toast');el.style.opacity='0';el.style.transform='translateX(-50%) translateY(-100px)';el.style.pointerEvents='none';}
+    function zcHide(){document.getElementById('zahraa-confirm').style.display='none';}
+    function zahraaConfirm(title,onYes,sub='',icon='⚠️'){
+        document.getElementById('zc-title').textContent=title;
+        document.getElementById('zc-sub').textContent=sub;
+        document.getElementById('zc-icon').textContent=icon;
+        document.getElementById('zahraa-confirm').style.display='flex';
+        document.getElementById('zc-yes').onclick=()=>{zcHide();onYes();};
     }
-    function zahraaConfirmHide() {
-        document.getElementById('zahraa-confirm-overlay').style.display = 'none';
-    }
-    function zahraaConfirm(text, onYes, subText = '', icon = '⚠️') {
-        document.getElementById('zahraa-confirm-text').textContent = text;
-        document.getElementById('zahraa-confirm-sub').textContent = subText;
-        document.getElementById('zahraa-confirm-icon').textContent = icon;
-        const overlay = document.getElementById('zahraa-confirm-overlay');
-        overlay.style.display = 'flex';
-        const yesBtn = document.getElementById('zahraa-confirm-yes');
-        yesBtn.onclick = () => { zahraaConfirmHide(); onYes(); };
-    }
-    // Override window.alert and window.confirm globally
-    window._origAlert = window.alert;
-    window.alert = function(msg) { zahraaToast(String(msg), String(msg).includes('✅') || String(msg).includes('تم') ? 'success' : 'error'); };
-    window.confirm = function(msg) {
-        // For legacy confirm() calls we show modal and return true immediately
-        // (proper async confirm uses zahraaConfirm() directly)
-        zahraaToast(msg, 'warning');
-        return true;
-    };
+    // Override browser alert/confirm
+    window._nativeAlert=window.alert;
+    window.alert=function(m){zahraaToast(String(m),String(m).includes('✅')||String(m).includes('تم')?'success':'error');};
+    window.confirm=function(m){zahraaToast(m,'warning');return true;};
     </script>
 
     <!-- Invoice Modal -->
@@ -800,7 +760,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, getDoc, doc, setDoc, updateDoc, deleteDoc, query, orderBy, where, limit, serverTimestamp, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, getDoc, doc, setDoc, updateDoc, deleteDoc, query, orderBy, where, limit, serverTimestamp, increment, arrayUnion, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
@@ -959,7 +919,7 @@
                 isDailyOffer,
                 isWeeklyOffer,
                 dailyOfferSetAt: isDailyOffer ? serverTimestamp() : null,
-                weeklyOfferEnd: isWeeklyOffer ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) : null,
+                weeklyOfferEnd: isWeeklyOffer ? new Date(Date.now() + 7*24*60*60*1000) : null,
                 updatedAt: serverTimestamp()
             };
 
@@ -974,7 +934,7 @@
                 }
                 resetProductForm();
                 loadProducts();
-            } catch (e) { zahraaToast('خطأ: ' + e.message,'error'); }
+            } catch (e) { zahraaToast('خطأ: '+e.message,'error'); }
         };
 
         window.resetProductForm = () => {
@@ -1268,7 +1228,7 @@
                     const a = document.createElement('a');
                     a.href = URL.createObjectURL(blob); a.download = `${o.orderNumber || orderId}-${type}.zip`; a.click();
                 }
-            } catch (e) { zahraaToast('خطأ: ' + e.message,'error'); }
+            } catch (e) { zahraaToast('خطأ: '+e.message,'error'); }
         };
 
         window.updateOrderStatus = async (id, newStatus) => {
@@ -1358,9 +1318,9 @@
             const paidStatus = o.paymentStatus === 'مدفوع';
             content.innerHTML = `
                 <div class="flex gap-3 mb-4 flex-wrap">
-                    <span class="px-3 py-1 rounded-full text-sm font-bold ${paidStatus ? 'bg-green-600 text-white' : 'bg-yellow-500 text-black'}">${paidStatus ? '✅ مدفوع' : '⏳ غير مدفوع'}</span>
-                    <span class="px-3 py-1 rounded-full text-sm font-bold bg-zinc-800 text-white">حالة الطلب: ${o.status || 'قيد التنفيذ'}</span>
-                    ${o.couponCode ? `<span class="px-3 py-1 rounded-full text-sm bg-zinc-700 text-yellow-400">كوبون: ${o.couponCode}</span>` : ''}
+                    <span class="px-4 py-1.5 rounded-full text-sm font-bold ${paidStatus ? 'bg-green-600 text-white' : 'bg-yellow-500 text-black'}">${paidStatus ? '✅ مدفوع' : '⏳ غير مدفوع'}</span>
+                    <span class="px-4 py-1.5 rounded-full text-sm font-bold bg-zinc-800 text-white">📦 ${o.status || 'قيد التنفيذ'}</span>
+                    ${o.couponCode ? `<span class="px-4 py-1.5 rounded-full text-sm bg-zinc-700 text-yellow-400">🎟️ كوبون: ${o.couponCode}</span>` : ''}
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div class="space-y-6">
@@ -1645,7 +1605,7 @@
                 await setDoc(doc(db, 'settings', 'general'), data, { merge: true });
                 zahraaToast('تم حفظ الإعدادات بنجاح ✅','success');
             } catch (e) {
-                zahraaToast('خطأ: ' + e.message,'error');
+                zahraaToast('خطأ: '+e.message,'error');
             }
         };
 
@@ -1663,11 +1623,7 @@
         };
 
         window.deleteCategory = async (id) => {
-            zahraaConfirm('حذف هذا القسم؟', async () => {
-                await deleteDoc(doc(db, 'categories', id));
-                await loadCategories();
-                zahraaToast('تم حذف القسم ✓', 'success');
-            }, '', '🗑️');
+            zahraaConfirm('حذف هذا القسم؟',async()=>{await deleteDoc(doc(db,'categories',id));await loadCategories();zahraaToast('تم الحذف ✅','success');},'','🗑️'); return;
         };
 
         async function loadCategories() {
@@ -1815,7 +1771,7 @@
 
         // ==================== INIT ====================
         // ==================== CUSTOM NOTIFICATION ====================
-        window.showNotif = (text, type = 'success') => { zahraaToast(text, type); };
+        window.showNotif = (t,type='success') => zahraaToast(t,type);
 
         window.loadAll = async () => {
             await loadSettings();
@@ -1826,8 +1782,8 @@
             await loadCoupons();
             await loadReferrals();
             await loadVisitors();
-            loadAdsList();
-            loadTokens();
+            await loadAdsList();
+            await loadTokens();
         };
 
         // Expose functions to window
@@ -1876,20 +1832,20 @@
             const btnText = document.getElementById('banner-btn-text').value.trim();
             const order = parseInt(document.getElementById('banner-order').value) || 0;
             const isActive = document.getElementById('banner-active').checked;
-            if (!title && !imageUrl) return zahraaToast('أدخل عنوان البانر أو رابط صورة','warning');
+            if (!title && !imageUrl) return zahraaToast('أدخل عنوان البانر أو صورة','warning');
             try {
                 await addDoc(collection(db, 'banners'), { title, subtitle, imageUrl, link, btnText, order, isActive, createdAt: serverTimestamp() });
                 ['banner-title','banner-subtitle','banner-image','banner-link','banner-btn-text'].forEach(id => document.getElementById(id).value = '');
                 loadAdminBanners();
                 zahraaToast('تم حفظ البانر ✅','success');
-            } catch (e) { zahraaToast('خطأ: ' + e.message,'error'); }
+            } catch (e) { zahraaToast('خطأ: '+e.message,'error'); }
         };
 
         window.toggleBanner = async (id, state) => {
             try { await updateDoc(doc(db, 'banners', id), { isActive: state }); loadAdminBanners(); } catch (e) {}
         };
         window.deleteBanner = async (id) => {
-            zahraaConfirm('حذف هذا البانر؟', async () => { try { await deleteDoc(doc(db, 'banners', id)); loadAdminBanners(); zahraaToast('تم حذف البانر ✓','success'); } catch(e) {} }, '', '🗑️');
+            zahraaConfirm('حذف هذا البانر؟',async()=>{try{await deleteDoc(doc(db,'banners',id));loadAdminBanners();zahraaToast('تم الحذف ✅','success');}catch(e){}},'','🗑️');
         };
 
         // ============ POSTS ADMIN ============
@@ -1946,7 +1902,7 @@
                 ['post-title','post-tag','post-body','post-image','post-video','post-link'].forEach(id => document.getElementById(id).value = '');
                 loadAdminPosts();
                 zahraaToast('تم حفظ المنشور ✅','success');
-            } catch (e) { zahraaToast('خطأ: ' + e.message,'error'); }
+            } catch (e) { zahraaToast('خطأ: '+e.message,'error'); }
         };
 
         window.editPost = async (id) => {
@@ -1969,7 +1925,7 @@
             try { await updateDoc(doc(db, 'posts', id), { isActive: state }); loadAdminPosts(); } catch (e) {}
         };
         window.deletePost = async (id) => {
-            zahraaConfirm('حذف هذا المنشور؟', async () => { try { await deleteDoc(doc(db, 'posts', id)); loadAdminPosts(); zahraaToast('تم حذف المنشور ✓','success'); } catch(e) {} }, '', '🗑️');
+            zahraaConfirm('حذف هذا المنشور؟',async()=>{try{await deleteDoc(doc(db,'posts',id));loadAdminPosts();zahraaToast('تم الحذف ✅','success');}catch(e){}},'','🗑️');
         };
 
         // ============ COMMUNITY ADMIN ============
@@ -2022,18 +1978,22 @@
             try { await updateDoc(doc(db, 'community_posts', id), { isHidden: hide }); loadAdminCommunity(); } catch (e) {}
         };
         window.deleteCommunityPostAdmin = async (id) => {
-            zahraaConfirm('حذف هذا المنشور نهائياً؟', async () => {
-                try { await deleteDoc(doc(db, 'community_posts', id)); loadAdminCommunity(); zahraaToast('تم الحذف ✓','success'); } catch(e) {}
-            }, '', '🗑️');
+            zahraaConfirm('حذف نهائياً؟', async () => {
+                try { await deleteDoc(doc(db, 'community_posts', id)); loadAdminCommunity(); zahraaToast('تم الحذف ✅','success'); } catch (e) { zahraaToast(e.message,'error'); }
+            }, 'لا يمكن التراجع عن هذا الإجراء', '🗑️');
         };
         window.toggleBlockUser = async (uid, currentlyBlocked) => {
-            try {
-                await updateDoc(doc(db, 'users', uid), { isBlocked: !currentlyBlocked });
-                if (!currentlyBlocked) { await setDoc(doc(db, 'blocked_users', uid), { blockedAt: serverTimestamp() }); }
-                else { await deleteDoc(doc(db, 'blocked_users', uid)); }
-                zahraaToast(currentlyBlocked ? 'تم إلغاء الحظر ✓' : 'تم الحظر بنجاح ✓');
-                loadCustomers();
-            } catch (e) { zahraaToast(e.message,'error'); }
+            zahraaConfirm(
+                currentlyBlocked ? 'إلغاء حظر هذا العميل؟' : 'حظر هذا العميل؟',
+                async () => {
+                    try {
+                        await updateDoc(doc(db, 'users', uid), { isBlocked: !currentlyBlocked });
+                        if (!currentlyBlocked) { await setDoc(doc(db, 'blocked_users', uid), { blockedAt: serverTimestamp() }); }
+                        else { await deleteDoc(doc(db, 'blocked_users', uid)); }
+                        zahraaToast(currentlyBlocked ? 'تم إلغاء الحظر ✅' : 'تم الحظر بنجاح ✅');
+                        loadCustomers();
+                    } catch (e) { zahraaToast(e.message, 'error'); }
+                }, '', '⚠️');
         };
 
         window.blockUser = async (uid, name) => {
@@ -2079,9 +2039,9 @@
         window.viewReportedContent = async (col, docId) => {
             try {
                 const snap = await getDoc(doc(db, col, docId));
-                if (snap.exists) zahraaToast('بيانات المحتوى في Console','info'), console.log(snap.data());
+                if (snap.exists) { zahraaToast('البيانات في الـ Console','info'); console.log(snap.data()); }
                 else zahraaToast('المحتوى محذوف أو غير موجود','warning');
-            } catch (e) { zahraaToast('خطأ: ' + e.message,'error'); }
+            } catch (e) { zahraaToast('خطأ: '+e.message,'error'); }
         };
 
         // ============ POINTS ADMIN ============
@@ -2097,7 +2057,7 @@
             try {
                 await setDoc(doc(db, 'settings', 'points'), data);
                 zahraaToast('تم حفظ إعدادات النقاط ✓');
-            } catch (e) { zahraaToast('خطأ: ' + e.message,'error'); }
+            } catch (e) { zahraaToast('خطأ: '+e.message,'error'); }
         };
 
         window.searchUserPoints = async () => {
@@ -2203,44 +2163,37 @@
         };
 
         window.deleteReview = async (collName, docId) => {
-            // confirm replaced below
-            try {
-                await deleteDoc(doc(db, collName, docId));
-                document.getElementById(`review-${docId}`)?.remove();
-                zahraaToast('تم الحذف ✓', 'success');
-            } catch (e) { zahraaToast('خطأ: ' + e.message, 'error'); }
+            zahraaConfirm('حذف هذا الرأي نهائياً؟', async () => {
+                try {
+                    await deleteDoc(doc(db, collName, docId));
+                    document.getElementById(`review-${docId}`)?.remove();
+                    zahraaToast('تم الحذف ✅', 'success');
+                } catch (e) { zahraaToast('خطأ: ' + e.message, 'error'); }
+            }, '', '🗑️');
         };
 
-    // ============ ADS FUNCTIONS (modular Firebase SDK) ============
-        const CLOUDINARY_URL_ADS = 'https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload';
-        const CLOUDINARY_PRESET_ADS = 'zahraa_upload';
+    // ============ ADS & PUSH (modular Firebase SDK — runs after auth) ============
         let adImagesUrls = [];
-
-        async function uploadToCloudinaryAds(file) {
-            const fd = new FormData();
-            fd.append('file', file);
-            fd.append('upload_preset', CLOUDINARY_PRESET_ADS);
-            const res = await fetch(CLOUDINARY_URL_ADS, { method: 'POST', body: fd });
-            const data = await res.json();
-            return data.secure_url || null;
-        }
 
         document.getElementById('ad-images')?.addEventListener('change', async (e) => {
             const files = e.target.files;
             const preview = document.getElementById('ad-images-preview');
-            preview.innerHTML = '<p class="text-xs text-zinc-500">جاري الرفع...</p>';
+            preview.innerHTML = '<p class="text-xs text-zinc-500">⏳ جاري الرفع...</p>';
             adImagesUrls = [];
             for (let file of files) {
+                const fd = new FormData();
+                fd.append('file', file);
+                fd.append('upload_preset', 'zahraa_upload');
                 try {
-                    const url = await uploadToCloudinaryAds(file);
-                    if (url) {
-                        adImagesUrls.push(url);
-                        preview.innerHTML += `<img src="${url}" class="w-16 h-16 object-cover rounded">`;
+                    const res = await fetch('https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload', { method: 'POST', body: fd });
+                    const data = await res.json();
+                    if (data.secure_url) {
+                        adImagesUrls.push(data.secure_url);
+                        preview.innerHTML += `<img src="${data.secure_url}" class="w-16 h-16 object-cover rounded-lg border border-zinc-700">`;
                     }
                 } catch(err) { console.error(err); }
             }
-            const p = preview.querySelector('p');
-            if (p) p.remove();
+            const p = preview.querySelector('p'); if (p) p.remove();
         });
 
         window.saveAd = async () => {
@@ -2252,164 +2205,214 @@
             const buttonType = document.getElementById('ad-button-type').value;
             if (!title && adImagesUrls.length === 0) return zahraaToast('أدخل عنوان أو ارفع صورة','warning');
             try {
-                await addDoc(collection(db, 'ads'), {
-                    title, images: adImagesUrls, duration, skipDelay,
-                    buttonText, buttonLink, buttonType, isActive: true,
-                    createdAt: serverTimestamp()
-                });
-                zahraaToast('تم حفظ الإعلان بنجاح ✅','success');
+                await addDoc(collection(db, 'ads'), { title, images: adImagesUrls, duration, skipDelay, buttonText, buttonLink, buttonType, isActive: true, createdAt: serverTimestamp() });
+                zahraaToast('تم حفظ الإعلان ✅','success');
                 document.getElementById('ad-title').value = '';
                 document.getElementById('ad-images-preview').innerHTML = '';
                 adImagesUrls = [];
                 loadAdsList();
-            } catch(e) { zahraaToast('خطأ: ' + e.message,'error'); }
+            } catch(e) { zahraaToast('خطأ: '+e.message,'error'); }
         };
 
         window.loadAdsList = async () => {
             const list = document.getElementById('ads-list');
             if (!list) return;
             try {
-                const snap = await getDocs(query(collection(db, 'ads'), orderBy('createdAt', 'desc')));
+                const snap = await getDocs(query(collection(db,'ads'), orderBy('createdAt','desc')));
                 list.innerHTML = '';
-                if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm p-4">لا توجد إعلانات</p>'; return; }
+                if (snap.empty) { list.innerHTML='<p class="text-zinc-500 text-sm p-4 text-center">لا توجد إعلانات بعد</p>'; return; }
                 snap.forEach(d => {
                     const ad = d.data();
-                    list.innerHTML += `
-                        <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 flex items-center gap-4">
-                            ${ad.images?.[0] ? `<img src="${ad.images[0]}" class="w-16 h-16 object-cover rounded-lg flex-shrink-0">` : '<div class="w-16 h-16 bg-zinc-800 rounded-lg flex-shrink-0 flex items-center justify-center text-2xl">📢</div>'}
-                            <div class="flex-1">
-                                <p class="font-bold">${ad.title || 'بدون عنوان'}</p>
-                                <p class="text-xs text-zinc-500">${ad.images?.length || 0} صورة • ${ad.duration} ثانية • تخطي بعد: ${ad.skipDelay} ث</p>
-                                <span class="text-xs px-2 py-0.5 rounded ${ad.isActive ? 'bg-green-700 text-white' : 'bg-zinc-700 text-zinc-300'}">${ad.isActive ? '✅ نشط' : '⛔ متوقف'}</span>
-                            </div>
-                            <div class="flex gap-2">
-                                <button onclick="toggleAd('${d.id}', ${!ad.isActive})" class="text-xs px-3 py-1 rounded-lg ${ad.isActive ? 'bg-zinc-700' : 'bg-green-700 text-white'}">${ad.isActive ? 'إيقاف' : 'تفعيل'}</button>
-                                <button onclick="deleteAd('${d.id}')" class="text-xs px-3 py-1 rounded-lg bg-red-800 text-white">حذف</button>
-                            </div>
-                        </div>`;
+                    list.innerHTML += `<div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 flex items-center gap-4 mb-3">
+                        ${ad.images?.[0] ? `<img src="${ad.images[0]}" class="w-16 h-16 object-cover rounded-lg flex-shrink-0 border border-zinc-700">` : '<div class="w-16 h-16 bg-zinc-800 rounded-lg flex-shrink-0 flex items-center justify-center text-2xl">📢</div>'}
+                        <div class="flex-1 min-w-0">
+                            <p class="font-bold truncate">${ad.title||'بدون عنوان'}</p>
+                            <p class="text-xs text-zinc-500">${ad.images?.length||0} صورة • ${ad.duration||30} ثانية • تخطي بعد ${ad.skipDelay||5} ث</p>
+                            <span class="text-xs px-2 py-0.5 rounded ${ad.isActive?'bg-green-700 text-white':'bg-zinc-700 text-zinc-400'}">${ad.isActive?'✅ نشط':'⛔ متوقف'}</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="toggleAd('${d.id}',${!ad.isActive})" class="text-xs px-3 py-1.5 rounded-lg ${ad.isActive?'bg-zinc-700':'bg-green-700 text-white'}">${ad.isActive?'إيقاف':'تفعيل'}</button>
+                            <button onclick="deleteAd('${d.id}')" class="text-xs px-3 py-1.5 rounded-lg bg-red-800 text-white">حذف</button>
+                        </div>
+                    </div>`;
                 });
-            } catch(e) { list.innerHTML = `<p class="text-red-400 text-sm p-4">خطأ: ${e.message}</p>`; }
+            } catch(e) { if(list) list.innerHTML=`<p class="text-red-400 text-sm p-4">خطأ: ${e.message}</p>`; }
         };
 
         window.toggleAd = async (id, state) => {
-            try { await updateDoc(doc(db, 'ads', id), { isActive: state }); loadAdsList(); } catch(e) {}
+            try { await updateDoc(doc(db,'ads',id),{isActive:state}); loadAdsList(); } catch(e) {}
         };
-
         window.deleteAd = async (id) => {
-            zahraaConfirm('حذف هذا الإعلان؟', async () => { try { await deleteDoc(doc(db, 'ads', id)); loadAdsList(); zahraaToast('تم حذف الإعلان ✓','success'); } catch(e) { zahraaToast(e.message,'error'); } }, '', '🗑️');
+            zahraaConfirm('حذف هذا الإعلان؟', async()=>{ try{await deleteDoc(doc(db,'ads',id));loadAdsList();zahraaToast('تم الحذف ✅','success');}catch(e){zahraaToast(e.message,'error');} },'','🗑️');
         };
 
-        // ============ PUSH FUNCTIONS (modular Firebase SDK) ============
+        // ============ PUSH NOTIFICATIONS ============
         window.sendPushNotification = async () => {
             const title = document.getElementById('push-title').value.trim();
-            const body = document.getElementById('push-body').value.trim();
-            const link = document.getElementById('push-link').value.trim();
+            const body  = document.getElementById('push-body').value.trim();
+            const link  = document.getElementById('push-link').value.trim();
             const serverKey = document.getElementById('push-server-key').value.trim();
-            if (!title || !body) return zahraaToast('أدخل عنوان ونص الإشعار','warning');
-            if (!serverKey) return zahraaToast('أدخل مفتاح الخادم من Firebase Console','warning');
-
-            const tokensSnap = await getDocs(collection(db, 'push_tokens'));
-            const tokens = [];
-            tokensSnap.forEach(d => tokens.push(d.data().token));
-            if (tokens.length === 0) return zahraaToast('لا يوجد أجهزة مسجلة بعد','info');
-
-            const btn = document.querySelector('[onclick="sendPushNotification()"]');
-            if (btn) { btn.disabled = true; btn.textContent = 'جاري الإرسال...'; }
-
+            if (!title||!body) return zahraaToast('أدخل عنوان ونص الإشعار','warning');
+            if (!serverKey) return zahraaToast('أدخل مفتاح الخادم (Server Key)','warning');
+            const tokensSnap = await getDocs(collection(db,'push_tokens'));
+            const tokens=[]; tokensSnap.forEach(d=>tokens.push(d.data().token));
+            if (!tokens.length) return zahraaToast('لا يوجد أجهزة مسجلة بعد','info');
+            const btn=document.querySelector('[onclick="sendPushNotification()"]');
+            if(btn){btn.disabled=true;btn.textContent='⏳ جاري الإرسال...';}
             try {
-                const response = await fetch('/api/send-push', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ title, body, link, serverKey, tokens })
-                });
-                const result = await response.json();
-                zahraaToast(`تم الإرسال لـ ${result.sent||0} من ${tokens.length} جهاز ✅`,'success');
-            } catch(e) {
-                zahraaToast('خطأ في الإرسال – تحقق من مفتاح FCM','error');
-                console.error(e);
-            } finally {
-                if (btn) { btn.disabled = false; btn.textContent = '📨 إرسال الإشعار'; }
-            }
+                const res = await fetch('/api/send-push',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,body,link,serverKey,tokens})});
+                const result = await res.json();
+                zahraaToast(`✅ أُرسل لـ ${result.sent||0} من ${tokens.length} جهاز`,'success');
+            } catch(e) { zahraaToast('خطأ في الإرسال — تحقق من مفتاح FCM','error'); }
+            finally { if(btn){btn.disabled=false;btn.textContent='📨 إرسال الإشعار';} }
         };
 
         window.loadTokens = async () => {
             const list = document.getElementById('tokens-list');
             if (!list) return;
             try {
-                const snap = await getDocs(query(collection(db, 'push_tokens'), limit(50)));
-                list.innerHTML = `
-                    <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
-                        <p class="text-zinc-300 font-bold">📱 الأجهزة المسجلة: <span class="gold-text text-xl">${snap.size}</span></p>
-                        <p class="text-xs text-zinc-500 mt-1">الأجهزة التي فعّلت الإشعارات من متجرك</p>
-                    </div>`;
-            } catch(e) { if (list) list.innerHTML = `<p class="text-red-400 text-sm">خطأ: ${e.message}</p>`; }
+                const snap = await getDocs(query(collection(db,'push_tokens'),limit(100)));
+                list.innerHTML = `<div class="bg-zinc-900 p-5 rounded-xl border border-zinc-800 text-center">
+                    <p class="text-2xl font-bold gold-text">${snap.size}</p>
+                    <p class="text-zinc-400 text-sm mt-1">📱 جهاز مسجل للإشعارات</p>
+                </div>`;
+            } catch(e) { if(list) list.innerHTML=`<p class="text-red-400 text-sm">خطأ: ${e.message}</p>`; }
         };
 
-        // ============ BANNER CLOUDINARY UPLOAD ============
-        document.getElementById('banner-image-file')?.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const status = document.getElementById('banner-upload-status');
-            status.textContent = 'جاري الرفع...';
-            try {
-                const fd = new FormData();
-                fd.append('file', file);
-                fd.append('upload_preset', 'zahraa_upload');
-                const res = await fetch('https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload', { method: 'POST', body: fd });
-                const data = await res.json();
-                if (data.secure_url) {
-                    document.getElementById('banner-image').value = data.secure_url;
-                    document.getElementById('banner-img-thumb').src = data.secure_url;
+        // ============ CLOUDINARY UPLOADS (Banner & Post) ============
+        document.getElementById('banner-image-file')?.addEventListener('change', async(e)=>{
+            const file=e.target.files[0]; if(!file) return;
+            const st=document.getElementById('banner-upload-status');
+            st.textContent='⏳ جاري الرفع...';
+            try{
+                const fd=new FormData(); fd.append('file',file); fd.append('upload_preset','zahraa_upload');
+                const res=await fetch('https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload',{method:'POST',body:fd});
+                const data=await res.json();
+                if(data.secure_url){
+                    document.getElementById('banner-image').value=data.secure_url;
+                    document.getElementById('banner-img-thumb').src=data.secure_url;
                     document.getElementById('banner-image-preview').classList.remove('hidden');
-                    status.textContent = '✅ تم الرفع بنجاح';
-                } else { status.textContent = '❌ فشل الرفع'; }
-            } catch(e) { status.textContent = '❌ خطأ في الرفع: ' + e.message; }
+                    st.textContent='✅ تم الرفع بنجاح';
+                } else st.textContent='❌ فشل الرفع';
+            }catch(err){st.textContent='❌ خطأ: '+err.message;}
         });
 
-        // ============ POST CLOUDINARY UPLOAD ============
-        document.getElementById('post-image-file')?.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const status = document.getElementById('post-upload-status');
-            status.textContent = 'جاري رفع الصورة...';
-            try {
-                const fd = new FormData();
-                fd.append('file', file);
-                fd.append('upload_preset', 'zahraa_upload');
-                const res = await fetch('https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload', { method: 'POST', body: fd });
-                const data = await res.json();
-                if (data.secure_url) {
-                    document.getElementById('post-image').value = data.secure_url;
-                    document.getElementById('post-img-thumb').src = data.secure_url;
+        document.getElementById('post-image-file')?.addEventListener('change', async(e)=>{
+            const file=e.target.files[0]; if(!file) return;
+            document.getElementById('post-upload-status').textContent='⏳ جاري رفع الصورة...';
+            try{
+                const fd=new FormData(); fd.append('file',file); fd.append('upload_preset','zahraa_upload');
+                const res=await fetch('https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload',{method:'POST',body:fd});
+                const data=await res.json();
+                if(data.secure_url){
+                    document.getElementById('post-image').value=data.secure_url;
+                    document.getElementById('post-img-thumb').src=data.secure_url;
                     document.getElementById('post-image-preview').classList.remove('hidden');
-                    status.textContent = '✅ صورة جاهزة';
+                    document.getElementById('post-upload-status').textContent='✅ صورة جاهزة';
                 }
-            } catch(e) { status.textContent = '❌ خطأ: ' + e.message; }
+            }catch(err){document.getElementById('post-upload-status').textContent='❌ خطأ: '+err.message;}
         });
 
-        document.getElementById('post-video-file')?.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const status = document.getElementById('post-upload-status');
-            status.textContent = 'جاري رفع الفيديو (قد يستغرق دقيقة)...';
-            try {
-                const fd = new FormData();
-                fd.append('file', file);
-                fd.append('upload_preset', 'zahraa_upload');
-                const res = await fetch('https://api.cloudinary.com/v1_1/dxlxwe55b/video/upload', { method: 'POST', body: fd });
-                const data = await res.json();
-                if (data.secure_url) {
-                    document.getElementById('post-video').value = data.secure_url;
-                    document.getElementById('post-vid-thumb').src = data.secure_url;
+        document.getElementById('post-video-file')?.addEventListener('change', async(e)=>{
+            const file=e.target.files[0]; if(!file) return;
+            document.getElementById('post-upload-status').textContent='⏳ جاري رفع الفيديو...';
+            try{
+                const fd=new FormData(); fd.append('file',file); fd.append('upload_preset','zahraa_upload');
+                const res=await fetch('https://api.cloudinary.com/v1_1/dxlxwe55b/video/upload',{method:'POST',body:fd});
+                const data=await res.json();
+                if(data.secure_url){
+                    document.getElementById('post-video').value=data.secure_url;
+                    document.getElementById('post-vid-thumb').src=data.secure_url;
                     document.getElementById('post-video-preview').classList.remove('hidden');
-                    status.textContent = '✅ فيديو جاهز';
+                    document.getElementById('post-upload-status').textContent='✅ فيديو جاهز';
                 }
-            } catch(e) { status.textContent = '❌ خطأ: ' + e.message; }
+            }catch(err){document.getElementById('post-upload-status').textContent='❌ خطأ: '+err.message;}
         });
 
-        document.getElementById('btn-ads-tab').addEventListener('click', loadAdsList);
-        document.getElementById('btn-push-tab').addEventListener('click', loadTokens);
-        
+
+        // ============ SUPPORT CHAT ADMIN ============
+        let activeChatId = null;
+        let adminChatUnsub = null;
+
+        window.loadChats = async () => {
+            const list = document.getElementById('chats-list');
+            if (!list) return;
+            try {
+                const snap = await getDocs(query(collection(db,'support_chats'), orderBy('lastAt','desc'), limit(50)));
+                list.innerHTML = '';
+                if (snap.empty) { list.innerHTML = '<p class="text-zinc-500 text-sm text-center py-8">لا توجد محادثات بعد</p>'; return; }
+                let totalUnread = 0;
+                snap.forEach(d => {
+                    const ch = d.data();
+                    const unread = ch.unreadByAdmin || 0;
+                    totalUnread += unread;
+                    const lastTime = ch.lastAt?.toDate ? ch.lastAt.toDate().toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'}) : '';
+                    list.innerHTML += `<div onclick="openChat('${d.id}')" class="p-3 rounded-xl cursor-pointer hover:bg-zinc-800 transition-colors border ${activeChatId===d.id?'border-yellow-500 bg-zinc-800':'border-zinc-800'} relative">
+                        <div class="flex items-center justify-between gap-2">
+                            <p class="font-bold text-sm truncate flex-1">${ch.userName || 'زائر'}</p>
+                            <span class="text-xs text-zinc-500 flex-shrink-0">${lastTime}</span>
+                            ${unread > 0 ? `<span class="bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0">${unread}</span>` : ''}
+                        </div>
+                        <p class="text-xs text-zinc-500 truncate mt-1">${ch.lastMessage || '...'}</p>
+                    </div>`;
+                });
+                const badge = document.getElementById('chat-unread-count');
+                if (badge) { badge.textContent = totalUnread; badge.classList.toggle('hidden', totalUnread === 0); }
+            } catch(e) { if(list) list.innerHTML = `<p class="text-red-400 text-sm p-4">خطأ: ${e.message}</p>`; }
+        };
+
+        window.openChat = (chatId) => {
+            activeChatId = chatId;
+            if (adminChatUnsub) adminChatUnsub();
+            const header = document.getElementById('chat-header');
+            const msgsBox = document.getElementById('admin-chat-messages');
+            if (header) header.innerHTML = `<p class="text-sm font-bold gold-text">محادثة: <span class="text-white">${chatId.substring(0,14)}...</span></p>`;
+            adminChatUnsub = onSnapshot(doc(db,'support_chats',chatId), snap => {
+                if (!snap.exists || !msgsBox) return;
+                const msgs = snap.data().messages || [];
+                const chatData = snap.data();
+                if (header) header.innerHTML = `<div class="flex items-center justify-between"><p class="font-bold text-sm">${chatData.userName || 'زائر'} ${chatData.userId ? '<span class="text-xs text-zinc-500">• مسجل</span>' : '<span class="text-xs text-zinc-500">• زائر</span>'}</p><p class="text-xs text-zinc-500">${chatId.substring(0,16)}</p></div>`;
+                msgsBox.innerHTML = '';
+                msgs.forEach(m => {
+                    const isUser = m.sender === 'user';
+                    const time = m.timestamp ? new Date(m.timestamp).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'}) : '';
+                    msgsBox.innerHTML += `<div class="flex flex-col ${isUser?'items-end':'items-start'} gap-1">
+                        <div class="max-w-[80%] px-4 py-2.5 rounded-2xl text-sm ${isUser?'bg-zinc-800 text-white':'bg-yellow-500/90 text-black font-medium'}">${m.text}</div>
+                        <span class="text-[10px] text-zinc-600">${isUser?'👤':'👑 أدمن'} ${time}</span>
+                    </div>`;
+                });
+                msgsBox.scrollTop = msgsBox.scrollHeight;
+                // Mark as read by admin
+                updateDoc(doc(db,'support_chats',chatId), {unreadByAdmin: 0}).catch(()=>{});
+                loadChats();
+            });
+        };
+
+        window.sendAdminReply = async () => {
+            if (!activeChatId) return zahraaToast('اختر محادثة أولاً', 'warning');
+            const input = document.getElementById('admin-chat-input');
+            const text = (input.value || '').trim();
+            if (!text) return;
+            input.value = '';
+            const msg = { text, sender: 'admin', timestamp: new Date().toISOString(), name: 'الدعم الفني' };
+            try {
+                await updateDoc(doc(db,'support_chats',activeChatId), {
+                    lastMessage: '👑 ' + text,
+                    lastAt: serverTimestamp(),
+                    unreadByUser: increment(1),
+                    messages: arrayUnion(msg)
+                });
+                zahraaToast('تم إرسال الرد ✅','success');
+            } catch(e) { zahraaToast('خطأ: '+e.message,'error'); }
+        };
+
+        // Load chats when tab clicked
+        document.getElementById('btn-chat-tab')?.addEventListener('click', loadChats);
+
+        // ===== Tab click listeners for ads/push =====
+        document.getElementById('btn-ads-tab')?.addEventListener('click', loadAdsList);
+        document.getElementById('btn-push-tab')?.addEventListener('click', loadTokens);
+
     </script>
 </body>
 </html>
