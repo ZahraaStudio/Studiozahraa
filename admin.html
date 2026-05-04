@@ -681,11 +681,20 @@
     <div class="bg-zinc-900 p-6 rounded-2xl gold-border">
         <h3 class="text-xl font-bold mb-4">🔔 إرسال إشعارات دفع</h3>
         <div class="space-y-4">
+            <div class="bg-zinc-800 p-3 rounded-lg text-xs text-zinc-400 leading-relaxed">
+                <p class="font-bold text-yellow-400 mb-1">⚙️ إعداد VAPID Key (مطلوب للإشعارات):</p>
+                <p>1. اذهب إلى <strong class="text-white">Firebase Console → Project Settings → Cloud Messaging</strong></p>
+                <p>2. انسخ <strong class="text-white">Web Push certificates → Key pair</strong></p>
+                <p>3. احفظها في الإعدادات بالأسفل</p>
+            </div>
+            <input type="text" id="vapid-key-input" placeholder="VAPID Public Key (من Firebase Console > Cloud Messaging)" class="w-full p-3 bg-black border border-zinc-700 rounded text-xs font-mono">
+            <button onclick="saveVapidKey()" class="w-full py-2 bg-zinc-800 text-zinc-300 rounded-lg text-sm font-bold hover:bg-zinc-700">💾 حفظ VAPID Key في الإعدادات</button>
+            <hr class="border-zinc-800">
             <input type="text" id="push-title" placeholder="عنوان الإشعار" class="w-full p-3 bg-black border border-zinc-700 rounded">
             <textarea id="push-body" placeholder="نص الإشعار" class="w-full p-3 bg-black border border-zinc-700 rounded" rows="3"></textarea>
             <input type="text" id="push-link" placeholder="رابط عند الضغط (اختياري)" class="w-full p-3 bg-black border border-zinc-700 rounded">
             <input type="text" id="push-server-key" placeholder="مفتاح الخادم (Server Key) من Firebase Console" class="w-full p-3 bg-black border border-zinc-700 rounded">
-            <button onclick="sendPushNotification()" class="gold-bg w-full py-3 rounded-xl font-bold">📨 إرسال الإشعار</button>
+            <button onclick="sendPushNotification()" class="gold-bg w-full py-3 rounded-xl font-bold">📨 إرسال الإشعار للأجهزة المسجلة</button>
         </div>
     </div>
     <div id="tokens-list" class="mt-6 text-sm text-zinc-400"></div>
@@ -957,7 +966,11 @@
                 isWeeklyOffer,
                 dailyOfferSetAt: isDailyOffer ? serverTimestamp() : null,
                 weeklyOfferEnd: isWeeklyOffer ? new Date(Date.now() + 7*24*60*60*1000) : null,
-                updatedAt: serverTimestamp()
+                updatedAt: serverTimestamp(),
+                firstOrderCoupon: document.getElementById('s-first-order-coupon')?.value?.trim() || 'FIRST10',
+                firstOrderDesc: document.getElementById('s-first-order-desc')?.value?.trim() || 'خصم 10% على أول طلب',
+                referralGiftCoupon: document.getElementById('s-referral-coupon')?.value?.trim() || 'WELCOME10',
+                referralGiftDesc: document.getElementById('s-referral-desc')?.value?.trim() || 'خصم 10% مع الإحالة'
             };
 
             try {
@@ -1199,7 +1212,11 @@
                 const pointsToEarn = Math.floor(amount * ratio);
                 if (pointsToEarn <= 0) return;
                 const userPtsRef = doc(db, 'points', userId);
-                await setDoc(userPtsRef, { balance: increment(pointsToEarn), updatedAt: serverTimestamp() }, { merge: true });
+                await setDoc(userPtsRef, { balance: increment(pointsToEarn), updatedAt: serverTimestamp(),
+                firstOrderCoupon: document.getElementById('s-first-order-coupon')?.value?.trim() || 'FIRST10',
+                firstOrderDesc: document.getElementById('s-first-order-desc')?.value?.trim() || 'خصم 10% على أول طلب',
+                referralGiftCoupon: document.getElementById('s-referral-coupon')?.value?.trim() || 'WELCOME10',
+                referralGiftDesc: document.getElementById('s-referral-desc')?.value?.trim() || 'خصم 10% مع الإحالة' }, { merge: true });
                 await addDoc(collection(db, 'points_history'), {
                     userId, points: pointsToEarn, type: 'earn', orderId,
                     orderNumber: orderNumber || orderId.substring(0,8), createdAt: serverTimestamp()
@@ -1470,7 +1487,11 @@
                 startDate: startDate ? new Date(startDate) : null,
                 expiryDate: expiryDate ? new Date(expiryDate) : null,
                 isActive: true,
-                updatedAt: serverTimestamp()
+                updatedAt: serverTimestamp(),
+                firstOrderCoupon: document.getElementById('s-first-order-coupon')?.value?.trim() || 'FIRST10',
+                firstOrderDesc: document.getElementById('s-first-order-desc')?.value?.trim() || 'خصم 10% على أول طلب',
+                referralGiftCoupon: document.getElementById('s-referral-coupon')?.value?.trim() || 'WELCOME10',
+                referralGiftDesc: document.getElementById('s-referral-desc')?.value?.trim() || 'خصم 10% مع الإحالة'
             };
 
             try {
@@ -1636,7 +1657,11 @@
                 },
                 referralEnabled: document.getElementById('setting-referral-enabled').checked,
                 isOpen: document.getElementById('setting-store-status').checked,
-                updatedAt: serverTimestamp()
+                updatedAt: serverTimestamp(),
+                firstOrderCoupon: document.getElementById('s-first-order-coupon')?.value?.trim() || 'FIRST10',
+                firstOrderDesc: document.getElementById('s-first-order-desc')?.value?.trim() || 'خصم 10% على أول طلب',
+                referralGiftCoupon: document.getElementById('s-referral-coupon')?.value?.trim() || 'WELCOME10',
+                referralGiftDesc: document.getElementById('s-referral-desc')?.value?.trim() || 'خصم 10% مع الإحالة'
             };
             try {
                 await setDoc(doc(db, 'settings', 'general'), data, { merge: true });
@@ -1726,7 +1751,11 @@
         };
         window.saveGovernorates = async () => {
             try {
-                await updateDoc(doc(db, 'settings', 'general'), { governorates: allGovernorates, updatedAt: serverTimestamp() });
+                await updateDoc(doc(db, 'settings', 'general'), { governorates: allGovernorates, updatedAt: serverTimestamp(),
+                firstOrderCoupon: document.getElementById('s-first-order-coupon')?.value?.trim() || 'FIRST10',
+                firstOrderDesc: document.getElementById('s-first-order-desc')?.value?.trim() || 'خصم 10% على أول طلب',
+                referralGiftCoupon: document.getElementById('s-referral-coupon')?.value?.trim() || 'WELCOME10',
+                referralGiftDesc: document.getElementById('s-referral-desc')?.value?.trim() || 'خصم 10% مع الإحالة' });
                 zahraaToast('تم حفظ المحافظات ✅','success');
             } catch (e) { zahraaToast(e.message,'error'); }
         };
@@ -1925,7 +1954,11 @@
                 videoUrl: document.getElementById('post-video').value.trim(),
                 link: document.getElementById('post-link').value.trim(),
                 isActive: document.getElementById('post-active').checked,
-                updatedAt: serverTimestamp()
+                updatedAt: serverTimestamp(),
+                firstOrderCoupon: document.getElementById('s-first-order-coupon')?.value?.trim() || 'FIRST10',
+                firstOrderDesc: document.getElementById('s-first-order-desc')?.value?.trim() || 'خصم 10% على أول طلب',
+                referralGiftCoupon: document.getElementById('s-referral-coupon')?.value?.trim() || 'WELCOME10',
+                referralGiftDesc: document.getElementById('s-referral-desc')?.value?.trim() || 'خصم 10% مع الإحالة'
             };
             if (!data.title && !data.body) return zahraaToast('أدخل عنواناً أو نصاً','warning');
             try {
@@ -2099,7 +2132,11 @@
                 threshold: parseInt(document.getElementById('pts-threshold').value) || 1000,
                 couponValue: parseFloat(document.getElementById('pts-coupon-value').value) || 50,
                 couponType: document.getElementById('pts-coupon-type').value,
-                updatedAt: serverTimestamp()
+                updatedAt: serverTimestamp(),
+                firstOrderCoupon: document.getElementById('s-first-order-coupon')?.value?.trim() || 'FIRST10',
+                firstOrderDesc: document.getElementById('s-first-order-desc')?.value?.trim() || 'خصم 10% على أول طلب',
+                referralGiftCoupon: document.getElementById('s-referral-coupon')?.value?.trim() || 'WELCOME10',
+                referralGiftDesc: document.getElementById('s-referral-desc')?.value?.trim() || 'خصم 10% مع الإحالة'
             };
             try {
                 await setDoc(doc(db, 'settings', 'points'), data);
@@ -2294,6 +2331,34 @@
         };
 
         // ============ PUSH NOTIFICATIONS ============
+        window.saveVapidKey = async () => {
+            const key = document.getElementById('vapid-key-input').value.trim();
+            if (!key) return zahraaToast('أدخل VAPID Key أولاً','warning');
+            try {
+                await setDoc(doc(db,'settings','general'), { vapidKey: key }, { merge: true });
+                zahraaToast('تم حفظ VAPID Key ✅','success');
+            } catch(e) { zahraaToast('خطأ: '+e.message,'error'); }
+        };
+
+        window.loadPushTokens = async () => {
+            const list = document.getElementById('tokens-list');
+            try {
+                const snap = await getDocs(query(collection(db,'push_tokens'), orderBy('registeredAt','desc')));
+                const tokens = [];
+                snap.forEach(d=>tokens.push({id:d.id,...d.data()}));
+                if(tokens.length===0){list.innerHTML='<p class="text-zinc-500 p-4 text-center">لا توجد أجهزة مسجلة بعد</p>';return;}
+                list.innerHTML = `<div class="flex items-center justify-between mb-3"><h4 class="font-bold text-yellow-400">✅ الأجهزة المسجلة (${tokens.length})</h4></div>` +
+                  tokens.map(t=>`<div class="bg-zinc-900 p-3 rounded-lg mb-2 flex items-center justify-between gap-3 border border-zinc-800">
+                    <div class="flex-1 min-w-0">
+                      <p class="text-white text-xs font-bold">${t.userName||'زائر'}</p>
+                      <p class="text-zinc-500 text-[10px] font-mono overflow-hidden text-ellipsis">${(t.endpoint||t.token||t.deviceId||'').substring(0,60)}…</p>
+                      <p class="text-zinc-600 text-[9px]">${t.userAgent?.substring(0,50)||''}</p>
+                    </div>
+                    <span class="text-[10px] ${t.endpoint?'text-green-400 bg-green-900/30':'text-yellow-400 bg-yellow-900/30'} px-2 py-1 rounded-full flex-shrink-0">${t.endpoint?'✅ Web Push':'⚡ Basic'}</span>
+                  </div>`).join('');
+            } catch(e) { list.innerHTML = '<p class="text-red-400 text-sm p-3">خطأ في تحميل الأجهزة</p>'; }
+        };
+
         window.sendPushNotification = async () => {
             const title = document.getElementById('push-title').value.trim();
             const body  = document.getElementById('push-body').value.trim();
@@ -2508,6 +2573,7 @@
 
         // ===== Tab click listeners for ads/push =====
         document.getElementById('btn-ads-tab')?.addEventListener('click', loadAdsList);
+        document.getElementById('btn-push-tab')?.addEventListener('click', loadPushTokens);
         document.getElementById('btn-push-tab')?.addEventListener('click', loadTokens);
 
     </script>
