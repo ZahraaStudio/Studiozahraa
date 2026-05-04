@@ -67,19 +67,20 @@
     }
     .logo-img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.6)); }
     @keyframes logoFloat { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-15px); } }
-    @keyframes slideInRight { from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1} }
-    @keyframes slideOutRight { from{transform:translateX(0);opacity:1}to{transform:translateX(120%);opacity:0} }
-    @keyframes slideUpFade { from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1} }
-    @keyframes slideDown { from{transform:translateY(-60px);opacity:0}to{transform:translateY(0);opacity:1} }
-    .buy-now-btn { background:linear-gradient(135deg,#d4af37,#f0c94e);color:#000;padding:8px 0;border-radius:10px;font-weight:800;font-size:12px;border:none;cursor:pointer;transition:all 0.2s;width:100%; }
-    .buy-now-btn:hover { opacity:0.9;transform:scale(1.02); }
-    .spend-bar-wrap { background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.3);border-radius:12px;padding:10px 14px;margin-bottom:12px; }
-    .spend-bar { height:6px;border-radius:3px;background:rgba(255,255,255,0.1);margin-top:6px;overflow:hidden; }
-    .spend-bar-fill { height:100%;border-radius:3px;background:linear-gradient(90deg,#d4af37,#f0c94e);transition:width 0.5s ease; }
-    .sort-btn { padding:6px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid #333;color:#888;background:transparent;transition:all 0.2s;white-space:nowrap; }
-    .sort-btn.active { background:rgba(212,175,55,0.15);border-color:#d4af37;color:#d4af37; }
-    #smart-cart-popup { animation: slideUpFade 0.3s ease; }
-    #first-order-banner { animation: slideDown 0.5s ease; }
+
+    @keyframes slideInRight{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
+    @keyframes slideOutRight{from{transform:translateX(0);opacity:1}to{transform:translateX(120%);opacity:0}}
+    @keyframes slideUpFade{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+    @keyframes slideDown{from{transform:translateY(-60px);opacity:0}to{transform:translateY(0);opacity:1}}
+    .buy-now-btn{background:linear-gradient(135deg,#d4af37,#f0c94e);color:#000;padding:8px 0;border-radius:10px;font-weight:800;font-size:12px;border:none;cursor:pointer;transition:all 0.2s;width:100%;}
+    .buy-now-btn:hover{opacity:0.9;transform:scale(1.02);}
+    .spend-bar-wrap{background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.3);border-radius:12px;padding:10px 14px;margin-bottom:12px;}
+    .spend-bar{height:6px;border-radius:3px;background:rgba(255,255,255,0.1);margin-top:6px;overflow:hidden;}
+    .spend-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#d4af37,#f0c94e);transition:width 0.5s ease;}
+    .sort-btn{padding:6px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid #333;color:#888;background:transparent;transition:all 0.2s;white-space:nowrap;}
+    .sort-btn.active{background:rgba(212,175,55,0.15);border-color:#d4af37;color:#d4af37;}
+    #smart-cart-popup{animation:slideUpFade 0.3s ease;}
+    #first-order-banner{animation:slideDown 0.5s ease;}
     
     .qty-control { display: flex; align-items: center; gap: 8px; background: #1a1a1a; border-radius: 8px; padding: 4px; }
     .qty-btn { width: 24px; height: 24px; border: none; background: #d4af37; color: black; border-radius: 4px; cursor: pointer; font-weight: bold; transition: all 0.2s; }
@@ -238,14 +239,6 @@
 
   <!-- Notification Container -->
   <div id="notification-container"></div>
-  <!-- ===== FIRST ORDER COUPON BANNER ===== -->
-  <div id="first-order-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:4000;background:linear-gradient(135deg,#1a0d00,#2a1a00);border-bottom:2px solid rgba(212,175,55,0.5);padding:10px 16px;text-align:center;font-family:'Cairo',sans-serif;direction:rtl;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;">
-    <span style="font-size:20px;">🎁</span>
-    <span style="color:#fff;font-size:13px;font-weight:700;" id="first-order-text">أول طلب لك؟ احصل على خصم خاص!</span>
-    <span id="first-order-code" style="background:rgba(212,175,55,0.2);border:1px solid #d4af37;color:#d4af37;font-size:13px;font-weight:800;padding:3px 12px;border-radius:20px;font-family:monospace;cursor:pointer;" onclick="copyFirstOrderCode()">FIRST10</span>
-    <button onclick="applyFirstOrderCode()" style="background:linear-gradient(135deg,#d4af37,#f0c94e);color:#000;border:none;padding:6px 16px;border-radius:20px;font-weight:800;font-size:12px;cursor:pointer;font-family:'Cairo',sans-serif;">تطبيق الآن</button>
-    <button onclick="document.getElementById('first-order-banner').style.display='none'" style="background:none;border:none;color:#666;cursor:pointer;font-size:16px;position:absolute;left:12px;top:50%;transform:translateY(-50%);">✕</button>
-  </div>
 
   <!-- Navigation -->
   <nav class="fixed w-full z-[100] bg-black/70 backdrop-blur-md border-b border-zinc-900">
@@ -534,8 +527,8 @@
             </div>
         </div>
       </div>
-        <!-- Sort/Filter Bar -->
-        <div id="sort-bar" class="flex gap-2 overflow-x-auto mb-4 pb-1" style="scrollbar-width:none;">
+        <!-- Sort Bar -->
+        <div id="sort-bar" class="flex gap-2 overflow-x-auto mb-4 pb-1" style="scrollbar-width:none;-webkit-overflow-scrolling:touch;">
           <button class="sort-btn active" onclick="setSort('default',event)">الكل</button>
           <button class="sort-btn" onclick="setSort('discount',event)">🔥 الأكثر خصماً</button>
           <button class="sort-btn" onclick="setSort('newest',event)">🆕 الأحدث</button>
@@ -1093,6 +1086,7 @@
         if (p.oldPrice && p.oldPrice > p.price) return p.oldPrice - p.price;
         return 0;
     }
+    function productDiscount(p){if(p.discountType==='percentage'&&p.discountValue)return p.discountValue;if(p.oldPrice&&p.oldPrice>p.price)return Math.round(((p.oldPrice-p.price)/p.oldPrice)*100);return 0;}
     function isOutOfStock(p) {
         return p.inStock === false || p.outOfStock === true;
     }
@@ -1346,9 +1340,7 @@
                         <button onclick="event.stopPropagation(); addToCartDirect('${p.id}')" ${oos ? 'disabled' : ''} class="gold-bg text-black py-2 rounded-lg font-bold text-xs hover:bg-yellow-500 transition-colors disabled:bg-zinc-700 disabled:text-zinc-500 disabled:cursor-not-allowed">${oos ? 'غير متاح' : '🛒 سلة'}</button>
                         <button onclick="event.stopPropagation(); buyNow('${p.id}')" ${oos ? 'disabled' : ''} class="buy-now-btn text-xs disabled:bg-zinc-700 disabled:text-zinc-500 disabled:cursor-not-allowed">${oos ? 'غير متاح' : '⚡ اشتري الآن'}</button>
                     </div>
-                    <div class="mb-2">
-                        <a href="https://wa.me/${cleanPhone(storeSettings.whatsapp1 || storeSettings.whatsapp)}?text=${encodeURIComponent('أريد ' + p.name + (p.code ? ' (' + p.code + ')' : ''))}" target="_blank" onclick="event.stopPropagation()" class="block bg-[#25D366] text-white py-1.5 rounded-lg font-bold text-xs hover:bg-green-600 transition-colors text-center">واتساب</a>
-                    </div>
+                    <div class="mb-2"><a href="https://wa.me/${cleanPhone(storeSettings.whatsapp1 || storeSettings.whatsapp)}?text=${encodeURIComponent('أريد ' + p.name + (p.code ? ' (' + p.code + ')' : ''))}" target="_blank" onclick="event.stopPropagation()" class="block bg-[#25D366] text-white py-1.5 rounded-lg font-bold text-xs hover:bg-green-600 transition-colors text-center">واتساب 💬</a></div>
                     <div class="flex gap-2">
                         <button onclick="event.stopPropagation(); toggleWishlist('${p.id}')" id="heart-${p.id}" class="flex-1 text-xs py-1.5 rounded-lg border ${isInWishlist(p.id) ? 'border-red-500 text-red-400 bg-red-500/10' : 'border-zinc-700 text-zinc-400 hover:border-red-400 hover:text-red-400'} transition-colors">${isInWishlist(p.id) ? '❤️ محفوظ' : '🤍 حفظ'}</button>
                         <button onclick="event.stopPropagation(); toggleCompare('${p.id}')" id="cmp-${p.id}" class="flex-1 text-xs py-1.5 rounded-lg border ${isInCompare(p.id) ? 'border-blue-500 text-blue-400 bg-blue-500/10' : 'border-zinc-700 text-zinc-400 hover:border-blue-400 hover:text-blue-400'} transition-colors">${isInCompare(p.id) ? '✓ مقارنة' : '⚖️ مقارنة'}</button>
@@ -1441,7 +1433,7 @@
                     <button onclick="addToCartMulti('${product.id}')" ${oos ? 'disabled' : ''} class="gold-bg text-black py-4 rounded-xl font-bold text-lg hover:bg-yellow-500 transition-colors disabled:bg-zinc-700 disabled:text-zinc-500 disabled:cursor-not-allowed">${oos ? 'غير متاح' : 'إضافة للسلة'}</button>
                     <button onclick="buyNow('${product.id}')" ${oos ? 'disabled' : ''} class="buy-now-btn py-4 text-lg disabled:bg-zinc-700 disabled:text-zinc-500 disabled:cursor-not-allowed">${oos ? 'غير متاح' : '⚡ اشتري الآن'}</button>
                 </div>
-                <a href="https://wa.me/${cleanPhone(storeSettings.whatsapp1 || storeSettings.whatsapp)}?text=${encodeURIComponent('أريد ' + product.name + (product.code ? ' (' + product.code + ')' : ''))}" target="_blank" class="block bg-[#25D366] text-white py-3 rounded-xl font-bold text-lg hover:bg-green-600 transition-colors text-center mt-2">واتساب 💬</a>
+                <a href="https://wa.me/${cleanPhone(storeSettings.whatsapp1 || storeSettings.whatsapp)}?text=${encodeURIComponent('أريد ' + product.name + (product.code ? ' (' + product.code + ')' : ''))}" target="_blank" class="block bg-[#25D366] text-white py-3 rounded-xl font-bold text-lg hover:bg-green-600 transition-colors text-center mt-3">واتساب 💬</a>
 
                 <!-- Reviews -->
                 <div class="border-t border-zinc-800 pt-4">
@@ -1871,19 +1863,13 @@
             // Send WhatsApp auto-message to store owner
             sendWhatsAppOrderConfirm({ ...orderData, orderNumber, items: cart });
 
-            // Update sales count for best sellers
-            for (const item of cart) {
-                db.collection('products').doc(item.id).update({
-                    salesCount: firebase.firestore.FieldValue.increment(item.qty)
-                }).catch(()=>{});
-            }
+            for(const item of cart){db.collection('products').doc(item.id).update({salesCount:firebase.firestore.FieldValue.increment(item.qty)}).catch(()=>{});}
+            db.collection('abandoned_carts').doc(deviceId).delete().catch(()=>{});
             cart = [];
             persistCart();
             updateCartUI();
             closeCheckout();
             document.getElementById('success-modal').classList.add('active');
-            // Clear abandoned cart
-            db.collection('abandoned_carts').doc(deviceId).delete().catch(()=>{});
         } catch (e) {
             showAlert('خطأ', 'حدث خطأ أثناء إرسال الطلب. حاول مرة أخرى.', 'error');
             console.error(e);
@@ -2809,364 +2795,248 @@
 
 
     // ============ SOCIAL PROOF NOTIFICATIONS ============
-    const _arabicNames = ['أحمد','محمد','إسراء','فاطمة','علي','سارة','كريم','مريم','يوسف','نور','خالد','هنا','عمر','ياسمين','حسام','رنا','طارق','دينا','أيمن','شيماء','ماجد','لمياء','وليد','سمر','جمال','إيمان','رامي','هبة'];
-    const _arabicCities = ['القاهرة','الجيزة','الإسكندرية','المنصورة','طنطا','الشرقية','المنيا','أسيوط','سوهاج','الأقصر','دمياط','الإسماعيلية','بورسعيد'];
-    function startSocialProof() {
-        const available = allProducts.filter(p => !p.outOfStock && p.images && p.images.length);
-        if (!available.length) return;
-        function showOne() {
-            const name = _arabicNames[Math.floor(Math.random()*_arabicNames.length)];
-            const city = _arabicCities[Math.floor(Math.random()*_arabicCities.length)];
-            const p = available[Math.floor(Math.random()*available.length)];
-            const mins = [2,3,5,7,10,12,15,20][Math.floor(Math.random()*8)];
-            const old = document.getElementById('sp-toast');
-            if(old) old.remove();
-            const el = document.createElement('div');
-            el.id = 'sp-toast';
-            el.style.cssText = 'position:fixed;bottom:80px;right:16px;z-index:2400;background:rgba(10,10,10,0.97);border:1px solid rgba(212,175,55,0.35);border-radius:16px;padding:10px 12px;display:flex;align-items:center;gap:10px;max-width:290px;box-shadow:0 8px 32px rgba(0,0,0,0.7);font-family:"Cairo",sans-serif;direction:rtl;animation:slideInRight 0.4s ease;';
-            el.innerHTML = `<img src="${p.images[0]}" style="width:42px;height:42px;border-radius:10px;object-fit:cover;flex-shrink:0;border:1px solid rgba(212,175,55,0.3);">
+    const _arabicNames=['أحمد','محمد','إسراء','فاطمة','علي','سارة','كريم','مريم','يوسف','نور','خالد','هنا','عمر','ياسمين','حسام','رنا','طارق','دينا','أيمن','شيماء'];
+    const _arabicCities=['القاهرة','الجيزة','الإسكندرية','المنصورة','طنطا','الشرقية','المنيا','أسيوط','سوهاج','الأقصر','دمياط','الإسماعيلية','بورسعيد'];
+    function startSocialProof(){
+        const avail=allProducts.filter(p=>!p.outOfStock&&p.images&&p.images.length);
+        if(!avail.length)return;
+        function showOne(){
+            const name=_arabicNames[Math.floor(Math.random()*_arabicNames.length)];
+            const city=_arabicCities[Math.floor(Math.random()*_arabicCities.length)];
+            const p=avail[Math.floor(Math.random()*avail.length)];
+            const mins=[2,3,5,7,10,12,15,20][Math.floor(Math.random()*8)];
+            const old=document.getElementById('sp-toast');if(old)old.remove();
+            const el=document.createElement('div');el.id='sp-toast';
+            el.style.cssText='position:fixed;bottom:80px;right:16px;z-index:2400;background:rgba(10,10,10,0.97);border:1px solid rgba(212,175,55,0.35);border-radius:16px;padding:10px 12px;display:flex;align-items:center;gap:10px;max-width:290px;box-shadow:0 8px 32px rgba(0,0,0,0.7);font-family:"Cairo",sans-serif;direction:rtl;animation:slideInRight 0.4s ease;';
+            el.innerHTML=`<img src="${p.images[0]}" style="width:42px;height:42px;border-radius:10px;object-fit:cover;flex-shrink:0;border:1px solid rgba(212,175,55,0.3);">
               <div style="flex:1;min-width:0;"><p style="color:#d4af37;font-size:11px;font-weight:700;margin:0 0 1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">🔥 ${name} من ${city}</p>
               <p style="color:#ddd;font-size:10px;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">اشترى: ${p.name}</p>
               <p style="color:#555;font-size:9px;margin:1px 0 0;">منذ ${mins} دقيقة</p></div>
               <button onclick="this.parentElement.remove()" style="background:none;border:none;color:#444;cursor:pointer;font-size:14px;flex-shrink:0;padding:0;">✕</button>`;
             document.body.appendChild(el);
-            setTimeout(()=>{ if(el.parentNode){el.style.animation='slideOutRight 0.4s ease forwards';setTimeout(()=>el.remove(),400);} },7000);
-            setTimeout(showOne, 25000 + Math.random()*35000);
+            setTimeout(()=>{if(el.parentNode){el.style.animation='slideOutRight 0.4s ease forwards';setTimeout(()=>el.remove(),400);}},7000);
+            setTimeout(showOne,25000+Math.random()*35000);
         }
-        setTimeout(showOne, 20000 + Math.random()*15000);
+        setTimeout(showOne,20000+Math.random()*15000);
     }
 
     // ============ SMART CART UPSELL ============
-    function showSmartCartSuggestion(product) {
-        const ss = storeSettings.spendSave || {};
-        const cartTotal = cart.reduce((a,b)=>a+(b.price*b.qty),0);
-        const popup = document.getElementById('smart-cart-popup');
-        const title = document.getElementById('smart-cart-title');
-        const content = document.getElementById('smart-cart-content');
-        if (!popup) return;
-        let shown = false;
-        // Spend & save suggestion
-        if (ss.enabled && cartTotal < parseFloat(ss.threshold||0)) {
-            const diff = parseFloat(ss.threshold||0) - cartTotal;
-            const reward = parseFloat(ss.amount||0);
-            const type = ss.type === 'percentage' ? `${reward}%` : `${reward} ج`;
-            title.textContent = '💡 أضف أكثر واكسب خصماً';
-            content.innerHTML = `<p style="color:#fff;margin:0 0 8px;font-size:13px;">اضف <strong style="color:#d4af37;">${diff} ج</strong> فقط واحصل على خصم <strong style="color:#d4af37;">${type}</strong> على طلبك! 🔥</p>`;
-            shown = true;
+    function showSmartCartSuggestion(product){
+        const ss=storeSettings.spendSave||{};
+        const cartTotal=cart.reduce((a,b)=>a+(b.price*b.qty),0);
+        const popup=document.getElementById('smart-cart-popup');
+        const title=document.getElementById('smart-cart-title');
+        const content=document.getElementById('smart-cart-content');
+        if(!popup)return;
+        let body='';let shown=false;
+        if(ss.enabled&&cartTotal<parseFloat(ss.threshold||0)){
+            const diff=(parseFloat(ss.threshold||0)-cartTotal).toFixed(0);
+            const reward=parseFloat(ss.amount||0);
+            const type=ss.type==='percentage'?`${reward}%`:`${reward} ج`;
+            title.textContent='💡 اضف أكثر واكسب خصماً';
+            body+=`<p style="color:#fff;margin:0 0 8px;font-size:13px;">اضف <strong style="color:#d4af37;">${diff} ج</strong> فقط واحصل على خصم <strong style="color:#d4af37;">${type}</strong> 🔥</p>`;
+            shown=true;
         }
-        // Related products
-        const related = allProducts.filter(p2 => p2.id !== product.id && p2.category === product.category && !p2.outOfStock).slice(0,3);
-        if (related.length) {
-            title.textContent = shown ? '💡 اقتراح ذكي' : '🛍️ العملاء يشترون أيضاً';
-            const relHTML = related.map(rp=>`<div onclick="openProductModal('${rp.id}');document.getElementById('smart-cart-popup').style.display='none';" style="display:flex;align-items:center;gap:8px;padding:6px;border-radius:10px;cursor:pointer;hover:background:#1a1a1a;border:1px solid #1a1a1a;margin-bottom:4px;" onmouseover="this.style.background='#1a1a1a'" onmouseout="this.style.background='transparent'">
+        const related=allProducts.filter(p2=>p2.id!==product.id&&p2.category===product.category&&!p2.outOfStock).slice(0,3);
+        if(related.length){
+            if(!shown)title.textContent='🛍️ العملاء يشترون أيضاً';
+            body+=`<div style="margin-top:${shown?8:0}px">${related.map(rp=>`<div onclick="openProductModal('${rp.id}');document.getElementById('smart-cart-popup').style.display='none';" style="display:flex;align-items:center;gap:8px;padding:6px;border-radius:10px;cursor:pointer;border:1px solid #1a1a1a;margin-bottom:4px;" onmouseover="this.style.background='#1a1a1a'" onmouseout="this.style.background='transparent'">
               <img src="${rp.images?.[0]||''}" style="width:36px;height:36px;border-radius:8px;object-fit:cover;flex-shrink:0;">
               <div style="flex:1;min-width:0;"><p style="color:#e0e0e0;font-size:11px;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${rp.name}</p>
               <p style="color:#d4af37;font-size:11px;font-weight:700;margin:0;">${effectivePrice(rp)} ج</p></div>
               <button onclick="event.stopPropagation();addToCartDirect('${rp.id}')" style="background:rgba(212,175,55,0.15);border:1px solid rgba(212,175,55,0.3);color:#d4af37;border-radius:8px;padding:4px 8px;cursor:pointer;font-size:10px;font-weight:700;font-family:'Cairo',sans-serif;flex-shrink:0;">+سلة</button>
-            </div>`).join('');
-            content.innerHTML = (content.innerHTML||'') + `<div style="margin-top:${shown?8:0}px">${relHTML}</div>`;
-            shown = true;
+            </div>`).join('')}</div>`;
+            shown=true;
         }
-        if (shown) {
-            popup.style.display = 'block';
-            setTimeout(()=>{ if(popup.style.display==='block') popup.style.display='none'; }, 12000);
-        }
+        if(shown){content.innerHTML=body;popup.style.display='block';setTimeout(()=>{if(popup.style.display==='block')popup.style.display='none';},12000);}
     }
 
-    // ============ BUY NOW DIRECT CHECKOUT ============
-    window.buyNow = (productId) => {
-        const p = allProducts.find(x=>x.id===productId);
-        if (!p || isOutOfStock(p)) return showNotification('المنتج غير متوفر', 'error');
-        const fp = effectivePrice(p);
-        // Add to cart (replace or add)
-        const existing = cart.find(x=>x.cartId===productId);
-        if (!existing) cart.push({id:p.id, code:p.code||'', cartId:productId, name:p.name, price:fp, images:p.images||[], qty:1});
-        persistCart();
-        updateCartUI();
+    // ============ BUY NOW ============
+    window.buyNow=(productId)=>{
+        const p=allProducts.find(x=>x.id===productId);
+        if(!p||isOutOfStock(p))return showNotification('المنتج غير متوفر','error');
+        const fp=effectivePrice(p);
+        if(!cart.find(x=>x.cartId===productId))cart.push({id:p.id,code:p.code||'',cartId:productId,name:p.name,price:fp,images:p.images||[],qty:1});
+        persistCart();updateCartUI();
         document.getElementById('product-modal')?.classList.remove('active');
-        setTimeout(()=>openCheckout(), 100);
+        setTimeout(()=>openCheckout(),100);
     };
 
     // ============ PRODUCT SORTING ============
-    let currentSort = 'default';
-    window.setSort = (sort, ev) => {
-        currentSort = sort;
+    let currentSort='default';
+    window.setSort=(sort,ev)=>{
+        currentSort=sort;
         document.querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));
-        if(ev?.target) ev.target.classList.add('active');
-        let sorted = [...allProducts];
-        const cat = document.getElementById('categories-list')?.querySelector('.text-gold-text')?.dataset?.cat || 'all';
-        if (cat !== 'all') sorted = sorted.filter(p=>p.category===cat);
-        switch(sort) {
-            case 'discount': sorted.sort((a,b)=>productDiscount(b)-productDiscount(a)); break;
-            case 'newest': sorted.sort((a,b)=>{ const ta=a.createdAt?.toDate?.()?.getTime()||0; const tb=b.createdAt?.toDate?.()?.getTime()||0; return tb-ta; }); break;
-            case 'price_asc': sorted.sort((a,b)=>effectivePrice(a)-effectivePrice(b)); break;
-            case 'price_desc': sorted.sort((a,b)=>effectivePrice(b)-effectivePrice(a)); break;
-            case 'bestsellers': sorted.sort((a,b)=>(b.salesCount||0)-(a.salesCount||0)); break;
+        if(ev?.target)ev.target.classList.add('active');
+        let sorted=[...allProducts];
+        switch(sort){
+            case 'discount':sorted.sort((a,b)=>productDiscount(b)-productDiscount(a));break;
+            case 'newest':sorted.sort((a,b)=>{const ta=a.createdAt?.toDate?.()?.getTime()||0;const tb=b.createdAt?.toDate?.()?.getTime()||0;return tb-ta;});break;
+            case 'price_asc':sorted.sort((a,b)=>effectivePrice(a)-effectivePrice(b));break;
+            case 'price_desc':sorted.sort((a,b)=>effectivePrice(b)-effectivePrice(a));break;
+            case 'bestsellers':sorted.sort((a,b)=>(b.salesCount||0)-(a.salesCount||0));break;
         }
         renderProducts(sorted);
     };
 
-    // ============ SPEND & SAVE PROGRESS BAR IN CART ============
-    function renderSpendSaveBar() {
-        const ss = storeSettings.spendSave || {};
-        const existing = document.getElementById('spend-save-bar');
-        if (existing) existing.remove();
-        if (!ss.enabled) return;
-        const total = cart.reduce((a,b)=>a+(b.price*b.qty),0);
-        const threshold = parseFloat(ss.threshold||0);
-        const amount = parseFloat(ss.amount||0);
-        const type = ss.type === 'percentage' ? `${amount}%` : `${amount} ج`;
-        const pct = Math.min(100, Math.round((total/threshold)*100));
-        const cartItems = document.getElementById('cart-items');
-        if (!cartItems) return;
-        const bar = document.createElement('div');
-        bar.id = 'spend-save-bar';
-        bar.className = 'spend-bar-wrap';
-        if (total >= threshold) {
-            bar.innerHTML = `<p style="color:#22c55e;font-size:12px;font-weight:700;margin:0;">✅ مبروك! حصلت على خصم ${type}</p>`;
-        } else {
-            const diff = (threshold - total).toFixed(0);
-            bar.innerHTML = `<p style="color:#d4af37;font-size:11px;font-weight:700;margin:0;">🔥 اضف ${diff} ج أكثر واحصل على خصم ${type}</p>
-              <div class="spend-bar"><div class="spend-bar-fill" style="width:${pct}%"></div></div>
-              <p style="color:#666;font-size:9px;margin:4px 0 0;text-align:left;">${pct}%</p>`;
-        }
-        cartItems.parentNode.insertBefore(bar, cartItems);
+    // ============ SPEND & SAVE BAR IN CART ============
+    function renderSpendSaveBar(){
+        const ss=storeSettings.spendSave||{};
+        document.getElementById('spend-save-bar')?.remove();
+        if(!ss.enabled||!cart.length)return;
+        const total=cart.reduce((a,b)=>a+(b.price*b.qty),0);
+        const threshold=parseFloat(ss.threshold||0);
+        const amount=parseFloat(ss.amount||0);
+        const type=ss.type==='percentage'?`${amount}%`:`${amount} ج`;
+        const pct=Math.min(100,Math.round((total/threshold)*100));
+        const cartItems=document.getElementById('cart-items');if(!cartItems)return;
+        const bar=document.createElement('div');bar.id='spend-save-bar';bar.className='spend-bar-wrap';
+        bar.innerHTML=total>=threshold
+            ?`<p style="color:#22c55e;font-size:12px;font-weight:700;margin:0;">✅ مبروك! استحققت خصم ${type}</p>`
+            :`<p style="color:#d4af37;font-size:11px;font-weight:700;margin:0;">🔥 اضف ${(threshold-total).toFixed(0)} ج أكثر واحصل على خصم ${type}</p>
+              <div class="spend-bar"><div class="spend-bar-fill" style="width:${pct}%"></div></div>`;
+        cartItems.parentNode.insertBefore(bar,cartItems);
     }
 
-    // ============ SCRATCH CARD GIFT (REFERRAL) ============
-    let _scratchCouponCode = null;
-    async function initScratchCard() {
-        // Check if referred user and hasn't seen gift yet
-        const ref = new URLSearchParams(window.location.search).get('ref');
-        if (!ref) return;
-        if (localStorage.getItem('zahraa_scratch_seen')) return;
-        if (currentUser && currentUser.uid === ref) return; // can't refer yourself
-        // Load referral coupon from settings or create a default one
-        try {
-            // Look for a referral gift coupon in settings
-            const settingsSnap = await db.collection('settings').doc('general').get();
-            const referralCoupon = settingsSnap.data()?.referralGiftCoupon || 'WELCOME10';
-            const referralCouponDesc = settingsSnap.data()?.referralGiftDesc || 'خصم 10% على أول طلب';
-            document.getElementById('scratch-coupon-code').textContent = referralCoupon;
-            document.getElementById('scratch-coupon-desc').textContent = referralCouponDesc;
-            _scratchCouponCode = referralCoupon;
-        } catch(e) {
-            document.getElementById('scratch-coupon-code').textContent = 'WELCOME10';
-            document.getElementById('scratch-coupon-desc').textContent = 'خصم 10% على أول طلب';
-            _scratchCouponCode = 'WELCOME10';
-        }
-        const modal = document.getElementById('scratch-gift-modal');
-        modal.style.display = 'flex';
-        initScratchCanvas();
-    }
-
-    function initScratchCanvas() {
-        const canvas = document.getElementById('scratch-canvas');
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        const reveal = document.getElementById('scratch-reveal');
-        canvas.width = reveal.offsetWidth || 230;
-        canvas.height = reveal.offsetHeight || 90;
-        // Fill with golden scratch layer
-        const grad = ctx.createLinearGradient(0,0,canvas.width,canvas.height);
-        grad.addColorStop(0,'#b8860b');
-        grad.addColorStop(0.5,'#d4af37');
-        grad.addColorStop(1,'#8b6914');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0,0,canvas.width,canvas.height);
-        ctx.fillStyle = 'rgba(255,255,255,0.12)';
-        ctx.font = '13px Cairo';
-        ctx.textAlign = 'center';
-        ctx.fillText('اخدش هنا 🎁', canvas.width/2, canvas.height/2+5);
-        let scratching = false, scratchedPct = 0;
-        function scratch(x,y) {
-            ctx.globalCompositeOperation = 'destination-out';
-            ctx.beginPath();
-            ctx.arc(x,y,22,0,Math.PI*2);
-            ctx.fill();
-            // Check revealed percentage
-            const data = ctx.getImageData(0,0,canvas.width,canvas.height).data;
-            let transparent = 0;
-            for(let i=3;i<data.length;i+=4) if(data[i]<128) transparent++;
-            scratchedPct = (transparent/(canvas.width*canvas.height))*100;
-            if(scratchedPct > 40) {
-                canvas.style.display = 'none';
-                document.getElementById('scratch-hint').style.display = 'none';
-                document.getElementById('scratch-apply-btn').style.display = 'block';
-                localStorage.setItem('zahraa_scratch_seen','1');
+    // ============ SCRATCH CARD GIFT ============
+    let _scratchCode=null;
+    async function initScratchCard(){
+        const ref=new URLSearchParams(window.location.search).get('ref');
+        if(!ref)return;
+        if(localStorage.getItem('zahraa_scratch_seen'))return;
+        if(currentUser&&currentUser.uid===ref)return;
+        try{
+            const snap=await db.collection('settings').doc('general').get();
+            const code=snap.data()?.referralGiftCoupon||'WELCOME10';
+            const desc=snap.data()?.referralGiftDesc||'خصم 10% على أول طلب';
+            document.getElementById('scratch-coupon-code').textContent=code;
+            document.getElementById('scratch-coupon-desc').textContent=desc;
+            _scratchCode=code;
+        }catch(e){document.getElementById('scratch-coupon-code').textContent='WELCOME10';document.getElementById('scratch-coupon-desc').textContent='خصم 10%';_scratchCode='WELCOME10';}
+        const modal=document.getElementById('scratch-gift-modal');
+        modal.style.display='flex';
+        setTimeout(()=>{
+            const canvas=document.getElementById('scratch-canvas');
+            if(!canvas)return;
+            const ctx=canvas.getContext('2d');
+            const reveal=document.getElementById('scratch-reveal');
+            canvas.width=reveal.offsetWidth||240;canvas.height=reveal.offsetHeight||92;
+            const g=ctx.createLinearGradient(0,0,canvas.width,canvas.height);
+            g.addColorStop(0,'#b8860b');g.addColorStop(0.5,'#d4af37');g.addColorStop(1,'#8b6914');
+            ctx.fillStyle=g;ctx.fillRect(0,0,canvas.width,canvas.height);
+            ctx.fillStyle='rgba(255,255,255,0.15)';ctx.font='bold 14px Cairo';ctx.textAlign='center';ctx.textBaseline='middle';
+            ctx.fillText('اخدش هنا 🎁',canvas.width/2,canvas.height/2);
+            let scratching=false;
+            function scratch(x,y){
+                ctx.globalCompositeOperation='destination-out';ctx.beginPath();ctx.arc(x,y,24,0,Math.PI*2);ctx.fill();
+                const d=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+                let t=0;for(let i=3;i<d.length;i+=4)if(d[i]<128)t++;
+                if((t/(canvas.width*canvas.height))>0.4){
+                    canvas.style.display='none';document.getElementById('scratch-hint').style.display='none';
+                    document.getElementById('scratch-apply-btn').style.display='block';
+                    localStorage.setItem('zahraa_scratch_seen','1');
+                }
             }
-        }
-        function getPos(e) {
-            const rect = canvas.getBoundingClientRect();
-            const scaleX = canvas.width/rect.width, scaleY = canvas.height/rect.height;
-            if(e.touches) return {x:(e.touches[0].clientX-rect.left)*scaleX, y:(e.touches[0].clientY-rect.top)*scaleY};
-            return {x:(e.clientX-rect.left)*scaleX, y:(e.clientY-rect.top)*scaleY};
-        }
-        canvas.addEventListener('mousedown',e=>{scratching=true;const p=getPos(e);scratch(p.x,p.y);});
-        canvas.addEventListener('mousemove',e=>{if(!scratching)return;const p=getPos(e);scratch(p.x,p.y);});
-        canvas.addEventListener('mouseup',()=>scratching=false);
-        canvas.addEventListener('touchstart',e=>{e.preventDefault();scratching=true;const p=getPos(e);scratch(p.x,p.y);},{passive:false});
-        canvas.addEventListener('touchmove',e=>{e.preventDefault();if(!scratching)return;const p=getPos(e);scratch(p.x,p.y);},{passive:false});
-        canvas.addEventListener('touchend',()=>scratching=false);
+            function getPos(e){const r=canvas.getBoundingClientRect();const sx=canvas.width/r.width,sy=canvas.height/r.height;if(e.touches)return{x:(e.touches[0].clientX-r.left)*sx,y:(e.touches[0].clientY-r.top)*sy};return{x:(e.clientX-r.left)*sx,y:(e.clientY-r.top)*sy};}
+            canvas.addEventListener('mousedown',e=>{scratching=true;const p=getPos(e);scratch(p.x,p.y);});
+            canvas.addEventListener('mousemove',e=>{if(!scratching)return;const p=getPos(e);scratch(p.x,p.y);});
+            canvas.addEventListener('mouseup',()=>scratching=false);
+            canvas.addEventListener('touchstart',e=>{e.preventDefault();scratching=true;const p=getPos(e);scratch(p.x,p.y);},{passive:false});
+            canvas.addEventListener('touchmove',e=>{e.preventDefault();if(!scratching)return;const p=getPos(e);scratch(p.x,p.y);},{passive:false});
+            canvas.addEventListener('touchend',()=>scratching=false);
+        },300);
     }
-
-    window.applyScratchCoupon = async () => {
-        if (!_scratchCouponCode) return;
-        document.getElementById('scratch-gift-modal').style.display = 'none';
-        // Open checkout section
-        document.getElementById('coupon-input').value = _scratchCouponCode;
-        showNotification('تم تطبيق كود الهدية: ' + _scratchCouponCode + ' ✓', 'success');
+    window.applyScratchCoupon=async()=>{
+        if(!_scratchCode)return;
+        document.getElementById('scratch-gift-modal').style.display='none';
+        document.getElementById('coupon-input').value=_scratchCode;
+        showNotification('تم تطبيق كود الهدية: '+_scratchCode+' ✓','success');
         openCheckout();
     };
-    window.closeScratchGift = () => {
-        document.getElementById('scratch-gift-modal').style.display = 'none';
+    window.closeScratchGift=()=>{
+        document.getElementById('scratch-gift-modal').style.display='none';
         localStorage.setItem('zahraa_scratch_seen','1');
     };
 
     // ============ FIRST ORDER COUPON BANNER ============
-    async function checkFirstOrderBanner() {
-        if (localStorage.getItem('zahraa_first_order_seen')) return;
-        try {
-            let hasOrders = false;
-            if (currentUser) {
-                const snap = await db.collection('orders').where('userId','==',currentUser.uid).limit(1).get();
-                hasOrders = !snap.empty;
-            } else {
-                const snap = await db.collection('orders').where('deviceId','==',deviceId).limit(1).get();
-                hasOrders = !snap.empty;
+    async function checkFirstOrderBanner(){
+        if(localStorage.getItem('zahraa_first_order_seen'))return;
+        try{
+            let hasOrders=false;
+            if(currentUser){const s=await db.collection('orders').where('userId','==',currentUser.uid).limit(1).get();hasOrders=!s.empty;}
+            else{const s=await db.collection('orders').where('deviceId','==',deviceId).limit(1).get();hasOrders=!s.empty;}
+            if(!hasOrders){
+                const snap=await db.collection('settings').doc('general').get();
+                const code=snap.data()?.firstOrderCoupon||'FIRST10';
+                const desc=snap.data()?.firstOrderDesc||'خصم 10% على أول طلب!';
+                const banner=document.getElementById('first-order-banner');
+                if(!banner)return;
+                document.getElementById('first-order-text').textContent=desc;
+                document.getElementById('first-order-code').textContent=code;
+                banner.style.display='flex';document.body.style.paddingTop='48px';
+                setTimeout(()=>{banner.style.display='none';document.body.style.paddingTop='';localStorage.setItem('zahraa_first_order_seen','1');},25000);
             }
-            if (!hasOrders) {
-                const settingsSnap = await db.collection('settings').doc('general').get();
-                const code = settingsSnap.data()?.firstOrderCoupon || 'FIRST10';
-                const desc = settingsSnap.data()?.firstOrderDesc || 'خصم 10% على أول طلب';
-                const banner = document.getElementById('first-order-banner');
-                if (!banner) return;
-                document.getElementById('first-order-text').textContent = desc;
-                document.getElementById('first-order-code').textContent = code;
-                banner._code = code;
-                banner.style.display = 'flex';
-                // Add top padding to body
-                document.body.style.paddingTop = '48px';
-                setTimeout(()=>{
-                    banner.style.display = 'none';
-                    document.body.style.paddingTop = '';
-                    localStorage.setItem('zahraa_first_order_seen','1');
-                }, 20000);
-            }
-        } catch(e) {}
+        }catch(e){}
     }
-    window.copyFirstOrderCode = () => {
-        const code = document.getElementById('first-order-code')?.textContent;
-        if(code) { navigator.clipboard.writeText(code).catch(()=>{}); showNotification('تم نسخ الكود: '+code+' ✓','success'); }
-    };
-    window.applyFirstOrderCode = () => {
-        const code = document.getElementById('first-order-code')?.textContent;
-        if(code) {
-            document.getElementById('first-order-banner').style.display = 'none';
-            document.body.style.paddingTop='';
-            document.getElementById('coupon-input').value = code;
-            showNotification('تم تطبيق الكود ✓','success');
-            openCheckout();
-        }
+    window.copyFirstOrderCode=()=>{const c=document.getElementById('first-order-code')?.textContent;if(c){navigator.clipboard.writeText(c).catch(()=>{});showNotification('تم نسخ الكود: '+c+' ✓','success');}};
+    window.applyFirstOrderCode=()=>{
+        const code=document.getElementById('first-order-code')?.textContent;
+        if(code){document.getElementById('first-order-banner').style.display='none';document.body.style.paddingTop='';document.getElementById('coupon-input').value=code;showNotification('تم تطبيق الكود ✓','success');openCheckout();}
     };
 
-    // ============ AUTO FOLLOW-UP (ABANDONED CART) ============
-    function saveAbandonedCart() {
-        if (!cart.length) return;
-        try {
-            db.collection('abandoned_carts').doc(deviceId).set({
-                deviceId, cart,
-                total: cart.reduce((a,b)=>a+(b.price*b.qty),0),
-                userId: currentUser ? currentUser.uid : null,
-                savedAt: firebase.firestore.FieldValue.serverTimestamp()
-            }, {merge:true}).catch(()=>{});
-        } catch(e) {}
+    // ============ ABANDONED CART ============
+    function saveAbandonedCart(){
+        if(!cart.length)return;
+        db.collection('abandoned_carts').doc(deviceId).set({deviceId,cart,total:cart.reduce((a,b)=>a+(b.price*b.qty),0),userId:currentUser?currentUser.uid:null,savedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true}).catch(()=>{});
     }
-    async function checkAbandonedCart() {
-        if (cart.length > 0) return; // Already has items
-        try {
-            const snap = await db.collection('abandoned_carts').doc(deviceId).get();
-            if (!snap.exists) return;
-            const data = snap.data();
-            const savedCart = data.cart || [];
-            if (!savedCart.length) return;
-            // Check if recent (within 48h)
-            const savedAt = data.savedAt?.toDate?.() || new Date(0);
-            if (Date.now() - savedAt.getTime() > 48*3600*1000) return;
-            // Show reminder
-            const total = data.total || 0;
-            const itemNames = savedCart.slice(0,2).map(i=>i.name).join('، ');
+    async function checkAbandonedCart(){
+        if(cart.length>0)return;
+        try{
+            const snap=await db.collection('abandoned_carts').doc(deviceId).get();
+            if(!snap.exists)return;
+            const data=snap.data();const savedCart=data.cart||[];if(!savedCart.length)return;
+            const savedAt=data.savedAt?.toDate?.()|| new Date(0);
+            if(Date.now()-savedAt.getTime()>48*3600*1000)return;
             setTimeout(()=>{
-                const el = document.createElement('div');
-                el.style.cssText = 'position:fixed;bottom:80px;left:16px;right:16px;max-width:400px;margin:auto;z-index:3600;background:#111;border:1.5px solid rgba(212,175,55,0.5);border-radius:20px;padding:14px 16px;font-family:"Cairo",sans-serif;direction:rtl;box-shadow:0 12px 48px rgba(0,0,0,0.7);display:flex;align-items:center;gap:12px;animation:slideUpFade 0.3s ease;';
-                el.innerHTML = `<span style="font-size:28px;flex-shrink:0;">🛒</span>
-                  <div style="flex:1;min-width:0;">
-                    <p style="color:#d4af37;font-weight:700;font-size:12px;margin:0 0 2px;">لديك منتجات في سلتك!</p>
-                    <p style="color:#aaa;font-size:11px;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${itemNames}</p>
-                  </div>
-                  <button onclick="restoreAbandonedCart(${JSON.stringify(savedCart).replace(/"/g,'&quot;')},this.closest('div[style]'))" style="background:linear-gradient(135deg,#d4af37,#f0c94e);color:#000;border:none;padding:8px 12px;border-radius:10px;font-weight:800;font-size:11px;cursor:pointer;font-family:'Cairo',sans-serif;flex-shrink:0;">استعادة</button>
+                const el=document.createElement('div');
+                el.style.cssText='position:fixed;bottom:80px;left:16px;right:16px;max-width:400px;margin:auto;z-index:3600;background:#111;border:1.5px solid rgba(212,175,55,0.5);border-radius:20px;padding:14px 16px;font-family:"Cairo",sans-serif;direction:rtl;box-shadow:0 12px 48px rgba(0,0,0,0.7);display:flex;align-items:center;gap:12px;animation:slideUpFade 0.3s ease;';
+                const names=savedCart.slice(0,2).map(i=>i.name).join('، ');
+                el.innerHTML=`<span style="font-size:28px;flex-shrink:0;">🛒</span>
+                  <div style="flex:1;min-width:0;"><p style="color:#d4af37;font-weight:700;font-size:12px;margin:0 0 2px;">لديك منتجات في سلتك!</p>
+                  <p style="color:#aaa;font-size:11px;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${names}</p></div>
+                  <button onclick="restoreCart(${JSON.stringify(savedCart).replace(/"/g,'&quot;')},this.closest('[style]'))" style="background:linear-gradient(135deg,#d4af37,#f0c94e);color:#000;border:none;padding:8px 12px;border-radius:10px;font-weight:800;font-size:11px;cursor:pointer;font-family:'Cairo',sans-serif;flex-shrink:0;">استعادة</button>
                   <button onclick="this.parentElement.remove()" style="background:none;border:none;color:#555;cursor:pointer;font-size:15px;flex-shrink:0;padding:0;">✕</button>`;
-                document.body.appendChild(el);
-                setTimeout(()=>{ if(el.parentNode) el.remove(); }, 12000);
-            }, 5000);
-        } catch(e) {}
+                document.body.appendChild(el);setTimeout(()=>{if(el.parentNode)el.remove();},12000);
+            },5000);
+        }catch(e){}
     }
-    window.restoreAbandonedCart = (savedCart, el) => {
-        cart = savedCart;
-        persistCart();
-        updateCartUI();
-        if(el) el.remove();
-        showNotification('تم استعادة سلة التسوق ✓','success');
-        db.collection('abandoned_carts').doc(deviceId).delete().catch(()=>{});
-    };
-    window.addEventListener('beforeunload', saveAbandonedCart);
+    window.restoreCart=(savedCart,el)=>{cart=savedCart;persistCart();updateCartUI();if(el)el.remove();showNotification('تم استعادة السلة ✓','success');db.collection('abandoned_carts').doc(deviceId).delete().catch(()=>{});};
+    window.addEventListener('beforeunload',saveAbandonedCart);
 
-    // ============ OVERRIDE addToCartDirect TO SHOW SMART SUGGESTIONS ============
-    const _origAddToCartDirect = window.addToCartDirect;
-    window.addToCartDirect = (id) => {
-        _origAddToCartDirect(id);
-        const p = allProducts.find(x=>x.id===id);
-        if(p) {
-            renderSpendSaveBar();
-            setTimeout(()=>showSmartCartSuggestion(p), 500);
-        }
-    };
-    const _origAddToCartMulti = window.addToCartMulti;
-    window.addToCartMulti = (id) => {
-        _origAddToCartMulti(id);
-        const p = allProducts.find(x=>x.id===id);
-        if(p) {
-            renderSpendSaveBar();
-            setTimeout(()=>showSmartCartSuggestion(p), 500);
-        }
+    // ============ ENHANCED WHATSAPP CART ============
+    window.sendCartWhatsApp=()=>{
+        const phone=cleanPhone(storeSettings.whatsapp1||storeSettings.whatsapp);
+        if(!phone)return;
+        const items=cart.map(i=>`• ${i.name} × ${i.qty} = ${i.price*i.qty} ج`).join('\n');
+        const total=cart.reduce((a,b)=>a+(b.price*b.qty),0);
+        window.open(`https://wa.me/${phone}?text=${encodeURIComponent('🛍️ *'+( storeSettings.storeName||'ZAHRAA STUDIO')+'*\n\nمحتويات سلتي:\n'+items+'\n\n💰 الإجمالي: *'+total+' ج*\n\nأريد إتمام الطلب')}`, '_blank');
     };
 
-    // ============ ENHANCED WHATSAPP BUTTON ============
-    window.sendCartWhatsApp = () => {
-        const phone = cleanPhone(storeSettings.whatsapp1 || storeSettings.whatsapp);
-        if (!phone) return;
-        const items = cart.map(i=>`• ${i.name} × ${i.qty} = ${i.price*i.qty} ج`).join('\n');
-        const total = cart.reduce((a,b)=>a+(b.price*b.qty),0);
-        const msg = `🛍️ *متجر ${storeSettings.storeName||'ZAHRAA STUDIO'}*\n\n📦 محتويات سلتي:\n${items}\n\n💰 الإجمالي: *${total} ج*\n\nأريد إتمام الطلب`;
-        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
-    };
+    // ============ PATCH addToCart TO SHOW SUGGESTIONS ============
+    const _origAdd=window.addToCartDirect;
+    window.addToCartDirect=(id)=>{_origAdd(id);const p=allProducts.find(x=>x.id===id);if(p){renderSpendSaveBar();setTimeout(()=>showSmartCartSuggestion(p),500);}};
+    const _origAddMulti=window.addToCartMulti;
+    window.addToCartMulti=(id)=>{_origAddMulti(id);const p=allProducts.find(x=>x.id===id);if(p){renderSpendSaveBar();setTimeout(()=>showSmartCartSuggestion(p),500);}};
+    const _origOpenCO=window.openCheckout;
+    window.openCheckout=function(){_origOpenCO();renderSpendSaveBar();};
 
-    // Override renderSpendSaveBar on cart open
-    const _origOpenCheckout2 = window.openCheckout;
-    window.openCheckout = function() {
-        _origOpenCheckout2();
-        renderSpendSaveBar();
-    };
-
-    // Start features after init
+    // ============ START ALL FEATURES ============
     setTimeout(()=>{
         startSocialProof();
         checkAbandonedCart();
-        // Check first order banner after auth resolves
-        setTimeout(checkFirstOrderBanner, 3000);
-        // Init scratch card
-        setTimeout(initScratchCard, 1500);
-    }, 2000);
+        setTimeout(checkFirstOrderBanner,3000);
+        setTimeout(initScratchCard,1500);
+    },2000);
 
     init();
   // ============ AD SYSTEM ============
@@ -3484,44 +3354,35 @@
     }, () => {});
 
     // ======= PUSH NOTIFICATION REGISTRATION =======
-    function _vapidToUint8(b64) {
-        const pad = '='.repeat((4 - b64.length % 4) % 4);
-        const base64 = (b64 + pad).replace(/-/g,'+').replace(/_/g,'/');
-        const raw = atob(base64);
-        return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
-    }
+    const VAPID_PUBLIC_KEY = 'BAtzdb2RIhljdg2H8zNOtPimm8CVEtSpAUnwkF2qa5x7j3ejf1MYSKRkR1AeCJpvuKlBm9j3UOo7GoidLMFNm1Y';
+    function _vapidToUint8(b64){const p='='.repeat((4-b64.length%4)%4);const s=(b64+p).replace(/-/g,'+').replace(/_/g,'/');const r=atob(s);return Uint8Array.from([...r].map(c=>c.charCodeAt(0)));}
     async function registerPushToken() {
         if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
         try {
             const permission = await Notification.requestPermission();
             if (permission !== 'granted') return;
             const reg = await navigator.serviceWorker.ready;
-            const tokenData = {
+            let sub = await reg.pushManager.getSubscription();
+            if (!sub) {
+                sub = await reg.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: _vapidToUint8(VAPID_PUBLIC_KEY)
+                });
+            }
+            const sj = sub.toJSON();
+            await db.collection('push_tokens').doc(deviceId).set({
+                token: sj.endpoint,
+                endpoint: sj.endpoint,
+                auth: sj.keys?.auth,
+                p256dh: sj.keys?.p256dh,
                 deviceId,
-                userAgent: navigator.userAgent.substring(0,120),
+                userAgent: navigator.userAgent.substring(0, 120),
                 registeredAt: firebase.firestore.FieldValue.serverTimestamp(),
                 userId: currentUser ? currentUser.uid : null,
                 userName: currentUser ? (currentUser.displayName || currentUser.email) : 'زائر',
-                active: true,
-                token: deviceId
-            };
-            // Try real Web Push subscription if VAPID key is configured
-            const vapidKey = storeSettings.vapidKey || null;
-            if (vapidKey) {
-                try {
-                    let sub = await reg.pushManager.getSubscription();
-                    if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey: _vapidToUint8(vapidKey) });
-                    if (sub) {
-                        const sj = sub.toJSON();
-                        tokenData.endpoint = sj.endpoint;
-                        tokenData.auth = sj.keys?.auth;
-                        tokenData.p256dh = sj.keys?.p256dh;
-                        tokenData.token = sj.endpoint;
-                    }
-                } catch(subErr) { /* VAPID key may need setup in Firebase Console */ }
-            }
-            await db.collection('push_tokens').doc(deviceId).set(tokenData, { merge: true });
-        } catch(e) { /* push registration failed */ }
+                active: true
+            }, { merge: true });
+        } catch(e) { /* push silently fails if blocked */ }
     }
     // Request permission after 10 seconds
     setTimeout(registerPushToken, 10000);
@@ -3584,14 +3445,6 @@ function moveAdSlide(dir) {
 }
   </script>
 
-  <!-- ===== SMART CART POPUP ===== -->
-  <div id="smart-cart-popup" style="display:none;position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:3500;background:#111;border:1px solid rgba(212,175,55,0.4);border-radius:20px;padding:16px 18px;max-width:340px;width:calc(100% - 32px);box-shadow:0 12px 48px rgba(0,0,0,0.7);font-family:'Cairo',sans-serif;direction:rtl;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-      <p style="color:#d4af37;font-weight:800;font-size:13px;margin:0;" id="smart-cart-title">💡 اقتراح ذكي</p>
-      <button onclick="document.getElementById('smart-cart-popup').style.display='none'" style="background:none;border:none;color:#555;cursor:pointer;font-size:16px;">✕</button>
-    </div>
-    <div id="smart-cart-content" style="font-size:12px;color:#aaa;"></div>
-  </div>
   <!-- ===== Ad Modal — تصميم احترافي طولي ===== -->
 <div id="ad-modal" style="display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,0.92);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:16px;font-family:'Cairo',sans-serif;">
   <div style="background:#0d0d0d;border-radius:24px;max-width:360px;width:100%;overflow:hidden;box-shadow:0 28px 80px rgba(0,0,0,0.95);border:1px solid rgba(212,175,55,0.35);position:relative;">
@@ -3623,18 +3476,34 @@ function moveAdSlide(dir) {
       <div style="font-size:48px;margin-bottom:10px;">🎁</div>
       <h2 style="color:#d4af37;font-size:20px;font-weight:800;margin:0 0 8px;">هديتك في انتظارك!</h2>
       <p style="color:#aaa;font-size:12px;margin:0 0 20px;line-height:1.6;">صديقك أهداك هدية خاصة من استوديو الزهراء<br>اخدش الكارت واكشف كودك الحصري!</p>
-      <div style="position:relative;width:230px;margin:0 auto 12px;border-radius:16px;overflow:hidden;">
-        <div id="scratch-reveal" style="background:linear-gradient(135deg,#111800,#1a2200);padding:24px 16px;border-radius:16px;border:2px solid rgba(212,175,55,0.4);">
+      <div style="position:relative;width:240px;margin:0 auto 12px;border-radius:16px;overflow:hidden;">
+        <div id="scratch-reveal" style="background:linear-gradient(135deg,#111800,#1a2200);padding:26px 16px;border-radius:16px;border:2px solid rgba(212,175,55,0.4);">
           <p style="color:#aaa;font-size:10px;margin:0 0 4px;">كود الخصم الخاص بك:</p>
           <p id="scratch-coupon-code" style="color:#d4af37;font-size:24px;font-weight:800;letter-spacing:4px;margin:0;font-family:monospace;">••••••</p>
           <p id="scratch-coupon-desc" style="color:#777;font-size:10px;margin:6px 0 0;">جاري التحميل...</p>
         </div>
-        <canvas id="scratch-canvas" style="position:absolute;inset:0;width:100%;height:100%;cursor:crosshair;touch-action:none;border-radius:16px;" width="230" height="90"></canvas>
+        <canvas id="scratch-canvas" style="position:absolute;inset:0;width:100%;height:100%;cursor:crosshair;touch-action:none;border-radius:16px;" width="240" height="92"></canvas>
       </div>
       <p id="scratch-hint" style="color:#d4af37;font-size:11px;font-weight:700;margin:0 0 14px;">← اخدش هنا لكشف الهدية →</p>
-      <button onclick="applyScratchCoupon()" id="scratch-apply-btn" style="display:none;width:100%;padding:13px;border-radius:14px;background:linear-gradient(135deg,#d4af37,#f0c94e);color:#000;font-weight:800;font-size:14px;border:none;cursor:pointer;margin-bottom:8px;">✅ تطبيق الكود وبدء التسوق</button>
+      <button onclick="applyScratchCoupon()" id="scratch-apply-btn" style="display:none;width:100%;padding:13px;border-radius:14px;background:linear-gradient(135deg,#d4af37,#f0c94e);color:#000;font-weight:800;font-size:14px;border:none;cursor:pointer;margin-bottom:8px;font-family:'Cairo',sans-serif;">✅ تطبيق الكود وبدء التسوق</button>
       <button onclick="closeScratchGift()" style="background:transparent;border:none;color:#555;font-size:12px;cursor:pointer;font-family:'Cairo',sans-serif;">تخطي</button>
     </div>
+  </div>
+  <!-- ===== FIRST ORDER BANNER ===== -->
+  <div id="first-order-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:4000;background:linear-gradient(135deg,#1a0d00,#2a1800);border-bottom:2px solid rgba(212,175,55,0.5);padding:10px 16px;font-family:'Cairo',sans-serif;direction:rtl;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;">
+    <span style="font-size:20px;">🎁</span>
+    <span style="color:#fff;font-size:13px;font-weight:700;" id="first-order-text">أول طلب لك؟ احصل على خصم خاص!</span>
+    <span id="first-order-code" onclick="copyFirstOrderCode()" style="background:rgba(212,175,55,0.2);border:1px solid #d4af37;color:#d4af37;font-size:13px;font-weight:800;padding:3px 12px;border-radius:20px;font-family:monospace;cursor:pointer;">FIRST10</span>
+    <button onclick="applyFirstOrderCode()" style="background:linear-gradient(135deg,#d4af37,#f0c94e);color:#000;border:none;padding:6px 16px;border-radius:20px;font-weight:800;font-size:12px;cursor:pointer;font-family:'Cairo',sans-serif;">تطبيق الآن</button>
+    <button onclick="document.getElementById('first-order-banner').style.display='none';document.body.style.paddingTop='';" style="background:none;border:none;color:#666;cursor:pointer;font-size:16px;position:absolute;left:12px;top:50%;transform:translateY(-50%);">✕</button>
+  </div>
+  <!-- ===== SMART CART POPUP ===== -->
+  <div id="smart-cart-popup" style="display:none;position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:3500;background:#111;border:1px solid rgba(212,175,55,0.4);border-radius:20px;padding:16px 18px;max-width:340px;width:calc(100% - 32px);box-shadow:0 12px 48px rgba(0,0,0,0.7);font-family:'Cairo',sans-serif;direction:rtl;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <p style="color:#d4af37;font-weight:800;font-size:13px;margin:0;" id="smart-cart-title">💡 اقتراح ذكي</p>
+      <button onclick="document.getElementById('smart-cart-popup').style.display='none'" style="background:none;border:none;color:#555;cursor:pointer;font-size:16px;">✕</button>
+    </div>
+    <div id="smart-cart-content" style="font-size:12px;color:#aaa;"></div>
   </div>
   <!-- ===== SUPPORT CHAT ===== -->
   <button id="chat-fab" onclick="toggleChat()" style="position:fixed;bottom:80px;left:20px;z-index:1500;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#d4af37,#f0c94e);border:none;cursor:pointer;box-shadow:0 4px 24px rgba(212,175,55,0.45);display:flex;align-items:center;justify-content:center;font-size:26px;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
