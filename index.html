@@ -198,6 +198,32 @@
     /* ====== REVIEW REPLY ====== */
     .review-reply { background: rgba(212,175,55,0.05); border-right: 3px solid #d4af37; padding: 8px 12px; border-radius: 0 8px 8px 0; margin-top: 8px; font-size: 12px; color: #a0a0a0; }
     .review-reply strong { color: #d4af37; display: block; margin-bottom: 2px; font-size: 11px; }
+
+    /* ====== LOW STOCK PULSE ====== */
+    @keyframes stockPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.7;transform:scale(1.05)} }
+    .stock-pulse { animation: stockPulse 1.2s ease-in-out infinite; }
+
+    /* ====== ORDER DETAIL MODAL ====== */
+    .order-timeline { position: relative; padding-right: 24px; }
+    .order-timeline::before { content:''; position:absolute; right:8px; top:0; bottom:0; width:2px; background:linear-gradient(to bottom,#d4af37,rgba(212,175,55,0.1)); }
+    .timeline-step { position:relative; margin-bottom:20px; }
+    .timeline-step::before { content:''; position:absolute; right:-20px; top:4px; width:12px; height:12px; border-radius:50%; background:#333; border:2px solid #555; }
+    .timeline-step.done::before { background:#d4af37; border-color:#d4af37; box-shadow:0 0 8px rgba(212,175,55,0.5); }
+    .timeline-step.current::before { background:#d4af37; border-color:#d4af37; box-shadow:0 0 0 4px rgba(212,175,55,0.2); animation:stockPulse 1.5s infinite; }
+
+    /* ====== GIFT CUSTOMIZER ====== */
+    .gift-font-btn { padding:6px 12px; border-radius:8px; border:1px solid #333; background:transparent; color:#888; font-size:12px; cursor:pointer; transition:all 0.2s; }
+    .gift-font-btn.active { border-color:#d4af37; background:rgba(212,175,55,0.15); color:#d4af37; }
+
+    /* ====== LOGIN NUDGE POPUP ====== */
+    #login-nudge { animation: slideUpFade 0.4s ease; }
+
+    /* ====== ZAHRAA TOAST ====== */
+    #zahraa-toast-container { position:fixed; bottom:90px; left:50%; transform:translateX(-50%); z-index:9000; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none; }
+    .zahraa-toast-item { background:#1a1a1a; border:1px solid rgba(212,175,55,0.4); color:#fff; padding:10px 20px; border-radius:30px; font-size:13px; font-weight:700; font-family:'Cairo',sans-serif; white-space:nowrap; box-shadow:0 4px 24px rgba(0,0,0,0.6); animation:slideUpFade 0.3s ease; }
+    .zahraa-toast-item.success { border-color:#22c55e; }
+    .zahraa-toast-item.error { border-color:#ef4444; }
+    .zahraa-toast-item.warning { border-color:#f59e0b; }
   </style>
 </head>
 <body class="overflow-x-hidden">
@@ -293,7 +319,6 @@
         <button onclick="showPage('track'); closeSidebar();" class="p-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 transition-colors text-sm font-bold text-center">📦 تتبع الطلب</button>
         <button id="sidebar-myorders-btn" onclick="showPage('myorders'); closeSidebar();" class="hidden p-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 transition-colors text-sm font-bold text-center">📋 طلباتي</button>
         <button onclick="showPage('testimonials'); closeSidebar();" class="p-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 transition-colors text-sm font-bold text-center col-span-2">⭐ الآراء والتقييمات</button>
-        <button onclick="showChatFab(); closeSidebar();" class="p-3 rounded-xl bg-yellow-900/20 border border-yellow-700/30 hover:bg-yellow-900/40 transition-colors text-sm font-bold text-center col-span-2 gold-text">💬 إظهار زر الدردشة</button>
       </div>
       <div class="border-t border-zinc-800 pt-4 mb-4">
         <h2 class="text-sm font-bold mb-3 text-zinc-400 uppercase tracking-widest">الأقسام</h2>
@@ -379,8 +404,6 @@
         <div class="hero-banner">
           <div id="banner-track" class="banner-track"></div>
           <div id="banner-dots" class="banner-dots"></div>
-          <button onclick="moveBanner(-1)" class="absolute top-1/2 -translate-y-1/2 right-3 bg-black/60 text-white w-9 h-9 rounded-full flex items-center justify-center hover:bg-black z-10">‹</button>
-          <button onclick="moveBanner(1)" class="absolute top-1/2 -translate-y-1/2 left-3 bg-black/60 text-white w-9 h-9 rounded-full flex items-center justify-center hover:bg-black z-10">›</button>
         </div>
       </div>
 
@@ -1275,6 +1298,7 @@
         const grid = document.getElementById('featured-grid');
         if (!grid) return;
         grid.innerHTML = products.map(p => renderProductCard(p)).join('');
+        setTimeout(initCardAutoCarousels, 300);
     }
 
     async function loadCategories() {
@@ -1294,6 +1318,7 @@
             return;
         }
         grid.innerHTML = products.map(p => renderProductCard(p)).join('');
+        setTimeout(initCardAutoCarousels, 300);
     }
 
     function renderProductCard(p) {
@@ -1304,20 +1329,18 @@
                   : (p.oldPrice && p.oldPrice > p.price ? Math.round(((p.oldPrice - p.price) / p.oldPrice) * 100) : 0);
         const images = p.images || [];
         const cardId = 'card-' + p.id;
+        const isLastOne = !oos && p.qty === 1;
         return `
             <div class="product-card cursor-pointer ${oos ? 'opacity-70' : ''}" onclick="openProductModal('${p.id}')">
                 <div class="relative h-64 bg-zinc-900 overflow-hidden" id="${cardId}">
-                    <div class="card-slider-track flex transition-transform duration-300 h-full" data-idx="0">
-                        ${(images.length ? images : ['']).map(img => `<img src="${img}" class="w-full h-full object-cover shrink-0" style="width:100%;">`).join('')}
+                    <div class="card-slider-track flex transition-transform duration-300 h-full" data-idx="0" data-count="${images.length}">
+                        ${(images.length ? images : ['']).map(img => `<img src="${img}" class="w-full h-full object-cover shrink-0" style="width:100%;" loading="lazy">`).join('')}
                     </div>
-                    ${images.length > 1 ? `
-                        <button onclick="event.stopPropagation(); cardSlide('${cardId}', -1)" class="absolute top-1/2 -translate-y-1/2 right-2 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-black">‹</button>
-                        <button onclick="event.stopPropagation(); cardSlide('${cardId}', 1)" class="absolute top-1/2 -translate-y-1/2 left-2 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-black">›</button>
-                    ` : ''}
                     <div class="absolute top-3 left-3 flex flex-col gap-1">
                         ${pct ? `<span class="bg-red-600 text-white text-[10px] px-2 py-1 rounded-lg font-bold">-${pct}%</span>` : (hasDiscount ? `<span class="bg-red-600 text-white text-[10px] px-2 py-1 rounded-lg font-bold">خصم</span>` : '')}
                         ${p.isDailyOffer ? `<span class="bg-yellow-500 text-black text-[10px] px-2 py-1 rounded-lg font-bold">⚡ يومي</span>` : ''}
                         ${p.isWeeklyOffer ? `<span class="bg-blue-500 text-white text-[10px] px-2 py-1 rounded-lg font-bold">📅 أسبوعي</span>` : ''}
+                        ${isLastOne ? `<span class="bg-orange-500 text-white text-[10px] px-2 py-1 rounded-lg font-bold stock-pulse">🔥 آخر قطعة!</span>` : ''}
                     </div>
                     <div class="absolute top-3 right-3 flex flex-col gap-1">
                         ${p.variants && p.variants.length > 0 ? `<span class="bg-gold-bg text-black text-[10px] px-2 py-1 rounded-lg font-bold">خيارات</span>` : ''}
@@ -1363,6 +1386,20 @@
         track.dataset.idx = idx;
         track.style.transform = `translateX(${idx * 100}%)`;
     };
+
+    function initCardAutoCarousels() {
+        document.querySelectorAll('.card-slider-track').forEach(track => {
+            const total = parseInt(track.dataset.count) || track.children.length;
+            if (total <= 1) return;
+            if (track._autoTimer) return;
+            track._autoTimer = setInterval(() => {
+                let idx = (parseInt(track.dataset.idx) || 0) + 1;
+                if (idx >= total) idx = 0;
+                track.dataset.idx = idx;
+                track.style.transform = `translateX(${idx * 100}%)`;
+            }, 3000);
+        });
+    }
 
     // Open Product Modal
     async function openProductModal(id) {
@@ -1436,6 +1473,30 @@
                 </div>
                 <a href="https://wa.me/${cleanPhone(storeSettings.whatsapp1 || storeSettings.whatsapp)}?text=${encodeURIComponent('أريد ' + product.name + (product.code ? ' (' + product.code + ')' : ''))}" target="_blank" class="block bg-[#25D366] text-white py-3 rounded-xl font-bold text-lg hover:bg-green-600 transition-colors text-center mt-3">واتساب 💬</a>
 
+                <!-- Gift Customizer -->
+                <div class="border border-zinc-800 p-4 rounded-xl bg-zinc-900/50">
+                    <p class="text-sm font-bold mb-3 gold-text">🎁 تخصيص الهدية (اختياري)</p>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-xs text-zinc-400 block mb-1">نص مخصص (يُطبع على الهدية):</label>
+                            <input type="text" id="gift-custom-text" placeholder="مثلاً: كل عام وأنتِ بخير 💕" maxlength="60" class="w-full bg-black border border-zinc-700 p-2 rounded-lg outline-none focus:border-gold-text text-sm" oninput="updateGiftPreview()">
+                        </div>
+                        <div>
+                            <label class="text-xs text-zinc-400 block mb-2">الخط:</label>
+                            <div class="flex gap-2 flex-wrap" id="gift-font-selector">
+                                <button class="gift-font-btn active" data-font="Cairo" onclick="selectGiftFont(this,'Cairo')" style="font-family:Cairo">Cairo</button>
+                                <button class="gift-font-btn" data-font="Amiri" onclick="selectGiftFont(this,'Amiri')" style="font-family:Amiri">أميري</button>
+                                <button class="gift-font-btn" data-font="Tajawal" onclick="selectGiftFont(this,'Tajawal')" style="font-family:Tajawal">تجوال</button>
+                                <button class="gift-font-btn" data-font="Scheherazade New" onclick="selectGiftFont(this,'Scheherazade New')" style="font-family:'Scheherazade New'">شهرزاد</button>
+                            </div>
+                        </div>
+                        <div id="gift-preview" class="hidden bg-black/50 border border-gold-text/20 rounded-xl p-4 text-center">
+                            <p class="text-[10px] text-zinc-500 mb-1">معاينة النص:</p>
+                            <p id="gift-preview-text" class="gold-text text-base font-bold" style="font-family:Cairo"></p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Reviews -->
                 <div class="border-t border-zinc-800 pt-4">
                     <h3 class="font-bold gold-text mb-3 text-sm">⭐ تقييمات هذا المنتج</h3>
@@ -1458,6 +1519,26 @@
         setupRatingPicker(document.getElementById('prod-review-rating'));
         loadProductReviews(product.id);
     }
+
+    window.selectGiftFont = (btn, font) => {
+        document.querySelectorAll('.gift-font-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const preview = document.getElementById('gift-preview-text');
+        if (preview) preview.style.fontFamily = font;
+    };
+
+    window.updateGiftPreview = () => {
+        const txt = document.getElementById('gift-custom-text')?.value;
+        const preview = document.getElementById('gift-preview');
+        const previewTxt = document.getElementById('gift-preview-text');
+        if (!preview || !previewTxt) return;
+        if (txt && txt.trim()) {
+            preview.classList.remove('hidden');
+            previewTxt.textContent = txt;
+        } else {
+            preview.classList.add('hidden');
+        }
+    };
 
     async function loadProductReviews(pid) {
         const wrap = document.getElementById('product-reviews-' + pid);
@@ -1734,6 +1815,8 @@
         const giftMessage = document.getElementById('gift-message').value.trim();
 
         if (!name || !phone || !address) return showAlert('تنبيه', 'يرجى ملء جميع البيانات المطلوبة', 'error');
+        const phoneRegex = /^01[0125][0-9]{8}$/;
+        if (!phoneRegex.test(phone.replace(/\s|-/g, ''))) return showAlert('تنبيه', 'رقم الهاتف غير صحيح. يجب أن يكون رقم مصري مثل: 01XXXXXXXXX', 'error');
         if (!governorate) return showAlert('تنبيه', 'يرجى اختيار المحافظة', 'error');
         if (surprise && (!recipientName || !recipientPhone || !recipientAddress)) return showAlert('تنبيه', 'يرجى ملء بيانات المستلم للمفاجأة', 'error');
         if (cart.length === 0) return showAlert('السلة فارغة', 'لا يوجد منتجات في السلة', 'error');
@@ -2110,8 +2193,18 @@
                 const tb = b.createdAt?.toDate?.() || new Date(0);
                 return tb - ta;
             });
-            wrap.innerHTML = orders.map(o => `
-                <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl">
+            wrap.innerHTML = orders.map(o => {
+                const statusSteps = ['قيد التنفيذ', 'تم الشحن', 'تم التوصيل', 'مكتمل'];
+                const currentIdx = statusSteps.indexOf(o.status);
+                const timelineHtml = statusSteps.map((st, i) => {
+                    const isDone = i < currentIdx;
+                    const isCurrent = i === currentIdx;
+                    return `<div class="timeline-step ${isDone ? 'done' : ''} ${isCurrent ? 'current' : ''}">
+                        <p class="text-xs font-bold ${isCurrent ? 'gold-text' : isDone ? 'text-green-400' : 'text-zinc-600'}">${st}</p>
+                    </div>`;
+                }).join('');
+                return `
+                <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl cursor-pointer hover:border-gold-text/40 transition-colors" onclick="openOrderDetail(${JSON.stringify(o).replace(/"/g,'&quot;')})">
                     <div class="flex justify-between items-start mb-3">
                         <div>
                             <p class="text-xs text-zinc-500">رقم الطلب</p>
@@ -2125,6 +2218,7 @@
                     <div class="text-xs text-zinc-400 mb-3">
                         ${(o.items || []).map(i => `${i.name} × ${i.qty}`).join(' • ')}
                     </div>
+                    <div class="order-timeline mb-3">${timelineHtml}</div>
                     <div class="flex justify-between items-center pt-3 border-t border-zinc-800">
                         <span class="text-sm">الإجمالي:</span>
                         <span class="font-bold gold-text">${o.totalPrice} ج</span>
@@ -2133,17 +2227,95 @@
                         <span class="text-zinc-500">حالة الدفع:</span>
                         <span class="${o.paymentStatus === 'مدفوع' ? 'text-green-400' : 'text-yellow-400'}">${o.paymentStatus || 'غير مدفوع'}</span>
                     </div>
-                    <button onclick='downloadInvoice(${JSON.stringify(o)})' class="w-full mt-4 bg-zinc-800 text-white py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-zinc-700 transition-colors">
+                    <button onclick='event.stopPropagation();downloadInvoice(${JSON.stringify(o)})' class="w-full mt-4 bg-zinc-800 text-white py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-zinc-700 transition-colors">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                         تحميل الفاتورة
                     </button>
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
         } catch (e) {
             console.error(e);
             wrap.innerHTML = '<div class="text-center text-red-400 py-8">تعذر تحميل طلباتك</div>';
         }
     }
+
+    window.openOrderDetail = (o) => {
+        const statusSteps = [
+            { key: 'قيد التنفيذ', icon: '📋', desc: 'تم استلام طلبك وجاري المعالجة' },
+            { key: 'تم الشحن', icon: '🚚', desc: 'طلبك في الطريق إليك' },
+            { key: 'تم التوصيل', icon: '📦', desc: 'تم التوصيل للعنوان' },
+            { key: 'مكتمل', icon: '✅', desc: 'تم إتمام الطلب بنجاح' }
+        ];
+        const currentIdx = statusSteps.findIndex(s => s.key === o.status);
+        const dateStr = o.createdAt?.toDate ? o.createdAt.toDate().toLocaleDateString('ar-EG', { year:'numeric',month:'long',day:'numeric' }) : '';
+        const itemsHtml = (o.items||[]).map(i => `
+            <div class="flex items-center gap-3 py-2 border-b border-zinc-800">
+                ${i.image ? `<img src="${i.image}" class="w-12 h-12 rounded-lg object-cover">` : '<div class="w-12 h-12 rounded-lg bg-zinc-800 flex items-center justify-center text-xl">🛍️</div>'}
+                <div class="flex-1">
+                    <p class="text-sm font-bold">${i.name}</p>
+                    <p class="text-xs text-zinc-500">${i.qty} × ${i.price} ج</p>
+                </div>
+                <span class="gold-text font-bold text-sm">${i.price * i.qty} ج</span>
+            </div>`).join('');
+        const timelineHtml = statusSteps.map((st, i) => {
+            const isDone = i < currentIdx;
+            const isCurrent = i === currentIdx;
+            return `<div class="timeline-step ${isDone?'done':''} ${isCurrent?'current':''}">
+                <span class="text-lg">${st.icon}</span>
+                <div>
+                    <p class="text-xs font-bold ${isCurrent?'gold-text':isDone?'text-green-400':'text-zinc-600'}">${st.key}</p>
+                    <p class="text-[10px] text-zinc-500">${isCurrent||isDone?st.desc:''}</p>
+                </div>
+            </div>`;
+        }).join('');
+        const existing = document.getElementById('order-detail-modal');
+        if (existing) existing.remove();
+        const modal = document.createElement('div');
+        modal.id = 'order-detail-modal';
+        modal.className = 'modal fixed inset-0 flex items-center justify-center p-4 z-[3500]';
+        modal.style.background = 'rgba(0,0,0,0.8)';
+        modal.style.backdropFilter = 'blur(6px)';
+        modal.innerHTML = `
+            <div class="bg-zinc-950 w-full max-w-lg rounded-3xl border border-zinc-800 overflow-hidden shadow-2xl" style="max-height:90vh;overflow-y:auto;">
+                <div class="sticky top-0 bg-zinc-950 border-b border-zinc-800 p-5 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-zinc-500">رقم الطلب</p>
+                        <p class="font-bold gold-text text-lg">${o.orderNumber}</p>
+                    </div>
+                    <button onclick="document.getElementById('order-detail-modal').classList.remove('active')" class="text-zinc-500 hover:text-white text-2xl">✕</button>
+                </div>
+                <div class="p-5 space-y-5">
+                    <div class="bg-zinc-900 p-4 rounded-2xl">
+                        <h4 class="text-sm font-bold mb-3 gold-text">📍 تفاصيل الطلب</h4>
+                        <div class="grid grid-cols-2 gap-2 text-xs text-zinc-400">
+                            <div><p class="text-zinc-600">التاريخ</p><p class="text-white">${dateStr}</p></div>
+                            <div><p class="text-zinc-600">الدفع</p><p class="${o.paymentStatus==='مدفوع'?'text-green-400':'text-yellow-400'}">${o.paymentStatus||'غير مدفوع'}</p></div>
+                            <div><p class="text-zinc-600">المحافظة</p><p class="text-white">${o.customerGovernorate||'—'}</p></div>
+                            <div><p class="text-zinc-600">الشحن</p><p class="text-white">${o.shippingCost||0} ج</p></div>
+                        </div>
+                    </div>
+                    <div class="bg-zinc-900 p-4 rounded-2xl">
+                        <h4 class="text-sm font-bold mb-3 gold-text">📦 حالة الطلب</h4>
+                        <div class="order-timeline space-y-1">${timelineHtml}</div>
+                        ${o.status==='ملغي'?'<div class="mt-3 bg-red-900/30 border border-red-800/40 rounded-xl p-3 text-xs text-red-300 text-center">تم إلغاء هذا الطلب</div>':''}
+                    </div>
+                    <div class="bg-zinc-900 p-4 rounded-2xl">
+                        <h4 class="text-sm font-bold mb-3 gold-text">🛍️ المنتجات</h4>
+                        ${itemsHtml}
+                        <div class="pt-3 space-y-1 text-xs text-zinc-400">
+                            <div class="flex justify-between"><span>المجموع الفرعي</span><span>${o.subtotal||0} ج</span></div>
+                            ${o.discountAmount>0?`<div class="flex justify-between text-green-400"><span>خصم</span><span>-${o.discountAmount} ج</span></div>`:''}
+                            <div class="flex justify-between"><span>الشحن</span><span>${o.shippingCost||0} ج</span></div>
+                            ${o.giftPrice>0?`<div class="flex justify-between"><span>تغليف هدايا</span><span>${o.giftPrice} ج</span></div>`:''}
+                            <div class="flex justify-between text-base font-bold gold-text border-t border-zinc-800 pt-2 mt-1"><span>الإجمالي</span><span>${o.totalPrice} ج</span></div>
+                        </div>
+                    </div>
+                    <button onclick='downloadInvoice(${JSON.stringify(o)})' class="w-full gold-bg text-black py-3 rounded-xl font-bold flex items-center justify-center gap-2">📥 تحميل الفاتورة</button>
+                </div>
+            </div>`;
+        document.body.appendChild(modal);
+        setTimeout(() => modal.classList.add('active'), 10);
+    };
 
     // ============ Reviews (testimonials page) ============
     function setupReviewStars() {
@@ -2689,7 +2861,6 @@
 
     // ============ 24H COUNTDOWN ============
     function startCountdown() {
-        // Find earliest dailyOfferSetAt among current daily offers
         const dailyProds = allProducts.filter(p => p.isDailyOffer && p.dailyOfferSetAt);
         let offerStart = null;
         if (dailyProds.length) {
@@ -2704,7 +2875,11 @@
             const diff = end - now;
 
             if (diff <= 0) {
-                document.getElementById('daily-offers-section').classList.add('hidden');
+                const sec = document.getElementById('daily-offers-section');
+                const cdWrap = sec ? sec.querySelector('.countdown-wrap') : null;
+                if (cdWrap) {
+                    cdWrap.innerHTML = '<div class="text-center py-2"><span class="bg-zinc-800 text-zinc-300 text-sm px-4 py-2 rounded-xl font-bold">⏱ انتهى العرض — تابعنا لعروض قادمة!</span></div>';
+                }
                 document.getElementById('sidebar-daily-btn').classList.add('hidden');
                 return;
             }
@@ -2891,6 +3066,8 @@
         if(!ref)return;
         if(localStorage.getItem('zahraa_scratch_seen'))return;
         if(currentUser&&currentUser.uid===ref)return;
+        // Only show to logged-in users or show anyway for guests (comment this block to restrict)
+        // Gift card shows for anyone who arrived via referral link
         try{
             const snap=await db.collection('settings').doc('general').get();
             const code=snap.data()?.referralGiftCoupon||'WELCOME10';
@@ -3016,12 +3193,51 @@
     const _origOpenCO=window.openCheckout;
     window.openCheckout=function(){_origOpenCO();renderSpendSaveBar();};
 
+    // ============ GUEST LOGIN NUDGE ============
+    function showLoginNudge() {
+        if (currentUser) return;
+        if (localStorage.getItem('zahraa_nudge_dismissed')) return;
+        const el = document.createElement('div');
+        el.id = 'login-nudge';
+        el.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:3700;background:linear-gradient(135deg,#1a1500,#2a2200);border:1.5px solid rgba(212,175,55,0.55);border-radius:20px;padding:16px 20px;max-width:340px;width:calc(100% - 32px);box-shadow:0 12px 48px rgba(0,0,0,0.7);font-family:"Cairo",sans-serif;direction:rtl;display:flex;align-items:center;gap:12px;';
+        el.innerHTML = `<span style="font-size:28px;flex-shrink:0;">👤</span>
+          <div style="flex:1;min-width:0;">
+            <p style="color:#d4af37;font-weight:800;font-size:13px;margin:0 0 3px;">سجل دخولك واستمتع بمزايا أكثر!</p>
+            <p style="color:#aaa;font-size:11px;margin:0;">تتبع طلباتك، احفظ مفضلتك، واحصل على نقاط مكافآت 🎁</p>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+            <button onclick="showLoginModal();this.closest('#login-nudge').remove();" style="background:linear-gradient(135deg,#d4af37,#f0c94e);color:#000;border:none;padding:7px 14px;border-radius:10px;font-weight:800;font-size:12px;cursor:pointer;font-family:'Cairo',sans-serif;white-space:nowrap;">دخول</button>
+            <button onclick="localStorage.setItem('zahraa_nudge_dismissed','1');this.closest('#login-nudge').remove();" style="background:none;border:none;color:#555;font-size:11px;cursor:pointer;font-family:'Cairo',sans-serif;">لاحقاً</button>
+          </div>`;
+        document.body.appendChild(el);
+        setTimeout(() => { if (el.parentNode) { el.style.opacity = '0'; el.style.transition = 'opacity 0.4s'; setTimeout(() => el.remove(), 400); } }, 15000);
+    }
+
+    // ============ ZAHRAA TOAST (index.html) ============
+    function zahraaToast(msg, type = 'success') {
+        const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+        const colors = { success: '#22c55e', error: '#ef4444', warning: '#f59e0b', info: '#60a5fa' };
+        let container = document.getElementById('zahraa-toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'zahraa-toast-container';
+            document.body.appendChild(container);
+        }
+        const item = document.createElement('div');
+        item.className = 'zahraa-toast-item ' + (type || 'success');
+        item.innerHTML = `${icons[type]||'✅'} ${msg}`;
+        item.style.borderColor = colors[type] || '#d4af37';
+        container.appendChild(item);
+        setTimeout(() => { item.style.opacity = '0'; item.style.transition = 'opacity 0.3s'; setTimeout(() => item.remove(), 300); }, 3500);
+    }
+
     // ============ START ALL FEATURES ============
     setTimeout(()=>{
-        // startSocialProof(); // تعطيل الإشعارات الوهمية
+        startSocialProof();
         checkAbandonedCart();
         setTimeout(checkFirstOrderBanner,3000);
         setTimeout(initScratchCard,1500);
+        setTimeout(showLoginNudge, 30000);
     },2000);
 
     init();
@@ -3029,9 +3245,11 @@
    let adTimer = null, adImages = [], currentAdSlide = 0, adDuration = 30, adSkipDelay = 5;
 
   async function loadAd() {
-  // لا تظهر الإعلان إلا كل ساعة على الأقل
-  const lastShown = sessionStorage.getItem('zahraa_last_ad');
-  if (lastShown) return;
+  // لا تظهر الإعلان إلا مرة كل 24 ساعة لكل إعلان
+  const now = Date.now();
+  const adKey = 'zahraa_ad_shown';
+  const lastShownData = JSON.parse(localStorage.getItem(adKey) || '{}');
+  if (lastShownData.ts && (now - lastShownData.ts) < 24 * 60 * 60 * 1000) return;
   try {
     const snap = await db.collection('ads').where('isActive', '==', true).limit(1).get();
     if (snap.empty) return;
@@ -3044,7 +3262,7 @@
     if (track) {
       track.innerHTML = adImages.map((img,i) => `<div style="min-width:100%;height:420px;overflow:hidden;"><img src="${img}" style="width:100%;height:100%;object-fit:cover;"></div>`).join('');
       buildAdDots();
-      sessionStorage.setItem('zahraa_last_ad', '1');
+      localStorage.setItem(adKey, JSON.stringify({ ts: now, adId: snap.docs[0].id }));
       startAdAutoSlide();
     }
 
@@ -3315,54 +3533,16 @@
             name: currentUser ? (currentUser.displayName || currentUser.email) : 'زائر'
         };
         try {
-            // Check if this is the first user message (for auto-reply)
-            let isFirstMsg = false;
-            try {
-                const existSnap = await db.collection('support_chats').doc(deviceId).get();
-                if (!existSnap.exists || !(existSnap.data()?.messages || []).some(m => m.sender === 'user')) {
-                    isFirstMsg = true;
-                }
-            } catch(e) {}
-
             await db.collection('support_chats').doc(deviceId).set({
                 deviceId,
                 userId: currentUser ? currentUser.uid : null,
                 userName: currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'زائر',
-                userPhoto: currentUser ? (currentUser.photoURL || '') : '',
                 lastMessage: text,
                 lastAt: firebase.firestore.FieldValue.serverTimestamp(),
                 unreadByAdmin: firebase.firestore.FieldValue.increment(1),
                 unreadByUser: 0,
                 messages: firebase.firestore.FieldValue.arrayUnion(msg)
             }, { merge: true });
-
-            // Send auto-reply on first message
-            if (isFirstMsg) {
-                try {
-                    const settSnap = await db.collection('settings').doc('chat').get();
-                    if (settSnap.exists) {
-                        const sett = settSnap.data();
-                        if (sett.autoReplyEnabled && sett.autoReplyMessage) {
-                            setTimeout(async () => {
-                                try {
-                                    const autoMsg = {
-                                        text: sett.autoReplyMessage,
-                                        sender: 'admin',
-                                        timestamp: new Date().toISOString(),
-                                        name: 'خدمة العملاء'
-                                    };
-                                    await db.collection('support_chats').doc(deviceId).update({
-                                        messages: firebase.firestore.FieldValue.arrayUnion(autoMsg),
-                                        unreadByUser: firebase.firestore.FieldValue.increment(1),
-                                        lastMessage: '👑 ' + sett.autoReplyMessage,
-                                        lastAt: firebase.firestore.FieldValue.serverTimestamp()
-                                    });
-                                } catch(e) {}
-                            }, 2000);
-                        }
-                    }
-                } catch(e) {}
-            }
         } catch(e) { console.error('Chat error:', e); }
     };
 
@@ -3530,57 +3710,10 @@ function moveAdSlide(dir) {
     <div id="smart-cart-content" style="font-size:12px;color:#aaa;"></div>
   </div>
   <!-- ===== SUPPORT CHAT ===== -->
-  <!-- Draggable Chat FAB -->
-  <div id="chat-fab-container" style="position:fixed;bottom:24px;right:20px;z-index:1500;touch-action:none;user-select:none;display:block;">
-    <button id="chat-fab-dismiss" onclick="hideChatFab()" title="إخفاء زر الدردشة" style="position:absolute;top:-8px;right:-8px;background:#ef4444;border:none;color:#fff;width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;z-index:2;box-shadow:0 2px 8px rgba(0,0,0,0.5);line-height:1;">✕</button>
-    <button id="chat-fab" onclick="!_fabDragged&&toggleChat()" style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#d4af37,#f0c94e);border:none;cursor:pointer;box-shadow:0 4px 24px rgba(212,175,55,0.45);display:flex;align-items:center;justify-content:center;font-size:26px;transition:transform 0.2s;position:relative;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-      💬
-      <span id="chat-unread-badge" style="display:none;position:absolute;top:-2px;right:-2px;background:#ef4444;color:#fff;border-radius:50%;width:20px;height:20px;font-size:11px;font-weight:700;align-items:center;justify-content:center;border:2px solid #000;"></span>
-    </button>
-  </div>
-  <script>
-  (function(){
-    const fab = document.getElementById('chat-fab-container');
-    if (!fab) return;
-    window._fabDragged = false;
-    // Restore position
-    try { const pos = localStorage.getItem('zahraa_chat_fab_pos'); if(pos){const p=JSON.parse(pos);fab.style.bottom=p.bottom;fab.style.right=p.right;} } catch(e){}
-    // Restore visibility
-    if (localStorage.getItem('zahraa_chat_fab_hidden')==='1') fab.style.display='none';
-    // Drag
-    let dragging=false,sx,sy,sr,sb;
-    function start(e){
-      if(e.target.id==='chat-fab-dismiss')return;
-      dragging=true;window._fabDragged=false;
-      const t=e.touches?e.touches[0]:e;
-      sx=t.clientX;sy=t.clientY;
-      const cs=window.getComputedStyle(fab);
-      sr=parseInt(cs.right)||20;sb=parseInt(cs.bottom)||24;
-      e.preventDefault();
-    }
-    function move(e){
-      if(!dragging)return;
-      const t=e.touches?e.touches[0]:e;
-      const dx=sx-t.clientX,dy=sy-t.clientY;
-      if(Math.abs(dx)>5||Math.abs(dy)>5)window._fabDragged=true;
-      fab.style.right=Math.max(4,Math.min(window.innerWidth-64,sr+dx))+'px';
-      fab.style.bottom=Math.max(4,Math.min(window.innerHeight-64,sb+dy))+'px';
-    }
-    function end(){
-      if(!dragging)return;dragging=false;
-      if(window._fabDragged)localStorage.setItem('zahraa_chat_fab_pos',JSON.stringify({bottom:fab.style.bottom,right:fab.style.right}));
-      setTimeout(()=>{window._fabDragged=false;},100);
-    }
-    fab.addEventListener('mousedown',start);
-    document.addEventListener('mousemove',move);
-    document.addEventListener('mouseup',end);
-    fab.addEventListener('touchstart',start,{passive:false});
-    document.addEventListener('touchmove',e=>{if(dragging){move(e);e.preventDefault();}},{passive:false});
-    document.addEventListener('touchend',end);
-  })();
-  window.hideChatFab=function(){const c=document.getElementById('chat-fab-container');if(c)c.style.display='none';localStorage.setItem('zahraa_chat_fab_hidden','1');};
-  window.showChatFab=function(){const c=document.getElementById('chat-fab-container');if(c)c.style.display='block';localStorage.removeItem('zahraa_chat_fab_hidden');};
-  </script>
+  <button id="chat-fab" onclick="toggleChat()" style="position:fixed;bottom:24px;right:20px;z-index:1500;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#d4af37,#f0c94e);border:none;cursor:pointer;box-shadow:0 4px 24px rgba(212,175,55,0.45);display:flex;align-items:center;justify-content:center;font-size:26px;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+    💬
+    <span id="chat-unread-badge" style="display:none;position:absolute;top:-2px;right:-2px;background:#ef4444;color:#fff;border-radius:50%;width:20px;height:20px;font-size:11px;font-weight:700;align-items:center;justify-content:center;border:2px solid #000;"></span>
+  </button>
 
   <div id="chat-widget" style="display:none;position:fixed;bottom:88px;right:20px;z-index:1501;width:310px;max-height:430px;background:#0d0d0d;border-radius:20px;border:1px solid rgba(212,175,55,0.3);box-shadow:0 8px 48px rgba(0,0,0,0.85);flex-direction:column;overflow:hidden;font-family:'Cairo',sans-serif;direction:rtl;animation:slideUpChat 0.3s ease;">
     <!-- Header -->
