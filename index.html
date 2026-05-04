@@ -654,6 +654,17 @@
                         <button onclick="applyCoupon()" class="gold-bg text-black px-4 py-2 rounded-lg font-bold text-xs">تطبيق</button>
                     </div>
                     <p id="coupon-msg" class="text-[10px]"></p>
+                    <!-- ===== Points Exchange ===== -->
+                    <div id="points-exchange-box" class="hidden mt-2 p-3 bg-zinc-900 rounded-xl border border-zinc-700">
+                        <div class="flex items-center justify-between gap-2 flex-wrap">
+                            <div>
+                                <p class="text-xs font-bold gold-text">⭐ نقاطك: <span id="checkout-pts-balance">0</span> نقطة</p>
+                                <p class="text-[10px] text-zinc-400 mt-0.5">تعادل <span id="checkout-pts-value">0</span> ج خصم فوري</p>
+                            </div>
+                            <button id="redeem-pts-btn" onclick="redeemPointsForCoupon()" class="gold-bg text-black text-xs font-bold px-4 py-2 rounded-xl hover:opacity-90">استبدل بكوبون</button>
+                        </div>
+                        <p id="redeem-msg" class="text-[10px] mt-1.5"></p>
+                    </div>
                     <div class="flex items-center gap-2 text-sm">
                         <input type="checkbox" id="gift-wrap" onchange="updateCheckoutTotal()">
                         <label for="gift-wrap">تغليف كهدية (+<span id="gift-price-display">50</span> ج)</label>
@@ -1104,6 +1115,21 @@
                 if (navAccountBtn) navAccountBtn.classList.remove('hidden');
                 const sidebarAccWrap = document.getElementById('sidebar-account-wrap');
                 if (sidebarAccWrap) sidebarAccWrap.classList.remove('hidden');
+
+                // Check if user is blocked — deny access if so
+                try {
+                    const blockSnap = await db.collection('blocked_users').doc(user.uid).get();
+                    const userDocSnap = await db.collection('users').doc(user.uid).get();
+                    const isBlocked = blockSnap.exists || (userDocSnap.exists && userDocSnap.data().isBlocked);
+                    if (isBlocked) {
+                        await firebase.auth().signOut();
+                        document.getElementById('auth-section')?.classList.remove('hidden');
+                        const modal = document.getElementById('login-modal');
+                        if (modal) modal.classList.add('active');
+                        setTimeout(() => zahraaToast('تم حظر حسابك. للتواصل مع الدعم: ' + (siteSettings?.whatsapp || ''), 'error'), 500);
+                        return;
+                    }
+                } catch(e) {}
 
                 // Save user profile
                 try {
@@ -1795,7 +1821,8 @@
 
             // Award points
             const pointsBox = document.getElementById('earned-points-box');
-            if (currentUser && pointsSettings.enabled) {
+            // Points awarded after admin confirms payment (not at order placement)
+            if (false && currentUser && pointsSettings.enabled) {
                 const earnedPts = await awardPoints(currentUser.uid, Math.round(totalPrice), orderRef.id, orderNumber);
                 if (earnedPts > 0 && pointsBox) {
                     pointsBox.classList.remove('hidden');
@@ -2794,6 +2821,167 @@
 
 
 
+
+    // ============ STICKY AD BANNER ============
+    async function loadStickyAd() {
+        try {
+            // Try sticky ads first, fallback to any active ad
+            let snap = await db.collection('ads').where('isActive','==',true).where('isSticky','==',true).limit(1).get();
+            if (snap.empty) snap = await db.collection('ads').where('isActive','==',true).limit(1).get();
+            if (snap.empty) return;
+            const ad = snap.docs[0].data();
+            const bar = document.getElementById('sticky-ad-bar');
+            const content = document.getElementById('sticky-ad-content');
+            if (!bar || !content) return;
+            // Rotate images if multiple
+            const imgs = ad.images || [];
+            let imgHTML = '';
+            if (imgs.length > 0) {
+                imgHTML = `<img src="${imgs[0]}" style="height:38px;width:56px;object-fit:cover;border-radius:7px;flex-shrink:0;" id="sticky-ad-img">`;
+                if (imgs.length > 1) {
+                    let idx = 0;
+                    setInterval(() => {
+                        idx = (idx+1) % imgs.length;
+                        const el = document.getElementById('sticky-ad-img');
+                        if (el) { el.style.opacity='0'; setTimeout(()=>{el.src=imgs[idx];el.style.opacity='1';},200); }
+                    }, 3000);
+                }
+            }
+            content.innerHTML = imgHTML +
+                `<div style="flex:1;min-width:0;overflow:hidden;">
+                    <p style="color:#fff;font-size:13px;font-weight:700;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${ad.title || ''}</p>
+                </div>` +
+                (ad.buttonLink ? `<a href="${ad.buttonLink}" target="_blank" style="background:linear-gradient(135deg,#d4af37,#f0c94e);color:#000;font-weight:700;padding:7px 14px;border-radius:10px;font-size:12px;text-decoration:none;white-space:nowrap;flex-shrink:0;">${ad.buttonText || 'عرض'}</a>` : '');
+            bar.style.display = 'flex';
+            // Adjust page bottom padding so content isn't hidden
+            document.body.style.paddingBottom = '56px';
+        } catch(e) {}
+    }
+    function closeStickyAd() {
+        const bar = document.getElementById('sticky-ad-bar');
+        if (bar) bar.style.display = 'none';
+        document.body.style.paddingBottom = '';
+    }
+    // Load sticky ad 2s after page load
+    setTimeout(loadStickyAd, 2000);
+
+    // ============ POINTS → COUPON EXCHANGE ============
+    window.redeemPointsForCoupon = async function() {
+        if (!currentUser) return zahraaToast('يجب تسجيل الدخول أولاً', 'warning');
+        const btn = document.getElementById('redeem-pts-btn');
+        const msg = document.getElementById('redeem-msg');
+        btn.disabled = true; btn.textContent = '⏳ جاري...';
+        try {
+            // Load fresh balance
+            const ptsSnap = await db.collection('points').doc(currentUser.uid).get();
+            const balance = ptsSnap.exists ? (ptsSnap.data().balance || 0) : 0;
+            const redeemRate = pointsSettings.redeemRate || 40; // points per EGP
+            const minPoints = pointsSettings.redeemMin || 200;
+            if (balance < minPoints) {
+                if (msg) { msg.textContent = `تحتاج على الأقل ${minPoints} نقطة للاستبدال`; msg.style.color = '#ef4444'; }
+                btn.disabled = false; btn.textContent = 'استبدل بكوبون'; return;
+            }
+            const discountValue = Math.floor(balance / redeemRate);
+            if (discountValue < 1) {
+                if (msg) { msg.textContent = 'رصيد النقاط غير كافٍ'; msg.style.color='#ef4444'; }
+                btn.disabled=false; btn.textContent='استبدل بكوبون'; return;
+            }
+            // Generate unique coupon code
+            const code = 'PTS' + currentUser.uid.substring(0,4).toUpperCase() + Date.now().toString().slice(-4);
+            // Save coupon to Firestore
+            await db.collection('coupons').doc(code).set({
+                code, discount: discountValue, type: 'fixed',
+                isPointsCoupon: true, userId: currentUser.uid,
+                maxUses: 1, usedCount: 0, isActive: true,
+                pointsUsed: balance,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            // Deduct all points
+            await db.collection('points').doc(currentUser.uid).update({
+                balance: 0,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            await db.collection('points_history').add({
+                userId: currentUser.uid, type: 'redeem',
+                amount: -balance, description: 'استبدال نقاط بكوبون ' + code,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            // Apply coupon automatically
+            document.getElementById('coupon-input').value = code;
+            await applyCoupon();
+            // Update nav points display
+            const ptsEl = document.getElementById('nav-points');
+            if (ptsEl) ptsEl.textContent = '0 ⭐';
+            if (msg) { msg.textContent = '✅ تم إنشاء كوبون ' + code + ' وتطبيقه!'; msg.style.color='#22c55e'; }
+            btn.textContent = '✅ تم الاستبدال';
+            zahraaToast('تم استبدال ' + balance + ' نقطة بخصم ' + discountValue + ' ج ✅', 'success');
+        } catch(e) { btn.disabled=false; btn.textContent='استبدل بكوبون'; zahraaToast('خطأ: '+e.message,'error'); }
+    };
+
+    // Show points exchange box when checkout opens
+    const _origOpenCheckout = window.openCheckout;
+    window.openCheckout = function() {
+        _origOpenCheckout();
+        if (currentUser) {
+            db.collection('points').doc(currentUser.uid).get().then(snap => {
+                const bal = snap.exists ? (snap.data().balance||0) : 0;
+                const redeemRate = pointsSettings.redeemRate || 40;
+                const val = Math.floor(bal / redeemRate);
+                const box = document.getElementById('points-exchange-box');
+                const balEl = document.getElementById('checkout-pts-balance');
+                const valEl = document.getElementById('checkout-pts-value');
+                if (balEl) balEl.textContent = bal;
+                if (valEl) valEl.textContent = val;
+                if (box && bal >= (pointsSettings.redeemMin || 200)) box.classList.remove('hidden');
+                else if (box) box.classList.add('hidden');
+            }).catch(()=>{});
+        }
+    };
+
+    // ============ CHAT IMAGE ATTACHMENT ============
+    window.sendChatImage = async function() {
+        const input = document.createElement('input');
+        input.type = 'file'; input.accept = 'image/*,application/pdf';
+        input.onchange = async (e) => {
+            const file = e.target.files[0]; if (!file) return;
+            const box = document.getElementById('chat-messages-box');
+            // Show uploading placeholder
+            const ph = document.createElement('div');
+            ph.style = 'text-align:left;color:#888;font-size:12px;padding:4px;';
+            ph.textContent = '⏳ جاري رفع الملف...';
+            if (box) box.appendChild(ph);
+            try {
+                const isImg = file.type.startsWith('image/');
+                const fd = new FormData();
+                fd.append('file', file);
+                fd.append('upload_preset','zahraa_upload');
+                const url = isImg
+                    ? 'https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload'
+                    : 'https://api.cloudinary.com/v1_1/dxlxwe55b/raw/upload';
+                const res = await fetch(url, {method:'POST',body:fd});
+                const data = await res.json();
+                if (!data.secure_url) throw new Error('فشل الرفع');
+                ph.remove();
+                const msg = {
+                    text: isImg ? '📷 صورة' : '📎 ملف',
+                    sender: 'user', timestamp: new Date().toISOString(),
+                    type: isImg ? 'image' : 'file',
+                    fileUrl: data.secure_url,
+                    fileName: file.name,
+                    name: currentUser ? (currentUser.displayName || currentUser.email) : 'زائر'
+                };
+                await db.collection('support_chats').doc(deviceId).set({
+                    deviceId, userId: currentUser?.uid||null,
+                    userName: currentUser?(currentUser.displayName||currentUser.email.split('@')[0]):'زائر',
+                    lastMessage: msg.text, lastAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    unreadByAdmin: firebase.firestore.FieldValue.increment(1), unreadByUser: 0,
+                    messages: firebase.firestore.FieldValue.arrayUnion(msg)
+                }, {merge:true});
+            } catch(err) { if(ph.parentNode) ph.remove(); zahraaToast('فشل رفع الملف','error'); }
+        };
+        input.click();
+    };
+
     // ============ SUPPORT CHAT ============
     let chatOpen = false;
     let chatUnsubListener = null;
@@ -2805,6 +2993,8 @@
             widget.style.display = 'flex';
             document.getElementById('chat-unread-badge').style.display = 'none';
             listenChatMsgs();
+            // Mark as read by user
+            db.collection('support_chats').doc(deviceId).update({unreadByUser:0}).catch(()=>{});
         } else {
             widget.style.display = 'none';
             if (chatUnsubListener) { chatUnsubListener(); chatUnsubListener = null; }
@@ -2826,12 +3016,24 @@
                 if (!msgs.length) {
                     box.innerHTML = '<div style="text-align:center;color:#555;font-size:11px;padding:6px;">لم ترسل رسائل بعد 💬</div>';
                 } else {
-                    msgs.forEach(m => {
+                    const totalUnreadByUser = snap.data().unreadByUser || 0;
+                    msgs.forEach((m, mi) => {
                         const isUser = m.sender === 'user';
                         const time = m.timestamp ? new Date(m.timestamp).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'}) : '';
-                        box.innerHTML += `<div style="display:flex;flex-direction:column;align-items:${isUser?'flex-end':'flex-start'};gap:2px;margin-bottom:2px;">
-                            <div style="max-width:85%;padding:9px 13px;border-radius:${isUser?'16px 16px 4px 16px':'16px 16px 16px 4px'};background:${isUser?'linear-gradient(135deg,#d4af37,#f0c94e)':'#1e1e1e'};color:${isUser?'#000':'#fff'};font-size:13px;line-height:1.5;border:${isUser?'none':'1px solid #2a2a2a'};">${m.text}</div>
-                            <span style="font-size:10px;color:#444;padding:0 4px;">${time}</span>
+                        // Read receipt: double tick for user msgs that admin has seen
+                        const totalMsgs = msgs.length;
+                        const isRead = isUser && totalUnreadByUser === 0;
+                        const tick = isUser ? (isRead ? '<span style="color:#4ade80;font-size:10px;">✓✓</span>' : '<span style="color:#555;font-size:10px;">✓</span>') : '';
+                        // Content: image, file, or text
+                        let content = '';
+                        if (m.type === 'image' && m.fileUrl) {
+                            content = `<a href="${m.fileUrl}" target="_blank"><img src="${m.fileUrl}" style="max-width:200px;max-height:180px;border-radius:10px;display:block;"></a>`;
+                        } else if (m.type === 'file' && m.fileUrl) {
+                            content = `<a href="${m.fileUrl}" target="_blank" style="color:${isUser?'#000':'#d4af37'};text-decoration:none;font-size:12px;">📎 ${m.fileName || 'ملف'}</a>`;
+                        } else { content = m.text; }
+                        box.innerHTML += `<div style="display:flex;flex-direction:column;align-items:${isUser?'flex-end':'flex-start'};gap:2px;margin-bottom:4px;">
+                            <div style="max-width:85%;padding:${m.type==='image'?'6px':'9px 13px'};border-radius:${isUser?'16px 16px 4px 16px':'16px 16px 16px 4px'};background:${isUser?'linear-gradient(135deg,#d4af37,#f0c94e)':'#1e1e1e'};color:${isUser?'#000':'#fff'};font-size:13px;line-height:1.5;border:${isUser?'none':'1px solid #2a2a2a'};">${content}</div>
+                            <div style="display:flex;align-items:center;gap:4px;padding:0 4px;">${tick}<span style="font-size:10px;color:#444;">${time}</span></div>
                         </div>`;
                     });
                 }
@@ -3009,13 +3211,23 @@ function moveAdSlide(dir) {
         style="flex:1;background:#1a1a1a;border:1px solid #2a2a2a;color:#fff;padding:10px 13px;border-radius:12px;outline:none;font-family:'Cairo',sans-serif;font-size:13px;min-width:0;"
         onkeydown="if(event.key==='Enter')sendChatMsg()"
         onfocus="this.style.borderColor='#d4af37'" onblur="this.style.borderColor='#2a2a2a'">
+      <button onclick="sendChatImage()" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#888;width:42px;height:42px;border-radius:12px;cursor:pointer;font-size:18px;flex-shrink:0;display:flex;align-items:center;justify-content:center;" title="إرسال صورة أو ملف">📎</button>
       <button onclick="sendChatMsg()" style="background:linear-gradient(135deg,#d4af37,#f0c94e);border:none;color:#000;width:42px;height:42px;border-radius:12px;cursor:pointer;font-size:20px;font-weight:700;flex-shrink:0;display:flex;align-items:center;justify-content:center;">↑</button>
     </div>
   </div>
   <style>
   @keyframes slideUpChat { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
   #chat-messages-box::-webkit-scrollbar{width:4px} #chat-messages-box::-webkit-scrollbar-track{background:transparent} #chat-messages-box::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+  #sticky-ad-bar img{transition:opacity 0.3s ease;}
+  @media(max-width:480px){#sticky-ad-bar .ad-cta{display:none!important}}
   </style>
+
+  <!-- ===== STICKY BOTTOM AD BANNER ===== -->
+  <div id="sticky-ad-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:1300;background:rgba(8,8,8,0.97);border-top:1px solid rgba(212,175,55,0.25);padding:8px 14px;align-items:center;gap:10px;font-family:'Cairo',sans-serif;direction:rtl;backdrop-filter:blur(8px);">
+    <span style="background:linear-gradient(135deg,#d4af37,#f0c94e);color:#000;font-size:9px;font-weight:800;padding:3px 9px;border-radius:5px;white-space:nowrap;flex-shrink:0;letter-spacing:0.5px;">إعلان ممول</span>
+    <div id="sticky-ad-content" style="flex:1;overflow:hidden;display:flex;align-items:center;gap:10px;min-width:0;"></div>
+    <button onclick="closeStickyAd()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#666;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:15px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.color='#ccc'" onmouseout="this.style.color='#666'">✕</button>
+  </div>
 
 </body>
 </html>

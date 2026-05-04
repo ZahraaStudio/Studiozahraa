@@ -86,7 +86,7 @@
             <button onclick="showTab('settings-tab')" id="btn-settings-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">⚙️ الإعدادات</button>
             <button onclick="showTab('ads-tab')" id="btn-ads-tab" class="px-4 py-2 font-bold text-zinc-500 whitespace-nowrap">📢 الإعلانات</button>
             <button onclick="showTab('push-tab')" id="btn-push-tab" class="px-4 py-2 font-bold text-zinc-500 whitespace-nowrap">🔔 الإشعارات</button>
-            <button onclick="showTab('chat-tab')" id="btn-chat-tab" class="px-4 py-2 font-bold text-zinc-500 whitespace-nowrap relative">💬 الدعم <span id="chat-unread-count" class="hidden absolute top-1 right-1 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">0</span></button>
+            <button onclick="showTab('chat-tab');loadChats();" id="btn-chat-tab" class="px-4 py-2 font-bold text-zinc-500 whitespace-nowrap relative">💬 الدعم <span id="chat-unread-count" class="hidden absolute top-1 right-1 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">0</span></button>
         </div>
 
         <!-- Products Tab -->
@@ -654,6 +654,12 @@
                 <input type="number" id="ad-skip-delay" placeholder="تأخير التخطي (ث)" class="p-3 bg-black border border-zinc-700 rounded">
                 <input type="text" id="ad-button-text" placeholder="نص الزر" class="p-3 bg-black border border-zinc-700 rounded">
             </div>
+            <div class="flex items-center gap-3 mt-2">
+                <label class="flex items-center gap-2 cursor-pointer select-none">
+                    <input type="checkbox" id="ad-is-sticky" class="w-4 h-4 rounded accent-yellow-400">
+                    <span class="text-sm font-bold gold-text">📌 إعلان ثابت (شريط سفلي أثناء التصفح)</span>
+                </label>
+            </div>
             <div class="grid grid-cols-2 gap-3">
                 <input type="text" id="ad-button-link" placeholder="رابط الزر" class="p-3 bg-black border border-zinc-700 rounded">
                 <select id="ad-button-type" class="p-3 bg-black border border-zinc-700 rounded">
@@ -684,7 +690,38 @@
     </div>
     <div id="tokens-list" class="mt-6 text-sm text-zinc-400"></div>
 </div>
-    
+
+<!-- ===== CHAT SUPPORT TAB ===== -->
+<div id="chat-tab" class="tab-content">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[75vh]">
+        <!-- Chats List -->
+        <div class="bg-zinc-900 rounded-2xl gold-border flex flex-col overflow-hidden">
+            <div class="p-4 border-b border-zinc-800 flex items-center justify-between">
+                <h3 class="font-bold gold-text text-lg">💬 المحادثات</h3>
+                <button onclick="loadChats()" class="text-xs text-zinc-400 hover:text-white transition-colors">🔄 تحديث</button>
+            </div>
+            <div id="chats-list" class="flex-1 overflow-y-auto p-3 space-y-2">
+                <p class="text-zinc-500 text-sm text-center py-8">جاري التحميل...</p>
+            </div>
+        </div>
+        <!-- Chat Window -->
+        <div class="lg:col-span-2 bg-zinc-900 rounded-2xl gold-border flex flex-col overflow-hidden">
+            <div id="chat-header" class="p-4 border-b border-zinc-800">
+                <p class="text-zinc-500 text-sm">اختر محادثة لعرضها</p>
+            </div>
+            <div id="admin-chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3">
+                <p class="text-center text-zinc-600 text-sm mt-10">اختر محادثة من القائمة على اليسار</p>
+            </div>
+            <!-- Reply area -->
+            <div class="p-4 border-t border-zinc-800 flex gap-2">
+                <button id="admin-img-btn" onclick="sendAdminImage()" title="إرسال صورة أو ملف" style="background:#1a1a1a;border:1px solid #333;color:#888;width:44px;height:44px;border-radius:12px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">📎</button>
+                <input id="admin-chat-input" type="text" placeholder="اكتب ردك هنا..." onkeydown="if(event.key==='Enter')sendAdminReply()" class="flex-1 bg-black border border-zinc-700 text-white p-3 rounded-xl text-sm outline-none focus:border-yellow-500">
+                <button onclick="sendAdminReply()" style="background:linear-gradient(135deg,#d4af37,#f0c94e);border:none;color:#000;font-weight:700;padding:0 20px;border-radius:12px;cursor:pointer;font-size:14px;white-space:nowrap;height:44px;">إرسال ↑</button>
+            </div>
+        </div>
+    </div>
+</div>
+
     <!-- ===== ZAHRAA CUSTOM TOAST ===== -->
     <div id="zahraa-toast" style="position:fixed;top:24px;left:50%;transform:translateX(-50%) translateY(-100px);z-index:99999;min-width:280px;max-width:420px;background:linear-gradient(135deg,#1a1a1a,#2a2a2a);border:1px solid #d4af37;border-radius:16px;padding:14px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,0.7);transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1),opacity 0.35s;opacity:0;pointer-events:none;direction:rtl;">
         <span id="zt-icon" style="font-size:20px;flex-shrink:0">✅</span>
@@ -1982,6 +2019,14 @@
                 try { await deleteDoc(doc(db, 'community_posts', id)); loadAdminCommunity(); zahraaToast('تم الحذف ✅','success'); } catch (e) { zahraaToast(e.message,'error'); }
             }, 'لا يمكن التراجع عن هذا الإجراء', '🗑️');
         };
+        // Auto-refresh chat unread count every 20s
+        setInterval(() => {
+            const badge = document.getElementById('chat-unread-count');
+            if (badge && document.getElementById('chat-tab')?.classList.contains('active')) return;
+            import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js').catch(()=>{});
+            // Count total unread from local state
+        }, 20000);
+
         window.toggleBlockUser = async (uid, currentlyBlocked) => {
             zahraaConfirm(
                 currentlyBlocked ? 'إلغاء حظر هذا العميل؟' : 'حظر هذا العميل؟',
@@ -2049,6 +2094,8 @@
             const data = {
                 enabled: document.getElementById('pts-enabled').checked,
                 ratio: parseFloat(document.getElementById('pts-ratio').value) || 1,
+                redeemRate: parseInt(document.getElementById('pts-redeem-rate')?.value) || 40,
+                redeemMin: parseInt(document.getElementById('pts-redeem-min')?.value) || 200,
                 threshold: parseInt(document.getElementById('pts-threshold').value) || 1000,
                 couponValue: parseFloat(document.getElementById('pts-coupon-value').value) || 50,
                 couponType: document.getElementById('pts-coupon-type').value,
@@ -2205,7 +2252,7 @@
             const buttonType = document.getElementById('ad-button-type').value;
             if (!title && adImagesUrls.length === 0) return zahraaToast('أدخل عنوان أو ارفع صورة','warning');
             try {
-                await addDoc(collection(db, 'ads'), { title, images: adImagesUrls, duration, skipDelay, buttonText, buttonLink, buttonType, isActive: true, createdAt: serverTimestamp() });
+                await addDoc(collection(db, 'ads'), { title, images: adImagesUrls, duration, skipDelay, buttonText, buttonLink, buttonType, isActive: true, isSticky: document.getElementById('ad-is-sticky')?.checked||false, createdAt: serverTimestamp() });
                 zahraaToast('تم حفظ الإعلان ✅','success');
                 document.getElementById('ad-title').value = '';
                 document.getElementById('ad-images-preview').innerHTML = '';
@@ -2373,12 +2420,24 @@
                 const chatData = snap.data();
                 if (header) header.innerHTML = `<div class="flex items-center justify-between"><p class="font-bold text-sm">${chatData.userName || 'زائر'} ${chatData.userId ? '<span class="text-xs text-zinc-500">• مسجل</span>' : '<span class="text-xs text-zinc-500">• زائر</span>'}</p><p class="text-xs text-zinc-500">${chatId.substring(0,16)}</p></div>`;
                 msgsBox.innerHTML = '';
-                msgs.forEach(m => {
+                const adminUnread = chatData.unreadByAdmin || 0;
+                const userUnread = chatData.unreadByUser || 0;
+                msgs.forEach((m, mi) => {
                     const isUser = m.sender === 'user';
+                    const isAdmin = m.sender === 'admin';
                     const time = m.timestamp ? new Date(m.timestamp).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'}) : '';
+                    // Read receipt: admin msgs get double ticks when user has read them
+                    const tick = isAdmin ? (userUnread === 0 ? '<span style="color:#4ade80;font-size:10px;margin-right:2px;">✓✓</span>' : '<span style="color:#555;font-size:10px;margin-right:2px;">✓</span>') : '';
+                    // Content rendering
+                    let content = '';
+                    if (m.type === 'image' && m.fileUrl) {
+                        content = `<a href="${m.fileUrl}" target="_blank"><img src="${m.fileUrl}" style="max-width:200px;max-height:160px;border-radius:8px;display:block;"></a>`;
+                    } else if (m.type === 'file' && m.fileUrl) {
+                        content = `<a href="${m.fileUrl}" target="_blank" style="color:${isUser?'#d4af37':'#000'};text-decoration:none;">📎 ${m.fileName||'ملف'}</a>`;
+                    } else { content = m.text || ''; }
                     msgsBox.innerHTML += `<div class="flex flex-col ${isUser?'items-end':'items-start'} gap-1">
-                        <div class="max-w-[80%] px-4 py-2.5 rounded-2xl text-sm ${isUser?'bg-zinc-800 text-white':'bg-yellow-500/90 text-black font-medium'}">${m.text}</div>
-                        <span class="text-[10px] text-zinc-600">${isUser?'👤':'👑 أدمن'} ${time}</span>
+                        <div class="max-w-[80%] ${m.type==='image'?'p-1':'px-4 py-2.5'} rounded-2xl text-sm ${isUser?'bg-zinc-800 text-white':'bg-yellow-500/90 text-black font-medium'}">${content}</div>
+                        <div class="flex items-center gap-1"><span class="text-[10px] text-zinc-600">${isUser?'👤':'👑 أدمن'} ${time}</span>${tick}</div>
                     </div>`;
                 });
                 msgsBox.scrollTop = msgsBox.scrollHeight;
@@ -2386,6 +2445,44 @@
                 updateDoc(doc(db,'support_chats',chatId), {unreadByAdmin: 0}).catch(()=>{});
                 loadChats();
             });
+        };
+
+        window.sendAdminImage = async () => {
+            if (!activeChatId) return zahraaToast('اختر محادثة أولاً', 'warning');
+            const inp = document.createElement('input');
+            inp.type='file'; inp.accept='image/*,application/pdf';
+            inp.onchange = async (e) => {
+                const file = e.target.files[0]; if (!file) return;
+                const btn = document.getElementById('admin-img-btn');
+                if(btn) btn.disabled=true;
+                try {
+                    const isImg = file.type.startsWith('image/');
+                    const fd = new FormData();
+                    fd.append('file', file); fd.append('upload_preset','zahraa_upload');
+                    const url = isImg
+                        ? 'https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload'
+                        : 'https://api.cloudinary.com/v1_1/dxlxwe55b/raw/upload';
+                    const res = await fetch(url,{method:'POST',body:fd});
+                    const data = await res.json();
+                    if (!data.secure_url) throw new Error('فشل الرفع');
+                    const msg = {
+                        text: isImg ? '📷 صورة' : '📎 ملف',
+                        sender: 'admin', timestamp: new Date().toISOString(),
+                        type: isImg ? 'image' : 'file',
+                        fileUrl: data.secure_url, fileName: file.name,
+                        name: 'الدعم الفني'
+                    };
+                    await updateDoc(doc(db,'support_chats',activeChatId), {
+                        lastMessage: '👑 ' + msg.text,
+                        lastAt: serverTimestamp(),
+                        unreadByUser: increment(1),
+                        messages: arrayUnion(msg)
+                    });
+                    zahraaToast('تم إرسال الملف ✅','success');
+                } catch(err) { zahraaToast('فشل رفع الملف','error'); }
+                finally { if(btn) btn.disabled=false; }
+            };
+            inp.click();
         };
 
         window.sendAdminReply = async () => {
