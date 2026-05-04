@@ -1814,22 +1814,7 @@
                 earnedCoupon = couponDoc;
             }
 
-            // Referral reward: if order placed by user referred by another, reward referrer with one-time coupon (fired once)
-            if (referralBy && currentUser && storeSettings.referralEnabled !== false) {
-                try {
-                    const refUserSnap = await db.collection('users').doc(referralBy).get();
-                    if (refUserSnap.exists && !refUserSnap.data().earnedReferralCoupon) {
-                        const refCode = 'REF' + Math.floor(1000 + Math.random() * 9000);
-                        await db.collection('coupons').add({
-                            code: refCode, isActive: true, type: 'percentage', discount: 10,
-                            limit: 1, perUserLimit: 1, usedCount: 0, linkedUser: referralBy,
-                            note: 'مكافأة الإحالة',
-                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                        });
-                        await db.collection('users').doc(referralBy).set({ earnedReferralCoupon: refCode }, { merge: true });
-                    }
-                } catch (e) { console.error('referral reward error', e); }
-            }
+            // Referral: المكافأة تُعطى عند اكتمال الطلب من الأدمن تجنبًا للتلاعب
 
             currentOrder = { ...orderData, id: orderRef.id, createdAt: new Date() };
             document.getElementById('success-order-number').innerText = orderNumber;
@@ -3506,12 +3491,12 @@ function moveAdSlide(dir) {
     <div id="smart-cart-content" style="font-size:12px;color:#aaa;"></div>
   </div>
   <!-- ===== SUPPORT CHAT ===== -->
-  <button id="chat-fab" onclick="toggleChat()" style="position:fixed;bottom:80px;left:20px;z-index:1500;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#d4af37,#f0c94e);border:none;cursor:pointer;box-shadow:0 4px 24px rgba(212,175,55,0.45);display:flex;align-items:center;justify-content:center;font-size:26px;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+  <button id="chat-fab" onclick="toggleChat()" style="position:fixed;bottom:24px;right:20px;z-index:1500;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#d4af37,#f0c94e);border:none;cursor:pointer;box-shadow:0 4px 24px rgba(212,175,55,0.45);display:flex;align-items:center;justify-content:center;font-size:26px;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
     💬
     <span id="chat-unread-badge" style="display:none;position:absolute;top:-2px;right:-2px;background:#ef4444;color:#fff;border-radius:50%;width:20px;height:20px;font-size:11px;font-weight:700;align-items:center;justify-content:center;border:2px solid #000;"></span>
   </button>
 
-  <div id="chat-widget" style="display:none;position:fixed;bottom:148px;left:20px;z-index:1501;width:310px;max-height:430px;background:#0d0d0d;border-radius:20px;border:1px solid rgba(212,175,55,0.3);box-shadow:0 8px 48px rgba(0,0,0,0.85);flex-direction:column;overflow:hidden;font-family:'Cairo',sans-serif;direction:rtl;animation:slideUpChat 0.3s ease;">
+  <div id="chat-widget" style="display:none;position:fixed;bottom:88px;right:20px;z-index:1501;width:310px;max-height:430px;background:#0d0d0d;border-radius:20px;border:1px solid rgba(212,175,55,0.3);box-shadow:0 8px 48px rgba(0,0,0,0.85);flex-direction:column;overflow:hidden;font-family:'Cairo',sans-serif;direction:rtl;animation:slideUpChat 0.3s ease;">
     <!-- Header -->
     <div style="background:linear-gradient(135deg,#d4af37,#f0c94e);padding:13px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
       <div style="display:flex;align-items:center;gap:9px;">

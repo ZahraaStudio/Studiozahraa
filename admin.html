@@ -286,18 +286,29 @@
                 <div class="lg:col-span-1 bg-zinc-900 p-6 rounded-xl gold-border h-fit">
                     <h3 class="text-xl font-bold mb-4 border-b border-zinc-800 pb-2">إعدادات المكافآت</h3>
                     <div class="space-y-4">
+                        <label class="flex items-center gap-3 cursor-pointer p-3 bg-black rounded-xl border border-zinc-800">
+                            <input type="checkbox" id="reward-enabled" class="w-5 h-5 accent-yellow-500" checked>
+                            <div>
+                                <span class="font-bold text-sm block">تفعيل نظام الإحالات</span>
+                                <span class="text-xs text-zinc-500">عند التعطيل لن تُعطى أي مكافآت</span>
+                            </div>
+                        </label>
                         <div>
                             <label class="text-xs text-zinc-500 block mb-1">قيمة كوبون المكافأة:</label>
-                            <input type="number" id="reward-amount" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                            <input type="number" id="reward-amount" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text" placeholder="مثلاً 50">
                         </div>
                         <div>
                             <label class="text-xs text-zinc-500 block mb-1">نوع المكافأة:</label>
                             <select id="reward-type" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
-                                <option value="fixed">مبلغ ثابت</option>
-                                <option value="percentage">نسبة %</option>
+                                <option value="fixed">مبلغ ثابت (ج)</option>
+                                <option value="percentage">نسبة مئوية %</option>
                             </select>
                         </div>
-                        <button onclick="saveRewardSettings()" class="w-full p-3 gold-bg text-black font-bold rounded">حفظ الإعدادات</button>
+                        <div>
+                            <label class="text-xs text-zinc-500 block mb-1">صلاحية الكوبون (أيام):</label>
+                            <input type="number" id="reward-expiry" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text" placeholder="30" value="30">
+                        </div>
+                        <button onclick="saveRewardSettings()" class="w-full p-3 gold-bg text-black font-bold rounded">💾 حفظ إعدادات المكافآت</button>
                     </div>
                 </div>
                 <div class="lg:col-span-2 bg-zinc-900 p-6 rounded-xl gold-border">
@@ -1289,16 +1300,24 @@
 
         async function processReferralReward(referrerUid, orderId, deviceId) {
             try {
+                // Get reward settings first — check if enabled
+                const settingsSnap = await getDoc(doc(db, 'settings', 'rewards'));
+                const settings = settingsSnap.exists() ? settingsSnap.data() : { amount: 50, type: 'fixed', enabled: true, expiry: 30 };
+                if (settings.enabled === false) return; // Rewards disabled
+
+                // Protection: Check if user already got a reward
+                const userSnap = await getDoc(doc(db, 'users', referrerUid));
+                if (userSnap.exists() && userSnap.data().earnedReferralCoupon) {
+                    console.log('Reward blocked: User already rewarded');
+                    return;
+                }
+
                 // Protection: Check if this device already got a reward
                 const deviceCheck = await getDocs(query(collection(db, 'referrals'), where('deviceId', '==', deviceId)));
                 if (!deviceCheck.empty) {
                     console.log('Reward blocked: Device already rewarded');
                     return;
                 }
-
-                // Get reward settings
-                const settingsSnap = await getDoc(doc(db, 'settings', 'rewards'));
-                const settings = settingsSnap.exists() ? settingsSnap.data() : { amount: 50, type: 'fixed' };
                 
                 // Create a coupon for the referrer
                 const couponCode = 'REF-' + Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -1310,13 +1329,16 @@
                     usedCount: 0,
                     isActive: true,
                     linkedUser: referrerUid,
-                    expiryDate: new Date(Date.now() + 2592000000), // 30 days
+                    expiryDate: new Date(Date.now() + (settings.expiry || 30) * 86400000),
                     createdAt: serverTimestamp()
                 });
 
-                // Mark order as reward processed
+                // Mark order as reward processed + set earnedReferralCoupon on referrer's user doc
                 await updateDoc(doc(db, 'orders', orderId), { rewardProcessed: true });
-                
+                try {
+                    await setDoc(doc(db, 'users', referrerUid), { earnedReferralCoupon: couponCode }, { merge: true });
+                } catch(e) {}
+
                 // Log referral
                 await addDoc(collection(db, 'referrals'), {
                     referrerUid,
@@ -1519,6 +1541,7 @@
                             <p class="text-xs text-zinc-500">${c.type === 'percentage' ? c.discount + '%' : c.discount + ' ج'} | استخدم: ${c.usedCount}/${c.limit || '∞'}</p>
                         </div>
                         <div class="flex gap-2">
+                            <button onclick="editCoupon('${c.id}')" class="btn-sm btn-warning">تعديل</button>
                             <button onclick="toggleCoupon('${c.id}', ${c.isActive})" class="btn-sm ${statusClass}">${c.isActive ? 'مفعل' : 'معطل'}</button>
                             <button onclick="deleteCoupon('${c.id}')" class="btn-sm btn-danger">حذف</button>
                         </div>
@@ -1540,6 +1563,23 @@
             }
         };
 
+        window.editCoupon = (id) => {
+            const c = allCoupons.find(x => x.id === id);
+            if (!c) return;
+            document.getElementById('coupon-id').value = id;
+            document.getElementById('coupon-code').value = c.code || '';
+            document.getElementById('coupon-discount').value = c.discount || '';
+            document.getElementById('coupon-type').value = c.type || 'fixed';
+            document.getElementById('coupon-limit').value = c.limit || '';
+            document.getElementById('coupon-min').value = c.minOrder || '';
+            document.getElementById('coupon-active').checked = c.isActive !== false;
+            document.getElementById('coupon-note').value = c.note || '';
+            document.getElementById('coupon-form-title').textContent = 'تعديل الكوبون';
+            document.getElementById('save-coupon-btn').textContent = 'حفظ التعديل';
+            document.getElementById('cancel-coupon-btn').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
         // ==================== REFERRALS ====================
         window.loadReferrals = async () => {
             const list = document.getElementById('referrals-list');
@@ -1554,14 +1594,15 @@
                 const date = r.timestamp?.toDate ? r.timestamp.toDate().toLocaleString('ar-EG') : 'N/A';
                 list.innerHTML += `
                     <div class="p-4 bg-black rounded-xl border border-zinc-800 flex justify-between items-center">
-                        <div>
+                        <div class="flex-1 min-w-0">
                             <p class="text-xs text-zinc-500 mb-1">${date}</p>
                             <p class="text-sm">المُحيل: <span class="gold-text font-bold">${r.referrerUid.substring(0,10)}...</span></p>
-                            <p class="text-[10px] text-zinc-400">كود المكافأة: ${r.couponCode}</p>
+                            <p class="text-[10px] text-zinc-400">كود المكافأة: ${r.couponCode || '—'}</p>
+                            <p class="text-[10px] text-zinc-500">طلب: ${r.orderId ? r.orderId.substring(0,8) : '—'}</p>
                         </div>
-                        <div class="text-left">
-                            <p class="font-bold text-green-500">+${r.amount} ج</p>
-                            <p class="text-[10px] text-zinc-500">طلب رقم: ${r.orderId.substring(0,8)}</p>
+                        <div class="text-left flex flex-col items-end gap-2">
+                            <p class="font-bold text-green-500">+${r.amount || 0} ج</p>
+                            <button onclick="deleteReferral('${docSnap.id}')" class="btn-sm btn-danger text-[10px]">حذف</button>
                         </div>
                     </div>
                 `;
@@ -1569,10 +1610,23 @@
         };
 
         window.saveRewardSettings = async () => {
-            const amount = document.getElementById('reward-amount').value;
-            const type = document.getElementById('reward-type').value;
-            await setDoc(doc(db, 'settings', 'rewards'), { amount: parseFloat(amount), type }, { merge: true });
+            const amount = parseFloat(document.getElementById('reward-amount').value) || 50;
+            const type = document.getElementById('reward-type').value || 'fixed';
+            const enabled = document.getElementById('reward-enabled').checked;
+            const expiry = parseInt(document.getElementById('reward-expiry').value) || 30;
+            await setDoc(doc(db, 'settings', 'rewards'), { amount, type, enabled, expiry }, { merge: true });
+            // Also sync referralEnabled to general settings
+            await setDoc(doc(db, 'settings', 'general'), { referralEnabled: enabled }, { merge: true });
             zahraaToast('تم حفظ إعدادات المكافآت ✅','success');
+        };
+
+        window.deleteReferral = async (id) => {
+            if (!confirm('حذف هذا السجل؟')) return;
+            try {
+                await deleteDoc(doc(db, 'referrals', id));
+                zahraaToast('تم الحذف','success');
+                loadReferrals();
+            } catch(e) { zahraaToast(e.message,'error'); }
         };
 
         // ==================== SETTINGS ====================
@@ -1582,8 +1636,10 @@
             const rewardSnap = await getDoc(doc(db, 'settings', 'rewards'));
             if (rewardSnap.exists()) {
                 const r = rewardSnap.data();
-                document.getElementById('reward-amount').value = r.amount;
-                document.getElementById('reward-type').value = r.type;
+                if (document.getElementById('reward-amount')) document.getElementById('reward-amount').value = r.amount || '';
+                if (document.getElementById('reward-type')) document.getElementById('reward-type').value = r.type || 'fixed';
+                if (document.getElementById('reward-enabled')) document.getElementById('reward-enabled').checked = r.enabled !== false;
+                if (document.getElementById('reward-expiry')) document.getElementById('reward-expiry').value = r.expiry || 30;
             }
             const generalSnap = await getDoc(doc(db, 'settings', 'general'));
             const g = generalSnap.exists() ? generalSnap.data() : {};
