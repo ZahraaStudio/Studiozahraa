@@ -665,29 +665,12 @@
                 <input type="number" id="ad-skip-delay" placeholder="تأخير التخطي (ث)" class="p-3 bg-black border border-zinc-700 rounded">
                 <input type="text" id="ad-button-text" placeholder="نص الزر" class="p-3 bg-black border border-zinc-700 rounded">
             </div>
-            <div>
-                <label class="text-xs text-zinc-500 block mb-2">🎯 طريقة العرض:</label>
-                <div class="grid grid-cols-2 gap-2">
-                    <label class="flex items-center gap-2 p-3 bg-black border border-zinc-700 rounded-xl cursor-pointer hover:border-yellow-500 transition-colors">
-                        <input type="radio" name="ad-display-type" value="popup" id="ad-type-popup" class="accent-yellow-400" checked>
-                        <div><p class="text-sm font-bold text-white">🪟 نافذة منبثقة</p><p class="text-[10px] text-zinc-500">تظهر عند دخول المتجر</p></div>
-                    </label>
-                    <label class="flex items-center gap-2 p-3 bg-black border border-zinc-700 rounded-xl cursor-pointer hover:border-yellow-500 transition-colors">
-                        <input type="radio" name="ad-display-type" value="sticky" id="ad-type-sticky" class="accent-yellow-400">
-                        <div><p class="text-sm font-bold text-white">📌 شريط سفلي</p><p class="text-[10px] text-zinc-500">ثابت أسفل الشاشة</p></div>
-                    </label>
-                    <label class="flex items-center gap-2 p-3 bg-black border border-zinc-700 rounded-xl cursor-pointer hover:border-yellow-500 transition-colors">
-                        <input type="radio" name="ad-display-type" value="corner" id="ad-type-corner" class="accent-yellow-400">
-                        <div><p class="text-sm font-bold text-white">📍 بطاقة زاوية</p><p class="text-[10px] text-zinc-500">تظهر في أسفل اليسار</p></div>
-                    </label>
-                    <label class="flex items-center gap-2 p-3 bg-black border border-zinc-700 rounded-xl cursor-pointer hover:border-yellow-500 transition-colors">
-                        <input type="radio" name="ad-display-type" value="floating" id="ad-type-floating" class="accent-yellow-400">
-                        <div><p class="text-sm font-bold text-white">🎴 شريط جانبي</p><p class="text-[10px] text-zinc-500">عائم على الجانب</p></div>
-                    </label>
-                </div>
+            <div class="flex items-center gap-3 mt-2">
+                <label class="flex items-center gap-2 cursor-pointer select-none">
+                    <input type="checkbox" id="ad-is-sticky" class="w-4 h-4 rounded accent-yellow-400">
+                    <span class="text-sm font-bold gold-text">📌 إعلان ثابت (شريط سفلي أثناء التصفح)</span>
+                </label>
             </div>
-            <!-- Keep hidden checkbox for backward compat -->
-            <input type="hidden" id="ad-is-sticky">
             <div class="grid grid-cols-2 gap-3">
                 <input type="text" id="ad-button-link" placeholder="رابط الزر" class="p-3 bg-black border border-zinc-700 rounded">
                 <select id="ad-button-type" class="p-3 bg-black border border-zinc-700 rounded">
@@ -2329,8 +2312,7 @@
             const buttonType = document.getElementById('ad-button-type').value;
             if (!title && adImagesUrls.length === 0) return zahraaToast('أدخل عنوان أو ارفع صورة','warning');
             try {
-                await addDoc(collection(db, 'ads'), { title, images: adImagesUrls, duration, skipDelay, buttonText, buttonLink, buttonType, isActive: true, displayType: document.querySelector('input[name="ad-display-type"]:checked')?.value || 'popup',
-                isSticky: document.getElementById('ad-type-sticky')?.checked || false,||false, createdAt: serverTimestamp() });
+                await addDoc(collection(db, 'ads'), { title, images: adImagesUrls, duration, skipDelay, buttonText, buttonLink, buttonType, isActive: true, isSticky: document.getElementById('ad-is-sticky')?.checked||false, createdAt: serverTimestamp() });
                 zahraaToast('تم حفظ الإعلان ✅','success');
                 document.getElementById('ad-title').value = '';
                 document.getElementById('ad-images-preview').innerHTML = '';

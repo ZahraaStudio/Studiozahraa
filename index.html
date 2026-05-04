@@ -1,4 +1,4 @@
-</body<!doctype html>
+<!doctype html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
@@ -305,9 +305,6 @@
       </div>
       <div id="sidebar-account-wrap" class="hidden mb-4">
         <a href="account.html" class="block w-full text-right p-3 rounded-xl bg-yellow-900/10 border border-yellow-700/30 hover:bg-yellow-900/30 transition-colors gold-text font-bold">👤 حسابي وإعداداتي</a>
-      </div>
-      <div class="mb-3">
-        <button onclick="showChatFab(); closeSidebar(); setTimeout(toggleChat,200);" class="w-full text-right p-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-sm font-bold text-zinc-300 flex items-center gap-2 transition-colors">💬 تواصل مع خدمة العملاء</button>
       </div>
       <div class="flex items-center justify-between py-3 border-t border-zinc-900 mb-4">
         <span class="text-sm text-zinc-400">الوضع الليلي / النهاري</span>
@@ -872,8 +869,6 @@
 
     // ============ Initialization ============
     async function init() {
-        if (window.isInitialized) return;
-        window.isInitialized = true;
         // Device ID for Referral Protection
         deviceId = localStorage.getItem('deviceId') || 'dev-' + Math.random().toString(36).substring(2, 15);
         localStorage.setItem('deviceId', deviceId);
@@ -1015,13 +1010,12 @@
 
     // ============ Home Offers ============
     function renderHomeOffers() {
-        if (!allProducts || allProducts.length === 0) return;
         const discounted = allProducts.filter(p => productDiscount(p) > 0).slice(0, 8);
         const off = document.getElementById('offers-section');
-        if (off && discounted.length > 0) {
+        if (discounted.length > 0) {
             off.classList.remove('hidden');
             document.getElementById('offers-grid').innerHTML = discounted.map(p => smallOfferCard(p)).join('');
-        } else if (off) {
+        } else {
             off.classList.add('hidden');
         }
         const _now=new Date();
@@ -1252,16 +1246,14 @@
 
     function showNotification(message, type = 'info') {
         const container = document.getElementById('notification-container');
-        if (!container) return;
-        // Remove any existing notification of same type to avoid duplicates
-        const existing = container.querySelector('.notification');
-        if (existing) existing.remove();
         const notification = document.createElement('div');
         notification.className = `notification ${type} active`;
         notification.innerHTML = `<p class="text-sm">${message}</p>`;
         container.appendChild(notification);
-        setTimeout(() => { notification.classList.remove('active'); setTimeout(() => notification.remove(), 400); }, 3000);
-    }, 4000);
+        setTimeout(() => {
+            notification.classList.remove('active');
+            setTimeout(() => notification.remove(), 300);
+        }, 4000);
     }
 
     // ============ Products ============
@@ -1567,13 +1559,7 @@
                 <button onclick="removeFromCart(${i})" class="text-red-500 text-xs px-2 hover:text-red-400">✕</button>
             </div>
         `).join('');
-        const cartTotalEl = document.getElementById('cart-total');
-        if (cartTotalEl) {
-            cartTotalEl.innerText = subtotal + ' ج';
-            cartTotalEl.style.animation = 'none';
-            cartTotalEl.offsetHeight; // reflow
-            cartTotalEl.style.animation = 'goldPulse 0.4s ease';
-        }
+        document.getElementById('cart-total').innerText = subtotal + ' ج';
     }
 
     window.updateQty = (i, delta) => {
@@ -1590,12 +1576,6 @@
         if (cart.length === 0) return showAlert('السلة فارغة', 'يرجى إضافة منتجات أولاً', 'error');
         document.getElementById('checkout-modal').classList.add('active');
         updateCheckoutTotal();
-        // Ensure total is always visible immediately (no waiting for governorate)
-        const tot = document.getElementById('checkout-total');
-        if (tot && tot.innerText === '0 ج') {
-            const sub = cart.reduce((a,b) => a+(b.price*b.qty),0);
-            tot.innerText = sub + ' ج';
-        }
     };
 
     window.closeCheckout = () => document.getElementById('checkout-modal').classList.remove('active');
@@ -1685,7 +1665,7 @@
         const giftWrap = document.getElementById('gift-wrap').checked ? giftPrice : 0;
         let finalTotal = Math.max(0, subtotal - discount) + shipping + giftWrap;
 
-        document.getElementById('checkout-shipping').innerText = shipping ? (shipping + ' ج') : 'يُضاف عند اختيار المحافظة';
+        document.getElementById('checkout-shipping').innerText = shipping ? (shipping + ' ج') : '— اختر المحافظة —';
         const dRow = document.getElementById('discount-row');
         if (discount > 0) {
             dRow.style.display = 'flex';
@@ -2489,8 +2469,7 @@
     };
     window.goBanner = (n) => {
         currentBanner = n;
-        // Fix for RTL: use positive n * 100 because translateX in RTL moves right with negative values
-        document.getElementById('banner-track').style.transform = `translateX(${n * 100}%)`;
+        document.getElementById('banner-track').style.transform = `translateX(${-n * 100}%)`;
         document.querySelectorAll('.banner-dot').forEach((d, i) => d.classList.toggle('active', i === n));
     };
 
@@ -2741,8 +2720,7 @@
             if (sEl) sEl.textContent = pad(sec);
         };
         updateTimer();
-        if (window.countdownInterval) clearInterval(window.countdownInterval);
-        window.countdownInterval = setInterval(updateTimer, 1000);
+        setInterval(updateTimer, 1000);
     }
 
     // ============ CUSTOM CONFIRM ============
@@ -2801,7 +2779,31 @@
     };
 
 
-
+    // ============ SOCIAL PROOF NOTIFICATIONS ============
+    const _arabicNames=['أحمد','محمد','إسراء','فاطمة','علي','سارة','كريم','مريم','يوسف','نور','خالد','هنا','عمر','ياسمين','حسام','رنا','طارق','دينا','أيمن','شيماء'];
+    const _arabicCities=['القاهرة','الجيزة','الإسكندرية','المنصورة','طنطا','الشرقية','المنيا','أسيوط','سوهاج','الأقصر','دمياط','الإسماعيلية','بورسعيد'];
+    function startSocialProof(){
+        const avail=allProducts.filter(p=>!p.outOfStock&&p.images&&p.images.length);
+        if(!avail.length)return;
+        function showOne(){
+            const name=_arabicNames[Math.floor(Math.random()*_arabicNames.length)];
+            const city=_arabicCities[Math.floor(Math.random()*_arabicCities.length)];
+            const p=avail[Math.floor(Math.random()*avail.length)];
+            const mins=[2,3,5,7,10,12,15,20][Math.floor(Math.random()*8)];
+            const old=document.getElementById('sp-toast');if(old)old.remove();
+            const el=document.createElement('div');el.id='sp-toast';
+            el.style.cssText='position:fixed;bottom:80px;right:16px;z-index:2400;background:rgba(10,10,10,0.97);border:1px solid rgba(212,175,55,0.35);border-radius:16px;padding:10px 12px;display:flex;align-items:center;gap:10px;max-width:290px;box-shadow:0 8px 32px rgba(0,0,0,0.7);font-family:"Cairo",sans-serif;direction:rtl;animation:slideInRight 0.4s ease;';
+            el.innerHTML=`<img src="${p.images[0]}" style="width:42px;height:42px;border-radius:10px;object-fit:cover;flex-shrink:0;border:1px solid rgba(212,175,55,0.3);">
+              <div style="flex:1;min-width:0;"><p style="color:#d4af37;font-size:11px;font-weight:700;margin:0 0 1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">🔥 ${name} من ${city}</p>
+              <p style="color:#ddd;font-size:10px;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">اشترى: ${p.name}</p>
+              <p style="color:#555;font-size:9px;margin:1px 0 0;">منذ ${mins} دقيقة</p></div>
+              <button onclick="this.parentElement.remove()" style="background:none;border:none;color:#444;cursor:pointer;font-size:14px;flex-shrink:0;padding:0;">✕</button>`;
+            document.body.appendChild(el);
+            setTimeout(()=>{if(el.parentNode){el.style.animation='slideOutRight 0.4s ease forwards';setTimeout(()=>el.remove(),400);}},7000);
+            setTimeout(showOne,25000+Math.random()*35000);
+        }
+        setTimeout(showOne,20000+Math.random()*15000);
+    }
 
     // ============ SMART CART UPSELL ============
     function showSmartCartSuggestion(product){
@@ -2910,20 +2912,11 @@
             ctx.fillStyle='rgba(255,255,255,0.15)';ctx.font='bold 14px Cairo';ctx.textAlign='center';ctx.textBaseline='middle';
             ctx.fillText('اخدش هنا 🎁',canvas.width/2,canvas.height/2);
             let scratching=false;
-            let lastScratchTime = 0;
             function scratch(x,y){
                 ctx.globalCompositeOperation='destination-out';ctx.beginPath();ctx.arc(x,y,24,0,Math.PI*2);ctx.fill();
-                
-                const now = Date.now();
-                if (now - lastScratchTime < 100) return; // Throttle calculation to every 100ms
-                lastScratchTime = now;
-
                 const d=ctx.getImageData(0,0,canvas.width,canvas.height).data;
-                let t=0;
-                // Optimization: Sample pixels to speed up calculation
-                for(let i=3; i<d.length; i+=16) if(d[i]<128) t++;
-                const totalSampled = (canvas.width * canvas.height) / 4;
-                if((t/totalSampled)>0.4){
+                let t=0;for(let i=3;i<d.length;i+=4)if(d[i]<128)t++;
+                if((t/(canvas.width*canvas.height))>0.4){
                     canvas.style.display='none';document.getElementById('scratch-hint').style.display='none';
                     document.getElementById('scratch-apply-btn').style.display='block';
                     localStorage.setItem('zahraa_scratch_seen','1');
@@ -3024,59 +3017,42 @@
 
     // ============ START ALL FEATURES ============
     setTimeout(()=>{
+        startSocialProof();
         checkAbandonedCart();
         setTimeout(checkFirstOrderBanner,3000);
         setTimeout(initScratchCard,1500);
     },2000);
 
     init();
-  // ============ AD SYSTEM (Multi-Type) ============
-  let adTimer = null, adImages = [], currentAdSlide = 0, adDuration = 30, adSkipDelay = 5;
+  // ============ AD SYSTEM ============
+   let adTimer = null, adImages = [], currentAdSlide = 0, adDuration = 30, adSkipDelay = 5;
 
   async function loadAd() {
-    const lastShown = sessionStorage.getItem('zahraa_last_ad');
-    if (lastShown) return;
-    try {
-      const snap = await db.collection('ads').where('isActive','==',true).limit(5).get();
-      if (snap.empty) return;
-      const adsList = snap.docs.map(d => ({id:d.id,...d.data()}));
-      // Show each ad based on its displayType
-      for (const ad of adsList) {
-        const type = ad.displayType || (ad.isSticky ? 'sticky' : 'popup');
-        if (type === 'popup') { showPopupAd(ad); break; } // show one popup
-      }
-      // Load sticky separately
-      const stickyAd = adsList.find(a => (a.displayType||'') === 'sticky' || a.isSticky);
-      if (stickyAd) showStickyAd(stickyAd);
-      // Corner popup
-      const cornerAd = adsList.find(a => (a.displayType||'') === 'corner');
-      if (cornerAd) setTimeout(() => showCornerAd(cornerAd), 4000);
-      // Floating side
-      const floatAd = adsList.find(a => (a.displayType||'') === 'floating');
-      if (floatAd) setTimeout(() => showFloatingAd(floatAd), 6000);
-
-      sessionStorage.setItem('zahraa_last_ad','1');
-    } catch(e) {}
-  }
-
-  // ── Popup Modal Ad (الحالي) ─────────────────────────────────────────────────
-  function showPopupAd(ad) {
+  // لا تظهر الإعلان إلا كل ساعة على الأقل
+  const lastShown = sessionStorage.getItem('zahraa_last_ad');
+  if (lastShown) return;
+  try {
+    const snap = await db.collection('ads').where('isActive', '==', true).limit(1).get();
+    if (snap.empty) return;
+    const ad = snap.docs[0].data();
     adImages = ad.images || [];
     adDuration = ad.duration || 30;
     adSkipDelay = ad.skipDelay || 5;
     document.getElementById('ad-title').innerText = ad.title || '';
     const track = document.getElementById('ad-track');
     if (track) {
-      track.innerHTML = adImages.map(img => `<div style="min-width:100%;height:420px;overflow:hidden;"><img src="${img}" style="width:100%;height:100%;object-fit:cover;"></div>`).join('');
-      buildAdDots(); 
-      if (window.adAutoSlideTimer) clearInterval(window.adAutoSlideTimer);
+      track.innerHTML = adImages.map((img,i) => `<div style="min-width:100%;height:420px;overflow:hidden;"><img src="${img}" style="width:100%;height:100%;object-fit:cover;"></div>`).join('');
+      buildAdDots();
+      sessionStorage.setItem('zahraa_last_ad', '1');
       startAdAutoSlide();
     }
+
     if (ad.buttonText && ad.buttonLink) {
       const btn = document.getElementById('ad-button');
       if (btn) {
         btn.classList.remove('hidden');
-        btn.innerText = ad.buttonText; btn.href = ad.buttonLink;
+        btn.innerText = ad.buttonText;
+        btn.href = ad.buttonLink;
         if (ad.buttonType === 'facebook') btn.className = 'w-full mt-3 py-3 rounded-xl font-bold text-center block bg-[#1877F2] text-white';
         else if (ad.buttonType === 'instagram') btn.className = 'w-full mt-3 py-3 rounded-xl font-bold text-center block bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 text-white';
         else btn.className = 'w-full mt-3 py-3 rounded-xl font-bold text-center block gold-bg text-black';
@@ -3090,88 +3066,62 @@
       if (timerEl) timerEl.innerText = adDuration - seconds;
       if (seconds >= adSkipDelay) {
         const skipBtn = document.getElementById('ad-skip');
-        if (skipBtn) { skipBtn.classList.remove('hidden','opacity-50','cursor-not-allowed'); skipBtn.classList.add('gold-bg','text-black','cursor-pointer'); skipBtn.onclick = () => closeAd(); }
+        if (skipBtn) {
+          skipBtn.classList.remove('hidden', 'opacity-50', 'cursor-not-allowed');
+          skipBtn.classList.add('gold-bg', 'text-black', 'cursor-pointer');
+          skipBtn.onclick = () => closeAd();
+        }
       }
       if (seconds >= adDuration) closeAd();
     }, 1000);
-  }
+  } catch(e) { console.error('Ad error:', e); }
+}
 
-  // ── Sticky Bottom Bar Ad ─────────────────────────────────────────────────────
-  function showStickyAd(ad) {
-    const bar = document.getElementById('sticky-ad-bar');
-    const content = document.getElementById('sticky-ad-content');
-    if (!bar || !content) return;
-    const imgs = ad.images || [];
-    let imgHTML = imgs.length ? `<img src="${imgs[0]}" id="sticky-ad-img" style="height:38px;width:56px;object-fit:cover;border-radius:7px;flex-shrink:0;">` : '';
-    if (imgs.length > 1) {
-      let i = 0;
-      if (window.stickyAdInterval) clearInterval(window.stickyAdInterval);
-      window.stickyAdInterval = setInterval(() => { i=(i+1)%imgs.length; const el=document.getElementById('sticky-ad-img'); if(el){el.style.opacity='0';setTimeout(()=>{el.src=imgs[i];el.style.opacity='1';},200);} }, 3000);
+
+
+
+    // ============ STICKY AD BANNER ============
+    async function loadStickyAd() {
+        try {
+            // Try sticky ads first, fallback to any active ad
+            let snap = await db.collection('ads').where('isActive','==',true).where('isSticky','==',true).limit(1).get();
+            if (snap.empty) snap = await db.collection('ads').where('isActive','==',true).limit(1).get();
+            if (snap.empty) return;
+            const ad = snap.docs[0].data();
+            const bar = document.getElementById('sticky-ad-bar');
+            const content = document.getElementById('sticky-ad-content');
+            if (!bar || !content) return;
+            // Rotate images if multiple
+            const imgs = ad.images || [];
+            let imgHTML = '';
+            if (imgs.length > 0) {
+                imgHTML = `<img src="${imgs[0]}" style="height:38px;width:56px;object-fit:cover;border-radius:7px;flex-shrink:0;" id="sticky-ad-img">`;
+                if (imgs.length > 1) {
+                    let idx = 0;
+                    setInterval(() => {
+                        idx = (idx+1) % imgs.length;
+                        const el = document.getElementById('sticky-ad-img');
+                        if (el) { el.style.opacity='0'; setTimeout(()=>{el.src=imgs[idx];el.style.opacity='1';},200); }
+                    }, 3000);
+                }
+            }
+            content.innerHTML = imgHTML +
+                `<div style="flex:1;min-width:0;overflow:hidden;">
+                    <p style="color:#fff;font-size:13px;font-weight:700;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${ad.title || ''}</p>
+                </div>` +
+                (ad.buttonLink ? `<a href="${ad.buttonLink}" target="_blank" style="background:linear-gradient(135deg,#d4af37,#f0c94e);color:#000;font-weight:700;padding:7px 14px;border-radius:10px;font-size:12px;text-decoration:none;white-space:nowrap;flex-shrink:0;">${ad.buttonText || 'عرض'}</a>` : '');
+            bar.style.display = 'flex';
+            // Adjust page bottom padding so content isn't hidden
+            document.body.style.paddingBottom = '56px';
+        } catch(e) {}
     }
-    content.innerHTML = imgHTML +
-      `<div style="flex:1;min-width:0;overflow:hidden;"><p style="color:#fff;font-size:13px;font-weight:700;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${ad.title||''}</p></div>` +
-      (ad.buttonLink ? `<a href="${ad.buttonLink}" target="_blank" style="background:linear-gradient(135deg,#d4af37,#f0c94e);color:#000;font-weight:700;padding:7px 14px;border-radius:10px;font-size:12px;text-decoration:none;white-space:nowrap;flex-shrink:0;">${ad.buttonText||'عرض'}</a>` : '');
-    bar.style.display = 'flex';
-    document.body.style.paddingBottom = '56px';
-  }
-  function closeStickyAd() {
-    const bar = document.getElementById('sticky-ad-bar');
-    if (bar) bar.style.display = 'none';
-    document.body.style.paddingBottom = '';
-    if (window.stickyAdInterval) { clearInterval(window.stickyAdInterval); window.stickyAdInterval = null; }
-  }
-
-  // ── Corner Popup Ad (زاوية سفلية يسار) ──────────────────────────────────────
-  function showCornerAd(ad) {
-    const old = document.getElementById('corner-ad-box'); if(old) old.remove();
-    const imgs = ad.images || [];
-    const el = document.createElement('div');
-    el.id = 'corner-ad-box';
-    el.style.cssText = 'position:fixed;bottom:88px;left:16px;z-index:1400;width:220px;background:#111;border:1px solid rgba(212,175,55,0.35);border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.8);font-family:"Cairo",sans-serif;direction:rtl;animation:slideUpCorner 0.4s ease;';
-    el.innerHTML = `
-      <button onclick="this.closest('#corner-ad-box').remove()" style="position:absolute;top:6px;left:6px;background:rgba(0,0,0,0.6);border:none;color:#fff;width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:13px;z-index:2;display:flex;align-items:center;justify-content:center;">✕</button>
-      ${imgs.length ? `<img src="${imgs[0]}" style="width:100%;height:110px;object-fit:cover;display:block;">` : ''}
-      <div style="padding:10px 12px;">
-        <p style="color:#d4af37;font-size:12px;font-weight:700;margin:0 0 6px;">${ad.title||''}</p>
-        ${ad.buttonLink ? `<a href="${ad.buttonLink}" target="_blank" style="display:block;text-align:center;background:linear-gradient(135deg,#d4af37,#f0c94e);color:#000;font-weight:700;padding:6px 10px;border-radius:8px;font-size:11px;text-decoration:none;">${ad.buttonText||'عرض العرض'}</a>` : ''}
-      </div>`;
-    document.body.appendChild(el);
-    setTimeout(() => { if(el.parentNode) el.style.opacity='0'; setTimeout(()=>el.remove(),400); }, (ad.duration||20)*1000);
-  }
-
-  // ── Floating Side Ad (جانبي عائم يمين) ──────────────────────────────────────
-  function showFloatingAd(ad) {
-    const old = document.getElementById('floating-ad-box'); if(old) old.remove();
-    const imgs = ad.images || [];
-    const el = document.createElement('div');
-    el.id = 'floating-ad-box';
-    el.style.cssText = 'position:fixed;top:50%;left:0;transform:translateY(-50%);z-index:1400;width:64px;background:#111;border:1px solid rgba(212,175,55,0.35);border-radius:0 14px 14px 0;overflow:hidden;box-shadow:4px 0 24px rgba(0,0,0,0.7);font-family:"Cairo",sans-serif;cursor:pointer;transition:width 0.3s ease;';
-    el.title = ad.title || '';
-    el.innerHTML = `
-      <button onclick="document.getElementById('floating-ad-box').remove()" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);border:none;color:#fff;width:18px;height:18px;border-radius:50%;cursor:pointer;font-size:11px;z-index:2;display:flex;align-items:center;justify-content:center;">✕</button>
-      ${imgs.length ? `<img src="${imgs[0]}" style="width:64px;height:96px;object-fit:cover;display:block;" id="float-ad-img">` : ''}
-      <div id="float-ad-info" style="display:none;padding:8px;width:160px;">
-        <p style="color:#d4af37;font-size:11px;font-weight:700;margin:0 0 5px;">${ad.title||''}</p>
-        ${ad.buttonLink ? `<a href="${ad.buttonLink}" target="_blank" style="display:block;text-align:center;background:linear-gradient(135deg,#d4af37,#f0c94e);color:#000;font-weight:700;padding:5px 8px;border-radius:7px;font-size:10px;text-decoration:none;">${ad.buttonText||'عرض'}</a>` : ''}
-      </div>`;
-    el.addEventListener('mouseenter', () => { el.style.width='224px'; document.getElementById('float-ad-info').style.display='block'; });
-    el.addEventListener('mouseleave', () => { el.style.width='64px'; document.getElementById('float-ad-info').style.display='none'; });
-    document.body.appendChild(el);
-    setTimeout(() => { if(el.parentNode) { el.style.opacity='0'; setTimeout(()=>el.remove(),400); } }, (ad.duration||30)*1000);
-  }
-
-  // Load ads 1.5s after page load
-  setTimeout(loadAd, 1500);
-  // Sticky ad always loads (even on repeat sessions)
-  setTimeout(async () => {
-    if (sessionStorage.getItem('zahraa_last_ad')) {
-      try {
-        const snap = await db.collection('ads').where('isActive','==',true).get();
-        const stickyAd = snap.docs.map(d=>({id:d.id,...d.data()})).find(a=>(a.displayType||'') === 'sticky' || a.isSticky);
-        if (stickyAd) showStickyAd(stickyAd);
-      } catch(e) {}
+    function closeStickyAd() {
+        const bar = document.getElementById('sticky-ad-bar');
+        if (bar) bar.style.display = 'none';
+        document.body.style.paddingBottom = '';
     }
-  }, 2000);
+    // Load sticky ad 2s after page load
+    setTimeout(loadStickyAd, 2000);
 
     // ============ POINTS → COUPON EXCHANGE ============
     window.redeemPointsForCoupon = async function() {
@@ -3541,14 +3491,10 @@ function moveAdSlide(dir) {
     <div id="smart-cart-content" style="font-size:12px;color:#aaa;"></div>
   </div>
   <!-- ===== SUPPORT CHAT ===== -->
-  <!-- DRAGGABLE CHAT FAB -->
-  <div id="chat-fab-wrap" style="position:fixed;bottom:24px;right:20px;z-index:1500;user-select:none;touch-action:none;">
-    <button id="chat-fab" onclick="toggleChat()" style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#d4af37,#f0c94e);border:none;cursor:grab;box-shadow:0 4px 24px rgba(212,175,55,0.45);display:flex;align-items:center;justify-content:center;font-size:26px;transition:transform 0.15s;position:relative;" title="تواصل معنا">
-      💬
-      <span id="chat-unread-badge" style="display:none;position:absolute;top:-2px;right:-2px;background:#ef4444;color:#fff;border-radius:50%;width:20px;height:20px;font-size:11px;font-weight:700;align-items:center;justify-content:center;border:2px solid #000;"></span>
-    </button>
-    <button id="chat-fab-close" onclick="hideChatFab()" title="إخفاء" style="position:absolute;top:-6px;left:-6px;width:22px;height:22px;border-radius:50%;background:#222;border:1.5px solid #555;color:#aaa;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;padding:0;line-height:1;">✕</button>
-  </div>
+  <button id="chat-fab" onclick="toggleChat()" style="position:fixed;bottom:24px;right:20px;z-index:1500;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#d4af37,#f0c94e);border:none;cursor:pointer;box-shadow:0 4px 24px rgba(212,175,55,0.45);display:flex;align-items:center;justify-content:center;font-size:26px;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+    💬
+    <span id="chat-unread-badge" style="display:none;position:absolute;top:-2px;right:-2px;background:#ef4444;color:#fff;border-radius:50%;width:20px;height:20px;font-size:11px;font-weight:700;align-items:center;justify-content:center;border:2px solid #000;"></span>
+  </button>
 
   <div id="chat-widget" style="display:none;position:fixed;bottom:88px;right:20px;z-index:1501;width:310px;max-height:430px;background:#0d0d0d;border-radius:20px;border:1px solid rgba(212,175,55,0.3);box-shadow:0 8px 48px rgba(0,0,0,0.85);flex-direction:column;overflow:hidden;font-family:'Cairo',sans-serif;direction:rtl;animation:slideUpChat 0.3s ease;">
     <!-- Header -->
@@ -3580,9 +3526,6 @@ function moveAdSlide(dir) {
   @keyframes slideUpChat { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
   #chat-messages-box::-webkit-scrollbar{width:4px} #chat-messages-box::-webkit-scrollbar-track{background:transparent} #chat-messages-box::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
   #sticky-ad-bar img{transition:opacity 0.3s ease;}
-  @keyframes slideUpCorner{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-  #floating-ad-box{transition:width 0.3s ease,opacity 0.4s ease;}
-  #corner-ad-box{transition:opacity 0.4s ease;}
   @media(max-width:480px){#sticky-ad-bar .ad-cta{display:none!important}}
   </style>
 
@@ -3592,86 +3535,6 @@ function moveAdSlide(dir) {
     <div id="sticky-ad-content" style="flex:1;overflow:hidden;display:flex;align-items:center;gap:10px;min-width:0;"></div>
     <button onclick="closeStickyAd()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#666;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:15px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.color='#ccc'" onmouseout="this.style.color='#666'">✕</button>
   </div>
-
-
-  <script>
-  // ── Draggable Chat FAB ──────────────────────────────────────────────────────
-  (function(){
-    const wrap = document.getElementById('chat-fab-wrap');
-    const fab  = document.getElementById('chat-fab');
-    if (!wrap) return;
-
-    // Restore hidden state (only persists in sessionStorage, resets on refresh)
-    if (sessionStorage.getItem('chatFabHidden') === '1') {
-      wrap.style.display = 'none';
-    }
-
-    let dragging = false, startX, startY, origRight, origBottom, moved = false;
-
-    function getPos() {
-      const r = parseInt(wrap.style.right) || 20;
-      const b = parseInt(wrap.style.bottom) || 24;
-      return { r, b };
-    }
-
-    function pointerDown(e) {
-      const pt = e.touches ? e.touches[0] : e;
-      dragging = true; moved = false;
-      startX = pt.clientX; startY = pt.clientY;
-      const pos = getPos();
-      origRight = pos.r; origBottom = pos.b;
-      fab.style.cursor = 'grabbing';
-      e.preventDefault();
-    }
-    function pointerMove(e) {
-      if (!dragging) return;
-      const pt = e.touches ? e.touches[0] : e;
-      const dx = pt.clientX - startX;
-      const dy = pt.clientY - startY;
-      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) moved = true;
-      const newRight = Math.max(5, Math.min(window.innerWidth - 66, origRight - dx));
-      const newBottom = Math.max(5, Math.min(window.innerHeight - 66, origBottom - dy));
-      wrap.style.right = newRight + 'px';
-      wrap.style.bottom = newBottom + 'px';
-      // Reposition chat widget too
-      const widget = document.getElementById('chat-widget');
-      if (widget) {
-        widget.style.right = newRight + 'px';
-        widget.style.bottom = (newBottom + 64) + 'px';
-      }
-      e.preventDefault();
-    }
-    function pointerUp(e) {
-      if (!dragging) return;
-      dragging = false;
-      fab.style.cursor = 'grab';
-      if (moved) { e.stopPropagation(); e.preventDefault(); }
-    }
-
-    wrap.addEventListener('mousedown', pointerDown);
-    document.addEventListener('mousemove', pointerMove);
-    document.addEventListener('mouseup', pointerUp);
-    wrap.addEventListener('touchstart', pointerDown, { passive: false });
-    document.addEventListener('touchmove', pointerMove, { passive: false });
-    document.addEventListener('touchend', pointerUp);
-
-    // Prevent click on fab when dragging
-    fab.addEventListener('click', function(e) { if (moved) { e.stopPropagation(); moved = false; } });
-  })();
-
-  window.hideChatFab = function() {
-    const wrap = document.getElementById('chat-fab-wrap');
-    const widget = document.getElementById('chat-widget');
-    if (wrap) wrap.style.display = 'none';
-    if (widget) widget.style.display = 'none';
-    sessionStorage.setItem('chatFabHidden', '1');
-  };
-  window.showChatFab = function() {
-    const wrap = document.getElementById('chat-fab-wrap');
-    if (wrap) wrap.style.display = '';
-    sessionStorage.removeItem('chatFabHidden');
-  };
-  </script>
 
 </body>
 </html>
