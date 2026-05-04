@@ -293,6 +293,7 @@
         <button onclick="showPage('track'); closeSidebar();" class="p-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 transition-colors text-sm font-bold text-center">📦 تتبع الطلب</button>
         <button id="sidebar-myorders-btn" onclick="showPage('myorders'); closeSidebar();" class="hidden p-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 transition-colors text-sm font-bold text-center">📋 طلباتي</button>
         <button onclick="showPage('testimonials'); closeSidebar();" class="p-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 transition-colors text-sm font-bold text-center col-span-2">⭐ الآراء والتقييمات</button>
+        <button onclick="showChatFab(); closeSidebar();" class="p-3 rounded-xl bg-yellow-900/20 border border-yellow-700/30 hover:bg-yellow-900/40 transition-colors text-sm font-bold text-center col-span-2 gold-text">💬 إظهار زر الدردشة</button>
       </div>
       <div class="border-t border-zinc-800 pt-4 mb-4">
         <h2 class="text-sm font-bold mb-3 text-zinc-400 uppercase tracking-widest">الأقسام</h2>
@@ -3017,7 +3018,7 @@
 
     // ============ START ALL FEATURES ============
     setTimeout(()=>{
-        startSocialProof();
+        // startSocialProof(); // تعطيل الإشعارات الوهمية
         checkAbandonedCart();
         setTimeout(checkFirstOrderBanner,3000);
         setTimeout(initScratchCard,1500);
@@ -3314,16 +3315,54 @@
             name: currentUser ? (currentUser.displayName || currentUser.email) : 'زائر'
         };
         try {
+            // Check if this is the first user message (for auto-reply)
+            let isFirstMsg = false;
+            try {
+                const existSnap = await db.collection('support_chats').doc(deviceId).get();
+                if (!existSnap.exists || !(existSnap.data()?.messages || []).some(m => m.sender === 'user')) {
+                    isFirstMsg = true;
+                }
+            } catch(e) {}
+
             await db.collection('support_chats').doc(deviceId).set({
                 deviceId,
                 userId: currentUser ? currentUser.uid : null,
                 userName: currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'زائر',
+                userPhoto: currentUser ? (currentUser.photoURL || '') : '',
                 lastMessage: text,
                 lastAt: firebase.firestore.FieldValue.serverTimestamp(),
                 unreadByAdmin: firebase.firestore.FieldValue.increment(1),
                 unreadByUser: 0,
                 messages: firebase.firestore.FieldValue.arrayUnion(msg)
             }, { merge: true });
+
+            // Send auto-reply on first message
+            if (isFirstMsg) {
+                try {
+                    const settSnap = await db.collection('settings').doc('chat').get();
+                    if (settSnap.exists) {
+                        const sett = settSnap.data();
+                        if (sett.autoReplyEnabled && sett.autoReplyMessage) {
+                            setTimeout(async () => {
+                                try {
+                                    const autoMsg = {
+                                        text: sett.autoReplyMessage,
+                                        sender: 'admin',
+                                        timestamp: new Date().toISOString(),
+                                        name: 'خدمة العملاء'
+                                    };
+                                    await db.collection('support_chats').doc(deviceId).update({
+                                        messages: firebase.firestore.FieldValue.arrayUnion(autoMsg),
+                                        unreadByUser: firebase.firestore.FieldValue.increment(1),
+                                        lastMessage: '👑 ' + sett.autoReplyMessage,
+                                        lastAt: firebase.firestore.FieldValue.serverTimestamp()
+                                    });
+                                } catch(e) {}
+                            }, 2000);
+                        }
+                    }
+                } catch(e) {}
+            }
         } catch(e) { console.error('Chat error:', e); }
     };
 
@@ -3491,10 +3530,57 @@ function moveAdSlide(dir) {
     <div id="smart-cart-content" style="font-size:12px;color:#aaa;"></div>
   </div>
   <!-- ===== SUPPORT CHAT ===== -->
-  <button id="chat-fab" onclick="toggleChat()" style="position:fixed;bottom:24px;right:20px;z-index:1500;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#d4af37,#f0c94e);border:none;cursor:pointer;box-shadow:0 4px 24px rgba(212,175,55,0.45);display:flex;align-items:center;justify-content:center;font-size:26px;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-    💬
-    <span id="chat-unread-badge" style="display:none;position:absolute;top:-2px;right:-2px;background:#ef4444;color:#fff;border-radius:50%;width:20px;height:20px;font-size:11px;font-weight:700;align-items:center;justify-content:center;border:2px solid #000;"></span>
-  </button>
+  <!-- Draggable Chat FAB -->
+  <div id="chat-fab-container" style="position:fixed;bottom:24px;right:20px;z-index:1500;touch-action:none;user-select:none;display:block;">
+    <button id="chat-fab-dismiss" onclick="hideChatFab()" title="إخفاء زر الدردشة" style="position:absolute;top:-8px;right:-8px;background:#ef4444;border:none;color:#fff;width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;z-index:2;box-shadow:0 2px 8px rgba(0,0,0,0.5);line-height:1;">✕</button>
+    <button id="chat-fab" onclick="!_fabDragged&&toggleChat()" style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#d4af37,#f0c94e);border:none;cursor:pointer;box-shadow:0 4px 24px rgba(212,175,55,0.45);display:flex;align-items:center;justify-content:center;font-size:26px;transition:transform 0.2s;position:relative;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+      💬
+      <span id="chat-unread-badge" style="display:none;position:absolute;top:-2px;right:-2px;background:#ef4444;color:#fff;border-radius:50%;width:20px;height:20px;font-size:11px;font-weight:700;align-items:center;justify-content:center;border:2px solid #000;"></span>
+    </button>
+  </div>
+  <script>
+  (function(){
+    const fab = document.getElementById('chat-fab-container');
+    if (!fab) return;
+    window._fabDragged = false;
+    // Restore position
+    try { const pos = localStorage.getItem('zahraa_chat_fab_pos'); if(pos){const p=JSON.parse(pos);fab.style.bottom=p.bottom;fab.style.right=p.right;} } catch(e){}
+    // Restore visibility
+    if (localStorage.getItem('zahraa_chat_fab_hidden')==='1') fab.style.display='none';
+    // Drag
+    let dragging=false,sx,sy,sr,sb;
+    function start(e){
+      if(e.target.id==='chat-fab-dismiss')return;
+      dragging=true;window._fabDragged=false;
+      const t=e.touches?e.touches[0]:e;
+      sx=t.clientX;sy=t.clientY;
+      const cs=window.getComputedStyle(fab);
+      sr=parseInt(cs.right)||20;sb=parseInt(cs.bottom)||24;
+      e.preventDefault();
+    }
+    function move(e){
+      if(!dragging)return;
+      const t=e.touches?e.touches[0]:e;
+      const dx=sx-t.clientX,dy=sy-t.clientY;
+      if(Math.abs(dx)>5||Math.abs(dy)>5)window._fabDragged=true;
+      fab.style.right=Math.max(4,Math.min(window.innerWidth-64,sr+dx))+'px';
+      fab.style.bottom=Math.max(4,Math.min(window.innerHeight-64,sb+dy))+'px';
+    }
+    function end(){
+      if(!dragging)return;dragging=false;
+      if(window._fabDragged)localStorage.setItem('zahraa_chat_fab_pos',JSON.stringify({bottom:fab.style.bottom,right:fab.style.right}));
+      setTimeout(()=>{window._fabDragged=false;},100);
+    }
+    fab.addEventListener('mousedown',start);
+    document.addEventListener('mousemove',move);
+    document.addEventListener('mouseup',end);
+    fab.addEventListener('touchstart',start,{passive:false});
+    document.addEventListener('touchmove',e=>{if(dragging){move(e);e.preventDefault();}},{passive:false});
+    document.addEventListener('touchend',end);
+  })();
+  window.hideChatFab=function(){const c=document.getElementById('chat-fab-container');if(c)c.style.display='none';localStorage.setItem('zahraa_chat_fab_hidden','1');};
+  window.showChatFab=function(){const c=document.getElementById('chat-fab-container');if(c)c.style.display='block';localStorage.removeItem('zahraa_chat_fab_hidden');};
+  </script>
 
   <div id="chat-widget" style="display:none;position:fixed;bottom:88px;right:20px;z-index:1501;width:310px;max-height:430px;background:#0d0d0d;border-radius:20px;border:1px solid rgba(212,175,55,0.3);box-shadow:0 8px 48px rgba(0,0,0,0.85);flex-direction:column;overflow:hidden;font-family:'Cairo',sans-serif;direction:rtl;animation:slideUpChat 0.3s ease;">
     <!-- Header -->
