@@ -318,14 +318,44 @@
         </div>
 
         <!-- Referral -->
-        <div class="card">
-          <h3 class="font-bold gold-text mb-3">🎁 دعوة الأصدقاء</h3>
-          <p class="text-zinc-400 text-xs mb-3">شارك الرابط وكسب كوبون خصم عند أول طلب لصديقك</p>
-          <div class="flex gap-2">
-            <input id="referral-link" readonly class="input-field flex-1 text-xs" placeholder="">
-            <button onclick="copyReferral()" class="btn-gold text-sm px-3">نسخ</button>
-          </div>
-        </div>
+<div class="card">
+  <h3 class="font-bold gold-text mb-3">🎁 دعوة الأصدقاء</h3>
+  <p class="text-zinc-400 text-xs mb-3">
+    شارك الرابط وكسب كوبون خصم عند أول طلب لصديقك
+  </p>
+
+  <div class="flex gap-2">
+    <!-- استخدم value بدل placeholder -->
+    <input 
+      id="referral-link" 
+      readonly 
+      class="input-field flex-1 text-xs overflow-x-auto"
+      value=""
+    >
+
+    <button onclick="copyReferral()" class="btn-gold text-sm px-3">
+      نسخ
+    </button>
+  </div>
+</div>
+
+<script>
+  // مثال لتوليد رابط الإحالة (تأكد إن userId موجود عندك)
+  const userId = localStorage.getItem("userId") || "guest";
+
+  const referralLink = window.location.origin + "/?ref=" + userId;
+
+  document.getElementById("referral-link").value = referralLink;
+
+  function copyReferral() {
+    const input = document.getElementById("referral-link");
+    input.select();
+    input.setSelectionRange(0, 99999);
+    document.execCommand("copy");
+
+    alert("تم نسخ رابط الإحالة");
+  }
+</script>
 
         <!-- Danger Zone -->
         <div class="card border-red-900/30">
