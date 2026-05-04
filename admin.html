@@ -100,10 +100,9 @@
                             <input type="text" id="p-name" placeholder="اسم المنتج" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
                             <input type="text" id="p-code" placeholder="كود المنتج (ZA-450)" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
                         </div>
-                        <div class="grid grid-cols-3 gap-2">
+                        <div class="grid grid-cols-2 gap-2">
                             <input type="number" id="p-price" placeholder="السعر الأساسي" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
-                            <input type="number" id="p-old-price" placeholder="السعر قبل الخصم" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
-                            <input type="number" id="p-qty" placeholder="الكمية (qty)" min="0" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                            <input type="number" id="p-old-price" placeholder="السعر قبل الخصم (اختياري)" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
                         </div>
                         <select id="p-category" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
                             <option value="">— اختر القسم —</option>
@@ -181,7 +180,6 @@
                         <label class="text-xs text-zinc-500 flex items-center gap-1">من: <input type="date" id="order-date-from" onchange="renderOrders()" class="bg-black border border-zinc-700 rounded text-xs p-2 outline-none"></label>
                         <label class="text-xs text-zinc-500 flex items-center gap-1">إلى: <input type="date" id="order-date-to" onchange="renderOrders()" class="bg-black border border-zinc-700 rounded text-xs p-2 outline-none"></label>
                         <button onclick="document.getElementById('order-date-from').value='';document.getElementById('order-date-to').value='';renderOrders();" class="text-xs px-3 py-2 bg-zinc-800 rounded hover:bg-zinc-700">مسح التاريخ</button>
-                        <button onclick="exportOrdersToCSV()" class="text-xs px-3 py-2 bg-green-700 hover:bg-green-600 text-white rounded font-bold flex items-center gap-1">📊 تصدير Excel</button>
                     </div>
                 </div>
                 <div id="orders-list" class="space-y-6"></div>
@@ -344,6 +342,14 @@
                 <div class="bg-zinc-900 p-8 rounded-2xl gold-border text-center">
                     <p class="text-zinc-500 text-sm mb-2">العملاء المسجلون</p>
                     <h4 id="stat-customers" class="text-4xl font-bold gold-text">0</h4>
+                </div>
+                <div class="bg-zinc-900 p-8 rounded-2xl gold-border text-center">
+                    <p class="text-zinc-500 text-sm mb-2">💰 إجمالي الإيرادات المدفوعة</p>
+                    <h4 id="stat-paid-revenue" class="text-4xl font-bold gold-text">0 ج</h4>
+                </div>
+                <div class="bg-zinc-900 p-8 rounded-2xl gold-border text-center">
+                    <p class="text-zinc-500 text-sm mb-2">📦 الطلبات المدفوعة</p>
+                    <h4 id="stat-paid-orders" class="text-4xl font-bold gold-text">0</h4>
                 </div>
             </div>
             <div class="bg-zinc-900 p-6 rounded-xl gold-border">
@@ -673,6 +679,15 @@
                     <span class="text-sm font-bold gold-text">📌 إعلان ثابت (شريط سفلي أثناء التصفح)</span>
                 </label>
             </div>
+            <div>
+                <label class="text-xs text-zinc-400 mb-1 block">🖥️ طريقة عرض الإعلان:</label>
+                <select id="ad-display-mode" class="w-full p-3 bg-black border border-zinc-700 rounded text-sm">
+                    <option value="popup">نافذة منبثقة مركزية (Popup)</option>
+                    <option value="banner">شريط علوي (Banner)</option>
+                    <option value="corner">زاوية صغيرة (Corner)</option>
+                    <option value="sticky">شريط سفلي ثابت (Sticky)</option>
+                </select>
+            </div>
             <div class="grid grid-cols-2 gap-3">
                 <input type="text" id="ad-button-link" placeholder="رابط الزر" class="p-3 bg-black border border-zinc-700 rounded">
                 <select id="ad-button-type" class="p-3 bg-black border border-zinc-700 rounded">
@@ -737,7 +752,34 @@
             </div>
         </div>
     </div>
+
+    <!-- Auto-Reply Settings Panel -->
+    <div class="mt-6 bg-zinc-900 p-5 rounded-2xl gold-border">
+        <h3 class="font-bold gold-text mb-4">⚡ إعدادات الرد التلقائي</h3>
+        <div class="space-y-3 max-w-lg">
+            <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" id="auto-reply-enabled" class="w-5 h-5 accent-yellow-500">
+                <span class="font-bold text-sm">تفعيل الرد التلقائي (يُرسل عند أول رسالة من العميل)</span>
+            </label>
+            <div>
+                <label class="text-xs text-zinc-400 mb-1 block">نص الرد التلقائي:</label>
+                <textarea id="auto-reply-message" rows="3" placeholder="مثلاً: شكراً لتواصلك! سنرد عليك في أقرب وقت ممكن ⭐" class="w-full bg-black border border-zinc-700 text-white p-3 rounded-xl text-sm outline-none focus:border-yellow-500 resize-none"></textarea>
+            </div>
+            <button onclick="saveAutoReplySettings()" class="gold-bg text-black px-6 py-2 rounded-xl font-bold text-sm">💾 حفظ إعدادات الرد التلقائي</button>
+        </div>
+    </div>
 </div>
+
+    <!-- Report Content Modal -->
+    <div id="report-content-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:99997;align-items:center;justify-content:center;backdrop-filter:blur(4px);direction:rtl;">
+        <div style="background:#1a1a1a;border:1px solid #d4af37;border-radius:20px;padding:28px 24px;max-width:500px;width:92%;max-height:80vh;overflow-y:auto;direction:rtl;position:relative;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <h3 style="color:#d4af37;font-size:17px;font-weight:700;margin:0;">📋 محتوى المنشور المُبلَّغ عنه</h3>
+                <button onclick="document.getElementById('report-content-modal').style.display='none'" style="background:none;border:none;color:#777;cursor:pointer;font-size:22px;line-height:1;">✕</button>
+            </div>
+            <div id="report-content-body"></div>
+        </div>
+    </div>
 
     <!-- ===== ZAHRAA CUSTOM TOAST ===== -->
     <div id="zahraa-toast" style="position:fixed;top:24px;left:50%;transform:translateX(-50%) translateY(-100px);z-index:99999;min-width:280px;max-width:420px;background:linear-gradient(135deg,#1a1a1a,#2a2a2a);border:1px solid #d4af37;border-radius:16px;padding:14px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,0.7);transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1),opacity 0.35s;opacity:0;pointer-events:none;direction:rtl;">
@@ -974,7 +1016,6 @@
                 isWeeklyOffer,
                 dailyOfferSetAt: isDailyOffer ? serverTimestamp() : null,
                 weeklyOfferEnd: isWeeklyOffer ? new Date(Date.now() + 7*24*60*60*1000) : null,
-                qty: document.getElementById('p-qty').value !== '' ? parseInt(document.getElementById('p-qty').value) : null,
                 updatedAt: serverTimestamp()
             };
 
@@ -994,7 +1035,7 @@
 
         window.resetProductForm = () => {
             editingProductId = null;
-            ['product-id','p-name','p-code','p-price','p-old-price','p-qty','p-desc','p-discount-value','p-video-url'].forEach(id => document.getElementById(id).value = '');
+            ['product-id','p-name','p-code','p-price','p-old-price','p-desc','p-discount-value','p-video-url'].forEach(id => document.getElementById(id).value = '');
             document.getElementById('p-category').value = '';
             document.getElementById('p-discount-type').value = '';
             document.getElementById('p-instock').checked = true;
@@ -1031,7 +1072,7 @@
                                 <h4 class="font-bold text-sm">${p.name}</h4>
                                 ${p.code ? `<span class="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded">${p.code}</span>` : ''}
                             </div>
-                            <p class="text-xs gold-text">${p.price} ج ${p.oldPrice ? `<span class="text-zinc-500 line-through ml-2">${p.oldPrice} ج</span>` : ''} ${p.qty !== null && p.qty !== undefined ? `<span class="text-zinc-400 mr-1">| الكمية: <b class="${p.qty===0?'text-red-400':p.qty===1?'text-orange-400':'text-white'}">${p.qty}</b></span>` : ''}</p>
+                            <p class="text-xs gold-text">${p.price} ج ${p.oldPrice ? `<span class="text-zinc-500 line-through ml-2">${p.oldPrice} ج</span>` : ''}</p>
                             <p class="text-[10px] text-zinc-500">${p.category || 'بدون قسم'}</p>
                             <div class="mt-1 flex gap-1 flex-wrap">${badges}</div>
                         </div>
@@ -1053,7 +1094,6 @@
             document.getElementById('p-code').value = p.code || '';
             document.getElementById('p-price').value = p.price || '';
             document.getElementById('p-old-price').value = p.oldPrice || '';
-            document.getElementById('p-qty').value = p.qty !== null && p.qty !== undefined ? p.qty : '';
             // ensure category exists in dropdown
             const catSel = document.getElementById('p-category');
             if (p.category && ![...catSel.options].some(o => o.value === p.category)) {
@@ -1096,43 +1136,14 @@
             const badge = document.getElementById('orders-count-badge');
             if (pendingCount > 0) { badge.innerText = pendingCount; badge.classList.remove('hidden'); }
             else { badge.classList.add('hidden'); }
+            // Paid orders revenue stats
+            const paidOrders = allOrders.filter(o => o.paymentStatus === 'مدفوع');
+            const paidRevenue = paidOrders.reduce((a, b) => a + (parseFloat(b.totalPrice) || 0), 0);
+            const statRev = document.getElementById('stat-paid-revenue');
+            const statPaid = document.getElementById('stat-paid-orders');
+            if (statRev) statRev.innerText = paidRevenue.toFixed(0) + ' ج';
+            if (statPaid) statPaid.innerText = paidOrders.length;
             renderOrders();
-        };
-
-        window.exportOrdersToCSV = async () => {
-            try {
-                zahraaToast('جاري تصدير الطلبات...','info');
-                const snap = await getDocs(query(collection(db, 'orders'), orderBy('createdAt','desc')));
-                const rows = [['رقم الطلب','التاريخ','الاسم','الهاتف','المحافظة','العنوان','الحالة','الدفع','المبلغ الكلي','الشحن','المنتجات']];
-                snap.forEach(d => {
-                    const o = { id: d.id, ...d.data() };
-                    const dateStr = o.createdAt?.toDate ? o.createdAt.toDate().toLocaleDateString('ar-EG') : '';
-                    const items = (o.items||[]).map(i => `${i.name}×${i.qty}`).join(' - ');
-                    rows.push([
-                        o.orderNumber||'',
-                        dateStr,
-                        o.customerName||'',
-                        o.customerPhone||'',
-                        o.customerGovernorate||'',
-                        (o.customerAddress||'').replace(/,/g,';'),
-                        o.status||'',
-                        o.paymentStatus||'',
-                        o.totalPrice||0,
-                        o.shippingCost||0,
-                        items.replace(/,/g,';')
-                    ]);
-                });
-                const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
-                const BOM = '\uFEFF';
-                const blob = new Blob([BOM+csv], {type:'text/csv;charset=utf-8'});
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `zahraa-orders-${new Date().toISOString().slice(0,10)}.csv`;
-                a.click();
-                setTimeout(()=>URL.revokeObjectURL(url),1000);
-                zahraaToast(`تم تصدير ${snap.size} طلب بنجاح ✅`,'success');
-            } catch(e) { zahraaToast('خطأ في التصدير: '+e.message,'error'); }
         };
 
         window.renderOrders = () => {
@@ -1197,6 +1208,7 @@
                             ${hasCustomerImages ? `<button onclick="downloadOrderZip('${o.id}','customer')" class="btn-sm bg-blue-600 text-white">📦 صور العميل</button>` : ''}
                             ${hasProductImages ? `<button onclick="downloadOrderZip('${o.id}','products')" class="btn-sm bg-purple-600 text-white">🖼️ صور المنتجات</button>` : ''}
                             <a href="https://wa.me/${(o.customerPhone||'').replace(/\D/g,'')}?text=${encodeURIComponent('مرحباً ' + (o.customerName||'') + '، بخصوص طلبك رقم ' + (o.orderNumber || o.id.substring(0,8)))}" target="_blank" class="btn-sm bg-[#25D366] text-white">واتساب</a>
+                            <button onclick="deleteOrder('${o.id}')" class="btn-sm btn-danger">🗑️ حذف</button>
                         </div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
@@ -1228,6 +1240,17 @@
                     </div>
                 </div>`;
             }).join('');
+        };
+
+        window.deleteOrder = async (id) => {
+            zahraaConfirm('حذف الطلب نهائياً؟', async () => {
+                try {
+                    await deleteDoc(doc(db, 'orders', id));
+                    allOrders = allOrders.filter(x => x.id !== id);
+                    zahraaToast('تم حذف الطلب ✓');
+                    renderOrders();
+                } catch (e) { zahraaToast(e.message, 'error'); }
+            }, 'هذا الإجراء لا يمكن التراجع عنه', '🗑️');
         };
 
         window.togglePaid = async (id, currentlyPaid) => {
@@ -1832,11 +1855,18 @@
         };
 
         // ==================== CUSTOMERS ====================
+        window.customerPointsMap = {};
         async function loadCustomers() {
             try {
                 const snap = await getDocs(collection(db, 'users'));
                 allCustomers = [];
                 snap.forEach(d => allCustomers.push({ id: d.id, ...d.data() }));
+                // Fetch all points balances
+                try {
+                    const pointsSnap = await getDocs(collection(db, 'points'));
+                    window.customerPointsMap = {};
+                    pointsSnap.forEach(d => { window.customerPointsMap[d.id] = d.data().balance || 0; });
+                } catch(pe) {}
                 renderCustomers();
             } catch (e) { console.error(e); }
         }
@@ -1862,11 +1892,15 @@
                 const orders = allOrders.filter(o => o.userId === c.id);
                 const totalSpent = orders.reduce((a, b) => a + (b.totalPrice || 0), 0);
                 const isBlocked = !!c.isBlocked;
+                const points = window.customerPointsMap?.[c.id] || 0;
                 return `
                     <div class="p-4 bg-black rounded-xl border border-zinc-800">
                         <div class="flex justify-between items-start gap-3 flex-wrap">
                             <div>
-                                <p class="font-bold">${c.name || c.email || 'بدون اسم'}</p>
+                                <div class="flex items-center gap-2 mb-1">
+                                    ${c.photoURL ? `<img src="${c.photoURL}" class="w-8 h-8 rounded-full border border-zinc-700 object-cover">` : '<div class="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-sm">👤</div>'}
+                                    <p class="font-bold">${c.name || c.email || 'بدون اسم'}</p>
+                                </div>
                                 <p class="text-xs text-zinc-500">${c.email || ''}</p>
                                 <p class="text-[10px] text-zinc-500 font-mono">كود: ${c.userCode || c.id.substring(0,10)}</p>
                                 ${c.earnedReferralCoupon ? `<p class="text-[10px] text-green-400">✓ كوبون إحالة: ${c.earnedReferralCoupon}</p>` : ''}
@@ -1875,6 +1909,7 @@
                             <div class="text-left">
                                 <p class="text-xs text-zinc-500">عدد الطلبات: <span class="text-white font-bold">${orders.length}</span></p>
                                 <p class="text-xs text-zinc-500">إجمالي الإنفاق: <span class="gold-text font-bold">${totalSpent} ج</span></p>
+                                <p class="text-xs text-zinc-500">النقاط: <span class="text-yellow-400 font-bold">⭐ ${points}</span></p>
                                 <button onclick="toggleBlockUser('${c.id}', ${isBlocked})" class="mt-2 text-[10px] px-3 py-1 rounded ${isBlocked ? 'bg-green-600' : 'bg-red-600'} text-white">
                                     ${isBlocked ? 'إلغاء الحظر' : 'حظر العميل'}
                                 </button>
@@ -2184,8 +2219,24 @@
         window.viewReportedContent = async (col, docId) => {
             try {
                 const snap = await getDoc(doc(db, col, docId));
-                if (snap.exists) { zahraaToast('البيانات في الـ Console','info'); console.log(snap.data()); }
-                else zahraaToast('المحتوى محذوف أو غير موجود','warning');
+                if (snap.exists()) {
+                    const d = snap.data();
+                    let html = '<div style="direction:rtl;text-align:right;">';
+                    Object.keys(d).forEach(k => {
+                        let v = d[k];
+                        let vStr = (v && typeof v === 'object') ? JSON.stringify(v) : String(v||'');
+                        if (vStr.length > 300) vStr = vStr.substring(0,300)+'...';
+                        html += `<div style="margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #2a2a2a;">
+                            <span style="color:#d4af37;font-size:11px;font-weight:700;">${k}:</span>
+                            <p style="color:#ddd;font-size:13px;margin:3px 0 0;word-break:break-all;">${vStr}</p>
+                        </div>`;
+                    });
+                    html += '</div>';
+                    document.getElementById('report-content-body').innerHTML = html;
+                    document.getElementById('report-content-modal').style.display = 'flex';
+                } else {
+                    zahraaToast('المحتوى محذوف أو غير موجود','warning');
+                }
             } catch (e) { zahraaToast('خطأ: '+e.message,'error'); }
         };
 
@@ -2350,9 +2401,10 @@
             const buttonText = document.getElementById('ad-button-text').value.trim();
             const buttonLink = document.getElementById('ad-button-link').value.trim();
             const buttonType = document.getElementById('ad-button-type').value;
+            const displayMode = document.getElementById('ad-display-mode')?.value || 'popup';
             if (!title && adImagesUrls.length === 0) return zahraaToast('أدخل عنوان أو ارفع صورة','warning');
             try {
-                await addDoc(collection(db, 'ads'), { title, images: adImagesUrls, duration, skipDelay, buttonText, buttonLink, buttonType, isActive: true, isSticky: document.getElementById('ad-is-sticky')?.checked||false, createdAt: serverTimestamp() });
+                await addDoc(collection(db, 'ads'), { title, images: adImagesUrls, duration, skipDelay, buttonText, buttonLink, buttonType, displayMode, isActive: true, isSticky: document.getElementById('ad-is-sticky')?.checked||false, createdAt: serverTimestamp() });
                 zahraaToast('تم حفظ الإعلان ✅','success');
                 document.getElementById('ad-title').value = '';
                 document.getElementById('ad-images-preview').innerHTML = '';
@@ -2476,12 +2528,17 @@
                     totalUnread += unread;
                     const lastTime = ch.lastAt?.toDate ? ch.lastAt.toDate().toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'}) : '';
                     list.innerHTML += `<div onclick="openChat('${d.id}')" class="p-3 rounded-xl cursor-pointer hover:bg-zinc-800 transition-colors border ${activeChatId===d.id?'border-yellow-500 bg-zinc-800':'border-zinc-800'} relative">
-                        <div class="flex items-center justify-between gap-2">
-                            <p class="font-bold text-sm truncate flex-1">${ch.userName || 'زائر'}</p>
-                            <span class="text-xs text-zinc-500 flex-shrink-0">${lastTime}</span>
-                            ${unread > 0 ? `<span class="bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0">${unread}</span>` : ''}
+                        <div class="flex items-center gap-2">
+                            ${ch.userPhoto ? `<img src="${ch.userPhoto}" class="w-9 h-9 rounded-full border border-zinc-700 object-cover flex-shrink-0">` : '<div class="w-9 h-9 rounded-full bg-zinc-800 flex items-center justify-center text-base flex-shrink-0">👤</div>'}
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between gap-1">
+                                    <p class="font-bold text-sm truncate flex-1">${ch.userName || 'زائر'}</p>
+                                    <span class="text-xs text-zinc-500 flex-shrink-0">${lastTime}</span>
+                                    ${unread > 0 ? `<span class="bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0">${unread}</span>` : ''}
+                                </div>
+                                <p class="text-xs text-zinc-500 truncate">${ch.lastMessage || '...'}</p>
+                            </div>
                         </div>
-                        <p class="text-xs text-zinc-500 truncate mt-1">${ch.lastMessage || '...'}</p>
                     </div>`;
                 });
                 const badge = document.getElementById('chat-unread-count');
@@ -2499,7 +2556,7 @@
                 if (!snap.exists || !msgsBox) return;
                 const msgs = snap.data().messages || [];
                 const chatData = snap.data();
-                if (header) header.innerHTML = `<div class="flex items-center justify-between"><p class="font-bold text-sm">${chatData.userName || 'زائر'} ${chatData.userId ? '<span class="text-xs text-zinc-500">• مسجل</span>' : '<span class="text-xs text-zinc-500">• زائر</span>'}</p><p class="text-xs text-zinc-500">${chatId.substring(0,16)}</p></div>`;
+                if (header) header.innerHTML = `<div class="flex items-center justify-between gap-2"><div class="flex items-center gap-2">${chatData.userPhoto ? `<img src="${chatData.userPhoto}" class="w-9 h-9 rounded-full border border-zinc-700 object-cover">` : '<div class="w-9 h-9 rounded-full bg-zinc-800 flex items-center justify-center text-base">👤</div>'}<div><p class="font-bold text-sm">${chatData.userName || 'زائر'} ${chatData.userId ? '<span class="text-xs text-zinc-500">• مسجل</span>' : '<span class="text-xs text-zinc-500">• زائر</span>'}</p><p class="text-[10px] text-zinc-500 font-mono">${chatId.substring(0,16)}</p></div></div></div>`;
                 msgsBox.innerHTML = '';
                 const adminUnread = chatData.unreadByAdmin || 0;
                 const userUnread = chatData.unreadByUser || 0;
@@ -2586,6 +2643,30 @@
 
         // Load chats when tab clicked
         document.getElementById('btn-chat-tab')?.addEventListener('click', loadChats);
+
+        // ============ AUTO-REPLY SETTINGS ============
+        window.saveAutoReplySettings = async () => {
+            const enabled = document.getElementById('auto-reply-enabled')?.checked || false;
+            const message = (document.getElementById('auto-reply-message')?.value || '').trim();
+            try {
+                await setDoc(doc(db, 'settings', 'chat'), { autoReplyEnabled: enabled, autoReplyMessage: message }, { merge: true });
+                zahraaToast('تم حفظ إعدادات الرد التلقائي ✓', 'success');
+            } catch (e) { zahraaToast('خطأ: ' + e.message, 'error'); }
+        };
+
+        // Load auto-reply settings when chat tab opens
+        document.getElementById('btn-chat-tab')?.addEventListener('click', async () => {
+            try {
+                const snap = await getDoc(doc(db, 'settings', 'chat'));
+                if (snap.exists()) {
+                    const d = snap.data();
+                    const enabledEl = document.getElementById('auto-reply-enabled');
+                    const msgEl = document.getElementById('auto-reply-message');
+                    if (enabledEl) enabledEl.checked = !!d.autoReplyEnabled;
+                    if (msgEl) msgEl.value = d.autoReplyMessage || '';
+                }
+            } catch(e) {}
+        });
 
         // ===== Tab click listeners for ads/push =====
         document.getElementById('btn-ads-tab')?.addEventListener('click', loadAdsList);
