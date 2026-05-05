@@ -2211,12 +2211,34 @@
             try { await deleteDoc(doc(db, 'reports', id)); loadAdminReports(); } catch (e) {}
         };
         window.viewReportedContent = async (col, docId) => {
-            try {
-                const snap = await getDoc(doc(db, col, docId));
-                if (snap.exists) { zahraaToast('البيانات في الـ Console','info'); console.log(snap.data()); }
-                else zahraaToast('المحتوى محذوف أو غير موجود','warning');
-            } catch (e) { zahraaToast('خطأ: '+e.message,'error'); }
-        };
+    try {
+        // الطريقة الحديثة لجلب وثيقة واحدة
+        const docRef = doc(db, col, docId);
+        const snap = await getDoc(docRef);
+        
+        if (snap.exists()) {
+            const d = snap.data();
+            let html = '<div style="direction:rtl;text-align:right;">';
+            Object.keys(d).forEach(k => {
+                let v = d[k];
+                let vStr = (v && typeof v === 'object') ? JSON.stringify(v) : String(v||'');
+                if (vStr.length > 300) vStr = vStr.substring(0,300)+'...';
+                html += `<div style="margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #2a2a2a;">
+                    <span style="color:#d4af37;font-size:11px;font-weight:700;">${k}:</span>
+                    <p style="color:#ddd;font-size:13px;margin:3px 0 0;word-break:break-all;">${vStr}</p>
+                </div>`;
+            });
+            html += '</div>';
+            document.getElementById('report-content-body').innerHTML = html;
+            document.getElementById('report-content-modal').style.display = 'flex';
+        } else {
+            zahraaToast('المحتوى محذوف أو غير موجود 🗑️', 'warning');
+        }
+    } catch (e) {
+        console.error("Error viewing content:", e);
+        zahraaToast('خطأ: ' + e.message, 'error');
+    }
+};
 
         // ============ POINTS ADMIN ============
         window.savePointsSettings = async () => {
