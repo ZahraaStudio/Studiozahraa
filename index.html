@@ -797,21 +797,7 @@
         </div>
     </div>
   </div>
-  <div id="ad-modal" class="modal fixed inset-0 flex items-center justify-center p-4 z-[2000]">
-  <div class="bg-zinc-950 rounded-3xl border border-gold-text max-w-md w-full p-6">
-    <div class="relative overflow-hidden rounded-xl">
-      <div id="ad-track" class="flex transition-transform duration-300"></div>
-      <button id="ad-prev" onclick="moveAdSlide(-1)" class="absolute top-1/2 right-2 bg-black/60 text-white w-8 h-8 rounded-full hidden">‹</button>
-      <button id="ad-next" onclick="moveAdSlide(1)" class="absolute top-1/2 left-2 bg-black/60 text-white w-8 h-8 rounded-full hidden">›</button>
-    </div>
-    <h3 id="ad-title" class="text-xl font-bold mt-4 text-center"></h3>
-    <div class="mt-4 text-center text-sm text-zinc-400">
-      يغلق بعد <span id="ad-timer">0</span> ثانية
-    </div>
-    <button id="ad-skip" class="w-full mt-3 py-2 rounded-xl font-bold hidden opacity-50 cursor-not-allowed">تخطي الإعلان</button>
-    <a id="ad-button" href="#" target="_blank" class="w-full mt-3 py-3 rounded-xl font-bold text-center hidden"></a>
-  </div>
-  </div>
+  <!-- ad-modal moved to bottom of page (inline-styled version) -->
   <!-- Firebase Config & Initialization -->
   <script>
     const firebaseConfig = {
@@ -2557,6 +2543,7 @@
     window.openCheckout = function() {
         if (cart.length === 0) return zahraaToast('سلة التسوق فارغة', 'warning');
         document.getElementById('checkout-modal').classList.add('active');
+        updateCheckoutTotal();
         // Pre-fill from saved profile
         const saved = JSON.parse(localStorage.getItem('zahraa_profile') || '{}');
         if (saved.name) document.getElementById('customer-name').value = saved.name;
@@ -3233,7 +3220,7 @@
 
     // ============ START ALL FEATURES ============
     setTimeout(()=>{
-        startSocialProof();
+        // startSocialProof(); // مُعطَّل - إشعارات وهمية محذوفة
         checkAbandonedCart();
         setTimeout(checkFirstOrderBanner,3000);
         setTimeout(initScratchCard,1500);
@@ -3262,8 +3249,12 @@
     if (track) {
       track.innerHTML = adImages.map((img,i) => `<div style="min-width:100%;height:420px;overflow:hidden;"><img src="${img}" style="width:100%;height:100%;object-fit:cover;"></div>`).join('');
       buildAdDots();
-      localStorage.setItem(adKey, JSON.stringify({ ts: now, adId: snap.docs[0].id }));
+        localStorage.setItem(adKey, JSON.stringify({ ts: now, adId: snap.docs[0].id }));
       startAdAutoSlide();
+      // عداد مشاهدات الإعلان
+      db.collection('ads').doc(snap.docs[0].id).update({
+        views: firebase.firestore.FieldValue.increment(1)
+      }).catch(()=>{});
     }
 
     if (ad.buttonText && ad.buttonLink) {
