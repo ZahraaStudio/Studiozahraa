@@ -2754,22 +2754,21 @@
         };
         // دالة حذف الطلب نهائياً
 window.deleteOrder = async (id) => {
-    // استخدام نافذة تأكيد مخصصة (أو confirm العادية)
     zahraaConfirm('حذف الطلب نهائياً؟', async () => {
         try {
-            // الحذف من مجموعة orders في الفايربيز
-            await db.collection('orders').doc(id).delete();
+            // الطريقة الصحيحة للإصدار الحديث (Modular)
+            await deleteDoc(doc(db, 'orders', id)); 
             
-            // إظهار إشعار نجاح
             zahraaToast('تم حذف الطلب بنجاح ✅', 'success');
             
-            // إعادة تحميل الطلبات لتحديث القائمة فوراً
+            // تحديث القائمة فوراً
             loadOrders(); 
         } catch (e) {
-            console.error("Error deleting order:", e);
-            zahraaToast('خطأ: تعذر حذف الطلب', 'error');
+            console.error("Firebase Error:", e);
+            // إذا استمر الخطأ، سيطبع السبب الحقيقي في الـ Console (اضغط F12 لرؤيته)
+            zahraaToast('خطأ: ' + e.message, 'error');
         }
-    }, 'هذا الإجراء سيقوم بمسح بيانات الطلب تماماً ولا يمكن التراجع عنه.', '🗑️');
+    }, 'هذا الإجراء سيقوم بمسح بيانات الطلب تماماً من قاعدة البيانات ولا يمكن التراجع عنه.', '🗑️');
 };
 
     </script>
