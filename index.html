@@ -3231,60 +3231,69 @@
   // ============ AD SYSTEM ============
    let adTimer = null, adImages = [], currentAdSlide = 0, adDuration = 30, adSkipDelay = 5;
 
-  async function loadAd() {
-  // لا تظهر الإعلان إلا مرة كل 24 ساعة لكل إعلان
-  const now = Date.now();
-  const adKey = 'zahraa_ad_shown';
-  const lastShownData = JSON.parse(localStorage.getItem(adKey) || '{}');
-  if (lastShownData.ts && (now - lastShownData.ts) < 24 * 60 * 60 * 1000) return;
-  try {
-    const snap = await db.collection('ads').where('isActive', '==', true).limit(1).get();
-    if (snap.empty) return;
-    const ad = snap.docs[0].data();
+   async function loadAd() {
+    try {
+        const snap = await db.collection('ads').where('isActive', '==', true).limit(1).get();
+        if (snap.empty) return;
+        
+        const ad = snap.docs[0].data();
+        const adId = snap.docs[0].id;
+        
+        // --- حسم التوقيت (التكرار) ---
+        const lastShownKey = 'zahraa_ad_last_time_' + adId;
+        const lastShownTime = localStorage.getItem(lastShownKey);
+        const now = Date.now();
+        const frequencyMs = (ad.frequencyMinutes || 10) * 60 * 1000; // تحويل الدقائق لملي ثانية
+
+        if (lastShownTime && (now - lastShownTime < frequencyMs)) {
+            console.log("الإعلان ظهر مؤخراً، سيظهر مجدداً بعد فترة.");
+            return; 
+        }
+
+        // --- تنفيذ العرض حسب النوع (Display Mode) ---
+        if (ad.displayMode === 'sticky') {
+            showStickyAd(ad); // وظيفة مخصصة للشريط السفلي
+        } else if (ad.displayMode === 'banner') {
+            showTopBannerAd(ad); // وظيفة مخصصة للشريط العلوي
+        } else {
+            showPopupAd(ad); // النوع التقليدي (المنبثق)
+        }
+
+        // حفظ وقت الظهور الحالي
+        localStorage.setItem(lastShownKey, now);
+
+    } catch(e) { console.error('Ad Error:', e); }
+}
+
+// دالة العرض المنبثق (Popup) - عدلتها لتشمل زر التخطي المصلح
+function showPopupAd(ad) {
     adImages = ad.images || [];
     adDuration = ad.duration || 30;
     adSkipDelay = ad.skipDelay || 5;
+    
     document.getElementById('ad-title').innerText = ad.title || '';
     const track = document.getElementById('ad-track');
-    if (track) {
-      track.innerHTML = adImages.map((img,i) => `<div style="min-width:100%;height:420px;overflow:hidden;"><img src="${img}" style="width:100%;height:100%;object-fit:cover;"></div>`).join('');
-      buildAdDots();
-        localStorage.setItem(adKey, JSON.stringify({ ts: now, adId: snap.docs[0].id }));
-      startAdAutoSlide();
-      // عداد مشاهدات الإعلان
-      db.collection('ads').doc(snap.docs[0].id).update({
-        views: firebase.firestore.FieldValue.increment(1)
-      }).catch(()=>{});
-    }
+    track.innerHTML = adImages.map(img => `<div style="min-width:100%;height:420px;"><img src="${img}" style="width:100%;height:100%;object-fit:cover;"></div>`).join('');
+    
+    const skipBtn = document.getElementById('ad-skip');
+    skipBtn.style.display = 'none'; // مخفي في البداية
 
-    if (ad.buttonText && ad.buttonLink) {
-      const btn = document.getElementById('ad-button');
-      if (btn) {
-        btn.classList.remove('hidden');
-        btn.innerText = ad.buttonText;
-        btn.href = ad.buttonLink;
-        if (ad.buttonType === 'facebook') btn.className = 'w-full mt-3 py-3 rounded-xl font-bold text-center block bg-[#1877F2] text-white';
-        else if (ad.buttonType === 'instagram') btn.className = 'w-full mt-3 py-3 rounded-xl font-bold text-center block bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 text-white';
-        else btn.className = 'w-full mt-3 py-3 rounded-xl font-bold text-center block gold-bg text-black';
-      }
-    }
     document.getElementById('ad-modal').style.display = 'flex';
-    let seconds = 0;
+    
+    let sec = 0;
     adTimer = setInterval(() => {
-      seconds++;
-      const timerEl = document.getElementById('ad-timer');
-      if (timerEl) timerEl.innerText = adDuration - seconds;
-      if (seconds >= adSkipDelay) {
-        const skipBtn = document.getElementById('ad-skip');
-        if (skipBtn) {
-          skipBtn.classList.remove('hidden', 'opacity-50', 'cursor-not-allowed');
-          skipBtn.classList.add('gold-bg', 'text-black', 'cursor-pointer');
-          skipBtn.onclick = () => closeAd();
+        sec++;
+        document.getElementById('ad-timer').innerText = adDuration - sec;
+        if (sec >= adSkipDelay) {
+            skipBtn.style.display = 'block';
+            skipBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            skipBtn.onclick = () => closeAd();
         }
-      }
-      if (seconds >= adDuration) closeAd();
+        if (sec >= adDuration) closeAd();
     }, 1000);
-  } catch(e) { console.error('Ad error:', e); }
+    
+    buildAdDots();
+    startAdAutoSlide();
 }
 
 
