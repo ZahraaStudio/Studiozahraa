@@ -2752,6 +2752,25 @@
                 if(document.getElementById('s-referral-desc'))       document.getElementById('s-referral-desc').value=d.referralGiftDesc||'خصم 10% مع الإحالة';
             }catch(e){}
         };
+        // دالة حذف الطلب نهائياً
+window.deleteOrder = async (id) => {
+    // استخدام نافذة تأكيد مخصصة (أو confirm العادية)
+    zahraaConfirm('حذف الطلب نهائياً؟', async () => {
+        try {
+            // الحذف من مجموعة orders في الفايربيز
+            await db.collection('orders').doc(id).delete();
+            
+            // إظهار إشعار نجاح
+            zahraaToast('تم حذف الطلب بنجاح ✅', 'success');
+            
+            // إعادة تحميل الطلبات لتحديث القائمة فوراً
+            loadOrders(); 
+        } catch (e) {
+            console.error("Error deleting order:", e);
+            zahraaToast('خطأ: تعذر حذف الطلب', 'error');
+        }
+    }, 'هذا الإجراء سيقوم بمسح بيانات الطلب تماماً ولا يمكن التراجع عنه.', '🗑️');
+};
 
     </script>
 </body>
