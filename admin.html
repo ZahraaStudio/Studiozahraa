@@ -1216,6 +1216,7 @@
                             <button onclick="togglePaid('${o.id}', ${paid})" class="btn-sm ${paid ? 'bg-zinc-700' : 'bg-green-600'} text-white">${paid ? 'إلغاء الدفع' : 'تعليم كمدفوع'}</button>
                             ${hasCustomerImages ? `<button onclick="downloadOrderZip('${o.id}','customer')" class="btn-sm bg-blue-600 text-white">📦 صور العميل</button>` : ''}
                             ${hasProductImages ? `<button onclick="downloadOrderZip('${o.id}','products')" class="btn-sm bg-purple-600 text-white">🖼️ صور المنتجات</button>` : ''}
+                            ‏<button onclick="deleteOrder('${o.id}')" class="btn-sm btn-danger">🗑️ حذف</button>
                             <a href="https://wa.me/${(o.customerPhone||'').replace(/\D/g,'')}?text=${encodeURIComponent('مرحباً ' + (o.customerName||'') + '، بخصوص طلبك رقم ' + (o.orderNumber || o.id.substring(0,8)))}" target="_blank" class="btn-sm bg-[#25D366] text-white">واتساب</a>
                         </div>
                     </div>
