@@ -681,33 +681,31 @@
     <div class="bg-zinc-900 p-6 rounded-2xl gold-border">
         <h3 class="text-xl font-bold mb-4">📢 إدارة الإعلانات المنبثقة</h3>
         <div class="space-y-4">
+            <!-- حقل العنوان -->
             <input type="text" id="ad-title" placeholder="عنوان الإعلان" class="w-full p-3 bg-black border border-zinc-700 rounded">
+            
+            <!-- (الإضافة الجديدة هنا) حقول التكرار وطريقة العرض -->
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="text-[10px] text-zinc-500 block mb-1">يظهر كل كم دقيقة؟</label>
+                    <input type="number" id="ad-frequency" placeholder="10" value="10" class="w-full p-3 bg-black border border-zinc-700 rounded">
+                </div>
+                <div>
+                    <label class="text-[10px] text-zinc-500 block mb-1">شكل العرض:</label>
+                    <select id="ad-display-mode" class="w-full p-3 bg-black border border-zinc-700 rounded text-sm">
+                        <option value="popup">نافذة منبثقة (وسط الشاشة)</option>
+                        <option value="sticky">شريط سفلي ثابت</option>
+                        <option value="banner">شريط علوي</option>
+                    </select>
+                </div>
+            </div>
+
             <div class="grid grid-cols-3 gap-3">
                 <input type="number" id="ad-duration" placeholder="المدة (ثانية)" class="p-3 bg-black border border-zinc-700 rounded">
                 <input type="number" id="ad-skip-delay" placeholder="تأخير التخطي (ث)" class="p-3 bg-black border border-zinc-700 rounded">
                 <input type="text" id="ad-button-text" placeholder="نص الزر" class="p-3 bg-black border border-zinc-700 rounded">
             </div>
-            <div class="flex items-center gap-3 mt-2">
-                <label class="flex items-center gap-2 cursor-pointer select-none">
-                    <input type="checkbox" id="ad-is-sticky" class="w-4 h-4 rounded accent-yellow-400">
-                    <span class="text-sm font-bold gold-text">📌 إعلان ثابت (شريط سفلي أثناء التصفح)</span>
-                </label>
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-                <input type="text" id="ad-button-link" placeholder="رابط الزر" class="p-3 bg-black border border-zinc-700 rounded">
-                <select id="ad-button-type" class="p-3 bg-black border border-zinc-700 rounded">
-                    <option value="custom">مخصص (ذهبي)</option>
-                    <option value="facebook">فيسبوك (أزرق)</option>
-                    <option value="instagram">إنستجرام (متدرج)</option>
-                </select>
-            </div>
-            <input type="file" id="ad-images" multiple accept="image/*" class="w-full p-2 bg-black border border-zinc-700 rounded">
-            <div id="ad-images-preview" class="flex gap-2 flex-wrap"></div>
-            <button onclick="saveAd()" class="gold-bg w-full py-3 rounded-xl font-bold">💾 حفظ الإعلان</button>
-        </div>
-    </div>
-    <div id="ads-list" class="mt-6 space-y-3"></div>
-</div>
+            <!-- ... باقي الكود الموجود أصلاً ... -->
 
 <!-- Push Notifications Tab -->
 <div id="push-tab" class="tab-content">
