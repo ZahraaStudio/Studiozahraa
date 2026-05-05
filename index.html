@@ -3270,22 +3270,88 @@
     }
     document.getElementById('ad-modal').style.display = 'flex';
     let seconds = 0;
+
+    let adTimer = null; 
+
+    async function loadAd() {
+    try {
+    // 1. فحص التكرار (يظهر كل 10 دقائق مثلاً)
+    const frequencyMinutes = 10; // يمكنك تغييرها أو جلبها من الداتابيز
+    const lastShown = localStorage.getItem('zahraa_last_ad_time');
+    const now = Date.now();
+
+    if (lastShown && (now - lastShown < frequencyMinutes * 60 * 1000)) {
+        console.log("الإعلان في فترة الانتظار");
+        return; 
+    }
+
+    // 2. جلب بيانات الإعلان من Firebase
+    const snap = await db.collection('ads').where('isActive', '==', true).limit(1).get();
+    if (snap.empty) return;
+    const ad = snap.docs[0].data();
+
+    // 3. تجهيز المتغيرات المحلية (داخل الدالة فقط)
+    let secondsElapsed = 0;
+    const adDuration = parseInt(ad.duration) || 30;
+    const adSkipDelay = parseInt(ad.skipDelay) || 5;
+
+    // 4. إيقاف أي تايمر قديم شغال لمنع التداخل (هذا هو سبب التهنيج غالباً)
+    if (adTimer) clearInterval(adTimer);
+
+    // 5. تعبئة البيانات في الـ HTML
+    document.getElementById('ad-title').innerText = ad.title || '';
+    // إضافة الصور واللوجيك الخاص بالسلايدر هنا (إذا كان لديك)
+    
+    // إخفاء زر التخطي في البداية
+    const skipBtn = document.getElementById('ad-skip');
+    if (skipBtn) {
+        skipBtn.style.display = 'none';
+        skipBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+
+    // 6. إظهار المودال
+    document.getElementById('ad-modal').style.display = 'flex';
+
+    // 7. بدء العداد الزمني بشكل آمن
     adTimer = setInterval(() => {
-      seconds++;
+      secondsElapsed++;
+      
+      // تحديث رقم العداد في الواجهة
       const timerEl = document.getElementById('ad-timer');
-      if (timerEl) timerEl.innerText = adDuration - seconds;
-      if (seconds >= adSkipDelay) {
-        const skipBtn = document.getElementById('ad-skip');
+      if (timerEl) {
+          timerEl.innerText = Math.max(0, adDuration - secondsElapsed);
+      }
+
+      // إظهار وتفعيل زر التخطي بعد مرور الوقت المحدد
+      if (secondsElapsed >= adSkipDelay) {
         if (skipBtn) {
+          skipBtn.style.display = 'block';
           skipBtn.classList.remove('hidden', 'opacity-50', 'cursor-not-allowed');
           skipBtn.classList.add('gold-bg', 'text-black', 'cursor-pointer');
-          skipBtn.onclick = () => closeAd();
+          skipBtn.onclick = () => closeAd(); // ربط زر الإغلاق
+          skipBtn.innerText = 'تخطي الإعلان ✕';
         }
       }
-      if (seconds >= adDuration) closeAd();
+
+      // إغلاق الإعلان تلقائياً عند انتهاء المدة الكاملة
+      if (secondsElapsed >= adDuration) {
+          closeAd();
+      }
     }, 1000);
-  } catch(e) { console.error('Ad error:', e); }
-    }
+
+    // حفظ وقت الظهور الحالي
+    localStorage.setItem('zahraa_last_ad_time', now);
+
+  } catch (e) {
+    console.error('Ad System Error:', e);
+  }
+}
+
+// دالة الإغلاق المصلحة
+function closeAd() {
+    if (adTimer) clearInterval(adTimer); // إيقاف العداد فوراً
+    document.getElementById('ad-modal').style.display = 'none';
+}
 
 
 
