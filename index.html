@@ -3273,20 +3273,29 @@
     adTimer = setInterval(() => {
       seconds++;
       const timerEl = document.getElementById('ad-timer');
-      if (timerEl) timerEl.innerText = adDuration - seconds;
+      if (timerEl) timerEl.innerText = Math.max(0, adDuration - seconds);
+
+      // هذا الجزء هو المسؤول عن إظهار الزر
       if (seconds >= adSkipDelay) {
         const skipBtn = document.getElementById('ad-skip');
         if (skipBtn) {
+          // أولاً: نجعله مرئياً بتغيير الـ display
+          skipBtn.style.display = 'block'; 
+          
+          // ثانياً: نحذف كلاسات التعطيل ونضيف كلاسات التفعيل
           skipBtn.classList.remove('hidden', 'opacity-50', 'cursor-not-allowed');
           skipBtn.classList.add('gold-bg', 'text-black', 'cursor-pointer');
+          
+          // ثالثاً: ربط دالة الإغلاق بالزر
           skipBtn.onclick = () => closeAd();
+          
+          // تغيير النص ليكون أوضح
+          skipBtn.innerHTML = 'تخطي الإعلان ✕';
         }
       }
+
       if (seconds >= adDuration) closeAd();
     }, 1000);
-  } catch(e) { console.error('Ad error:', e); }
-}
-
 
 
 
