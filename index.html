@@ -883,6 +883,7 @@
         // Device ID for Referral Protection
         deviceId = localStorage.getItem('deviceId') || 'dev-' + Math.random().toString(36).substring(2, 15);
         localStorage.setItem('deviceId', deviceId);
+        window.deviceId = deviceId;
 
         visitorId = localStorage.getItem('visitorId') || 'visitor-' + Date.now();
         localStorage.setItem('visitorId', visitorId);
@@ -3624,7 +3625,7 @@ function renderStickyAd(ad) {
     }
 
     window.sendChatMsg = async function() {
-    const input = document.getElementById('chat-input');
+    const input = document.getElementById('chat-msg-input') || document.getElementById('chat-input');
     const text = (input.value || '').trim();
     if (!text) return;
     input.value = '';
@@ -3864,9 +3865,9 @@ function moveAdSlide(dir) {
 <!-- ====================================================== -->
 <div id="zahraa-standalone-chat">
     <!-- الزر العائم (مفصول تماماً عن أي حاويات) -->
-    <div id="chat-fab-portal" style="position: fixed !important; bottom: 25px !important; right: 25px !important; z-index: 2147483647 !important;">
-        <span id="chat-notif-count" style="display:none; position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; width:22px; height:22px; font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center; border:2px solid black;">0</span>
-        <button onclick="handleChatToggle()" style="width:100px; height:100px; border-radius:50%; background:linear-gradient(135deg,#d4af37,#f0c94e); border:none; cursor:pointer; box-shadow:0 8px 32px rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; font-size:50px;">
+    <div id="chat-fab-portal" style="position: fixed !important; bottom: 25px !important; right: 25px !important; z-index: 2147483647 !important; width: 100px; height: 100px;">
+        <span id="chat-notif-count" style="display:none; position:absolute; top:0px; right:0px; background:red; color:white; border-radius:50%; width:28px; height:28px; font-size:14px; font-weight:bold; display:flex; align-items:center; justify-content:center; border:2px solid black; z-index: 10;">0</span>
+        <button onclick="handleChatToggle()" style="width:100%; height:100%; border-radius:50%; background:linear-gradient(135deg,#d4af37,#f0c94e); border:none; cursor:pointer; box-shadow:0 8px 32px rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; font-size:50px; position: relative;">
             <span id="chat-btn-icon">💬</span>
         </button>
     </div>
@@ -3921,12 +3922,12 @@ function moveAdSlide(dir) {
 
         function startChatListener() {
             // ننتظر حتى يتم تعريف db و deviceId
-            if (typeof firebase === 'undefined' || !window.deviceId) {
+            if (typeof firebase === 'undefined' || !window.deviceId || typeof db === 'undefined') {
                 setTimeout(startChatListener, 1000);
                 return;
             }
 
-            const chatRef = firebase.firestore().collection('support_chats').doc(window.deviceId);
+            const chatRef = db.collection('support_chats').doc(window.deviceId);
             
             chatRef.onSnapshot(snap => {
                 const box = document.getElementById('chat-scroll-area');
@@ -3963,6 +3964,51 @@ function moveAdSlide(dir) {
                 box.scrollTop = box.scrollHeight;
             }, err => console.error("Chat Listener Error:", err));
         }
+
+        window.sendChatImage = async function() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                // Show uploading status
+                const box = document.getElementById('chat-scroll-area');
+                const tempId = 'temp-' + Date.now();
+                box.innerHTML += `<div id="${tempId}" style="text-align:center;color:#d4af37;font-size:11px;">جاري رفع الصورة...</div>`;
+                box.scrollTop = box.scrollHeight;
+
+                try {
+                    const storageRef = firebase.storage().ref(`chats/${window.deviceId}/${Date.now()}_${file.name}`);
+                    const uploadTask = await storageRef.put(file);
+                    const fileUrl = await uploadTask.ref.getDownloadURL();
+                    
+                    const msg = {
+                        type: 'image',
+                        fileUrl,
+                        sender: 'user',
+                        timestamp: new Date().toISOString(),
+                        name: currentUser ? (currentUser.displayName || currentUser.email) : 'زائر'
+                    };
+
+                    const chatDocRef = db.collection('support_chats').doc(window.deviceId);
+                    await chatDocRef.set({
+                        deviceId: window.deviceId,
+                        lastMessage: '📷 صورة',
+                        lastAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        unreadByAdmin: firebase.firestore.FieldValue.increment(1),
+                        messages: firebase.firestore.FieldValue.arrayUnion(msg)
+                    }, { merge: true });
+                    
+                    document.getElementById(tempId)?.remove();
+                } catch (err) {
+                    console.error("Upload error:", err);
+                    document.getElementById(tempId).innerText = "فشل رفع الصورة ❌";
+                }
+            };
+            input.click();
+        };
 
         // تشغيل النظام
         setTimeout(startChatListener, 2000);
