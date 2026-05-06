@@ -3561,144 +3561,8 @@ function renderStickyAd(ad) {
         input.click();
     };
 
-    // ============ SUPPORT CHAT ============
-    let chatOpen = false;
-    let chatUnsubListener = null;
-
-    window.toggleChat = function() {
-        chatOpen = !chatOpen;
-        const widget = document.getElementById('chat-widget');
-        if (chatOpen) {
-            widget.style.display = 'flex';
-            document.getElementById('chat-unread-badge').style.display = 'none';
-            listenChatMsgs();
-            // Mark as read by user
-            db.collection('support_chats').doc(deviceId).update({unreadByUser:0}).catch(()=>{});
-        } else {
-            widget.style.display = 'none';
-            if (chatUnsubListener) { chatUnsubListener(); chatUnsubListener = null; }
-        }
-    };
-
-    function listenChatMsgs() {
-        if (chatUnsubListener) chatUnsubListener();
-        chatUnsubListener = db.collection('support_chats').doc(deviceId)
-            .onSnapshot(snap => {
-                const box = document.getElementById('chat-messages-box');
-                if (!box) return;
-                if (!snap.exists) {
-                    box.innerHTML = '<div style="text-align:center;color:#555;font-size:11px;padding:6px;">مرحباً! كيف يمكننا مساعدتك؟ 😊</div>';
-                    return;
-                }
-                const msgs = snap.data().messages || [];
-                box.innerHTML = '';
-                if (!msgs.length) {
-                    box.innerHTML = '<div style="text-align:center;color:#555;font-size:11px;padding:6px;">لم ترسل رسائل بعد 💬</div>';
-                } else {
-                    const totalUnreadByUser = snap.data().unreadByUser || 0;
-                    msgs.forEach((m, mi) => {
-                        const isUser = m.sender === 'user';
-                        const time = m.timestamp ? new Date(m.timestamp).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'}) : '';
-                        // Read receipt: double tick for user msgs that admin has seen
-                        const totalMsgs = msgs.length;
-                        const isRead = isUser && totalUnreadByUser === 0;
-                        const tick = isUser ? (isRead ? '<span style="color:#4ade80;font-size:10px;">✓✓</span>' : '<span style="color:#555;font-size:10px;">✓</span>') : '';
-                        // Content: image, file, or text
-                        let content = '';
-                        if (m.type === 'image' && m.fileUrl) {
-                            content = `<a href="${m.fileUrl}" target="_blank"><img src="${m.fileUrl}" style="max-width:200px;max-height:180px;border-radius:10px;display:block;"></a>`;
-                        } else if (m.type === 'file' && m.fileUrl) {
-                            content = `<a href="${m.fileUrl}" target="_blank" style="color:${isUser?'#000':'#d4af37'};text-decoration:none;font-size:12px;">📎 ${m.fileName || 'ملف'}</a>`;
-                        } else { content = m.text; }
-                        box.innerHTML += `<div style="display:flex;flex-direction:column;align-items:${isUser?'flex-end':'flex-start'};gap:2px;margin-bottom:4px;">
-                            <div style="max-width:85%;padding:${m.type==='image'?'6px':'9px 13px'};border-radius:${isUser?'16px 16px 4px 16px':'16px 16px 16px 4px'};background:${isUser?'linear-gradient(135deg,#d4af37,#f0c94e)':'#1e1e1e'};color:${isUser?'#000':'#fff'};font-size:13px;line-height:1.5;border:${isUser?'none':'1px solid #2a2a2a'};">${content}</div>
-                            <div style="display:flex;align-items:center;gap:4px;padding:0 4px;">${tick}<span style="font-size:10px;color:#444;">${time}</span></div>
-                        </div>`;
-                    });
-                }
-                box.scrollTop = box.scrollHeight;
-                // Mark admin messages as read
-                if (snap.data().unreadByUser > 0)
-                    db.collection('support_chats').doc(deviceId).update({unreadByUser: 0}).catch(()=>{});
-            }, () => {});
-    }
-
-    window.sendChatMsg = async function() {
-    const input = document.getElementById('chat-input');
-    const text = (input.value || '').trim();
-    if (!text) return;
-    input.value = '';
-
-    const msg = {
-        text,
-        sender: 'user',
-        timestamp: new Date().toISOString(),
-        name: currentUser ? (currentUser.displayName || currentUser.email) : 'زائر'
-    };
-
-    try {
-        const chatDocRef = db.collection('support_chats').doc(deviceId);
-        
-        // 1. جلب بيانات المحادثة لمعرفة تاريخ آخر رد تلقائي
-        const existSnap = await chatDocRef.get();
-        const chatData = existSnap.exists ? existSnap.data() : {};
-        
-        // 2. إرسال رسالة المستخدم فوراً
-        await chatDocRef.set({
-            deviceId,
-            userId: currentUser ? currentUser.uid : null,
-            userName: currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'زائر',
-            lastMessage: text,
-            lastAt: firebase.firestore.FieldValue.serverTimestamp(),
-            unreadByAdmin: firebase.firestore.FieldValue.increment(1),
-            messages: firebase.firestore.FieldValue.arrayUnion(msg)
-        }, { merge: true });
-
-        // 3. منطق الرد التلقائي (مرة كل 24 ساعة)
-        const now = new Date();
-        // جلب تاريخ آخر رد تلقائي (إذا لم يوجد نعتبره تاريخاً قديماً جداً)
-        const lastAutoReplyAt = chatData.lastAutoReplyAt ? chatData.lastAutoReplyAt.toDate() : new Date(0);
-        
-        // حساب الفرق بالساعات
-        const diffInHours = (now - lastAutoReplyAt) / (1000 * 60 * 60);
-
-        // إذا مرت 24 ساعة أو أكثر على آخر رد تلقائي
-        if (diffInHours >= 24) {
-            // جلب الإعدادات من لوحة التحكم
-            db.collection('settings').doc('chat').get().then(async (settSnap) => {
-                if (settSnap.exists) {
-                    const sett = settSnap.data();
-
-                    if (sett.autoReplyEnabled && sett.autoReplyMessage) {
-                        // الرد بعد ثانيتين
-                        setTimeout(async () => {
-                            const autoMsg = {
-                                text: sett.autoReplyMessage,
-                                sender: 'admin',
-                                timestamp: new Date().toISOString(),
-                                name: 'الدعم الفني ✨'
-                            };
-
-                            // تحديث المحادثة بالرد + تسجيل تاريخ الرد التلقائي الحالي
-                            await chatDocRef.update({
-                                messages: firebase.firestore.FieldValue.arrayUnion(autoMsg),
-                                unreadByUser: firebase.firestore.FieldValue.increment(1),
-                                lastMessage: '👑 ' + sett.autoReplyMessage,
-                                lastAutoReplyAt: firebase.firestore.FieldValue.serverTimestamp() // أهم سطر للتكرار اليومي
-                            });
-                            console.log("تم إرسال الرد التلقائي اليومي بنجاح ✅");
-                        }, 2000);
-                    }
-                }
-            });
-        } else {
-            console.log(`لن يتم إرسال رد تلقائي الآن، آخر رد كان منذ ${Math.floor(diffInHours)} ساعة.`);
-        }
-
-    } catch(e) { 
-        console.error('Chat error:', e); 
-    }
-};
+    
+    
 
     // ======= PUSH NOTIFICATION REGISTRATION =======
     const VAPID_PUBLIC_KEY = 'BAtzdb2RIhljdg2H8zNOtPimm8CVEtSpAUnwkF2qa5x7j3ejf1MYSKRkR1AeCJpvuKlBm9j3UOo7GoidLMFNm1Y';
@@ -3860,112 +3724,191 @@ function moveAdSlide(dir) {
     <button onclick="closeStickyAd()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#666;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:15px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.color='#ccc'" onmouseout="this.style.color='#666'">✕</button>
   </div>
   <!-- ====================================================== -->
-<!-- نظام دردشة استوديو الزهراء المستقل (حل مشكلة الطفو والبيانات) -->
+<!-- نظام دردشة استوديو الزهراء - النسخة الاحترافية النهائية -->
 <!-- ====================================================== -->
-<div id="zahraa-standalone-chat">
-    <!-- الزر العائم (مفصول تماماً عن أي حاويات) -->
-    <div id="chat-fab-portal" style="position: fixed !important; bottom: 25px !important; right: 25px !important; z-index: 2147483647 !important;">
-        <span id="chat-notif-count" style="display:none; position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; width:22px; height:22px; font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center; border:2px solid black;">0</span>
-        <button onclick="handleChatToggle()" style="width:65px; height:65px; border-radius:50%; background:linear-gradient(135deg,#d4af37,#f0c94e); border:none; cursor:pointer; box-shadow:0 8px 32px rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; font-size:30px;">
+<div id="zahraa-chat-teleport">
+    <!-- الزر العائم -->
+    <div id="chat-fab-container" style="position: fixed !important; bottom: 25px !important; right: 25px !important; z-index: 2147483647 !important; display: block !important;">
+        <!-- شعار التنبيه باللون الأحمر -->
+        <span id="chat-notif-count" style="display:none; position:absolute; top:-5px; right:-5px; background:#ff0000; color:#fff; border-radius:50%; width:22px; height:22px; font-size:12px; font-weight:bold; align-items:center; justify-content:center; border:2px solid #000; z-index: 2147483647; box-shadow: 0 0 10px rgba(255,0,0,0.5);">0</span>
+        
+        <button id="main-chat-btn" onclick="toggleZahraaChat()" class="chat-pulse-anim" style="width:65px; height:65px; border-radius:50%; background:linear-gradient(135deg,#d4af37,#f0c94e); border:none; cursor:pointer; box-shadow:0 8px 32px rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; font-size:30px; position:relative; -webkit-tap-highlight-color: transparent;">
             <span id="chat-btn-icon">💬</span>
         </button>
     </div>
 
     <!-- نافذة الدردشة -->
-    <div id="chat-window-portal" style="display:none; position:fixed !important; bottom:100px !important; right:25px !important; z-index: 2147483646 !important; width:350px; max-width:calc(100vw - 50px); height:500px; background:#0a0a0a; border-radius:24px; border:1px solid #d4af3750; box-shadow:0 25px 80px rgba(0,0,0,0.9); flex-direction:column; overflow:hidden; direction:rtl; font-family: 'Cairo', sans-serif;">
+    <div id="chat-window-container" style="display:none; position:fixed !important; bottom:100px !important; right:25px !important; z-index: 2147483646 !important; width:350px; max-width:calc(100vw - 40px); height:500px; max-height:80vh; background:#0d0d0d; border-radius:24px; border:1px solid rgba(212,175,55,0.3); box-shadow:0 25px 80px rgba(0,0,0,0.9); flex-direction:column; overflow:hidden; font-family: 'Cairo', sans-serif; direction: rtl;">
         <!-- Header -->
         <div style="background:linear-gradient(135deg,#d4af37,#f0c94e); padding:15px 20px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
             <div style="display:flex; align-items:center; gap:10px;">
-                <div style="width:10px; height:10px; background:#22c55e; border-radius:50%; box-shadow:0 0 8px #22c55e;"></div>
-                <span style="font-weight:bold; color:#000;">الدعم الفني</span>
+                <div style="width:10px; height:10px; background:#22c55e; border-radius:50%; box-shadow: 0 0 8px #22c55e;"></div>
+                <span style="font-weight:bold; color:#000; font-size:15px;">الدعم الفني</span>
             </div>
-            <button onclick="handleChatToggle()" style="background:none; border:none; color:#000; font-size:22px; cursor:pointer;">✕</button>
+            <button onclick="toggleZahraaChat()" style="background:none; border:none; color:#000; font-size:22px; cursor:pointer;">✕</button>
         </div>
-        <!-- Messages Area -->
-        <div id="chat-scroll-area" style="flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:10px; background:#000;">
-            <div style="text-align:center; color:#555; font-size:12px; margin-top:50px;">جاري الاتصال...</div>
+        
+        <!-- منطقة الرسائل -->
+        <div id="msgs-scroll-area" style="flex:1; overflow-y:auto; padding:20px; background:#0a0a0a; display:flex; flex-direction:column; gap:12px; scrollbar-width: thin;">
+            <div style="text-align:center; color:#444; font-size:12px; margin-top:50px;">جاري الاتصال...</div>
         </div>
-        <!-- Input Area -->
-        <div style="padding:15px; background:#111; border-top:1px solid #222; display:flex; gap:8px;">
-            <button onclick="sendChatImage()" style="background:none; border:none; color:#d4af37; font-size:24px; cursor:pointer;">📎</button>
-            <input id="chat-msg-input" type="text" placeholder="اكتب رسالتك..." style="flex:1; background:#1a1a1a; border:1px solid #333; color:#fff; padding:10px 15px; border-radius:15px; outline:none;">
-            <button onclick="sendChatMsg()" style="background:#d4af37; color:#000; width:40px; height:40px; border-radius:10px; border:none; font-weight:bold;">↑</button>
+
+        <!-- منطقة الإدخال -->
+        <div style="padding:15px; background:#111; border-top:1px solid #222; display:flex; gap:10px; align-items:center;">
+            <button onclick="triggerChatUpload()" style="background:none; border:none; color:#d4af37; font-size:24px; cursor:pointer;" title="إرسال صورة">📎</button>
+            <input id="chat-main-input" type="text" placeholder="اكتب رسالتك..." style="flex:1; background:#1a1a1a; border:1px solid #333; color:#fff; padding:10px 15px; border-radius:15px; outline:none; font-family:'Cairo'; font-size:14px;">
+            <button onclick="sendZahraaMsg()" style="background:#d4af37; color:#000; width:45px; height:45px; border-radius:12px; border:none; cursor:pointer; font-weight:bold; font-size:22px;">↑</button>
         </div>
     </div>
 </div>
 
-<script>
-    // التأكد من تحميل البيانات والارتباط بالفايربيز
-    (function() {
-        let chatInitialized = false;
-        let chatVisible = false;
+<style>
+    .chat-pulse-anim::after {
+        content: ''; position: absolute; inset: 0; border-radius: 50%;
+        background: #d4af37; z-index: -1; animation: chatPulseEffect 2s infinite;
+    }
+    @keyframes chatPulseEffect { 0% { transform: scale(1); opacity: 0.7; } 100% { transform: scale(1.6); opacity: 0; } }
+</style>
 
-        window.handleChatToggle = function() {
-            chatVisible = !chatVisible;
-            const win = document.getElementById('chat-window-portal');
+<script>
+    (function() {
+        let isChatOpen = false;
+
+        // 1. فتح وغلق الشات
+        window.toggleZahraaChat = function() {
+            isChatOpen = !isChatOpen;
+            const win = document.getElementById('chat-window-container');
             const icon = document.getElementById('chat-btn-icon');
             const badge = document.getElementById('chat-notif-count');
             
-            if (chatVisible) {
-                win.style.display = 'flex';
-                icon.innerText = '✕';
+            win.style.display = isChatOpen ? 'flex' : 'none';
+            icon.innerText = isChatOpen ? '✕' : '💬';
+            
+            if (isChatOpen) {
                 badge.style.display = 'none';
-                if (window.deviceId) {
-                    firebase.firestore().collection('support_chats').doc(window.deviceId).update({ unreadByUser: 0 }).catch(()=>{});
+                if (window.deviceId && window.db) {
+                    window.db.collection('support_chats').doc(window.deviceId).update({ unreadByUser: 0 }).catch(()=>{});
                 }
-            } else {
-                win.style.display = 'none';
-                icon.innerText = '💬';
+                setTimeout(() => {
+                    const box = document.getElementById('msgs-scroll-area');
+                    box.scrollTop = box.scrollHeight;
+                }, 300);
             }
         };
 
-        function startChatListener() {
-            // ننتظر حتى يتم تعريف db و deviceId
-            if (typeof firebase === 'undefined' || !window.deviceId) {
-                setTimeout(startChatListener, 1000);
+        // 2. إرسال الرسائل
+        window.sendZahraaMsg = async function() {
+            const input = document.getElementById('chat-main-input');
+            const text = input.value.trim();
+            if (!text || !window.deviceId) return;
+            input.value = '';
+
+            const msg = { text, sender: 'user', timestamp: new Date().toISOString(), name: 'أنت' };
+            const chatRef = window.db.collection('support_chats').doc(window.deviceId);
+            
+            // جلب البيانات لفحص الرد التلقائي
+            const snap = await chatRef.get();
+            const chatData = snap.exists ? snap.data() : {};
+            
+            await chatRef.set({
+                deviceId: window.deviceId,
+                lastAt: firebase.firestore.FieldValue.serverTimestamp(),
+                unreadByAdmin: firebase.firestore.FieldValue.increment(1),
+                messages: firebase.firestore.FieldValue.arrayUnion(msg),
+                userName: currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'زائر'
+            }, { merge: true });
+
+            // منطق الرد التلقائي كل 24 ساعة
+            const lastAuto = chatData.lastAutoReplyAt ? chatData.lastAutoReplyAt.toDate() : new Date(0);
+            if ((new Date() - lastAuto) / (1000 * 60 * 60) >= 24) {
+                window.db.collection('settings').doc('chat').get().then(settSnap => {
+                    if (settSnap.exists) {
+                        const s = settSnap.data();
+                        if (s.autoReplyEnabled && s.autoReplyMessage) {
+                            setTimeout(async () => {
+                                const autoMsg = { text: s.autoReplyMessage, sender: 'admin', timestamp: new Date().toISOString(), name: 'الدعم الفني' };
+                                await chatRef.update({
+                                    messages: firebase.firestore.FieldValue.arrayUnion(autoMsg),
+                                    unreadByUser: firebase.firestore.FieldValue.increment(1),
+                                    lastAutoReplyAt: firebase.firestore.FieldValue.serverTimestamp()
+                                });
+                            }, 2000);
+                        }
+                    }
+                });
+            }
+        };
+
+        // 3. رفع الصور
+        window.triggerChatUpload = function() {
+            const inp = document.createElement('input');
+            inp.type = 'file'; inp.accept = 'image/*';
+            inp.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const fd = new FormData();
+                fd.append('file', file); fd.append('upload_preset', 'zahraa_upload');
+                try {
+                    const res = await fetch('https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload', {method:'POST', body:fd});
+                    const data = await res.json();
+                    if (data.secure_url) {
+                        const msg = { text: '📷 صورة', fileUrl: data.secure_url, type: 'image', sender: 'user', timestamp: new Date().toISOString() };
+                        await window.db.collection('support_chats').doc(window.deviceId).update({
+                            messages: firebase.firestore.FieldValue.arrayUnion(msg),
+                            unreadByAdmin: firebase.firestore.FieldValue.increment(1),
+                            lastAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    }
+                } catch(err) { alert('فشل رفع الصورة'); }
+            };
+            inp.click();
+        };
+
+        // 4. المستمع الحي (Real-time Listener)
+        function startFinalListener() {
+            if (typeof firebase === 'undefined' || !window.deviceId || !window.db) {
+                setTimeout(startFinalListener, 500);
                 return;
             }
 
-            const chatRef = firebase.firestore().collection('support_chats').doc(window.deviceId);
-            
-            chatRef.onSnapshot(snap => {
-                const box = document.getElementById('chat-scroll-area');
+            window.db.collection('support_chats').doc(window.deviceId).onSnapshot(snap => {
+                const box = document.getElementById('msgs-scroll-area');
                 const badge = document.getElementById('chat-notif-count');
-                
+                if (!box) return;
+
                 if (!snap.exists) {
-                    box.innerHTML = '<div style="text-align:center;color:#555;font-size:12px;margin-top:50px;">أهلاً بك! كيف يمكننا مساعدتك؟ 😊</div>';
+                    box.innerHTML = '<p style="text-align:center;color:#555;font-size:12px;margin-top:50px;">مرحباً بك! كيف نساعدك اليوم؟ 😊</p>';
                     return;
                 }
 
                 const data = snap.data();
-                
-                // تحديث الإشعارات
                 const unread = data.unreadByUser || 0;
-                if (!chatVisible && unread > 0) {
+                if (!isChatOpen && unread > 0) {
                     badge.style.display = 'flex';
                     badge.innerText = unread;
                 }
 
-                // عرض الرسائل
                 box.innerHTML = '';
-                const messages = data.messages || [];
-                messages.forEach(m => {
+                (data.messages || []).forEach(m => {
                     const isUser = m.sender === 'user';
-                    const time = m.timestamp ? new Date(m.timestamp).toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'}) : '';
                     box.innerHTML += `
                         <div style="display:flex; flex-direction:column; align-items:${isUser?'flex-end':'flex-start'};">
-                            <div style="max-width:85%; padding:10px 15px; border-radius:${isUser?'18px 18px 4px 18px':'18px 18px 18px 4px'}; background:${isUser?'linear-gradient(135deg,#d4af37,#f0c94e)':'#222'}; color:${isUser?'#000':'#fff'}; font-size:13px;">
+                            <div style="max-width:85%; padding:10px 15px; border-radius:${isUser?'18px 18px 4px 18px':'18px 18px 18px 4px'}; background:${isUser?'linear-gradient(135deg,#d4af37,#f0c94e)':'#1e1e1e'}; color:${isUser?'#000':'#fff'}; font-size:13px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
                                 ${m.type==='image' ? '<img src="'+m.fileUrl+'" style="max-width:100%; border-radius:10px;">' : m.text}
                             </div>
-                            <span style="font-size:9px; color:#444; margin-top:3px;">${time}</span>
+                            <span style="font-size:9px; color:#444; margin-top:3px; padding: 0 5px;">${new Date(m.timestamp).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})}</span>
                         </div>`;
                 });
                 box.scrollTop = box.scrollHeight;
-            }, err => console.error("Chat Listener Error:", err));
+            });
         }
 
-        // تشغيل النظام
-        setTimeout(startChatListener, 2000);
+        // إضافة Enter للتحدث
+        document.addEventListener('keypress', e => {
+            if (e.key === 'Enter' && document.activeElement.id === 'chat-main-input') sendZahraaMsg();
+        });
+
+        startFinalListener();
     })();
 </script>
 
