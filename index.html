@@ -2699,11 +2699,15 @@
                 const isOwner = currentUser && currentUser.uid === cp.userId;
                 grid.innerHTML += `
                     <div class="community-card" id="cp-card-${cpid}">
-                        ${cp.mediaUrls && cp.mediaUrls.length > 0 ? (
-                            cp.mediaUrls[0].includes('.mp4') || cp.mediaUrls[0].includes('video') ?
-                            `<video src="${cp.mediaUrls[0]}" controls class="w-full max-h-60 object-cover"></video>` :
-                            `<img src="${cp.mediaUrls[0]}" class="w-full object-cover max-h-72" loading="lazy">`
-                        ) : ''}
+     ${cp.mediaUrls && cp.mediaUrls.length > 0 ? (
+    (cp.mediaUrls[0].toLowerCase().includes('video') || 
+     cp.mediaUrls[0].toLowerCase().includes('.mp4') || 
+     cp.mediaUrls[0].toLowerCase().includes('.mov')) ?
+    `<div style="width:100%; background:#000; border-radius:12px; overflow:hidden;">
+        <video src="${cp.mediaUrls[0]}" controls playsinline muted preload="metadata" style="width:100%; max-height:300px; object-fit:cover;"></video>
+    </div>` :
+    `<img src="${cp.mediaUrls[0]}" class="w-full object-cover max-h-72" loading="lazy" onclick="openImageViewer('${cp.mediaUrls[0]}')">`
+) : ''}
                         <div class="p-4">
                             <div class="flex items-start justify-between gap-2 mb-2">
                                 <div class="flex items-center gap-2">
