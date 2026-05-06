@@ -3638,10 +3638,16 @@ function renderStickyAd(ad) {
 
     try {
         const chatDocRef = db.collection('support_chats').doc(deviceId);
+        
+        // 1. جلب بيانات المحادثة قبل إرسال الرسالة الجديدة
         const existSnap = await chatDocRef.get();
-        // فحص هل هذه أول رسالة للمستخدم لبدء الرد التلقائي
-        const isFirst = !existSnap.exists || !(existSnap.data()?.messages || []).some(m => m.sender === 'user');
+        const chatData = existSnap.exists ? existSnap.data() : { messages: [] };
+        
+        // 2. فحص هل هذه أول رسالة يرسلها المستخدم فعلياً؟
+        const userMsgs = (chatData.messages || []).filter(m => m.sender === 'user');
+        const isFirstUserMsg = userMsgs.length === 0;
 
+        // 3. إرسال رسالة المستخدم الحالية
         await chatDocRef.set({
             deviceId,
             userId: currentUser ? currentUser.uid : null,
@@ -3652,29 +3658,47 @@ function renderStickyAd(ad) {
             messages: firebase.firestore.FieldValue.arrayUnion(msg)
         }, { merge: true });
 
-        // منطق الرد التلقائي من لوحة التحكم
-        if (isFirst) {
-            const settSnap = await db.collection('settings').doc('chat').get();
-            if (settSnap.exists) {
-                const sett = settSnap.data();
-                if (sett.autoReplyEnabled && sett.autoReplyMessage) {
-                    setTimeout(async () => {
-                        const autoMsg = {
-                            text: sett.autoReplyMessage,
-                            sender: 'admin',
-                            timestamp: new Date().toISOString(),
-                            name: 'الدعم الفني ✨'
-                        };
-                        await chatDocRef.update({
-                            messages: firebase.firestore.FieldValue.arrayUnion(autoMsg),
-                            unreadByUser: firebase.firestore.FieldValue.increment(1),
-                            lastMessage: '👑 ' + sett.autoReplyMessage
-                        });
-                    }, 2000); // يرسل الرد بعد ثانيتين من رسالة العميل
+        console.log("تم إرسال رسالة المستخدم. هل هي الأولى؟", isFirstUserMsg);
+
+        // 4. منطق الرد التلقائي
+        if (isFirstUserMsg) {
+            // جلب الإعدادات من المسار الصحيح settings/chat
+            db.collection('settings').doc('chat').get().then(async (settSnap) => {
+                if (settSnap.exists) {
+                    const sett = settSnap.data();
+                    console.log("إعدادات الرد التلقائي موجودة:", sett);
+
+                    if (sett.autoReplyEnabled && sett.autoReplyMessage) {
+                        // انتظر ثانيتين ليكون الرد واقعياً
+                        setTimeout(async () => {
+                            const autoMsg = {
+                                text: sett.autoReplyMessage,
+                                sender: 'admin',
+                                timestamp: new Date().toISOString(),
+                                name: 'الدعم الفني ✨'
+                            };
+
+                            await chatDocRef.update({
+                                messages: firebase.firestore.FieldValue.arrayUnion(autoMsg),
+                                unreadByUser: firebase.firestore.FieldValue.increment(1),
+                                lastMessage: '👑 ' + sett.autoReplyMessage,
+                                lastAt: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                            console.log("تم إرسال الرد التلقائي بنجاح ✅");
+                        }, 2000);
+                    } else {
+                        console.log("الرد التلقائي معطل من لوحة التحكم ❌");
+                    }
+                } else {
+                    console.log("لم يتم العثور على وثيقة الإعدادات chat في Firebase ❌");
                 }
-            }
+            }).catch(err => console.error("خطأ في جلب إعدادات الرد:", err));
         }
-    } catch(e) { console.error('Chat error:', e); }
+
+    } catch(e) { 
+        console.error('Chat error:', e); 
+        zahraaToast('عذراً، حدث خطأ في إرسال الرسالة', 'error');
+    }
 };
 
     // ======= PUSH NOTIFICATION REGISTRATION =======
