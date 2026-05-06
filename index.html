@@ -3639,15 +3639,11 @@ function renderStickyAd(ad) {
     try {
         const chatDocRef = db.collection('support_chats').doc(deviceId);
         
-        // 1. جلب بيانات المحادثة قبل إرسال الرسالة الجديدة
+        // 1. جلب بيانات المحادثة لمعرفة تاريخ آخر رد تلقائي
         const existSnap = await chatDocRef.get();
-        const chatData = existSnap.exists ? existSnap.data() : { messages: [] };
+        const chatData = existSnap.exists ? existSnap.data() : {};
         
-        // 2. فحص هل هذه أول رسالة يرسلها المستخدم فعلياً؟
-        const userMsgs = (chatData.messages || []).filter(m => m.sender === 'user');
-        const isFirstUserMsg = userMsgs.length === 0;
-
-        // 3. إرسال رسالة المستخدم الحالية
+        // 2. إرسال رسالة المستخدم فوراً
         await chatDocRef.set({
             deviceId,
             userId: currentUser ? currentUser.uid : null,
@@ -3658,18 +3654,23 @@ function renderStickyAd(ad) {
             messages: firebase.firestore.FieldValue.arrayUnion(msg)
         }, { merge: true });
 
-        console.log("تم إرسال رسالة المستخدم. هل هي الأولى؟", isFirstUserMsg);
+        // 3. منطق الرد التلقائي (مرة كل 24 ساعة)
+        const now = new Date();
+        // جلب تاريخ آخر رد تلقائي (إذا لم يوجد نعتبره تاريخاً قديماً جداً)
+        const lastAutoReplyAt = chatData.lastAutoReplyAt ? chatData.lastAutoReplyAt.toDate() : new Date(0);
+        
+        // حساب الفرق بالساعات
+        const diffInHours = (now - lastAutoReplyAt) / (1000 * 60 * 60);
 
-        // 4. منطق الرد التلقائي
-        if (isFirstUserMsg) {
-            // جلب الإعدادات من المسار الصحيح settings/chat
+        // إذا مرت 24 ساعة أو أكثر على آخر رد تلقائي
+        if (diffInHours >= 24) {
+            // جلب الإعدادات من لوحة التحكم
             db.collection('settings').doc('chat').get().then(async (settSnap) => {
                 if (settSnap.exists) {
                     const sett = settSnap.data();
-                    console.log("إعدادات الرد التلقائي موجودة:", sett);
 
                     if (sett.autoReplyEnabled && sett.autoReplyMessage) {
-                        // انتظر ثانيتين ليكون الرد واقعياً
+                        // الرد بعد ثانيتين
                         setTimeout(async () => {
                             const autoMsg = {
                                 text: sett.autoReplyMessage,
@@ -3678,26 +3679,24 @@ function renderStickyAd(ad) {
                                 name: 'الدعم الفني ✨'
                             };
 
+                            // تحديث المحادثة بالرد + تسجيل تاريخ الرد التلقائي الحالي
                             await chatDocRef.update({
                                 messages: firebase.firestore.FieldValue.arrayUnion(autoMsg),
                                 unreadByUser: firebase.firestore.FieldValue.increment(1),
                                 lastMessage: '👑 ' + sett.autoReplyMessage,
-                                lastAt: firebase.firestore.FieldValue.serverTimestamp()
+                                lastAutoReplyAt: firebase.firestore.FieldValue.serverTimestamp() // أهم سطر للتكرار اليومي
                             });
-                            console.log("تم إرسال الرد التلقائي بنجاح ✅");
+                            console.log("تم إرسال الرد التلقائي اليومي بنجاح ✅");
                         }, 2000);
-                    } else {
-                        console.log("الرد التلقائي معطل من لوحة التحكم ❌");
                     }
-                } else {
-                    console.log("لم يتم العثور على وثيقة الإعدادات chat في Firebase ❌");
                 }
-            }).catch(err => console.error("خطأ في جلب إعدادات الرد:", err));
+            });
+        } else {
+            console.log(`لن يتم إرسال رد تلقائي الآن، آخر رد كان منذ ${Math.floor(diffInHours)} ساعة.`);
         }
 
     } catch(e) { 
         console.error('Chat error:', e); 
-        zahraaToast('عذراً، حدث خطأ في إرسال الرسالة', 'error');
     }
 };
 
