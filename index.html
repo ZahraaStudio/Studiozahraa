@@ -814,7 +814,18 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const auth = firebase.auth();
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
 
+    // تأكد من وجود تعريف deviceId هنا
+    let deviceId = localStorage.getItem('deviceId') || 'dev-' + Math.random().toString(36).substring(2, 15);
+    localStorage.setItem('deviceId', deviceId);
+
+    // الرابط السحري الذي يحتاجه الشات (أضف السطرين دول هنا)
+    window.db = db;
+    window.deviceId = deviceId
+    
     // Cloudinary Config
     const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload';
     const CLOUDINARY_UPLOAD_PRESET = 'zahraa_upload';
