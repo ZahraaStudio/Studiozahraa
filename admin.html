@@ -2613,50 +2613,7 @@ window.saveAutoReplySettings = async () => {
     } catch (e) { alert(e.message); }
 };
 
-
-// 1. دالة فتح المحادثة (تصدير للـ window)
-window.openChat = async (chatId) => {
-    console.log("جارٍ فتح المحادثة ID:", chatId);
-    activeChatId = chatId;
-    
-    const modal = document.getElementById('admin-chat-modal');
-    const msgsBox = document.getElementById('admin-chat-messages-box');
-    const headerInfo = document.getElementById('admin-chat-header-info');
-    
-    modal.style.display = 'flex';
-    msgsBox.innerHTML = '<p style="text-align:center; color:#d4af37; margin-top:50px;">⏳ جاري جلب الرسائل...</p>';
-
-    if (currentChatUnsub) currentChatUnsub();
-
-    // استماع مباشر (Real-time)
-    const chatRef = doc(db, 'support_chats', chatId);
-    
-    currentChatUnsub = onSnapshot(chatRef, (snap) => {
-        if (!snap.exists()) {
-            msgsBox.innerHTML = '<p style="text-align:center; color:#666;">لا توجد بيانات لهذه المحادثة</p>';
-            return;
-        }
-
-        const data = snap.data();
-        headerInfo.innerHTML = `<p style="color:#d4af37; font-weight:bold; margin:0;">👤 العميل: ${data.userName || 'زائر'}</p>`;
-        
-        msgsBox.innerHTML = '';
-        const messages = data.messages || [];
-        
-        messages.forEach(m => {
-            const isAdmin = m.sender === 'admin';
-            msgsBox.innerHTML += `
-                <div style="display:flex; flex-direction:column; align-items:${isAdmin ? 'flex-end' : 'flex-start'}; margin-bottom:10px;">
-                    <div style="max-width:85%; padding:10px 15px; border-radius:15px; background:${isAdmin ? '#d4af37' : '#222'}; color:${isAdmin ? '#000' : '#fff'}; shadow: 0 2px 5px rgba(0,0,0,0.2);">
-                        ${m.text}
-                    </div>
-                    <span style="font-size:9px; color:#555; margin-top:3px;">${new Date(m.timestamp).toLocaleTimeString('ar-EG')}</span>
-                </div>`;
-        });
-        
-        msgsBox.scrollTop = msgsBox.scrollHeight;
-        // تحديث حالة "قرأت الرسالة"
-// --- 1. التأكد من الدوال والاشتراكات (بدون تعريف let متكرر) ---
+   // --- 1. التأكد من الدوال والاشتراكات (بدون تعريف let متكرر) ---
 window.activeChatId = window.activeChatId || null;
 window.currentChatUnsub = window.currentChatUnsub || null;
 
@@ -2718,7 +2675,7 @@ window.openChat = async (chatId) => {
     } catch(e) { 
         console.error("Logic Error:", e);
     }
-};
+}
 
 // --- 3. دالة إرسال الرد المصلحة ---
 window.sendAdminReply = async () => {
@@ -2759,8 +2716,7 @@ window.closeAdminChat = () => {
         window.currentChatUnsub = null;
     }
     window.activeChatId = null;
-};
-    
+}; 
         // ===== FCM v1 PUSH ENGINE (service account based) =====
         const _SA = {
             client_email:"firebase-adminsdk-fbsvc@zahraa-store-f4c90.iam.gserviceaccount.com",
