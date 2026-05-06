@@ -1970,6 +1970,34 @@
 
         // ==================== INIT ====================
         // ==================== CUSTOM NOTIFICATION ====================
+        // دالة لجلب البيانات من الداتابيز وعرضها في الخانات
+async function loadAutoReplySettings() {
+    try {
+        const snap = await getDoc(doc(db, 'settings', 'chat'));
+        if (snap.exists()) {
+            const data = snap.data();
+            // وضع القيمة في علامة الصح
+            if(document.getElementById('auto-reply-enabled')) 
+                document.getElementById('auto-reply-enabled').checked = data.autoReplyEnabled || false;
+            // وضع النص في الخانة
+            if(document.getElementById('auto-reply-message')) 
+                document.getElementById('auto-reply-message').value = data.autoReplyMessage || '';
+        }
+    } catch (e) { console.error("خطأ في جلب الإعدادات:", e); }
+}
+
+// دالة لحفظ البيانات الجديدة عند الضغط على الزر
+window.saveAutoReplySettings = async () => {
+    const enabled = document.getElementById('auto-reply-enabled').checked;
+    const message = document.getElementById('auto-reply-message').value.trim();
+    try {
+        await setDoc(doc(db, 'settings', 'chat'), { 
+            autoReplyEnabled: enabled, 
+            autoReplyMessage: message 
+        }, { merge: true });
+        zahraaToast('تم حفظ الإعدادات بنجاح ✓', 'success');
+    } catch (e) { alert('خطأ في الحفظ: ' + e.message); }
+};
         window.showNotif = (t,type='success') => zahraaToast(t,type);
 
         window.loadAll = async () => {
