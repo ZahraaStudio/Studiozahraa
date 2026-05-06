@@ -2615,117 +2615,76 @@ window.saveAutoReplySettings = async () => {
 
 // 1. دالة فتح المحادثة وعرض الرسائل (تصدير للـ window)
 window.openChat = (chatId) => {
+    console.log("محاولة فتح محادثة برقم:", chatId); // سيظهر في F12
     activeChatId = chatId;
     
     const modal = document.getElementById('admin-chat-modal');
     const msgsBox = document.getElementById('admin-chat-messages-box');
     const headerInfo = document.getElementById('admin-chat-header-info');
     
-    // التأكد من وجود العناصر قبل البدء
-    if (!modal || !msgsBox) return console.error("عناصر الدردشة غير موجودة في HTML");
+    if (!modal || !msgsBox) return;
 
     modal.style.display = 'flex';
-    msgsBox.innerHTML = '<p style="text-align:center; color:#666; margin-top:50px;">جاري تحميل الرسائل...</p>';
+    msgsBox.innerHTML = '<p style="text-align:center; color:#d4af37; margin-top:50px;">⏳ جاري الاتصال بقاعدة البيانات...</p>';
 
     if (currentChatUnsub) currentChatUnsub();
-
-    const chatRef = doc(db, 'support_chats', chatId);
-    currentChatUnsub = onSnapshot(chatRef, (snap) => {
-        if (!snap.exists()) return;
-        const data = snap.data();
-
-        // تحديث الهيدر
-        if (headerInfo) {
-            headerInfo.innerHTML = `
-                <div style="width:12px; height:12px; background:#22c55e; border-radius:50%; box-shadow:0 0 10px #22c55e;"></div>
-                <div>
-                    <p style="color:#d4af37; font-weight:bold; margin:0; font-size:15px;">${data.userName || 'زائر'}</p>
-                    <p style="color:#555; font-size:10px; margin:0;">الجهاز: ${chatId.substring(0,12)}...</p>
-                </div>
-            `;
-        }
-
-        // عرض الرسائل
-        msgsBox.innerHTML = '';
-        const messages = data.messages || [];
-        
-        messages.forEach(m => {
-            const isAdmin = m.sender === 'admin';
-            const time = m.timestamp ? new Date(m.timestamp).toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'}) : '';
-            
-            msgsBox.innerHTML += `
-                <div style="display:flex; flex-direction:column; align-items:${isAdmin ? 'flex-end' : 'flex-start'}; margin-bottom:8px;">
-                    <div style="max-width:85%; padding:12px 16px; border-radius:${isAdmin ? '18px 18px 4px 18px' : '18px 18px 18px 4px'}; background:${isAdmin ? 'linear-gradient(135deg,#d4af37,#f0c94e)' : '#1e1e1e'}; color:${isAdmin ? '#000' : '#fff'}; box-shadow:0 4px 12px rgba(0,0,0,0.15); font-size:14px; line-height:1.5;">
-                        ${m.type === 'image' ? `<img src="${m.fileUrl}" style="max-width:100%; border-radius:10px; display:block;" onclick="window.open('${m.fileUrl}')">` : m.text}
-                    </div>
-                    <span style="font-size:10px; color:#444; margin-top:4px; padding:0 8px;">${isAdmin ? 'أنت' : 'العميل'} • ${time}</span>
-                </div>`;
-        });
-
-        msgsBox.scrollTop = msgsBox.scrollHeight;
-        updateDoc(chatRef, { unreadByAdmin: 0 }).catch(()=>{});
-    });
-};
-
-// 2. دالة إرسال الرد
-window.sendAdminReply = async () => {
-    const input = document.getElementById('admin-chat-input');
-    const text = input.value.trim();
-    if (!text || !activeChatId) return;
-
-    input.value = '';
-    const msg = { text, sender: 'admin', timestamp: new Date().toISOString(), name: 'المتجر' };
 
     try {
-        await updateDoc(doc(db, 'support_chats', activeChatId), {
-            messages: arrayUnion(msg),
-            lastMessage: '👑 ' + text,
-            lastAt: serverTimestamp(),
-            unreadByUser: increment(1)
+        // الاتصال بالوثيقة
+        const chatRef = doc(db, 'support_chats', chatId);
+        
+        currentChatUnsub = onSnapshot(chatRef, (snap) => {
+            if (!snap.exists()) {
+                msgsBox.innerHTML = '<p style="text-align:center; color:#ef4444; margin-top:50px;">❌ هذه المحادثة غير موجودة في قاعدة البيانات</p>';
+                console.error("Document not found ID:", chatId);
+                return;
+            }
+
+            const data = snap.data();
+            console.log("وصلت بيانات المحادثة:", data);
+
+            // تحديث الهيدر
+            headerInfo.innerHTML = `
+                <div style="width:12px; height:12px; background:#22c55e; border-radius:50%;"></div>
+                <div>
+                    <p style="color:#d4af37; font-weight:bold; margin:0; font-size:15px;">${data.userName || 'عميل'}</p>
+                    <p style="color:#555; font-size:10px; margin:0;">ID: ${chatId}</p>
+                </div>
+            `;
+
+            // عرض الرسائل
+            msgsBox.innerHTML = '';
+            const messages = data.messages || [];
+            
+            if (messages.length === 0) {
+                msgsBox.innerHTML = '<p style="text-align:center; color:#555; margin-top:50px;">لا توجد رسائل سابقة</p>';
+            }
+
+            messages.forEach(m => {
+                const isAdmin = m.sender === 'admin';
+                const time = m.timestamp ? new Date(m.timestamp).toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'}) : '';
+                
+                msgsBox.innerHTML += `
+                    <div style="display:flex; flex-direction:column; align-items:${isAdmin ? 'flex-end' : 'flex-start'}; margin-bottom:10px;">
+                        <div style="max-width:85%; padding:12px 16px; border-radius:${isAdmin ? '18px 18px 4px 18px' : '18px 18px 18px 4px'}; background:${isAdmin ? '#d4af37' : '#1e1e1e'}; color:${isAdmin ? '#000' : '#fff'}; box-shadow:0 4px 12px rgba(0,0,0,0.2); font-size:14px;">
+                            ${m.type === 'image' ? `<img src="${m.fileUrl}" style="max-width:100%; border-radius:10px; display:block;" onclick="window.open('${m.fileUrl}')">` : m.text}
+                        </div>
+                        <span style="font-size:10px; color:#444; margin-top:4px;">${time}</span>
+                    </div>`;
+            });
+
+            msgsBox.scrollTop = msgsBox.scrollHeight;
+            updateDoc(chatRef, { unreadByAdmin: 0 }).catch(()=>{});
+        }, (error) => {
+            // هذا الجزء سيخبرنا إذا كانت المشكلة في الصلاحيات
+            console.error("Snapshot Error:", error);
+            msgsBox.innerHTML = `<p style="text-align:center; color:#ef4444; margin-top:50px;">❌ خطأ في الصلاحيات: ${error.message}</p>`;
         });
-    } catch (e) {
-        zahraaToast('فشل إرسال الرد', 'error');
+    } catch (err) {
+        console.error("Try-Catch Error:", err);
+        msgsBox.innerHTML = `<p style="text-align:center; color:#ef4444; margin-top:50px;">❌ حدث خطأ غير متوقع</p>`;
     }
 };
-
-// 3. دالة إغلاق الدردشة
-window.closeAdminChat = () => {
-    document.getElementById('admin-chat-modal').style.display = 'none';
-    if (currentChatUnsub) currentChatUnsub();
-    activeChatId = null;
-};
-
-// 4. دالة إرسال صورة من الأدمن (لزر المشبك)
-window.sendAdminImage = async () => {
-    if (!activeChatId) return zahraaToast('اختر محادثة أولاً', 'warning');
-    const inp = document.createElement('input');
-    inp.type = 'file'; inp.accept = 'image/*';
-    inp.onchange = async (e) => {
-        const file = e.target.files[0];
-        if(!file) return;
-        const fd = new FormData();
-        fd.append('file', file); fd.append('upload_preset', 'zahraa_upload');
-        zahraaToast('⏳ جاري رفع الصورة...', 'info');
-        try {
-            const res = await fetch('https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload', {method:'POST', body:fd});
-            const data = await res.json();
-            if (data.secure_url) {
-                const msg = { text: '📷 صورة', fileUrl: data.secure_url, type:'image', sender: 'admin', timestamp: new Date().toISOString(), name: 'المتجر' };
-                await updateDoc(doc(db, 'support_chats', activeChatId), {
-                    messages: arrayUnion(msg),
-                    unreadByUser: increment(1),
-                    lastMessage: '👑 أرسل صورة',
-                    lastAt: serverTimestamp()
-                });
-                zahraaToast('تم إرسال الصورة ✅', 'success');
-            }
-        } catch(e) { zahraaToast('فشل الرفع', 'error'); }
-    };
-    inp.click();
-};
-        // ===== Tab click listeners for ads/push =====
-        document.getElementById('btn-ads-tab')?.addEventListener('click', loadAdsList);
-        document.getElementById('btn-push-tab')?.addEventListener('click', loadTokens);
 
     
         // ===== FCM v1 PUSH ENGINE (service account based) =====
