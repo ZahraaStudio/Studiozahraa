@@ -764,6 +764,16 @@
                 <p class="text-zinc-500 text-sm text-center py-8">جاري التحميل...</p>
             </div>
         </div>
+      
+     <div class="mt-6 bg-zinc-900 p-5 rounded-2xl gold-border">
+    <h3 class="font-bold gold-text mb-4">⚡ إعدادات الرد التلقائي</h3>
+    <label class="flex items-center gap-3 cursor-pointer mb-4">
+        <input type="checkbox" id="auto-reply-enabled" class="w-5 h-5 accent-yellow-500">
+        <span class="text-sm">تفعيل الرد التلقائي عند أول رسالة</span>
+    </label>
+    <textarea id="auto-reply-message" rows="3" class="w-full bg-black border border-zinc-700 text-white p-3 rounded-xl text-sm outline-none focus:border-yellow-500 mb-4" placeholder="اكتب نص الرد التلقائي هنا..."></textarea>
+    <button onclick="saveAutoReplySettings()" class="gold-bg text-black px-6 py-2 rounded-xl font-bold text-sm">💾 حفظ نص الرد</button>
+</div>
         <!-- Chat Window -->
         <div class="lg:col-span-2 bg-zinc-900 rounded-2xl gold-border flex flex-col overflow-hidden">
             <div id="chat-header" class="p-4 border-b border-zinc-800">
