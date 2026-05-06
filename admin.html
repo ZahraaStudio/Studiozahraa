@@ -2613,13 +2613,19 @@ window.saveAutoReplySettings = async () => {
     } catch (e) { alert(e.message); }
 };
 
-// تعريف المتغيرات على مستوى النافذة لمنع أي تعارض أو تهنيج
-window.activeChatId = window.activeChatId || null;
-window.currentChatUnsub = window.currentChatUnsub || null;
+// ======================================================
+// نظام الدردشة المصلح (إرسال + رفع + استلام)
+// ======================================================
 
-// 1. دالة فتح المحادثة (شغالة عندك بس حدثناها لضمان التوافق)
+// تعريف المتغيرات على النافذة لضمان عدم التكرار والوصول العام
+window.activeChatId = null;
+window.currentChatUnsub = null;
+
+// 1. دالة فتح المحادثة
 window.openChat = async (chatId) => {
+    console.log("محاولة فتح محادثة ID:", chatId);
     window.activeChatId = chatId;
+    
     const modal = document.getElementById('admin-chat-modal');
     const msgsBox = document.getElementById('admin-chat-messages-box');
     const headerInfo = document.getElementById('admin-chat-header-info');
@@ -2627,42 +2633,52 @@ window.openChat = async (chatId) => {
     if (modal) modal.style.display = 'flex';
     if (msgsBox) msgsBox.innerHTML = '<p style="text-align:center; color:#d4af37; margin-top:50px;">⏳ جاري جلب الرسائل...</p>';
 
+    // إغلاق أي اشتراك قديم
     if (typeof window.currentChatUnsub === 'function') window.currentChatUnsub();
 
     const chatRef = doc(db, 'support_chats', chatId);
+    
     window.currentChatUnsub = onSnapshot(chatRef, (snap) => {
         if (!snap.exists()) return;
         const data = snap.data();
-        if (headerInfo) headerInfo.innerHTML = `<p style="color:#d4af37; font-weight:bold; margin:0;">👤 ${data.userName || 'عميل'}</p>`;
+        if (headerInfo) headerInfo.innerHTML = `<p style="color:#d4af37; font-weight:bold; margin:0; font-size:16px;">👤 ${data.userName || 'زائر'}</p>`;
         
         if (msgsBox) {
             msgsBox.innerHTML = '';
-            (data.messages || []).forEach(m => {
+            const messages = data.messages || [];
+            messages.forEach(m => {
                 const isAdmin = m.sender === 'admin';
                 const time = m.timestamp ? new Date(m.timestamp).toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'}) : '';
                 msgsBox.innerHTML += `
                     <div style="display:flex; flex-direction:column; align-items:${isAdmin ? 'flex-end' : 'flex-start'}; margin-bottom:10px;">
-                        <div style="max-width:85%; padding:10px 15px; border-radius:15px; background:${isAdmin ? 'linear-gradient(135deg,#d4af37,#f0c94e)' : '#222'}; color:${isAdmin ? '#000' : '#fff'}; box-shadow: 0 2px 5px rgba(0,0,0,0.2); font-size:14px;">
-                            ${m.type === 'image' ? `<img src="${m.fileUrl}" style="max-width:200px; border-radius:8px; display:block;" onclick="window.open('${m.fileUrl}')">` : m.text}
+                        <div style="max-width:85%; padding:10px 15px; border-radius:${isAdmin?'18px 18px 4px 18px':'18px 18px 18px 4px'}; background:${isAdmin ? 'linear-gradient(135deg,#d4af37,#f0c94e)' : '#1e1e1e'}; color:${isAdmin ? '#000' : '#fff'}; box-shadow: 0 2px 8px rgba(0,0,0,0.3); font-size:14px; line-height:1.5;">
+                            ${m.type === 'image' ? `<img src="${m.fileUrl}" style="max-width:100%; border-radius:10px; display:block; cursor:pointer;" onclick="window.open('${m.fileUrl}')">` : m.text}
                         </div>
-                        <span style="font-size:10px; color:#555; margin-top:3px; padding:0 5px;">${time}</span>
+                        <span style="font-size:10px; color:#555; margin-top:4px; padding:0 5px;">${time}</span>
                     </div>`;
             });
             msgsBox.scrollTop = msgsBox.scrollHeight;
         }
+        // تعليم الرسائل كمقروءة للأدمن
         updateDoc(chatRef, { unreadByAdmin: 0 }).catch(()=>{});
+    }, (error) => {
+        console.error("خطأ في جلب الرسائل:", error);
     });
 };
 
-// 2. دالة إرسال الرد (تم إصلاحها)
+// 2. دالة إرسال الرد (تم التأكد من IDs الحقول)
 window.sendAdminReply = async () => {
+    console.log("محاولة إرسال رد...");
     const input = document.getElementById('admin-chat-input');
     const text = input ? input.value.trim() : "";
     const currentId = window.activeChatId;
     
-    if (!text || !currentId) return;
+    if (!text) return;
+    if (!currentId) return alert("يرجى اختيار محادثة أولاً");
 
-    input.value = ''; // مسح الحقل فوراً لتجربة سريعة
+    // مسح الحقل فوراً لتجربة سريعة
+    input.value = ''; 
+
     const msg = {
         text: text,
         sender: 'admin',
@@ -2678,16 +2694,16 @@ window.sendAdminReply = async () => {
             lastAt: serverTimestamp(),
             unreadByUser: increment(1)
         });
-        console.log("تم الإرسال بنجاح");
+        console.log("تم إرسال الرد بنجاح ✅");
     } catch(e) {
-        console.error("خطأ في الإرسال:", e);
-        zahraaToast('خطأ في الإرسال: ' + e.message, 'error');
+        console.error("خطأ الإرسال الفعلي:", e);
+        alert("خطأ في الإرسال: " + e.message);
     }
 };
 
-// 3. دالة إرسال الصور (تم إصلاحها وربطها بـ Cloudinary)
+// 3. دالة إرسال صورة
 window.sendAdminImage = async () => {
-    if (!window.activeChatId) return zahraaToast('اختر محادثة أولاً', 'warning');
+    if (!window.activeChatId) return alert("يرجى اختيار محادثة أولاً");
     
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
@@ -2699,12 +2715,11 @@ window.sendAdminImage = async () => {
 
         const fd = new FormData();
         fd.append('file', file);
-        fd.append('upload_preset', 'zahraa_upload'); // تأكد أن الـ Preset صحيح كما في مشروعك
+        fd.append('upload_preset', 'zahraa_upload');
 
         zahraaToast('⏳ جاري رفع الصورة...', 'info');
 
         try {
-            // الرفع إلى Cloudinary
             const res = await fetch('https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload', {
                 method: 'POST',
                 body: fd
@@ -2721,8 +2736,7 @@ window.sendAdminImage = async () => {
                     name: 'الأدمن'
                 };
 
-                const chatRef = doc(db, 'support_chats', window.activeChatId);
-                await updateDoc(chatRef, {
+                await updateDoc(doc(db, 'support_chats', window.activeChatId), {
                     messages: arrayUnion(msg),
                     lastMessage: '👑 أرسل صورة',
                     lastAt: serverTimestamp(),
@@ -2731,21 +2745,23 @@ window.sendAdminImage = async () => {
                 zahraaToast('تم إرسال الصورة ✅', 'success');
             }
         } catch (err) {
-            console.error("Upload Error:", err);
             zahraaToast('فشل رفع الصورة', 'error');
         }
     };
-    
-    fileInput.click(); // فتح نافذة اختيار الملفات
+    fileInput.click();
 };
 
 // 4. دالة إغلاق المودال
 window.closeAdminChat = () => {
     const modal = document.getElementById('admin-chat-modal');
     if (modal) modal.style.display = 'none';
-    if (typeof window.currentChatUnsub === 'function') window.currentChatUnsub();
+    if (typeof window.currentChatUnsub === 'function') {
+        window.currentChatUnsub();
+        window.currentChatUnsub = null;
+    }
     window.activeChatId = null;
 };
+
 
         // ===== FCM v1 PUSH ENGINE (service account based) =====
         const _SA = {
