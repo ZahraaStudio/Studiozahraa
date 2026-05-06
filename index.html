@@ -3624,40 +3624,58 @@ function renderStickyAd(ad) {
     }
 
     window.sendChatMsg = async function() {
-        const input = document.getElementById('chat-input');
-        const text = (input.value || '').trim();
-        if (!text) return;
-        input.value = '';
-        const msg = {
-            text,
-            sender: 'user',
-            timestamp: new Date().toISOString(),
-            name: currentUser ? (currentUser.displayName || currentUser.email) : 'زائر'
-        };
-        try {
-            await db.collection('support_chats').doc(deviceId).set({
-                deviceId,
-                userId: currentUser ? currentUser.uid : null,
-                userName: currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'زائر',
-                lastMessage: text,
-                lastAt: firebase.firestore.FieldValue.serverTimestamp(),
-                unreadByAdmin: firebase.firestore.FieldValue.increment(1),
-                unreadByUser: 0,
-                messages: firebase.firestore.FieldValue.arrayUnion(msg)
-            }, { merge: true });
-        } catch(e) { console.error('Chat error:', e); }
+    const input = document.getElementById('chat-input');
+    const text = (input.value || '').trim();
+    if (!text) return;
+    input.value = '';
+
+    const msg = {
+        text,
+        sender: 'user',
+        timestamp: new Date().toISOString(),
+        name: currentUser ? (currentUser.displayName || currentUser.email) : 'زائر'
     };
 
-    // Listen for admin replies when chat is closed (show badge)
-    db.collection('support_chats').doc(deviceId).onSnapshot(snap => {
-        if (!snap.exists || chatOpen) return;
-        const unread = snap.data().unreadByUser || 0;
-        const badge = document.getElementById('chat-unread-badge');
-        if (badge) {
-            if (unread > 0) { badge.style.display = 'flex'; badge.textContent = unread; }
-            else badge.style.display = 'none';
+    try {
+        const chatDocRef = db.collection('support_chats').doc(deviceId);
+        const existSnap = await chatDocRef.get();
+        // فحص هل هذه أول رسالة للمستخدم لبدء الرد التلقائي
+        const isFirst = !existSnap.exists || !(existSnap.data()?.messages || []).some(m => m.sender === 'user');
+
+        await chatDocRef.set({
+            deviceId,
+            userId: currentUser ? currentUser.uid : null,
+            userName: currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'زائر',
+            lastMessage: text,
+            lastAt: firebase.firestore.FieldValue.serverTimestamp(),
+            unreadByAdmin: firebase.firestore.FieldValue.increment(1),
+            messages: firebase.firestore.FieldValue.arrayUnion(msg)
+        }, { merge: true });
+
+        // منطق الرد التلقائي من لوحة التحكم
+        if (isFirst) {
+            const settSnap = await db.collection('settings').doc('chat').get();
+            if (settSnap.exists) {
+                const sett = settSnap.data();
+                if (sett.autoReplyEnabled && sett.autoReplyMessage) {
+                    setTimeout(async () => {
+                        const autoMsg = {
+                            text: sett.autoReplyMessage,
+                            sender: 'admin',
+                            timestamp: new Date().toISOString(),
+                            name: 'الدعم الفني ✨'
+                        };
+                        await chatDocRef.update({
+                            messages: firebase.firestore.FieldValue.arrayUnion(autoMsg),
+                            unreadByUser: firebase.firestore.FieldValue.increment(1),
+                            lastMessage: '👑 ' + sett.autoReplyMessage
+                        });
+                    }, 2000); // يرسل الرد بعد ثانيتين من رسالة العميل
+                }
+            }
         }
-    }, () => {});
+    } catch(e) { console.error('Chat error:', e); }
+};
 
     // ======= PUSH NOTIFICATION REGISTRATION =======
     const VAPID_PUBLIC_KEY = 'BAtzdb2RIhljdg2H8zNOtPimm8CVEtSpAUnwkF2qa5x7j3ejf1MYSKRkR1AeCJpvuKlBm9j3UOo7GoidLMFNm1Y';
