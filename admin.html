@@ -2613,45 +2613,58 @@ window.saveAutoReplySettings = async () => {
     } catch (e) { alert(e.message); }
 };
 
-        window.openChat = (chatId) => {
-            activeChatId = chatId;
-            if (adminChatUnsub) adminChatUnsub();
-            const header = document.getElementById('chat-header');
-            const msgsBox = document.getElementById('admin-chat-messages');
-            if (header) header.innerHTML = `<p class="text-sm font-bold gold-text">محادثة: <span class="text-white">${chatId.substring(0,14)}...</span></p>`;
-            adminChatUnsub = onSnapshot(doc(db,'support_chats',chatId), snap => {
-                if (!snap.exists || !msgsBox) return;
-                const msgs = snap.data().messages || [];
-                const chatData = snap.data();
-                if (header) header.innerHTML = `<div class="flex items-center justify-between"><p class="font-bold text-sm">${chatData.userName || 'زائر'} ${chatData.userId ? '<span class="text-xs text-zinc-500">• مسجل</span>' : '<span class="text-xs text-zinc-500">• زائر</span>'}</p><p class="text-xs text-zinc-500">${chatId.substring(0,16)}</p></div>`;
-                msgsBox.innerHTML = '';
-                const adminUnread = chatData.unreadByAdmin || 0;
-                const userUnread = chatData.unreadByUser || 0;
-                msgs.forEach((m, mi) => {
-                    const isUser = m.sender === 'user';
-                    const isAdmin = m.sender === 'admin';
-                    const time = m.timestamp ? new Date(m.timestamp).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'}) : '';
-                    // Read receipt: admin msgs get double ticks when user has read them
-                    const tick = isAdmin ? (userUnread === 0 ? '<span style="color:#4ade80;font-size:10px;margin-right:2px;">✓✓</span>' : '<span style="color:#555;font-size:10px;margin-right:2px;">✓</span>') : '';
-                    // Content rendering
-                    let content = '';
-                    if (m.type === 'image' && m.fileUrl) {
-                        content = `<a href="${m.fileUrl}" target="_blank"><img src="${m.fileUrl}" style="max-width:200px;max-height:160px;border-radius:8px;display:block;"></a>`;
-                    } else if (m.type === 'file' && m.fileUrl) {
-                        content = `<a href="${m.fileUrl}" target="_blank" style="color:${isUser?'#d4af37':'#000'};text-decoration:none;">📎 ${m.fileName||'ملف'}</a>`;
-                    } else { content = m.text || ''; }
-                    msgsBox.innerHTML += `<div class="flex flex-col ${isUser?'items-end':'items-start'} gap-1">
-                        <div class="max-w-[80%] ${m.type==='image'?'p-1':'px-4 py-2.5'} rounded-2xl text-sm ${isUser?'bg-zinc-800 text-white':'bg-yellow-500/90 text-black font-medium'}">${content}</div>
-                        <div class="flex items-center gap-1"><span class="text-[10px] text-zinc-600">${isUser?'👤':'👑 أدمن'} ${time}</span>${tick}</div>
-                    </div>`;
-                });
-                msgsBox.scrollTop = msgsBox.scrollHeight;
-                // Mark as read by admin
-                updateDoc(doc(db,'support_chats',chatId), {unreadByAdmin: 0}).catch(()=>{});
-                loadChats();
-            });
-        };
+window.openChat = (chatId) => {
+    activeChatId = chatId;
+    const modal = document.getElementById('admin-chat-modal');
+    const headerInfo = document.getElementById('admin-chat-header-info');
+    const msgsBox = document.getElementById('admin-chat-messages-box');
 
+    modal.style.display = 'flex'; 
+    msgsBox.innerHTML = '<p style="text-align:center;color:#555;margin-top:50px;">جاري تحميل المحادثة...</p>';
+
+    if (currentChatUnsub) currentChatUnsub(); 
+
+    // استماع حي للرسائل
+    currentChatUnsub = onSnapshot(doc(db, 'support_chats', chatId), (snap) => {
+        if (!snap.exists()) return;
+        const data = snap.data();
+        
+        // معلومات العميل فوق
+        headerInfo.innerHTML = `
+            <div style="width:12px; height:12px; background:#22c55e; border-radius:50%; box-shadow:0 0 10px #22c55e;"></div>
+            <div>
+                <p style="color:#d4af37; font-weight:bold; margin:0; font-size:16px;">محادثة: ${data.userName || 'زائر'}</p>
+                <p style="color:#555; font-size:10px; margin:0;">ID: ${chatId}</p>
+            </div>
+        `;
+
+        // عرض الرسايل بشكل شيك
+        msgsBox.innerHTML = '';
+        const msgs = data.messages || [];
+        msgs.forEach(m => {
+            const isAdmin = m.sender === 'admin';
+            msgsBox.innerHTML += `
+                <div style="display:flex; flex-direction:column; align-items:${isAdmin?'flex-end':'flex-start'}; margin-bottom:5px;">
+                    <div style="max-width:80%; padding:12px 18px; border-radius:${isAdmin?'20px 20px 4px 20px':'20px 20px 20px 4px'}; background:${isAdmin?'#d4af37':'#1e1e1e'}; color:${isAdmin?'#000':'#fff'}; box-shadow:0 4px 15px rgba(0,0,0,0.2);">
+                        ${m.type==='image' ? `<img src="${m.fileUrl}" style="max-width:100%; border-radius:10px; cursor:pointer;" onclick="window.open('${m.fileUrl}')">` : m.text}
+                    </div>
+                    <span style="font-size:10px; color:#444; margin-top:5px; padding:0 10px;">${isAdmin?'أنت':'العميل'} • ${new Date(m.timestamp).toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'})}</span>
+                </div>
+            `;
+        });
+        msgsBox.scrollTop = msgsBox.scrollHeight;
+        
+        // تصفير عداد الرسايل غير المقروءة
+        updateDoc(doc(db, 'support_chats', chatId), { unreadByAdmin: 0 }).catch(()=>{});
+    });
+};
+
+// دالة قفل المودال
+window.closeAdminChat = () => {
+    document.getElementById('admin-chat-modal').style.display = 'none';
+    activeChatId = null;
+    if (currentChatUnsub) currentChatUnsub();
+};
         window.sendAdminImage = async () => {
             if (!activeChatId) return zahraaToast('اختر محادثة أولاً', 'warning');
             const inp = document.createElement('input');
