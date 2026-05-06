@@ -2742,7 +2742,10 @@ window.sendAdminImage = async () => {
 // 4. دالة إغلاق المودال
 window.closeAdminChat = () => {
     const modal = document.getElementById('admin-chat-modal');
-    if (modal) modal.style.displ
+    if (modal) modal.style.display = 'none';
+    if (typeof window.currentChatUnsub === 'function') window.currentChatUnsub();
+    window.activeChatId = null;
+};
 
         // ===== FCM v1 PUSH ENGINE (service account based) =====
         const _SA = {
