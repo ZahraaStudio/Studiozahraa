@@ -2695,19 +2695,54 @@
             }
             _visible.forEach(d => {
                 communityLastDoc = d;
-                const cp = d.data(); const cpid = d.id;
+                const cp = d.data(); 
+                const cpid = d.id;
                 const isOwner = currentUser && currentUser.uid === cp.userId;
+                const media = cp.mediaUrls || [];
+
+                // --- منطق عرض الميديا (سلايدر لو أكثر من ملف) ---
+                let mediaHtml = '';
+                if (media.length > 0) {
+                    if (media.length === 1) {
+                        // حالة ملف واحد فقط (صورة أو فيديو)
+                        const url = media[0];
+                        const isVideo = url.toLowerCase().includes('.mp4') || url.toLowerCase().includes('.mov') || url.toLowerCase().includes('/video/upload/');
+                        
+                        if (isVideo) {
+                            mediaHtml = `
+                                <div style="width:100%; background:#000; border-radius:12px; overflow:hidden; aspect-ratio:1/1; display:flex; align-items:center;">
+                                    <video src="${url}" controls playsinline muted preload="metadata" style="width:100%; height:100%; object-fit:contain;"></video>
+                                </div>`;
+                        } else {
+                            mediaHtml = `<img src="${url}" class="w-full object-cover max-h-[450px] cursor-pointer" loading="lazy" onclick="openImageViewer('${url}')">`;
+                        }
+                    } else {
+                        // حالة "سلايدر" لمجموعة ملفات
+                        mediaHtml = `
+                        <div class="relative group">
+                            <div id="slider-${cpid}" style="display:flex; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; -ms-overflow-style:none; background:#000;" class="no-scrollbar">
+                                ${media.map((url, index) => {
+                                    const isVideo = url.toLowerCase().includes('.mp4') || url.toLowerCase().includes('.mov') || url.toLowerCase().includes('/video/upload/');
+                                    return `
+                                    <div style="min-width:100%; scroll-snap-align:start; aspect-ratio:1/1; display:flex; align-items:center; justify-content:center; position:relative;">
+                                        ${isVideo ? 
+                                            `<video src="${url}" controls playsinline muted preload="metadata" style="width:100%; height:100%; object-fit:contain;"></video>` : 
+                                            `<img src="${url}" style="width:100%; height:100%; object-fit:cover;" class="cursor-pointer" onclick="openImageViewer('${url}')">`
+                                        }
+                                        <div style="position:absolute; bottom:10px; right:10px; background:rgba(0,0,0,0.6); color:#fff; font-size:10px; padding:2px 8px; border-radius:10px; z-index:10;">${index+1} / ${media.length}</div>
+                                    </div>`;
+                                }).join('')}
+                            </div>
+                            <!-- أزرار التنقل (تظهر عند الحوم بالماوس) -->
+                            <button onclick="document.getElementById('slider-${cpid}').scrollBy({left: -250, behavior:'smooth'})" style="position:absolute; left:5px; top:50%; transform:translateY(-50%); background:rgba(0,0,0,0.4); color:#fff; border:none; width:28px; height:28px; border-radius:50%; cursor:pointer; z-index:11;" class="md:opacity-0 group-hover:opacity-100 transition-opacity">‹</button>
+                            <button onclick="document.getElementById('slider-${cpid}').scrollBy({left: 250, behavior:'smooth'})" style="position:absolute; right:5px; top:50%; transform:translateY(-50%); background:rgba(0,0,0,0.4); color:#fff; border:none; width:28px; height:28px; border-radius:50%; cursor:pointer; z-index:11;" class="md:opacity-0 group-hover:opacity-100 transition-opacity">›</button>
+                        </div>`;
+                    }
+                }
+
                 grid.innerHTML += `
-                    <div class="community-card" id="cp-card-${cpid}">
-     ${cp.mediaUrls && cp.mediaUrls.length > 0 ? (
-    (cp.mediaUrls[0].toLowerCase().includes('video') || 
-     cp.mediaUrls[0].toLowerCase().includes('.mp4') || 
-     cp.mediaUrls[0].toLowerCase().includes('.mov')) ?
-    `<div style="width:100%; background:#000; border-radius:12px; overflow:hidden;">
-        <video src="${cp.mediaUrls[0]}" controls playsinline muted preload="metadata" style="width:100%; max-height:300px; object-fit:cover;"></video>
-    </div>` :
-    `<img src="${cp.mediaUrls[0]}" class="w-full object-cover max-h-72" loading="lazy" onclick="openImageViewer('${cp.mediaUrls[0]}')">`
-) : ''}
+                    <div class="community-card" id="cp-card-${cpid}" style="overflow:hidden; border-radius:16px;">
+                        ${mediaHtml}
                         <div class="p-4">
                             <div class="flex items-start justify-between gap-2 mb-2">
                                 <div class="flex items-center gap-2">
@@ -2726,9 +2761,6 @@
                                 </div>
                             </div>
                             ${cp.text ? `<p class="text-sm text-zinc-300 mb-2">${cp.text}</p>` : ''}
-                            ${cp.mediaUrls && cp.mediaUrls.length > 1 ? `
-                                <div class="flex gap-1 flex-wrap mt-1">${cp.mediaUrls.slice(1).map(url => `<img src="${url}" class="w-14 h-14 rounded-lg object-cover cursor-pointer" onclick="openImageViewer('${url}')">`).join('')}</div>
-                            ` : ''}
                             <p class="text-[10px] text-zinc-600 mt-2">${cp.createdAt?.toDate?.().toLocaleDateString('ar-EG') || ''}</p>
                         </div>
                     </div>
