@@ -2804,44 +2804,61 @@
     };
 
     window.submitCommunityPost = async () => {
-        const name = document.getElementById('cp-name').value.trim();
-        const text = document.getElementById('cp-text').value.trim();
-        if (!name) return showNotification('أدخل اسمك', 'error');
-        if (!text && communityMediaFiles.length === 0) return showNotification('أضف نص أو صورة', 'error');
-        const btn = document.getElementById('cp-submit-btn');
-        btn.disabled = true; btn.textContent = 'جاري النشر...';
-        try {
-            const mediaUrls = [];
-            for (const file of communityMediaFiles) {
-                const fd = new FormData();
-                fd.append('file', file);
-                fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-                const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: fd });
-                const data = await res.json();
-                if (data.secure_url) mediaUrls.push(data.secure_url);
-            }
-            const selEl = document.getElementById('cp-product');
-            const selectedOpt = selEl.options[selEl.selectedIndex];
-            await db.collection('community_posts').add({
-                userName: name, text, mediaUrls,
-                productId: selEl.value || null,
-                productName: selEl.value && selectedOpt ? selectedOpt.dataset.name : null,
-                userId: currentUser ? currentUser.uid : null,
-                deviceId: deviceId,
-                isHidden: false,
-                reportCount: 0,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            document.getElementById('community-post-modal').classList.remove('active');
-            document.getElementById('cp-text').value = '';
-            communityMediaFiles = [];
-            document.getElementById('cp-media-preview').innerHTML = '';
-            document.getElementById('cp-media-preview').classList.add('hidden');
-            showNotification('تم نشر مشاركتك ✓', 'success');
-            loadCommunity();
-        } catch (e) { showNotification('خطأ في النشر: ' + e.message, 'error'); }
-        btn.disabled = false; btn.textContent = 'نشر';
-    };
+    const name = document.getElementById('cp-name').value.trim();
+    const text = document.getElementById('cp-text').value.trim();
+    if (!name) return showNotification('أدخل اسمك', 'error');
+    
+    const btn = document.getElementById('cp-submit-btn');
+    btn.disabled = true; btn.textContent = 'جاري النشر...';
+
+    try {
+        const mediaUrls = [];
+        for (const file of communityMediaFiles) {
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+            
+            // --- التعديل الجوهري هنا: تحديد نوع الملف ---
+            const resourceType = file.type.startsWith('video') ? 'video' : 'image';
+            const uploadUrl = `https://api.cloudinary.com/v1_1/dxlxwe55b/${resourceType}/upload`;
+            
+            const res = await fetch(uploadUrl, { method: 'POST', body: fd });
+            const data = await res.json();
+            if (data.secure_url) mediaUrls.push(data.secure_url);
+        }
+
+        const selEl = document.getElementById('cp-product');
+        const selectedOpt = selEl.options[selEl.selectedIndex];
+
+        // حفظ المنشور في Firestore
+        await db.collection('community_posts').add({
+            userName: name,
+            text: text,
+            mediaUrls: mediaUrls,
+            productId: selEl.value || null,
+            productName: selEl.value && selectedOpt ? selectedOpt.dataset.name : null,
+            userId: currentUser ? currentUser.uid : null,
+            deviceId: deviceId,
+            isHidden: false, // تأكد إنها false عشان يظهر فوراً
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // إعادة تصفير الفورم
+        document.getElementById('community-post-modal').classList.remove('active');
+        document.getElementById('cp-text').value = '';
+        communityMediaFiles = [];
+        document.getElementById('cp-media-preview').innerHTML = '';
+        showNotification('تم النشر بنجاح! سيظهر الآن في المجتمع ✓', 'success');
+        
+        // إعادة تحميل المجتمع فوراً لرؤية المنشور الجديد
+        loadCommunity(); 
+        
+    } catch (e) { 
+        console.error(e);
+        showNotification('خطأ في النشر: ' + e.message, 'error'); 
+    }
+    btn.disabled = false; btn.textContent = 'نشر';
+};
 
     window.deleteCommunityPost = async (id) => {
         if (!currentUser) return;
