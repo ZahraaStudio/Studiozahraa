@@ -774,23 +774,6 @@
     <textarea id="auto-reply-message" rows="3" class="w-full bg-black border border-zinc-700 text-white p-3 rounded-xl text-sm outline-none focus:border-yellow-500 mb-4" placeholder="اكتب نص الرد التلقائي هنا..."></textarea>
     <button onclick="saveAutoReplySettings()" class="gold-bg text-black px-6 py-2 rounded-xl font-bold text-sm">💾 حفظ نص الرد</button>
 </div>
-        <!-- Chat Window -->
-        <div class="lg:col-span-2 bg-zinc-900 rounded-2xl gold-border flex flex-col overflow-hidden">
-            <div id="chat-header" class="p-4 border-b border-zinc-800">
-                <p class="text-zinc-500 text-sm">اختر محادثة لعرضها</p>
-            </div>
-            <div id="admin-chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3">
-                <p class="text-center text-zinc-600 text-sm mt-10">اختر محادثة من القائمة على اليسار</p>
-            </div>
-            <!-- Reply area -->
-            <div class="p-4 border-t border-zinc-800 flex gap-2">
-                <button id="admin-img-btn" onclick="sendAdminImage()" title="إرسال صورة أو ملف" style="background:#1a1a1a;border:1px solid #333;color:#888;width:44px;height:44px;border-radius:12px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">📎</button>
-                <input id="admin-chat-input" type="text" placeholder="اكتب ردك هنا..." onkeydown="if(event.key==='Enter')sendAdminReply()" class="flex-1 bg-black border border-zinc-700 text-white p-3 rounded-xl text-sm outline-none focus:border-yellow-500">
-                <button onclick="sendAdminReply()" style="background:linear-gradient(135deg,#d4af37,#f0c94e);border:none;color:#000;font-weight:700;padding:0 20px;border-radius:12px;cursor:pointer;font-size:14px;white-space:nowrap;height:44px;">إرسال ↑</button>
-            </div>
-        </div>
-    </div>
-</div>
 
     <!-- ===== ZAHRAA CUSTOM TOAST ===== -->
     <div id="zahraa-toast" style="position:fixed;top:24px;left:50%;transform:translateX(-50%) translateY(-100px);z-index:99999;min-width:280px;max-width:420px;background:linear-gradient(135deg,#1a1a1a,#2a2a2a);border:1px solid #d4af37;border-radius:16px;padding:14px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,0.7);transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1),opacity 0.35s;opacity:0;pointer-events:none;direction:rtl;">
@@ -2966,8 +2949,8 @@ window.deleteOrder = async (id) => {
         <div style="padding:15px 25px; background:#111; border-top:1px solid #222; display:flex; gap:12px; align-items:center;">
             <button onclick="sendAdminImage()" style="background:#1a1a1a; border:1px solid #333; color:#d4af37; width:45px; height:45px; border-radius:12px; cursor:pointer; font-size:20px; display:flex; align-items:center; justify-content:center;">📎</button>
             <input id="admin-chat-input" type="text" placeholder="اكتب ردك هنا..." style="flex:1; background:#000; border:1px solid #333; color:#fff; padding:12px 20px; border-radius:15px; outline:none; font-family:inherit; font-size:14px;" onkeydown="if(event.key==='Enter')sendAdminReply()">
-            <button onclick="sendAdminReply()" style="background:linear-gradient(135deg,#d4af37,#f0c94e); color:#000; font-weight:bold; padding:0 25px; height:45px; border-radius:15px; border:none; cursor:pointer; font-size:14px;">إرسال</button>
-        </div>
+            <button onclick="sendAdminReply()" style="background:linear-gradient(135deg,#d4af37,#f0c94e);border:none;color:#000;font-weight:700;padding:0 20px;border-radius:12px;cursor:pointer;font-size:14px;white-space:nowrap;height:44px;">إرسال ↑</button>
+            </div>
     </div>
 </div>
 </body>
