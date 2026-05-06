@@ -2613,10 +2613,6 @@ window.saveAutoReplySettings = async () => {
     } catch (e) { alert(e.message); }
 };
 
-// --- الجزء المطور لإدارة الدردشة من لوحة التحكم ---
-let activeChatId = null;
-let currentChatUnsub = null;
-
 // 1. دالة فتح المحادثة وعرض الرسائل (تصدير للـ window)
 window.openChat = (chatId) => {
     activeChatId = chatId;
