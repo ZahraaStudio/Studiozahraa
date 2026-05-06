@@ -3852,39 +3852,6 @@ function moveAdSlide(dir) {
     </div>
     <div id="smart-cart-content" style="font-size:12px;color:#aaa;"></div>
   </div>
-  <!-- ===== SUPPORT CHAT (النسخة العائمة الجديدة) ===== -->
-  <div id="chat-fab-container" style="position:fixed; bottom:25px; right:25px; z-index:10000;">
-    <span id="chat-unread-badge" style="display:none; position:absolute; top:-5px; right:-5px; background:#ef4444; color:#fff; border-radius:50%; width:22px; height:22px; font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center; border:2px solid #000; z-index:10001;">0</span>
-    <button id="chat-floating-btn" onclick="toggleChat()" class="chat-pulse-effect" style="width:65px; height:65px; border-radius:50%; background:linear-gradient(135deg,#d4af37,#f0c94e); border:none; cursor:pointer; box-shadow:0 10px 25px rgba(212,175,55,0.4); display:flex; align-items:center; justify-content:center; font-size:30px; transition:all 0.3s ease; position:relative; z-index:10000;">
-        <span id="chat-icon-state">💬</span>
-    </button>
-  </div>
-
-  <div id="chat-widget" style="display:none; position:fixed; bottom:100px; right:25px; z-index:9999; width:360px; max-width:calc(100vw - 50px); background:#0d0d0d; border-radius:24px; border:1px solid rgba(212,175,55,0.3); box-shadow:0 20px 60px rgba(0,0,0,0.9); flex-direction:column; overflow:hidden; font-family:'Cairo',sans-serif; direction:rtl; animation:chatSlideIn 0.4s ease;">
-    <div style="background:linear-gradient(135deg,#d4af37,#f0c94e); padding:18px 20px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
-      <div style="display:flex; align-items:center; gap:12px;">
-        <div style="width:10px; height:10px; background:#22c55e; border-radius:50%; box-shadow:0 0 8px #22c55e;"></div>
-        <p style="font-weight:800; color:#000; font-size:16px; margin:0;">الدعم الفني</p>
-      </div>
-      <button onclick="toggleChat()" style="background:rgba(0,0,0,0.1); border:none; color:#000; width:30px; height:30px; border-radius:50%; cursor:pointer; font-size:18px;">✕</button>
-    </div>
-    <div id="chat-messages-box" style="flex:1; overflow-y:auto; padding:20px; height:380px; display:flex; flex-direction:column; gap:12px; background:#0a0a0a;">
-      <div style="text-align:center; color:#555; font-size:12px; margin-top:100px;">مرحباً! كيف يمكننا مساعدتك اليوم؟ 😊</div>
-    </div>
-    <div style="padding:15px; background:#111; border-top:1px solid #1e1e1e; display:flex; gap:10px; align-items:center;">
-      <button onclick="sendChatImage()" style="background:none; border:none; color:#d4af37; font-size:24px; cursor:pointer;" title="إرسال صورة">📎</button>
-      <input id="chat-input" type="text" placeholder="اكتب رسالتك..." style="flex:1; background:#1a1a1a; border:1px solid #2a2a2a; color:#fff; padding:12px 15px; border-radius:18px; outline:none; font-size:14px;" onkeydown="if(event.key==='Enter')sendChatMsg()">
-      <button onclick="sendChatMsg()" style="background:linear-gradient(135deg,#d4af37,#f0c94e); border:none; color:#000; width:45px; height:45px; border-radius:14px; cursor:pointer; font-size:22px; font-weight:bold;">↑</button>
-    </div>
-  </div>
-
-  <style>
-    @keyframes chatSlideIn { from{opacity:0; transform:translateY(20px) scale(0.9);} to{opacity:1; transform:translateY(0) scale(1);} }
-    #chat-messages-box::-webkit-scrollbar { width: 4px; }
-    #chat-messages-box::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
-    .chat-pulse-effect::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: #d4af37; z-index: -1; animation: chatPulse 2s infinite; }
-    @keyframes chatPulse { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(1.7); opacity: 0; } }
-  </style>
 
   <!-- ===== STICKY BOTTOM AD BANNER ===== -->
   <div id="sticky-ad-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:1300;background:rgba(8,8,8,0.97);border-top:1px solid rgba(212,175,55,0.25);padding:8px 14px;align-items:center;gap:10px;font-family:'Cairo',sans-serif;direction:rtl;backdrop-filter:blur(8px);">
@@ -3892,6 +3859,28 @@ function moveAdSlide(dir) {
     <div id="sticky-ad-content" style="flex:1;overflow:hidden;display:flex;align-items:center;gap:10px;min-width:0;"></div>
     <button onclick="closeStickyAd()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#666;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:15px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.color='#ccc'" onmouseout="this.style.color='#666'">✕</button>
   </div>
+  <!-- كود الدردشة المطور - Force Floating -->
+<div id="chat-system-global-wrap">
+    <div id="chat-fab-container" style="position:fixed !important; bottom:25px !important; right:25px !important; z-index:999999 !important; display:block !important;">
+        <span id="chat-unread-badge" style="display:none; position:absolute; top:-5px; right:-5px; background:#ef4444; color:#fff; border-radius:50%; width:22px; height:22px; font-size:12px; font-weight:bold; align-items:center; justify-content:center; border:2px solid #000; z-index:1000001;">0</span>
+        <button onclick="toggleChat()" style="width:65px; height:65px; border-radius:50%; background:linear-gradient(135deg,#d4af37,#f0c94e); border:none; cursor:pointer; box-shadow:0 8px 30px rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; font-size:30px; position:relative; z-index:1000000;">
+            <span id="chat-icon-state">💬</span>
+        </button>
+    </div>
+
+    <div id="chat-widget" style="display:none; position:fixed !important; bottom:100px !important; right:25px !important; z-index:999998 !important; width:350px; max-width:calc(100vw - 40px); background:#0d0d0d; border-radius:24px; border:1px solid #d4af3750; box-shadow:0 20px 60px rgba(0,0,0,0.9); flex-direction:column; overflow:hidden; direction:rtl;">
+        <div style="background:linear-gradient(135deg,#d4af37,#f0c94e); padding:15px 20px; display:flex; align-items:center; justify-content:space-between;">
+            <div style="display:flex; align-items:center; gap:10px;"><div style="width:10px; height:10px; background:#22c55e; border-radius:50%; box-shadow:0 0 8px #22c55e;"></div><p style="font-weight:800; color:#000; font-size:15px; margin:0;">الدعم الفني</p></div>
+            <button onclick="toggleChat()" style="background:none; border:none; color:#000; font-size:22px; cursor:pointer;">✕</button>
+        </div>
+        <div id="chat-messages-box" style="flex:1; overflow-y:auto; padding:20px; height:350px; background:#0a0a0a; display:flex; flex-direction:column; gap:10px;"></div>
+        <div style="padding:15px; background:#111; border-top:1px solid #222; display:flex; gap:10px;">
+            <button onclick="sendChatImage()" style="background:none; border:none; color:#d4af37; font-size:22px; cursor:pointer;">📎</button>
+            <input id="chat-input" type="text" placeholder="اكتب رسالتك..." style="flex:1; background:#1a1a1a; border:1px solid #333; color:#fff; padding:10px 15px; border-radius:15px; outline:none; font-family:inherit;">
+            <button onclick="sendChatMsg()" style="background:#d4af37; color:#000; width:40px; height:40px; border-radius:12px; border:none; cursor:pointer; font-weight:bold;">↑</button>
+        </div>
+    </div>
+</div>
 
 </body>
 </html>
