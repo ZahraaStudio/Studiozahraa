@@ -2572,6 +2572,17 @@
                 if (badge) { badge.textContent = totalUnread; badge.classList.toggle('hidden', totalUnread === 0); }
             } catch(e) { if(list) list.innerHTML = `<p class="text-red-400 text-sm p-4">خطأ: ${e.message}</p>`; }
         };
+        window.saveAutoReplySettings = async () => {
+    const enabled = document.getElementById('auto-reply-enabled').checked;
+    const message = document.getElementById('auto-reply-message').value.trim();
+    try {
+        await setDoc(doc(db, 'settings', 'chat'), { 
+            autoReplyEnabled: enabled, 
+            autoReplyMessage: message 
+        }, { merge: true });
+        zahraaToast('تم حفظ الإعدادات بنجاح ✓');
+    } catch (e) { alert(e.message); }
+};
 
         window.openChat = (chatId) => {
             activeChatId = chatId;
