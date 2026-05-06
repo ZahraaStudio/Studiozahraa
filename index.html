@@ -3859,132 +3859,114 @@ function moveAdSlide(dir) {
     <div id="sticky-ad-content" style="flex:1;overflow:hidden;display:flex;align-items:center;gap:10px;min-width:0;"></div>
     <button onclick="closeStickyAd()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#666;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:15px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.color='#ccc'" onmouseout="this.style.color='#666'">✕</button>
   </div>
-  <!-- نظام الدردشة الاحترافي - نسخة الطفو والاشعارات الذكية -->
-<div id="zahraa-global-chat">
-    <!-- الزر العائم -->
-    <div id="chat-fab-container" style="position: fixed !important; bottom: 25px !important; right: 25px !important; z-index: 2147483647 !important; direction: rtl;">
-        <!-- علامة الإشعارات (رقم الرسائل) -->
-        <span id="chat-unread-badge" style="display:none; position:absolute; top:-5px; right:-5px; background:#ff0000; color:#fff; border-radius:50%; width:24px; height:22px; font-size:12px; font-weight:bold; align-items:center; justify-content:center; border:2px solid #0d0d0d; z-index: 2147483647; box-shadow: 0 0 10px rgba(255,0,0,0.5);">0</span>
-        
-        <button onclick="toggleChat()" class="chat-pulse-gold" style="width:65px; height:65px; border-radius:50%; background:linear-gradient(135deg,#d4af37,#f0c94e); border:none; cursor:pointer; box-shadow:0 8px 32px rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; font-size:30px; transition:transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); position:relative; -webkit-tap-highlight-color: transparent;">
-            <span id="chat-icon-symbol">💬</span>
+  <!-- ====================================================== -->
+<!-- نظام دردشة استوديو الزهراء المستقل (حل مشكلة الطفو والبيانات) -->
+<!-- ====================================================== -->
+<div id="zahraa-standalone-chat">
+    <!-- الزر العائم (مفصول تماماً عن أي حاويات) -->
+    <div id="chat-fab-portal" style="position: fixed !important; bottom: 25px !important; right: 25px !important; z-index: 2147483647 !important;">
+        <span id="chat-notif-count" style="display:none; position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; width:22px; height:22px; font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center; border:2px solid black;">0</span>
+        <button onclick="handleChatToggle()" style="width:65px; height:65px; border-radius:50%; background:linear-gradient(135deg,#d4af37,#f0c94e); border:none; cursor:pointer; box-shadow:0 8px 32px rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; font-size:30px;">
+            <span id="chat-btn-icon">💬</span>
         </button>
     </div>
 
-    <!-- نافذة المحادثة -->
-    <div id="chat-widget" style="display:none; position:fixed !important; bottom:100px !important; right:25px !important; z-index: 2147483646 !important; width:350px; max-width:calc(100vw - 50px); height:500px; max-height:80vh; background:#0d0d0d; border-radius:24px; border:1px solid rgba(212,175,55,0.3); box-shadow:0 25px 80px rgba(0,0,0,0.9); flex-direction:column; overflow:hidden; font-family: 'Cairo', sans-serif;">
-        <!-- الرأس -->
+    <!-- نافذة الدردشة -->
+    <div id="chat-window-portal" style="display:none; position:fixed !important; bottom:100px !important; right:25px !important; z-index: 2147483646 !important; width:350px; max-width:calc(100vw - 50px); height:500px; background:#0a0a0a; border-radius:24px; border:1px solid #d4af3750; box-shadow:0 25px 80px rgba(0,0,0,0.9); flex-direction:column; overflow:hidden; direction:rtl; font-family: 'Cairo', sans-serif;">
+        <!-- Header -->
         <div style="background:linear-gradient(135deg,#d4af37,#f0c94e); padding:15px 20px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
             <div style="display:flex; align-items:center; gap:10px;">
-                <div style="width:10px; height:10px; background:#22c55e; border-radius:50%; box-shadow: 0 0 8px #22c55e;"></div>
-                <span style="font-weight:800; color:#000; font-size:15px;">الدعم الفني</span>
+                <div style="width:10px; height:10px; background:#22c55e; border-radius:50%; box-shadow:0 0 8px #22c55e;"></div>
+                <span style="font-weight:bold; color:#000;">الدعم الفني</span>
             </div>
-            <button onclick="toggleChat()" style="background:rgba(0,0,0,0.1); border:none; color:#000; width:30px; height:30px; border-radius:50%; cursor:pointer; font-size:18px; line-height:1;">✕</button>
+            <button onclick="handleChatToggle()" style="background:none; border:none; color:#000; font-size:22px; cursor:pointer;">✕</button>
         </div>
-        <!-- منطقة الرسائل -->
-        <div id="chat-messages-box" style="flex:1; overflow-y:auto; padding:20px; background:#0a0a0a; display:flex; flex-direction:column; gap:12px; scrollbar-width: thin;">
-            <div style="text-align:center; color:#444; font-size:11px; margin-top:50px;">جاري تحميل المحادثة...</div>
+        <!-- Messages Area -->
+        <div id="chat-scroll-area" style="flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:10px; background:#000;">
+            <div style="text-align:center; color:#555; font-size:12px; margin-top:50px;">جاري الاتصال...</div>
         </div>
-        <!-- الإدخال -->
-        <div style="padding:15px; background:#111; border-top:1px solid #222; display:flex; gap:10px; align-items:center;">
-            <button onclick="sendChatImage()" style="background:none; border:none; color:#d4af37; font-size:22px; cursor:pointer;" title="إرسال صورة">📎</button>
-            <input id="chat-input" type="text" placeholder="اكتب رسالتك..." style="flex:1; background:#1a1a1a; border:1px solid #333; color:#fff; padding:10px 15px; border-radius:15px; outline:none; font-family:'Cairo'; font-size:14px;" onkeydown="if(event.key==='Enter')sendChatMsg()">
-            <button onclick="sendChatMsg()" style="background:#d4af37; color:#000; width:45px; height:45px; border-radius:12px; border:none; cursor:pointer; font-weight:bold; font-size:22px;">↑</button>
+        <!-- Input Area -->
+        <div style="padding:15px; background:#111; border-top:1px solid #222; display:flex; gap:8px;">
+            <button onclick="sendChatImage()" style="background:none; border:none; color:#d4af37; font-size:24px; cursor:pointer;">📎</button>
+            <input id="chat-msg-input" type="text" placeholder="اكتب رسالتك..." style="flex:1; background:#1a1a1a; border:1px solid #333; color:#fff; padding:10px 15px; border-radius:15px; outline:none;">
+            <button onclick="sendChatMsg()" style="background:#d4af37; color:#000; width:40px; height:40px; border-radius:10px; border:none; font-weight:bold;">↑</button>
         </div>
     </div>
 </div>
 
-<style>
-    /* انيميشن النبض الذهبي للزر */
-    .chat-pulse-gold::after {
-        content: ''; position: absolute; inset: 0; border-radius: 50%;
-        background: #d4af37; z-index: -1; animation: chatPulseAnim 2s infinite;
-    }
-    @keyframes chatPulseAnim { 
-        0% { transform: scale(1); opacity: 0.7; } 
-        100% { transform: scale(1.6); opacity: 0; } 
-    }
-</style>
-
 <script>
-    // --- برمجة الدردشة والإشعارات ---
-    let isChatOpen = false;
+    // التأكد من تحميل البيانات والارتباط بالفايربيز
+    (function() {
+        let chatInitialized = false;
+        let chatVisible = false;
 
-    // 1. دالة الفتح والغلق
-    window.toggleChat = function() {
-        isChatOpen = !isChatOpen;
-        const widget = document.getElementById('chat-widget');
-        const icon = document.getElementById('chat-icon-symbol');
-        const badge = document.getElementById('chat-unread-badge');
-
-        if (isChatOpen) {
-            widget.style.display = 'flex';
-            icon.innerText = '✕';
-            badge.style.display = 'none'; // إخفاء الرقم عند الفتح
-            // تصفير عداد الرسائل في الداتابيز عند الفتح
-            if (window.deviceId) {
-                db.collection('support_chats').doc(window.deviceId).update({ unreadByUser: 0 }).catch(()=>{});
-            }
-            setTimeout(() => {
-                const box = document.getElementById('chat-messages-box');
-                box.scrollTop = box.scrollHeight;
-            }, 300);
-        } else {
-            widget.style.display = 'none';
-            icon.innerText = '💬';
-        }
-    };
-
-    // 2. مراقب الإشعارات والرسائل (يعمل تلقائياً)
-    function startChatNotificationListener() {
-        if (!window.deviceId) {
-            setTimeout(startChatNotificationListener, 1000); // انتظر حتى يجهز deviceId
-            return;
-        }
-
-        db.collection('support_chats').doc(window.deviceId).onSnapshot(snap => {
-            const badge = document.getElementById('chat-unread-badge');
-            const box = document.getElementById('chat-messages-box');
+        window.handleChatToggle = function() {
+            chatVisible = !chatVisible;
+            const win = document.getElementById('chat-window-portal');
+            const icon = document.getElementById('chat-btn-icon');
+            const badge = document.getElementById('chat-notif-count');
             
-            if (!snap.exists) {
-                if (box) box.innerHTML = '<div style="text-align:center; color:#555; font-size:11px; margin-top:50px;">مرحباً! كيف يمكننا مساعدتك؟ 😊</div>';
+            if (chatVisible) {
+                win.style.display = 'flex';
+                icon.innerText = '✕';
+                badge.style.display = 'none';
+                if (window.deviceId) {
+                    firebase.firestore().collection('support_chats').doc(window.deviceId).update({ unreadByUser: 0 }).catch(()=>{});
+                }
+            } else {
+                win.style.display = 'none';
+                icon.innerText = '💬';
+            }
+        };
+
+        function startChatListener() {
+            // ننتظر حتى يتم تعريف db و deviceId
+            if (typeof firebase === 'undefined' || !window.deviceId) {
+                setTimeout(startChatListener, 1000);
                 return;
             }
 
-            const data = snap.data();
+            const chatRef = firebase.firestore().collection('support_chats').doc(window.deviceId);
             
-            // تحديث شارة الإشعارات (Badge) لو الشات مقفول وفي رسائل جديدة
-            const unread = data.unreadByUser || 0;
-            if (!isChatOpen && unread > 0) {
-                badge.style.display = 'flex';
-                badge.innerText = unread;
-                // صوت تنبيه خفيف (اختياري)
-            } else if (isChatOpen) {
-                badge.style.display = 'none';
-            }
+            chatRef.onSnapshot(snap => {
+                const box = document.getElementById('chat-scroll-area');
+                const badge = document.getElementById('chat-notif-count');
+                
+                if (!snap.exists) {
+                    box.innerHTML = '<div style="text-align:center;color:#555;font-size:12px;margin-top:50px;">أهلاً بك! كيف يمكننا مساعدتك؟ 😊</div>';
+                    return;
+                }
 
-            // تحديث الرسائل داخل الصندوق
-            if (box) {
+                const data = snap.data();
+                
+                // تحديث الإشعارات
+                const unread = data.unreadByUser || 0;
+                if (!chatVisible && unread > 0) {
+                    badge.style.display = 'flex';
+                    badge.innerText = unread;
+                }
+
+                // عرض الرسائل
                 box.innerHTML = '';
-                const msgs = data.messages || [];
-                msgs.forEach(m => {
+                const messages = data.messages || [];
+                messages.forEach(m => {
                     const isUser = m.sender === 'user';
                     const time = m.timestamp ? new Date(m.timestamp).toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'}) : '';
                     box.innerHTML += `
-                        <div style="display:flex; flex-direction:column; align-items:${isUser?'flex-end':'flex-start'}; gap:2px;">
-                            <div style="max-width:85%; padding:10px 15px; border-radius:${isUser?'18px 18px 4px 18px':'18px 18px 18px 4px'}; background:${isUser?'linear-gradient(135deg,#d4af37,#f0c94e)':'#1e1e1e'}; color:${isUser?'#000':'#fff'}; font-size:13px; line-height:1.5;">
+                        <div style="display:flex; flex-direction:column; align-items:${isUser?'flex-end':'flex-start'};">
+                            <div style="max-width:85%; padding:10px 15px; border-radius:${isUser?'18px 18px 4px 18px':'18px 18px 18px 4px'}; background:${isUser?'linear-gradient(135deg,#d4af37,#f0c94e)':'#222'}; color:${isUser?'#000':'#fff'}; font-size:13px;">
                                 ${m.type==='image' ? '<img src="'+m.fileUrl+'" style="max-width:100%; border-radius:10px;">' : m.text}
                             </div>
-                            <span style="font-size:10px; color:#444; padding:0 5px;">${time}</span>
+                            <span style="font-size:9px; color:#444; margin-top:3px;">${time}</span>
                         </div>`;
                 });
                 box.scrollTop = box.scrollHeight;
-            }
-        });
-    }
+            }, err => console.error("Chat Listener Error:", err));
+        }
 
-    // تشغيل المستمع
-    startChatNotificationListener();
+        // تشغيل النظام
+        setTimeout(startChatListener, 2000);
+    })();
 </script>
 
 </body>
