@@ -2613,12 +2613,8 @@ window.saveAutoReplySettings = async () => {
     } catch (e) { alert(e.message); }
 };
 
-// --- كود الدردشة المصلح للأدمن ---
-let activeChatId = null;
-let currentChatUnsub = null;
-
 // 1. دالة فتح المحادثة (تصدير للـ window)
-window.openChat = (chatId) => {
+    window.openChat = (chatId) => {
     activeChatId = chatId;
     document.getElementById('admin-chat-modal').style.display = 'flex';
     const msgsBox = document.getElementById('admin-chat-messages-box');
