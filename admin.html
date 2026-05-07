@@ -118,7 +118,13 @@
                             <input type="number" id="p-discount-value" placeholder="قيمة الخصم" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
                         </div>
 
-                        <input type="text" id="p-video-url" placeholder="رابط فيديو المنتج (اختياري)" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                        <div class="space-y-2">
+                            <label class="text-xs text-zinc-400">🎬 فيديو المنتج (اختياري)</label>
+                            <input type="file" id="p-video-file" accept="video/*" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text cursor-pointer">
+                            <div id="p-video-preview" class="hidden"><video id="p-vid-thumb" controls class="w-full h-20 rounded mt-1 border border-zinc-700"></video></div>
+                            <div id="p-video-status" class="text-xs text-zinc-500"></div>
+                            <input type="hidden" id="p-video-url">
+                        </div>
 
                         <div class="grid grid-cols-3 gap-2 text-xs">
                             <label class="flex items-center gap-2 bg-black border border-zinc-800 p-2 rounded cursor-pointer">
@@ -363,11 +369,18 @@
                         <input id="banner-title" type="text" placeholder="عنوان البانر" class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700">
                         <input id="banner-subtitle" type="text" placeholder="نص فرعي (اختياري)" class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700">
                         <div class="space-y-2">
-                            <label class="text-xs text-zinc-400">📸 صورة البانر</label>
-                            <input type="file" id="banner-image-file" accept="image/*,video/*" class="w-full bg-zinc-800 text-white p-2 rounded-xl border border-zinc-700 text-sm cursor-pointer">
-                            <div id="banner-image-preview" class="hidden"><img id="banner-img-thumb" class="w-full h-24 object-cover rounded-xl mt-1 border border-zinc-700"></div>
+                            <label class="text-xs text-zinc-400">📸 صور البانر (يمكن رفع عدة صور)</label>
+                            <input type="file" id="banner-image-file" accept="image/*" multiple class="w-full bg-zinc-800 text-white p-2 rounded-xl border border-zinc-700 text-sm cursor-pointer">
+                            <div id="banner-images-preview" class="grid grid-cols-3 gap-2 mt-2"></div>
                             <div id="banner-upload-status" class="text-xs text-zinc-500"></div>
-                            <input id="banner-image" type="hidden">
+                            <input id="banner-images" type="hidden">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-xs text-zinc-400">🎬 فيديو البانر (اختياري)</label>
+                            <input type="file" id="banner-video-file" accept="video/*" class="w-full bg-zinc-800 text-white p-2 rounded-xl border border-zinc-700 text-sm cursor-pointer">
+                            <div id="banner-video-preview" class="hidden mt-2"><video id="banner-vid-thumb" controls class="w-full h-24 rounded-xl border border-zinc-700"></video></div>
+                            <div id="banner-video-status" class="text-xs text-zinc-500"></div>
+                            <input id="banner-video" type="hidden">
                         </div>
                         <input id="banner-link" type="text" placeholder="رابط الزر (اختياري)" class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700">
                         <input id="banner-btn-text" type="text" placeholder="نص الزر (مثلاً: اعرف أكثر)" class="w-full bg-zinc-800 text-white p-3 rounded-xl border border-zinc-700">
@@ -2038,15 +2051,32 @@ window.saveAutoReplySettings = async () => {
         window.saveBanner = async () => {
             const title = document.getElementById('banner-title').value.trim();
             const subtitle = document.getElementById('banner-subtitle').value.trim();
-            const imageUrl = document.getElementById('banner-image').value.trim();
+            const imagesStr = document.getElementById('banner-images').value.trim();
+            const images = imagesStr ? JSON.parse(imagesStr) : [];
+            const videoUrl = document.getElementById('banner-video').value.trim();
             const link = document.getElementById('banner-link').value.trim();
             const btnText = document.getElementById('banner-btn-text').value.trim();
             const order = parseInt(document.getElementById('banner-order').value) || 0;
             const isActive = document.getElementById('banner-active').checked;
-            if (!title && !imageUrl) return zahraaToast('أدخل عنوان البانر أو صورة','warning');
+            if (!title && images.length === 0 && !videoUrl) return zahraaToast('أدخل عنوان البانر أو صورة أو فيديو','warning');
             try {
-                await addDoc(collection(db, 'banners'), { title, subtitle, imageUrl, link, btnText, order, isActive, createdAt: serverTimestamp() });
-                ['banner-title','banner-subtitle','banner-image','banner-link','banner-btn-text'].forEach(id => document.getElementById(id).value = '');
+                await addDoc(collection(db, 'banners'), { 
+                    title, 
+                    subtitle, 
+                    images: images,
+                    imageUrl: images[0] || null,
+                    videoUrl: videoUrl || null,
+                    link, 
+                    btnText, 
+                    order, 
+                    isActive, 
+                    createdAt: serverTimestamp() 
+                });
+                ['banner-title','banner-subtitle','banner-link','banner-btn-text'].forEach(id => document.getElementById(id).value = '');
+                document.getElementById('banner-images').value = '';
+                document.getElementById('banner-video').value = '';
+                bannerImages = [];
+                renderBannerImagesPreview();
                 loadAdminBanners();
                 zahraaToast('تم حفظ البانر ✅','success');
             } catch (e) { zahraaToast('خطأ: '+e.message,'error'); }
@@ -2503,29 +2533,97 @@ window.saveAutoReplySettings = async () => {
             } catch(e) { if(list) list.innerHTML=`<p class="text-red-400 text-sm">خطأ: ${e.message}</p>`; }
         };
 
-        // ============ CLOUDINARY UPLOADS (Banner & Post) ============
+        // ============ CLOUDINARY UPLOADS (Banner & Post & Product Videos) ============
+
+        // متغيرات عامة لتخزين الملفات
+        let bannerImages = [];
+
+        // ============ رفع صور متعددة للبانرات ============
         document.getElementById('banner-image-file')?.addEventListener('change', async(e)=>{
-            const file=e.target.files[0]; if(!file) return;
+            const files=e.target.files; if(files.length===0) return;
             const st=document.getElementById('banner-upload-status');
-            st.textContent='⏳ جاري الرفع...';
+            st.textContent='⏳ جاري رفع الصور...';
             try{
-                const fd=new FormData(); fd.append('file',file); fd.append('upload_preset','zahraa_upload');
-                const res=await fetch('https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload',{method:'POST',body:fd});
+                for(let file of files){
+                    const fd=new FormData(); 
+                    fd.append('file',file); 
+                    fd.append('upload_preset','zahraa_upload');
+                    const res=await fetch('https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload',{method:'POST',body:fd});
+                    const data=await res.json();
+                    if(data.secure_url){
+                        bannerImages.push(data.secure_url);
+                    }
+                }
+                document.getElementById('banner-images').value=JSON.stringify(bannerImages);
+                renderBannerImagesPreview();
+                st.textContent='✅ تم رفع '+files.length+' صور بنجاح';
+            }catch(err){st.textContent='❌ خطأ: '+err.message;}
+        });
+
+        function renderBannerImagesPreview(){
+            const preview=document.getElementById('banner-images-preview');
+            preview.innerHTML=bannerImages.map((img,i)=>`
+                <div class="relative group">
+                    <img src="${img}" class="w-full h-20 object-cover rounded border border-zinc-700">
+                    <button onclick="removeBannerImage(${i})" class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-5 h-5 text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition">✕</button>
+                </div>
+            `).join('');
+        }
+
+        window.removeBannerImage=(i)=>{ 
+            bannerImages.splice(i,1); 
+            renderBannerImagesPreview(); 
+            document.getElementById('banner-images').value=JSON.stringify(bannerImages); 
+        };
+
+        // ============ رفع فيديو البانر ============
+        document.getElementById('banner-video-file')?.addEventListener('change', async(e)=>{
+            const file=e.target.files[0]; if(!file) return;
+            const st=document.getElementById('banner-video-status');
+            st.textContent='⏳ جاري رفع الفيديو...';
+            try{
+                const fd=new FormData(); 
+                fd.append('file',file); 
+                fd.append('upload_preset','zahraa_upload');
+                const res=await fetch('https://api.cloudinary.com/v1_1/dxlxwe55b/video/upload',{method:'POST',body:fd});
                 const data=await res.json();
                 if(data.secure_url){
-                    document.getElementById('banner-image').value=data.secure_url;
-                    document.getElementById('banner-img-thumb').src=data.secure_url;
-                    document.getElementById('banner-image-preview').classList.remove('hidden');
-                    st.textContent='✅ تم الرفع بنجاح';
+                    document.getElementById('banner-video').value=data.secure_url;
+                    document.getElementById('banner-vid-thumb').src=data.secure_url;
+                    document.getElementById('banner-video-preview').classList.remove('hidden');
+                    st.textContent='✅ فيديو جاهز';
                 } else st.textContent='❌ فشل الرفع';
             }catch(err){st.textContent='❌ خطأ: '+err.message;}
         });
 
+        // ============ رفع فيديو المنتج ============
+        document.getElementById('p-video-file')?.addEventListener('change', async(e)=>{
+            const file=e.target.files[0]; if(!file) return;
+            const st=document.getElementById('p-video-status');
+            st.textContent='⏳ جاري رفع الفيديو...';
+            try{
+                const fd=new FormData(); 
+                fd.append('file',file); 
+                fd.append('upload_preset','zahraa_upload');
+                const res=await fetch('https://api.cloudinary.com/v1_1/dxlxwe55b/video/upload',{method:'POST',body:fd});
+                const data=await res.json();
+                if(data.secure_url){
+                    document.getElementById('p-video-url').value=data.secure_url;
+                    document.getElementById('p-vid-thumb').src=data.secure_url;
+                    document.getElementById('p-video-preview').classList.remove('hidden');
+                    st.textContent='✅ فيديو جاهز';
+                } else st.textContent='❌ فشل الرفع';
+            }catch(err){st.textContent='❌ خطأ: '+err.message;}
+        });
+
+        // ============ رفع صورة المنشور ============
         document.getElementById('post-image-file')?.addEventListener('change', async(e)=>{
             const file=e.target.files[0]; if(!file) return;
             document.getElementById('post-upload-status').textContent='⏳ جاري رفع الصورة...';
             try{
-                const fd=new FormData(); fd.append('file',file); fd.append('upload_preset','zahraa_upload');
+                const fd=new FormData(); 
+                fd.append('file',file); 
+                fd.append('upload_preset','zahraa_upload');
                 const res=await fetch('https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload',{method:'POST',body:fd});
                 const data=await res.json();
                 if(data.secure_url){
@@ -2537,11 +2635,14 @@ window.saveAutoReplySettings = async () => {
             }catch(err){document.getElementById('post-upload-status').textContent='❌ خطأ: '+err.message;}
         });
 
+        // ============ رفع فيديو المنشور ============
         document.getElementById('post-video-file')?.addEventListener('change', async(e)=>{
             const file=e.target.files[0]; if(!file) return;
             document.getElementById('post-upload-status').textContent='⏳ جاري رفع الفيديو...';
             try{
-                const fd=new FormData(); fd.append('file',file); fd.append('upload_preset','zahraa_upload');
+                const fd=new FormData(); 
+                fd.append('file',file); 
+                fd.append('upload_preset','zahraa_upload');
                 const res=await fetch('https://api.cloudinary.com/v1_1/dxlxwe55b/video/upload',{method:'POST',body:fd});
                 const data=await res.json();
                 if(data.secure_url){
