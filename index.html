@@ -4119,6 +4119,36 @@ function moveAdSlide(dir) {
         // تشغيل النظام
         setTimeout(startChatListener, 2000);
     })();
+  window.accessGallery = async () => {
+    const pass = document.getElementById('gallery-pass').value.trim();
+    const snap = await db.collection('client_previews').where('password', '==', pass).get();
+    if (snap.empty) return zahraaToast('كلمة المرور خطأ ❌', 'error');
+
+    const data = snap.docs[0].data();
+    const gid = snap.docs[0].id;
+    document.getElementById('gallery-auth').classList.add('hidden');
+    document.getElementById('gallery-content').classList.remove('hidden');
+    document.getElementById('gallery-client-name').innerText = "صالة عرض: " + data.clientName;
+
+    document.getElementById('gallery-grid').innerHTML = data.images.map((url, i) => `
+        <div class="relative bg-zinc-900 rounded-3xl overflow-hidden border border-zinc-800 shadow-xl group">
+            <div style="position:absolute; inset:0; z-index:5; background:transparent;"></div>
+            <img src="${url}" class="w-full h-auto pointer-events-none group-hover:scale-105 transition-transform duration-700">
+            <div class="p-6 relative z-10 bg-black/40 backdrop-blur-md">
+                <button onclick="addGalleryComment('${gid}','${url}')" class="w-full py-3 bg-zinc-800 gold-text rounded-2xl font-bold text-sm border border-gold-text/20">💬 أضف ملاحظة أو تعديل</button>
+            </div>
+        </div>
+    `).join('');
+};
+
+window.addGalleryComment = async (pid, url) => {
+    const msg = await showPrompt("ما هو التعديل المطلوب على هذه الصورة؟");
+    if (!msg) return;
+    await db.collection('preview_comments').add({
+        previewId: pid, imageUrl: url, text: msg, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    zahraaToast('تم إرسال ملاحظتك بنجاح ✓');
+};
 </script>
 
 </body>
