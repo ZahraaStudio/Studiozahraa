@@ -1262,13 +1262,8 @@
                             ${hasCustomerImages ? `<button onclick="downloadOrderZip('${o.id}','customer')" class="btn-sm bg-blue-600 text-white">📦 صور العميل</button>` : ''}
                             ${hasProductImages ? `<button onclick="downloadOrderZip('${o.id}','products')" class="btn-sm bg-purple-600 text-white">🖼️ صور المنتجات</button>` : ''}
                             ‏<button onclick="deleteOrder('${o.id}')" class="btn-sm btn-danger">🗑️ حذف</button
-                          <a href="https://wa.me/${ => {
-                          let p = (o.customerPhone || '').replace(/\D/g, ''); // تنظيف الرقم من أي مسافات أو رموز
-                          if (p.startsWith('01')) return '2' + p; // لو بدأ بـ 010 مثلاً يخليه 2010
-                          if (p.startsWith('1')) return '20' + p; // لو العميل نسي الصفر وكتب 10 يخليه 2010
-                          return p; // لو كاتب الرمز فعلاً يسيبه زي ما هو
-})()}?text=${encodeURIComponent('مرحباً ' + (o.customerName||'') + '، بخصوص طلبك رقم ' + (o.orderNumber || o.id.substring(0,8)))}" target="_blank" class="btn-sm bg-[#25D366] text-white">واتساب</a>
-                    </div>
+                            <a href="https://wa.me/${(o.customerPhone||'').replace(/\D/g,'')}?text=${encodeURIComponent('مرحباً ' + (o.customerName||'') + '، بخصوص طلبك رقم ' + (o.orderNumber || o.id.substring(0,8)))}" target="_blank" class="btn-sm bg-[#25D366] text-white">واتساب</a>       
+                      </div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
                         <div>
