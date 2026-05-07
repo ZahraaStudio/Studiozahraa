@@ -900,7 +900,7 @@
         if (ref) localStorage.setItem('referral_by', ref);
 
         await loadSettings();
-        await loadProducts();
+        loadProducts();
         await loadCategories();
         loadTestimonials();
         renderHomeOffers();
