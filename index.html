@@ -2145,16 +2145,7 @@
         const target = document.querySelector(`[data-page="${page}"]`);
         if (target) target.classList.remove('hidden');
         closeSidebar();
-        window.scrollTo(0, 0);
-        if (page === 'myorders') loadMyOrders();
-        if (pushState && window.location.hash !== '#' + page) {
-            history.pushState({ page }, '', '#' + page);
-        }
-        // Update sidebar active state
-        document.querySelectorAll('#sidebar button[onclick*="showPage"]').forEach(btn => btn.classList.remove('ring-1', 'ring-yellow-400'));
-    };
-
-    window.accessGallery = async () => {
+      window.accessGallery = async () => {
     const pass = document.getElementById('gallery-pass').value.trim();
     const snap = await db.collection('client_previews').where('password', '==', pass).get();
     if (snap.empty) return zahraaToast('كلمة المرور خطأ ❌', 'error');
@@ -2176,7 +2167,16 @@
         </div>
     `).join('');
 };
+        window.scrollTo(0, 0);
+        if (page === 'myorders') loadMyOrders();
+        if (pushState && window.location.hash !== '#' + page) {
+            history.pushState({ page }, '', '#' + page);
+        }
+        // Update sidebar active state
+        document.querySelectorAll('#sidebar button[onclick*="showPage"]').forEach(btn => btn.classList.remove('ring-1', 'ring-yellow-400'));
+    };
 
+    
 window.addGalleryComment = async (pid, url) => {
     const msg = await showPrompt("اكتب ملاحظتك على هذه الصورة:");
     if (!msg) return;
