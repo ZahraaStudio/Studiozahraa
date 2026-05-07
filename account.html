@@ -907,19 +907,21 @@
       list.innerHTML = '';
       snap.forEach(d => {
         const cp = d.data();
+        // إذا كان المنشور مخفياً من الإدارة فعلاً، لا تعرضه للمستخدم في قائمة "منشوراتي"
+        if (cp.isHidden) return; 
+
         list.innerHTML += `
-          <div class="flex gap-3 p-3 bg-zinc-900 rounded-xl border border-zinc-800 ${cp.isHidden ? 'opacity-50' : ''}">
+          <div class="flex gap-3 p-3 bg-zinc-900 rounded-xl border border-zinc-800 transition-all hover:border-zinc-700">
             ${cp.mediaUrls?.length ? `<img src="${cp.mediaUrls[0]}" class="w-16 h-16 rounded-lg object-cover flex-shrink-0">` : '<div class="w-16 h-16 bg-zinc-800 rounded-lg flex-shrink-0 flex items-center justify-center text-2xl">📝</div>'}
             <div class="flex-1 min-w-0">
               ${cp.text ? `<p class="text-sm text-zinc-300 line-clamp-2 mb-1">${cp.text}</p>` : ''}
               ${cp.productName ? `<p class="text-xs text-zinc-500">🛍️ ${cp.productName}</p>` : ''}
               <div class="flex items-center gap-2 mt-1">
-                ${cp.isHidden ? '<span class="text-[10px] bg-red-800 text-white px-2 py-0.5 rounded">مخفي من الإدارة</span>' : '<span class="text-[10px] bg-green-800 text-white px-2 py-0.5 rounded">ظاهر</span>'}
-                ${cp.reportCount > 0 ? `<span class="text-[10px] bg-orange-800 text-white px-2 py-0.5 rounded">🚨 ${cp.reportCount} بلاغ</span>` : ''}
+                <span class="text-[10px] bg-green-800/30 text-green-400 px-2 py-0.5 rounded border border-green-800/50">منشور نشط ✓</span>
                 <span class="text-[10px] text-zinc-600">${cp.createdAt?.toDate?.()?.toLocaleDateString('ar-EG') || ''}</span>
               </div>
             </div>
-            <button onclick="deleteMyPost('${d.id}')" class="text-red-400 hover:text-red-300 text-sm flex-shrink-0 self-start">🗑</button>
+            <button onclick="deleteMyPost('${d.id}')" class="text-zinc-500 hover:text-red-400 transition-colors text-lg p-1">🗑</button>
           </div>`;
       });
     } catch (e) { list.innerHTML = `<p class="text-red-400 text-sm text-center">خطأ في التحميل: ${e.message}</p>`; }
