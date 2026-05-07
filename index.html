@@ -2172,20 +2172,18 @@ window.loginWithFacebook = async () => {
             });
         } catch (e) { console.error('Error loading testimonials:', e); }
     }
-   window.showPage = (page, pushState = true) => {
-        document.querySelectorAll('[data-page]').forEach(el => el.classList.add('hidden'));
-        const target = document.querySelector(`[data-page="${page}"]`);
-        if (target) target.classList.remove('hidden');
-        closeSidebar();
-        window.scrollTo(0, 0);
-        if (page === 'myorders') loadMyOrders();
-        if (pushState && window.location.hash !== '#' + page) {
-            history.pushState({ page }, '', '#' + page);
-        }
-        // Update sidebar active state
-        document.querySelectorAll('#sidebar button[onclick*="showPage"]').forEach(btn => btn.classList.remove('ring-1', 'ring-yellow-400'));
-    };
-
+  window.showPage = (page, pushState = true) => {
+    document.querySelectorAll('[data-page]').forEach(el => el.classList.add('hidden'));
+    const target = document.querySelector(`[data-page="${page}"]`);
+    if (target) target.classList.remove('hidden');
+    closeSidebar();
+    window.scrollTo(0, 0);
+    if (page === 'myorders') loadMyOrders();
+    if (pushState && window.location.hash !== '#' + page) {
+        history.pushState({ page }, '', '#' + page);
+    }
+    document.querySelectorAll('#sidebar button[onclick*="showPage"]').forEach(btn => btn.classList.remove('ring-1', 'ring-yellow-400'));
+};
     window.addEventListener('popstate', (e) => {
         const page = e.state?.page || (window.location.hash.slice(1)) || 'home';
         showPage(page, false);
