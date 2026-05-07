@@ -2064,8 +2064,8 @@ window.saveAutoReplySettings = async () => {
         window.loadAll = async () => {
             await loadSettings();
             await loadCategories();
-            await loadProducts();
-            await loadOrders();
+            loadProducts();
+            loadOrders();
             await loadCustomers();
             await loadCoupons();
             await loadReferrals();
