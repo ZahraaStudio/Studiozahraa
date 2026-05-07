@@ -2086,184 +2086,44 @@ window.saveAutoReplySettings = async () => {
 };
         window.showNotif = (t,type='success') => zahraaToast(t,type);
 
+// 1. رفع الصور مع إمكانية حذفها قبل الحفظ
 window.uploadPreviewImages = async (input) => {
     const files = input.files;
     const status = document.getElementById('prev-upload-status');
-    const previewArea = document.getElementById('prev-images-preview');
-    
     status.innerText = "⏳ جاري الرفع...";
-    // تصفير المصفوفة عند الرفع الجديد لو حبيت، أو سيبها لو عاوز تضيف عليهم
-    // previewImagesUrls = []; 
 
     for (let file of files) {
         const fd = new FormData();
         fd.append('file', file);
-        fd.append('upload_preset', 'zahraa_upload'); // الـ Preset بتاعك
+        fd.append('upload_preset', 'zahraa_upload');
         try {
             const res = await fetch('https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload', { method: 'POST', body: fd });
             const data = await res.json();
             if (data.secure_url) {
                 previewImagesUrls.push(data.secure_url);
-                previewArea.innerHTML += `<img src="${data.secure_url}" class="w-full h-12 object-cover rounded border border-zinc-700">`;
             }
-        } catch (e) { console.error("Upload error:", e); }
+        } catch (e) { console.error(e); }
     }
-    status.innerText = "✅ جاهز: " + previewImagesUrls.length + " صورة";
+    status.innerText = "✅ تم رفع " + previewImagesUrls.length + " صورة";
+    renderNewBatchPreviews(); // دالة لعرض الصور مع زر الحذف
 };
 
-// 2. دالة حفظ ونشر المجموعة لـ Firebase
-window.savePreviewGroup = async () => {
-    const name = document.getElementById('prev-client-name').value.trim();
-    const pass = document.getElementById('prev-password').value.trim();
-    
-    if (!name || !pass) return zahraaToast('يرجى إدخال اسم العميل وكلمة المرور', 'warning');
-    if (previewImagesUrls.length === 0) return zahraaToast('يرجى رفع صور أولاً', 'warning');
-
-    try {
-        // الحفظ في مجموعة client_previews
-        await addDoc(collection(db, 'client_previews'), {
-            clientName: name,
-            password: pass,
-            images: previewImagesUrls,
-            createdAt: serverTimestamp()
-        });
-        
-        zahraaToast('تم إنشاء صالة عرض للعميل بنجاح ✅', 'success');
-        
-        // إعادة تصفير الفورم
-        document.getElementById('prev-client-name').value = '';
-        document.getElementById('prev-password').value = '';
-        document.getElementById('prev-images-preview').innerHTML = '';
-        document.getElementById('prev-upload-status').innerText = '';
-        previewImagesUrls = [];
-        
-    } catch (e) {
-        console.error(e);
-        zahraaToast('خطأ أثناء النشر: ' + e.message, 'error');
-    }
-};
-
-// 3. دالة جلب وعرض المجموعات والتعليقات (تحديث لحظي)
-window.loadPreviews = () => {
-    const list = document.getElementById('previews-list');
-    const q = query(collection(db, 'client_previews'), orderBy('createdAt', 'desc'));
-
-    onSnapshot(q, (snapshot) => {
-        list.innerHTML = '';
-        if (snapshot.empty) {
-            list.innerHTML = '<p class="text-center text-zinc-500 py-10">لا توجد مجموعات معاينة حالياً</p>';
-            return;
-        }
-
-        snapshot.forEach(docSnap => {
-            const p = docSnap.data();
-            const id = docSnap.id;
-            
-            list.innerHTML += `
-                <div class="bg-black border border-zinc-800 p-5 rounded-2xl mb-4 hover:border-gold-text/50 transition-colors">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <h4 class="font-bold gold-text text-lg">${p.clientName}</h4>
-                            <p class="text-xs text-zinc-500">كلمة المرور: <b class="text-white">${p.password}</b></p>
-                        </div>
-                        <button onclick="deletePreviewGroup('${id}')" class="bg-red-900/20 text-red-500 px-3 py-1 rounded-lg text-xs border border-red-900/30 hover:bg-red-900 hover:text-white transition-all">حذف 🗑️</button>
-                    </div>
-                    <div class="grid grid-cols-6 gap-2 mb-4">
-                        ${(p.images || []).slice(0, 6).map(img => `<img src="${img}" class="w-full h-10 object-cover rounded border border-zinc-900">`).join('')}
-                        ${p.images.length > 6 ? `<div class="bg-zinc-900 rounded flex items-center justify-center text-[10px] text-zinc-500">+${p.images.length - 6}</div>` : ''}
-                    </div>
-                    <div class="border-t border-zinc-900 pt-3">
-                        <p class="text-xs font-bold mb-3 gold-text">💬 ملاحظات العميل:</p>
-                        <div id="comments-box-${id}" class="space-y-2 max-h-40 overflow-y-auto pr-2">
-                            <!-- التعليقات ستظهر هنا -->
-                        </div>
-                    </div>
-                </div>`;
-            
-            // جلب تعليقات هذه المجموعة بالذات
-            loadCommentsForGroup(id);
-        });
-    });
-};
-
-// 4. دالة جلب التعليقات لكل مجموعة
-function loadCommentsForGroup(previewId) {
-    const q = query(collection(db, 'preview_comments'), where('previewId', '==', previewId), orderBy('createdAt', 'asc'));
-    onSnapshot(q, (snap) => {
-        const box = document.getElementById('comments-box-' + previewId);
-        if (!box) return;
-        if (snap.empty) {
-            box.innerHTML = '<p class="text-zinc-600 italic text-[10px]">لا توجد ملاحظات حتى الآن</p>';
-            return;
-        }
-        box.innerHTML = snap.docs.map(d => {
-            const c = d.data();
-            return `
-                <div class="bg-zinc-900/50 p-3 rounded-xl border-r-4 border-yellow-600 flex gap-3 items-center">
-                    <img src="${c.imageUrl}" class="w-12 h-12 rounded-lg object-cover cursor-pointer" onclick="window.open('${c.imageUrl}')">
-                    <div class="flex-1">
-                        <p class="text-white text-xs leading-relaxed">${c.text}</p>
-                        <p class="text-[8px] text-zinc-600 mt-1">${c.createdAt?.toDate() ? c.createdAt.toDate().toLocaleString('ar-EG') : 'الآن'}</p>
-                    </div>
-                </div>`;
-        }).join('');
-    });
+// دالة عرض الصور المرفوعة حديثاً (قبل الحفظ)
+function renderNewBatchPreviews() {
+    const previewArea = document.getElementById('prev-images-preview');
+    previewArea.innerHTML = previewImagesUrls.map((url, index) => `
+        <div class="relative group h-16 w-full">
+            <img src="${url}" class="w-full h-full object-cover rounded border border-zinc-700">
+            <button onclick="deleteImageFromNewBatch(${index})" class="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-5 h-5 text-[10px] flex items-center justify-center shadow-lg">✕</button>
+        </div>
+    `).join('');
 }
 
-// 5. دالة الحذف
-window.deletePreviewGroup = async (id) => {
-    if (!confirm("سيتم حذف المجموعة وكل تعليقات العميل، هل أنت متأكد؟")) return;
-    try {
-        await deleteDoc(doc(db, 'client_previews', id));
-        zahraaToast('تم الحذف بنجاح');
-    } catch (e) { alert(e.message); }
+window.deleteImageFromNewBatch = (index) => {
+    previewImagesUrls.splice(index, 1);
+    renderNewBatchPreviews();
+    document.getElementById('prev-upload-status').innerText = "✅ متبقي " + previewImagesUrls.length + " صورة";
 };
-
-window.savePreviewGroup = async () => {
-    const name = document.getElementById('prev-client-name').value.trim();
-    const pass = document.getElementById('prev-password').value.trim();
-    if (!name || !pass || previewImagesUrls.length === 0) return alert("اكمل البيانات");
-    await addDoc(collection(db, 'client_previews'), { clientName: name, password: pass, images: previewImagesUrls, createdAt: serverTimestamp() });
-    alert("تم الإنشاء بنجاح ✅");
-    location.reload();
-};
-
-window.loadPreviews = () => {
-    onSnapshot(query(collection(db, 'client_previews'), orderBy('createdAt', 'desc')), (snap) => {
-        const list = document.getElementById('previews-list');
-        list.innerHTML = '';
-        snap.forEach(docSnap => {
-            const p = docSnap.data(); const id = docSnap.id;
-            list.innerHTML += `<div class="bg-black border border-zinc-800 p-4 rounded-2xl mb-4">
-                <div class="flex justify-between items-center mb-3">
-                    <h4 class="font-bold gold-text">العميل: ${p.clientName} (باسورد: ${p.password})</h4>
-                    <button onclick="deletePreviewGroup('${id}')" class="text-red-500 text-xs">حذف 🗑️</button>
-                </div>
-                <div id="comments-${id}" class="space-y-2"></div>
-            </div>`;
-            loadPreviewComments(id);
-        });
-    });
-};
-
-window.loadPreviewComments = (pid) => {
-    onSnapshot(query(collection(db, 'preview_comments'), where('previewId', '==', pid), orderBy('createdAt', 'asc')), (snap) => {
-        const box = document.getElementById('comments-' + pid);
-        if (!box) return;
-        if (snap.empty) { box.innerHTML = '<p class="text-zinc-600 italic text-xs">لا توجد تعليقات</p>'; return; }
-        box.innerHTML = '';
-        snap.forEach(d => {
-            const c = d.data();
-            box.innerHTML += `<div class="bg-zinc-900 p-2 rounded-lg border-r-2 border-yellow-600 flex gap-2 items-center">
-                <img src="${c.imageUrl}" class="w-10 h-10 rounded object-cover">
-                <div class="flex-1"><p class="text-white text-xs">${c.text}</p></div>
-            </div>`;
-        });
-    });
-};
-
-window.deletePreviewGroup = async (id) => { if (confirm("حذف؟")) await deleteDoc(doc(db, 'client_previews', id)); };
-
         window.loadAll = async () => {
             await loadSettings();
             await loadCategories();
