@@ -2204,91 +2204,88 @@ window.loadPreviews = () => {
                 </div>`;
         });
     });
-};
-
-// 2. فتح ألبوم معين
-window.openPreviewGallery = async (id) => {
+};  // 1. فتح ألبوم معين وجلب بياناته لحظياً
+window.openPreviewGallery = (id) => {
     currentPreviewId = id;
     const header = document.getElementById('preview-main-header');
     const content = document.getElementById('preview-main-content');
-    header.classList.remove('hidden');
-    content.innerHTML = '<p class="text-center py-20 gold-text animate-pulse text-sm">⏳ جاري جلب الألبوم والملاحظات...</p>';
+    
+    if (header) header.classList.remove('hidden');
+    content.innerHTML = '<p class="text-center py-20 gold-text animate-pulse text-sm">⏳ جاري الاتصال بالخادم...</p>';
 
-    // جلب بيانات الألبوم
-    const albumSnap = await getDoc(doc(db, 'client_previews', id));
-    currentPreviewData = albumSnap.data();
-    document.getElementById('active-prev-name').innerText = currentPreviewData.clientName;
+    if (window.albumUnsub) window.albumUnsub(); // تنظيف أي استماع قديم
 
-    // تشغيل مستمع الملاحظات
-    renderGalleryContent();
+    // استماع لحظي للألبوم نفسه (لو مسحت صورة تظهر التغييرات فوراً)
+    window.albumUnsub = onSnapshot(doc(db, 'client_previews', id), (albumSnap) => {
+        if (!albumSnap.exists()) {
+            content.innerHTML = '<p class="text-center py-20 text-red-500">❌ الألبوم غير موجود</p>';
+            return;
+        }
+        currentPreviewData = albumSnap.data();
+        document.getElementById('active-prev-name').innerText = currentPreviewData.clientName;
+        
+        // بمجرد جلب بيانات الألبوم، نقوم بعرض المحتوى مع الملاحظات
+        renderGalleryContent();
+    }, (error) => {
+        console.error("Album Snapshot Error:", error);
+        content.innerHTML = `<p class="text-center py-20 text-red-500">خطأ في الصلاحيات: ${error.message}</p>`;
+    });
 };
 
-// 3. عرض المحتوى (فلترة وعرض)
+// 2. عرض المحتوى (الصور والملاحظات)
 function renderGalleryContent() {
     const content = document.getElementById('preview-main-content');
     const albumImages = currentPreviewData.images || [];
 
-    // جلب الملاحظات أولاً
+    // جلب الملاحظات مع ترتيب تنازلي
     const q = query(collection(db, 'preview_comments'), where('previewId', '==', currentPreviewId), orderBy('createdAt', 'desc'));
+    
     onSnapshot(q, (snap) => {
-        const comments = snap.docs.map(d => d.data());
-        
+        const allComments = snap.docs.map(d => d.data());
         content.innerHTML = '';
         
         let filteredImages = albumImages;
         if (previewMode === 'notes') {
-            filteredImages = albumImages.filter(img => comments.some(c => c.imageUrl === img));
+            filteredImages = albumImages.filter(img => allComments.some(c => c.imageUrl === img));
         }
 
         if (filteredImages.length === 0) {
-            content.innerHTML = `<p class="text-center py-20 text-zinc-500 text-sm">لا توجد صور ${previewMode === 'notes' ? 'عليها ملاحظات' : ''}</p>`;
+            content.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-zinc-600 py-20">
+                <div class="text-4xl mb-2">📸</div>
+                <p>لا توجد صور ${previewMode === 'notes' ? 'عليها ملاحظات' : ''}</p>
+            </div>`;
             return;
         }
 
         filteredImages.forEach(img => {
-            const imgComments = comments.filter(c => c.imageUrl === img);
+            const imgComments = allComments.filter(c => c.imageUrl === img);
             content.innerHTML += `
-                <div class="max-w-2xl mx-auto bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl transition-all hover:border-gold-text/20">
-                    <img src="${img}" class="w-full h-auto cursor-pointer" onclick="openPrevImage('${img}')">
-                    <div class="p-5 bg-black/40">
-                        <div class="flex justify-between items-center mb-3">
-                            <span class="text-[10px] text-zinc-600">ID للصورة: ...${img.slice(-10)}</span>
-                            <button onclick="window.deleteImageFromAlbum('${currentPreviewId}','${img}')" class="text-[10px] text-red-500">حذف الصورة ✕</button>
+                <div class="max-w-2xl mx-auto bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl mb-8">
+                    <div class="relative group">
+                        <img src="${img}" class="w-full h-auto cursor-pointer" onclick="openPrevImage('${img}')" loading="lazy">
+                        <div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                             <button onclick="window.deleteImageFromAlbum('${currentPreviewId}','${img}')" class="bg-red-600 text-white p-2 rounded-full shadow-xl">✕</button>
                         </div>
+                    </div>
+                    <div class="p-5 bg-black/40">
                         <div class="space-y-3">
                             ${imgComments.length > 0 ? imgComments.map(c => `
-                                <div class="bg-yellow-900/10 border-r-4 border-gold-text p-3 rounded-xl shadow-inner">
-                                    <p class="text-xs text-white leading-relaxed">${c.text}</p>
-                                    <p class="text-[8px] text-zinc-500 mt-2">${new Date(c.createdAt?.toDate()).toLocaleString('ar-EG')}</p>
+                                <div class="bg-yellow-900/10 border-r-4 border-gold-text p-3 rounded-xl">
+                                    <p class="text-[13px] text-white leading-relaxed">${c.text}</p>
+                                    <p class="text-[9px] text-zinc-500 mt-2">📅 ${c.createdAt?.toDate ? c.createdAt.toDate().toLocaleString('ar-EG') : 'الآن'}</p>
                                 </div>
-                            `).join('') : '<p class="text-zinc-700 italic text-center text-xs">لا توجد ملاحظات على هذه الصورة</p>'}
+                            `).join('') : '<p class="text-zinc-700 italic text-center text-[11px]">لا توجد ملاحظات من العميل على هذه الصورة</p>'}
                         </div>
                     </div>
                 </div>`;
         });
+    }, (err) => {
+        console.error("Comments Load Error:", err);
+        // ملاحظة هامة: لو ظهر هنا خطأ "Index required" لازم تضغط على الرابط اللي هيظهر في الـ Console
+        content.innerHTML = `<p class="text-center py-20 text-red-500">تنبيه: المحرك يحتاج لإعداد الفهرس (Index) لعرض الملاحظات.</p>`;
     });
 }
 
-// 4. التبديل بين الأوضاع (كل الصور / الملاحظات فقط)
-window.togglePreviewMode = (mode) => {
-    previewMode = mode;
-    document.getElementById('mode-all').className = mode === 'all' ? 'text-[10px] gold-text font-bold border-b-2 border-gold-text' : 'text-[10px] text-zinc-500 font-bold border-b-2 border-transparent';
-    document.getElementById('mode-notes').className = mode === 'notes' ? 'text-[10px] gold-text font-bold border-b-2 border-gold-text' : 'text-[10px] text-zinc-500 font-bold border-b-2 border-transparent';
-    if(currentPreviewId) renderGalleryContent();
-};
-
-window.openNewAlbumModal = () => {
-    document.getElementById('new-album-modal').style.display = 'flex';
-};
-
-window.deleteActiveAlbum = async () => {
-    if(confirm("حذف هذا الألبوم بالكامل؟")) {
-        await deleteDoc(doc(db, 'client_previews', currentPreviewId));
-        document.getElementById('preview-main-header').classList.add('hidden');
-        document.getElementById('preview-main-content').innerHTML = '<p class="text-center py-20 text-zinc-500">تم حذف الألبوم</p>';
-        currentPreviewId = null;
-    }
-};
         window.showNotif = (t,type='success') => zahraaToast(t,type);
 
         window.loadAll = async () => {
