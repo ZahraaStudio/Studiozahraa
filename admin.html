@@ -2232,59 +2232,131 @@ window.openPreviewGallery = (id) => {
     });
 };
 
-// 2. عرض المحتوى (الصور والملاحظات)
+// --- الجزء المطور لإدارة معاينات الصور والملاحظات ---
+window.currentPreviewId = null;
+window.currentPreviewData = null;
+window.previewMode = 'all'; // الوضع الافتراضي: كل الصور
+
+// 1. دالة فتح ألبوم العميل
+window.openPreviewGallery = (id) => {
+    window.currentPreviewId = id;
+    const header = document.getElementById('preview-main-header');
+    const content = document.getElementById('preview-main-content');
+    
+    if (header) header.classList.remove('hidden');
+    content.innerHTML = '<p class="text-center py-20 gold-text animate-pulse text-sm">⏳ جاري الاتصال بالخادم...</p>';
+
+    if (window.albumUnsub) window.albumUnsub(); // تنظيف أي استماع قديم
+
+    // استماع لحظي لبيانات الألبوم
+    window.albumUnsub = onSnapshot(doc(db, 'client_previews', id), (albumSnap) => {
+        if (!albumSnap.exists()) {
+            content.innerHTML = '<p class="text-center py-20 text-red-500">❌ الألبوم غير موجود</p>';
+            return;
+        }
+        window.currentPreviewData = albumSnap.data();
+        document.getElementById('active-prev-name').innerText = window.currentPreviewData.clientName;
+        
+        // تشغيل وضع "كل الصور" كبداية
+        window.togglePreviewMode('all');
+    }, (error) => {
+        console.error("Album Snapshot Error:", error);
+        content.innerHTML = `<p class="text-center py-20 text-red-500">خطأ: ${error.message}</p>`;
+    });
+};
+
+// 2. دالة التبديل بين الأوضاع (كل الصور / الملاحظات فقط)
+window.togglePreviewMode = (mode) => {
+    window.previewMode = mode;
+    console.log("الوضع الحالي:", mode);
+
+    // تحديث شكل الأزرار
+    const btnAll = document.getElementById('mode-all');
+    const btnNotes = document.getElementById('mode-notes');
+    if (btnAll && btnNotes) {
+        if (mode === 'all') {
+            btnAll.className = "text-[11px] gold-text font-bold border-b-2 border-gold-text pb-1";
+            btnNotes.className = "text-[11px] text-zinc-500 font-bold border-b-2 border-transparent pb-1";
+        } else {
+            btnNotes.className = "text-[11px] gold-text font-bold border-b-2 border-gold-text pb-1";
+            btnAll.className = "text-[11px] text-zinc-500 font-bold border-b-2 border-transparent pb-1";
+        }
+    }
+
+    // استدعاء دالة الرسم
+    renderGalleryContent();
+};
+
+// 3. دالة الرسم الفعلي للصور والملاحظات
 function renderGalleryContent() {
     const content = document.getElementById('preview-main-content');
-    const albumImages = currentPreviewData.images || [];
+    if (!content || !window.currentPreviewData) return;
 
-    // جلب الملاحظات مع ترتيب تنازلي
-    const q = query(collection(db, 'preview_comments'), where('previewId', '==', currentPreviewId), orderBy('createdAt', 'desc'));
-    
+    const albumImages = window.currentPreviewData.images || [];
+
+    // استماع لحظي للملاحظات الخاصة بهذا الألبوم
+    const q = query(
+        collection(db, 'preview_comments'), 
+        where('previewId', '==', window.currentPreviewId), 
+        orderBy('createdAt', 'desc')
+    );
+
     onSnapshot(q, (snap) => {
         const allComments = snap.docs.map(d => d.data());
-        content.innerHTML = '';
-        
+        content.innerHTML = ''; 
+
+        // منطق الفلترة
         let filteredImages = albumImages;
-        if (previewMode === 'notes') {
-            filteredImages = albumImages.filter(img => allComments.some(c => c.imageUrl === img));
+        if (window.previewMode === 'notes') {
+            // تصفية الصور التي لها تعليق مطابق للرابط
+            filteredImages = albumImages.filter(imgUrl => 
+                allComments.some(c => c.imageUrl === imgUrl)
+            );
         }
 
+        // عرض رسالة لو مفيش صور في الوضع الحالي
         if (filteredImages.length === 0) {
-            content.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-zinc-600 py-20">
-                <div class="text-4xl mb-2">📸</div>
-                <p>لا توجد صور ${previewMode === 'notes' ? 'عليها ملاحظات' : ''}</p>
-            </div>`;
+            content.innerHTML = `
+                <div class="py-20 text-center text-zinc-600">
+                    <div class="text-5xl mb-4">${window.previewMode === 'notes' ? '📝' : '📸'}</div>
+                    <p class="text-sm">لا توجد صور ${window.previewMode === 'notes' ? 'عليها ملاحظات حالياً' : 'في هذا الألبوم'}</p>
+                </div>`;
             return;
         }
 
+        // رسم الكروت
         filteredImages.forEach(img => {
             const imgComments = allComments.filter(c => c.imageUrl === img);
             content.innerHTML += `
-                <div class="max-w-2xl mx-auto bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl mb-8">
+                <div class="max-w-2xl mx-auto bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl mb-10 transition-all hover:border-gold-text/20">
                     <div class="relative group">
-                        <img src="${img}" class="w-full h-auto cursor-pointer" onclick="openPrevImage('${img}')" loading="lazy">
+                        <img src="${img}" class="w-full h-auto cursor-pointer" onclick="window.open('${img}')" loading="lazy">
                         <div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                             <button onclick="window.deleteImageFromAlbum('${currentPreviewId}','${img}')" class="bg-red-600 text-white p-2 rounded-full shadow-xl">✕</button>
+                             <button onclick="window.deleteImageFromAlbum('${window.currentPreviewId}','${img}')" class="bg-red-600 text-white w-8 h-8 rounded-full shadow-xl flex items-center justify-center font-bold">✕</button>
                         </div>
                     </div>
-                    <div class="p-5 bg-black/40">
+                    <div class="p-6 bg-black/40">
                         <div class="space-y-3">
                             ${imgComments.length > 0 ? imgComments.map(c => `
-                                <div class="bg-yellow-900/10 border-r-4 border-gold-text p-3 rounded-xl">
-                                    <p class="text-[13px] text-white leading-relaxed">${c.text}</p>
-                                    <p class="text-[9px] text-zinc-500 mt-2">📅 ${c.createdAt?.toDate ? c.createdAt.toDate().toLocaleString('ar-EG') : 'الآن'}</p>
+                                <div class="bg-yellow-900/10 border-r-4 border-gold-text p-4 rounded-xl">
+                                    <p class="text-[14px] text-white leading-relaxed">${c.text}</p>
+                                    <p class="text-[10px] text-zinc-500 mt-2">🕒 ${new Date(c.createdAt?.toDate()).toLocaleString('ar-EG')}</p>
                                 </div>
-                            `).join('') : '<p class="text-zinc-700 italic text-center text-[11px]">لا توجد ملاحظات من العميل على هذه الصورة</p>'}
+                            `).join('') : '<p class="text-zinc-700 italic text-center text-[12px]">هذه الصورة لا يوجد عليها ملاحظات</p>'}
                         </div>
                     </div>
                 </div>`;
         });
     }, (err) => {
-        console.error("Comments Load Error:", err);
-        // ملاحظة هامة: لو ظهر هنا خطأ "Index required" لازم تضغط على الرابط اللي هيظهر في الـ Console
-        content.innerHTML = `<p class="text-center py-20 text-red-500">تنبيه: المحرك يحتاج لإعداد الفهرس (Index) لعرض الملاحظات.</p>`;
+        console.error("Comments Error:", err);
+        if (err.message.includes('requires an index')) {
+            content.innerHTML = `<div class="p-10 text-center border border-red-900/50 rounded-2xl">
+                <p class="text-red-400 font-bold mb-2">النظام يحتاج لإعداد Index</p>
+                <p class="text-xs">افتح Console المتصفح (F12) واضغط على رابط جوجل الأزرق لتفعيل الفلترة.</p>
+            </div>`;
+        }
     });
-}
+            }
 
         window.showNotif = (t,type='success') => zahraaToast(t,type);
 
