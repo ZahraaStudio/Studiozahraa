@@ -2086,11 +2086,6 @@ window.saveAutoReplySettings = async () => {
 };
         window.showNotif = (t,type='success') => zahraaToast(t,type);
 
-        let previewImagesUrls = [];
-// --- نظام إدارة معاينات العملاء (نسخة مطورة) ---
-let previewImagesUrls = []; // مصفوفة لتخزين روابط الصور المرفوعة
-
-// 1. دالة رفع الصور لـ Cloudinary
 window.uploadPreviewImages = async (input) => {
     const files = input.files;
     const status = document.getElementById('prev-upload-status');
