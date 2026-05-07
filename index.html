@@ -1236,32 +1236,45 @@
     window.showLoginModal = () => document.getElementById('login-modal').classList.add('active');
     window.closeLoginModal = () => document.getElementById('login-modal').classList.remove('active');
 
-    window.loginWithGoogle = async () => {
-        try {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            await auth.signInWithPopup(provider);
-            closeLoginModal();
-            showNotification('تم تسجيل الدخول بنجاح', 'success');
-        } catch (e) {
-            if (e.code === 'auth/unauthorized-domain') {
-                showAlert('خطأ في الإعدادات', 'يجب إضافة هذا النطاق (Domain) في إعدادات Firebase (Authorized Domains).', 'error');
-            } else {
-                showNotification('خطأ في تسجيل الدخول: ' + e.message, 'error');
-            }
-        }
-    };
+    // دالة لتشغيل شاشة التحميل الدعائية
+function triggerBrandingLoader(callback) {
+    const loader = document.getElementById('luxury-loader');
+    loader.style.display = 'flex';
+    
+    // الانتظار لمدة 3 ثواني (دعاية)
+    setTimeout(() => {
+        loader.style.opacity = '0';
+        loader.style.transition = 'opacity 0.5s';
+        setTimeout(() => {
+            loader.style.display = 'none';
+            loader.style.opacity = '1';
+            if (callback) callback();
+        }, 500);
+    }, 3000);
+}
 
-    window.loginWithFacebook = async () => {
-        try {
-            const provider = new firebase.auth.FacebookAuthProvider();
-            await auth.signInWithPopup(provider);
-            closeLoginModal();
-            showNotification('تم تسجيل الدخول بنجاح', 'success');
-        } catch (e) {
-            showNotification('خطأ في تسجيل الدخول: ' + e.message, 'error');
-        }
-    };
+window.loginWithGoogle = async () => {
+    try {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        const result = await auth.signInWithPopup(provider);
+        closeLoginModal();
+        // تشغيل الدعاية بعد نجاح الدخول
+        triggerBrandingLoader(() => {
+            zahraaToast('مرحباً بك في عالم الفخامة ✅');
+        });
+    } catch (e) { zahraaToast(e.message, 'error'); }
+};
 
+window.loginWithFacebook = async () => {
+    try {
+        const provider = new firebase.auth.FacebookAuthProvider();
+        await auth.signInWithPopup(provider);
+        closeLoginModal();
+        triggerBrandingLoader(() => {
+            zahraaToast('تم تسجيل الدخول بنجاح ✅');
+        });
+    } catch (e) { zahraaToast(e.message, 'error'); }
+};
     window.logout = async () => {
         try {
             await auth.signOut();
