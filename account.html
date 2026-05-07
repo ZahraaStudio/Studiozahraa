@@ -926,12 +926,23 @@
   }
 
   window.deleteMyPost = async (id) => {
-    if (!confirm('حذف هذه المشاركة؟')) return;
+    // إظهار نافذة تأكيد مخصصة
+    if (!confirm('هل أنت متأكد من حذف هذه المشاركة نهائياً؟ لا يمكن التراجع عن هذا الإجراء.')) return;
+    
     try {
-      await db.collection('community_posts').doc(id).update({ isHidden: true });
-      loadMyCommunityPosts();
-    } catch (e) { alert('خطأ: ' + e.message); }
-  };
+        // الحذف الفعلي من قاعدة بيانات Firestore
+        await db.collection('community_posts').doc(id).delete();
+        
+        // إظهار إشعار نجاح
+        showNotif('تم حذف المشاركة بنجاح ✓', 'success');
+        
+        // إعادة تحميل القائمة لتحديث الواجهة فوراً
+        loadMyCommunityPosts();
+    } catch (e) {
+        console.error("Error deleting post:", e);
+        showNotif('خطأ في الحذف: ' + e.message, 'error');
+    }
+};
 
   // ===== TABS =====
   function showTab(name) {
