@@ -607,6 +607,20 @@
             <h2 class="text-4xl font-bold mb-2">آراء العملاء</h2>
             <p class="text-zinc-500">نفتخر بثقة عملائنا بنا</p>
         </div>
+      <div data-page="client-previews" class="hidden container mx-auto px-4 py-12">
+    <div id="gallery-auth" class="bg-zinc-900 p-8 rounded-3xl border border-zinc-800 text-center max-w-md mx-auto">
+        <h2 class="text-2xl font-bold mb-4 gold-text">🔐 منطقة خاصة</h2>
+        <input type="password" id="gallery-pass" placeholder="كلمة المرور" class="w-full bg-black border border-zinc-800 p-4 rounded-2xl text-center text-xl font-bold outline-none focus:border-gold-text mb-4">
+        <button onclick="accessGallery()" class="w-full gold-bg text-black py-4 rounded-2xl font-bold">دخول العميل</button>
+    </div>
+
+    <div id="gallery-content" class="hidden" oncontextmenu="return false;">
+        <h2 id="gallery-client-name" class="text-2xl font-bold gold-text text-center mb-8"></h2>
+        <div id="gallery-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6 select-none" style="-webkit-touch-callout: none;">
+            <!-- الصور ستظهر هنا -->
+        </div>
+    </div>
+</div>
         <!-- Add Review Form -->
         <div class="max-w-xl mx-auto bg-zinc-900 border border-zinc-800 p-6 rounded-3xl mb-12">
             <h3 class="text-xl font-bold mb-4 gold-text text-center">✍️ شاركنا رأيك</h3>
