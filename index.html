@@ -638,6 +638,24 @@
             <!-- Testimonials will be loaded here -->
         </div>
     </div>
+<div data-page="client-previews" class="hidden container mx-auto px-4 py-12">
+    <div id="gallery-auth" class="bg-zinc-900 p-8 rounded-3xl border border-zinc-800 text-center max-w-md mx-auto shadow-2xl">
+        <div style="font-size: 40px; margin-bottom: 15px;">🔒</div>
+        <h2 class="text-2xl font-bold mb-4 gold-text">معاينة الصور الخاصة</h2>
+        <p class="text-zinc-500 text-sm mb-6">يرجى إدخال كود الدخول الذي استلمته من الاستوديو</p>
+        <input type="password" id="gallery-pass" placeholder="أدخل الكود هنا" class="w-full bg-black border border-zinc-800 p-4 rounded-2xl text-center text-xl font-bold outline-none focus:border-gold-text mb-4 text-white">
+        <button onclick="accessGallery()" class="w-full gold-bg text-black py-4 rounded-2xl font-bold hover:scale-105 transition-transform">فتح صالة العرض</button>
+    </div>
+
+    <div id="gallery-content" class="hidden" oncontextmenu="return false;">
+        <!-- محتوى المعاينة المطور كما في الرد السابق -->
+        <div class="flex justify-between items-center mb-8 bg-zinc-900 p-5 rounded-2xl border border-zinc-800">
+            <h2 id="gallery-client-name" class="text-xl font-bold gold-text"></h2>
+            <button onclick="showPage('home')" class="text-xs bg-red-900/20 text-red-400 px-4 py-2 rounded-lg border border-red-900/30">خروج</button>
+        </div>
+        <div id="gallery-grid" class="grid grid-cols-1 md:grid-cols-2 gap-8 select-none"></div>
+    </div>
+</div>
   </main>
 
   <!-- Product Modal -->
