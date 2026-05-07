@@ -2173,32 +2173,76 @@ window.loginWithFacebook = async () => {
         } catch (e) { console.error('Error loading testimonials:', e); }
     }
 
-    window.showPage = (page, pushState = true) => {
-        document.querySelectorAll('[data-page]').forEach(el => el.classList.add('hidden'));
-        const target = document.querySelector(`[data-page="${page}"]`);
-        if (target) target.classList.remove('hidden');
-        closeSidebar();
-      window.accessGallery = async () => {
+    // 1. تحديث دالة التنقل بين الصفحات لتعمل مع المعاينات
+window.showPage = (page, pushState = true) => {
+    document.querySelectorAll('[data-page]').forEach(el => el.classList.add('hidden'));
+    const target = document.querySelector(`[data-page="${page}"]`);
+    if (target) target.classList.remove('hidden');
+    closeSidebar();
+    window.scrollTo(0, 0);
+    if (pushState) window.location.hash = page;
+};
+
+// 2. دالة تشغيل الدعاية 3 ثواني
+function triggerBrandingLoader(callback) {
+    const loader = document.getElementById('luxury-loader');
+    loader.style.display = 'flex';
+    setTimeout(() => {
+        loader.style.opacity = '0';
+        loader.style.transition = 'opacity 0.5s';
+        setTimeout(() => {
+            loader.style.display = 'none';
+            loader.style.opacity = '1';
+            if (callback) callback();
+        }, 500);
+    }, 3000); // 3 ثواني دعاية كما طلبت
+}
+
+// 3. تحديث دوال تسجيل الدخول لتشمل الدعاية
+const originalLoginWithGoogle = window.loginWithGoogle;
+window.loginWithGoogle = async () => {
+    try {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        await auth.signInWithPopup(provider);
+        closeLoginModal();
+        triggerBrandingLoader(() => zahraaToast('مرحباً بك في استوديو الزهراء ✅'));
+    } catch (e) { zahraaToast(e.message, 'error'); }
+};
+
+// 4. دالة فتح المعاينة (التي كانت ناقصة وتسبب الصفحة السوداء)
+window.accessGallery = async () => {
     const pass = document.getElementById('gallery-pass').value.trim();
+    if (!pass) return zahraaToast('يرجى كتابة كلمة المرور', 'warning');
+
     const snap = await db.collection('client_previews').where('password', '==', pass).get();
-    if (snap.empty) return zahraaToast('كلمة المرور خطأ ❌', 'error');
+    if (snap.empty) return zahraaToast('كلمة المرور غير صحيحة ❌', 'error');
 
     const data = snap.docs[0].data();
     const gid = snap.docs[0].id;
+
     document.getElementById('gallery-auth').classList.add('hidden');
     document.getElementById('gallery-content').classList.remove('hidden');
     document.getElementById('gallery-client-name').innerText = "صالة عرض: " + data.clientName;
 
-    document.getElementById('gallery-grid').innerHTML = data.images.map((url, i) => `
-        <div class="relative bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800">
-            <!-- طبقة حماية شفافة فوق الصورة لمنع السحب أو الحفظ -->
+    const grid = document.getElementById('gallery-grid');
+    grid.innerHTML = data.images.map((url, i) => `
+        <div class="relative bg-zinc-900 rounded-3xl overflow-hidden border border-zinc-800 shadow-xl group">
             <div style="position:absolute; inset:0; z-index:5; background:transparent;"></div>
-            <img src="${url}" class="w-full h-auto pointer-events-none">
-            <div class="p-4 relative z-10">
-                <button onclick="addGalleryComment('${gid}','${url}')" class="w-full py-2 bg-zinc-800 gold-text rounded-xl font-bold text-xs border border-gold-text/30">💬 أضف ملاحظة/تعديل على هذه الصورة</button>
+            <img src="${url}" class="w-full h-auto pointer-events-none group-hover:scale-105 transition-transform duration-700">
+            <div class="p-6 relative z-10 bg-black/40 backdrop-blur-md">
+                <button onclick="addGalleryComment('${gid}','${url}')" class="w-full py-3 bg-zinc-800 gold-text rounded-2xl font-bold text-sm border border-gold-text/20 hover:bg-zinc-700">💬 أضف ملاحظة أو تعديل</button>
             </div>
         </div>
     `).join('');
+};
+
+window.addGalleryComment = async (pid, url) => {
+    const msg = await showPrompt("ما هو التعديل المطلوب على هذه الصورة؟");
+    if (!msg) return;
+    await db.collection('preview_comments').add({
+        previewId: pid, imageUrl: url, text: msg, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    zahraaToast('تم إرسال ملاحظتك بنجاح ✓');
 };
         window.scrollTo(0, 0);
         if (page === 'myorders') loadMyOrders();
