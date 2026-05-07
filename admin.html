@@ -689,36 +689,61 @@
             </div>
         </div>
     <!-- End settings-tab -->
-     <!-- Previews Tab -->
+     <!-- Previews Tab المطور بنظام الشات -->
 <div id="previews-tab" class="tab-content">
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 h-[85vh] min-h-[600px]">
         
-        <!-- أولاً: فورم إنشاء ألبوم جديد -->
-        <div class="lg:col-span-1 bg-zinc-900 p-6 rounded-xl gold-border h-fit sticky top-4">
-            <h3 class="text-xl font-bold mb-4 gold-text">📸 إنشاء ألبوم لعميل</h3>
-            <div class="space-y-4">
-                <input type="text" id="prev-client-name" placeholder="اسم العميل (مثلاً: محمد أحمد)" class="w-full p-3 bg-black border border-zinc-700 rounded-lg outline-none focus:border-gold-text text-sm">
-                <input type="text" id="prev-password" placeholder="باسورد دخول العميل" class="w-full p-3 bg-black border border-zinc-700 rounded-lg outline-none focus:border-gold-text text-sm">
-                
-                <div class="border-2 border-dashed border-zinc-700 p-4 rounded-xl text-center">
-                    <input type="file" id="prev-images-file" multiple accept="image/*" class="hidden" onchange="uploadPreviewImages(this)">
-                    <button type="button" onclick="document.getElementById('prev-images-file').click()" class="gold-bg text-black px-4 py-2 rounded-lg font-bold text-xs">اختر صور الألبوم</button>
-                    <div id="prev-upload-status" class="text-[10px] mt-2 text-zinc-500"></div>
-                </div>
-
-                <!-- معاينة الصور قبل الحفظ مع زر حذف -->
-                <div id="prev-images-preview" class="grid grid-cols-4 gap-2"></div>
-                
-                <button onclick="savePreviewGroup()" class="w-full p-3 gold-bg text-black font-bold rounded-xl hover:opacity-90">💾 حفظ ونشر الألبوم</button>
+        <!-- 1. القائمة الجانبية (أسماء العملاء) -->
+        <div class="lg:col-span-1 bg-zinc-900 rounded-2xl gold-border flex flex-col overflow-hidden">
+            <div class="p-4 border-b border-zinc-800 flex justify-between items-center">
+                <h3 class="font-bold gold-text text-sm">📸 ألبومات العملاء</h3>
+                <button onclick="openNewAlbumModal()" class="bg-gold-bg text-black w-7 h-7 rounded-full font-bold text-lg">+</button>
+            </div>
+            <div id="previews-sidebar-list" class="flex-1 overflow-y-auto p-2 space-y-2 no-scrollbar">
+                <p class="text-center text-zinc-600 py-10 text-xs">جاري التحميل...</p>
             </div>
         </div>
 
-        <!-- ثانياً: عرض الألبومات الحالية والتعليقات -->
-        <div class="lg:col-span-2 bg-zinc-900 p-6 rounded-xl gold-border">
-            <h3 class="text-xl font-bold mb-4">الألبومات النشطة وملاحظات العملاء</h3>
-            <div id="previews-list" class="space-y-6">
-                <p class="text-zinc-500 text-center py-10">جاري تحميل البيانات...</p>
+        <!-- 2. منطقة العرض الرئيسية (الصور والتعليقات) -->
+        <div class="lg:col-span-3 bg-zinc-900 rounded-2xl gold-border flex flex-col overflow-hidden relative">
+            <div id="preview-main-header" class="p-4 border-b border-zinc-800 bg-zinc-900/50 flex justify-between items-center hidden">
+                <div>
+                    <h3 id="active-prev-name" class="font-bold gold-text"></h3>
+                    <div class="flex gap-4 mt-1">
+                        <button onclick="togglePreviewMode('all')" id="mode-all" class="text-[10px] gold-text font-bold border-b-2 border-gold-text">كل الصور</button>
+                        <button onclick="togglePreviewMode('notes')" id="mode-notes" class="text-[10px] text-zinc-500 font-bold border-b-2 border-transparent">الصور التي عليها ملاحظات ⚠️</button>
+                    </div>
+                </div>
+                <button onclick="deleteActiveAlbum()" class="text-[10px] text-red-500 hover:underline">حذف الألبوم 🗑️</button>
             </div>
+
+            <!-- منطقة عرض المحتوى -->
+            <div id="preview-main-content" class="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar bg-black/20">
+                <div class="h-full flex flex-col items-center justify-center text-zinc-600">
+                    <div class="text-5xl mb-4">📸</div>
+                    <p>اختر ألبوم عميل من القائمة الجانبية لعرض الصور والملاحظات</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- مودال إضافة ألبوم جديد (يفتح بـ Popup) -->
+<div id="new-album-modal" class="modal" style="z-index:11000;">
+    <div class="modal-content max-w-md">
+        <h3 class="text-xl font-bold mb-4 gold-text">إنشاء ألبوم جديد</h3>
+        <div class="space-y-4">
+            <input type="text" id="prev-client-name" placeholder="اسم العميل" class="w-full p-3 bg-black border border-zinc-700 rounded-lg outline-none text-white focus:border-gold-text">
+            <input type="text" id="prev-password" placeholder="باسورد الدخول" class="w-full p-3 bg-black border border-zinc-700 rounded-lg outline-none text-white focus:border-gold-text">
+            <div class="border-2 border-dashed border-zinc-700 p-4 rounded-xl text-center">
+                <input type="file" id="prev-images-file" multiple accept="image/*" class="hidden" onchange="uploadPreviewImages(this)">
+                <button type="button" onclick="document.getElementById('prev-images-file').click()" class="gold-bg text-black px-4 py-2 rounded-lg font-bold text-xs">رفع الصور</button>
+                <div id="prev-upload-status" class="text-[10px] mt-2 text-zinc-500"></div>
+            </div>
+            <div id="prev-images-preview" class="grid grid-cols-4 gap-2"></div>
+            <button onclick="savePreviewGroup()" class="w-full p-3 gold-bg text-black font-bold rounded-xl">💾 حفظ ونشر</button>
+            <button onclick="document.getElementById('new-album-modal').style.display='none'" class="w-full text-zinc-500 text-xs">إلغاء</button>
         </div>
     </div>
 </div>
