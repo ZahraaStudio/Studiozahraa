@@ -1270,17 +1270,26 @@
 
     // ============ Products ============
     async function loadProducts() {
-        try {
-            const snapshot = await db.collection('products').orderBy('updatedAt', 'desc').get();
-            allProducts = [];
-            snapshot.forEach(doc => allProducts.push({ id: doc.id, ...doc.data() }));
-            renderProducts(allProducts);
-            renderFeatured(allProducts.filter(p => !isOutOfStock(p)).slice(0, 6));
-        } catch (e) {
-            console.error('Error loading products:', e);
-            showAlert('خطأ', 'حدث خطأ في تحميل المنتجات. تأكد من اتصال الإنترنت.', 'error');
-        }
-    }
+    // نستخدم onSnapshot بدلاً من get() لفتح قناة اتصال دائمة
+    db.collection('products').orderBy('updatedAt', 'desc').onSnapshot(snapshot => {
+        allProducts = [];
+        snapshot.forEach(doc => {
+            allProducts.push({ id: doc.id, ...doc.data() });
+        });
+
+        // بمجرد وصول أي تغيير، نقوم بتحديث كل الواجهات فوراً باستخدام الدوال الموجودة لديك
+        renderProducts(allProducts);
+        renderFeatured(allProducts.filter(p => !isOutOfStock(p)).slice(0, 6));
+        
+        // تحديث إضافي للأقسام والعروض لضمان تزامن كل شيء
+        loadCategories();
+        if (typeof renderHomeOffers === 'function') renderHomeOffers();
+        
+        console.log("تم تحديث بيانات المتجر لحظياً ✅");
+    }, error => {
+        console.error('Error loading products:', error);
+    });
+}
 
     function renderFeatured(products) {
         const grid = document.getElementById('featured-grid');
