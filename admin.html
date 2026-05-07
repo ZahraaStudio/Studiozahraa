@@ -2086,6 +2086,69 @@ window.saveAutoReplySettings = async () => {
 };
         window.showNotif = (t,type='success') => zahraaToast(t,type);
 
+        let previewImagesUrls = [];
+window.uploadPreviewImages = async (input) => {
+    const files = input.files;
+    document.getElementById('prev-upload-status').innerText = "⏳ جاري الرفع...";
+    for (let file of files) {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('upload_preset', 'zahraa_upload');
+        try {
+            const res = await fetch('https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload', { method: 'POST', body: fd });
+            const data = await res.json();
+            previewImagesUrls.push(data.secure_url);
+            document.getElementById('prev-images-preview').innerHTML += `<img src="${data.secure_url}" class="w-full h-10 object-cover rounded">`;
+        } catch (e) { console.error(e); }
+    }
+    document.getElementById('prev-upload-status').innerText = "✅ تم رفع " + previewImagesUrls.length + " صورة";
+};
+
+window.savePreviewGroup = async () => {
+    const name = document.getElementById('prev-client-name').value.trim();
+    const pass = document.getElementById('prev-password').value.trim();
+    if (!name || !pass || previewImagesUrls.length === 0) return alert("اكمل البيانات");
+    await addDoc(collection(db, 'client_previews'), { clientName: name, password: pass, images: previewImagesUrls, createdAt: serverTimestamp() });
+    alert("تم الإنشاء بنجاح ✅");
+    location.reload();
+};
+
+window.loadPreviews = () => {
+    onSnapshot(query(collection(db, 'client_previews'), orderBy('createdAt', 'desc')), (snap) => {
+        const list = document.getElementById('previews-list');
+        list.innerHTML = '';
+        snap.forEach(docSnap => {
+            const p = docSnap.data(); const id = docSnap.id;
+            list.innerHTML += `<div class="bg-black border border-zinc-800 p-4 rounded-2xl mb-4">
+                <div class="flex justify-between items-center mb-3">
+                    <h4 class="font-bold gold-text">العميل: ${p.clientName} (باسورد: ${p.password})</h4>
+                    <button onclick="deletePreviewGroup('${id}')" class="text-red-500 text-xs">حذف 🗑️</button>
+                </div>
+                <div id="comments-${id}" class="space-y-2"></div>
+            </div>`;
+            loadPreviewComments(id);
+        });
+    });
+};
+
+window.loadPreviewComments = (pid) => {
+    onSnapshot(query(collection(db, 'preview_comments'), where('previewId', '==', pid), orderBy('createdAt', 'asc')), (snap) => {
+        const box = document.getElementById('comments-' + pid);
+        if (!box) return;
+        if (snap.empty) { box.innerHTML = '<p class="text-zinc-600 italic text-xs">لا توجد تعليقات</p>'; return; }
+        box.innerHTML = '';
+        snap.forEach(d => {
+            const c = d.data();
+            box.innerHTML += `<div class="bg-zinc-900 p-2 rounded-lg border-r-2 border-yellow-600 flex gap-2 items-center">
+                <img src="${c.imageUrl}" class="w-10 h-10 rounded object-cover">
+                <div class="flex-1"><p class="text-white text-xs">${c.text}</p></div>
+            </div>`;
+        });
+    });
+};
+
+window.deletePreviewGroup = async (id) => { if (confirm("حذف؟")) await deleteDoc(doc(db, 'client_previews', id)); };
+
         window.loadAll = async () => {
             await loadSettings();
             await loadCategories();
