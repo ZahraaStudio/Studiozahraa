@@ -3865,15 +3865,15 @@ function moveAdSlide(dir) {
 <!-- ====================================================== -->
 <div id="zahraa-standalone-chat">
     <!-- الزر العائم (مفصول تماماً عن أي حاويات) -->
-    <div id="chat-fab-portal" style="position: fixed !important; bottom: 25px !important; right: 25px !important; z-index: 2147483647 !important; width: 100px; height: 100px;">
-        <span id="chat-notif-count" style="display:none; position:absolute; top:0px; right:0px; background:red; color:white; border-radius:50%; width:28px; height:28px; font-size:14px; font-weight:bold; display:flex; align-items:center; justify-content:center; border:2px solid black; z-index: 10;">0</span>
-        <button onclick="handleChatToggle()" style="width:100%; height:100%; border-radius:50%; background:linear-gradient(135deg,#d4af37,#f0c94e); border:none; cursor:pointer; box-shadow:0 8px 32px rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; font-size:50px; position: relative;">
+    <div id="chat-fab-portal" style="position: fixed !important; bottom: 25px !important; right: 25px !important; z-index: 2147483647 !important; width: 65px; height: 65px; touch-action: none; cursor: move;">
+        <span id="chat-notif-count" style="display:none; position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; width:22px; height:22px; font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center; border:2px solid black; z-index: 10;">0</span>
+        <button id="chat-fab-button" style="width:100%; height:100%; border-radius:50%; background:linear-gradient(135deg,#d4af37,#f0c94e); border:none; cursor:pointer; box-shadow:0 8px 32px rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; font-size:30px; position: relative; pointer-events: auto;">
             <span id="chat-btn-icon">💬</span>
         </button>
     </div>
 
     <!-- نافذة الدردشة -->
-    <div id="chat-window-portal" style="display:none; position:fixed !important; bottom:135px !important; right:25px !important; z-index: 2147483646 !important; width:350px; max-width:calc(100vw - 50px); height:500px; background:#0a0a0a; border-radius:24px; border:1px solid #d4af3750; box-shadow:0 25px 80px rgba(0,0,0,0.9); flex-direction:column; overflow:hidden; direction:rtl; font-family: 'Cairo', sans-serif;">
+    <div id="chat-window-portal" style="display:none; position:fixed !important; bottom:100px !important; right:25px !important; z-index: 2147483646 !important; width:350px; max-width:calc(100vw - 50px); height:500px; background:#0a0a0a; border-radius:24px; border:1px solid #d4af3750; box-shadow:0 25px 80px rgba(0,0,0,0.9); flex-direction:column; overflow:hidden; direction:rtl; font-family: 'Cairo', sans-serif;">
         <!-- Header -->
         <div style="background:linear-gradient(135deg,#d4af37,#f0c94e); padding:15px 20px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
             <div style="display:flex; align-items:center; gap:10px;">
@@ -3901,7 +3901,54 @@ function moveAdSlide(dir) {
         let chatInitialized = false;
         let chatVisible = false;
 
+        const fab = document.getElementById('chat-fab-portal');
+        const fabBtn = document.getElementById('chat-fab-button');
+        let isDragging = false;
+        let startX, startY, initialRight, initialBottom;
+
+        // منطق السحب (Drag Logic)
+        const startDrag = (e) => {
+            isDragging = false;
+            const event = e.type === 'touchstart' ? e.touches[0] : e;
+            startX = event.clientX;
+            startY = event.clientY;
+            const rect = fab.getBoundingClientRect();
+            initialRight = window.innerWidth - rect.right;
+            initialBottom = window.innerHeight - rect.bottom;
+            
+            document.addEventListener(e.type === 'touchstart' ? 'touchmove' : 'mousemove', drag);
+            document.addEventListener(e.type === 'touchstart' ? 'touchend' : 'mouseup', stopDrag);
+        };
+
+        const drag = (e) => {
+            const event = e.type === 'touchmove' ? e.touches[0] : e;
+            const dx = startX - event.clientX;
+            const dy = startY - event.clientY;
+            
+            if (Math.abs(dx) > 5 || Math.abs(dy) > 5) isDragging = true;
+            
+            if (isDragging) {
+                fab.style.right = (initialRight + dx) + 'px';
+                fab.style.bottom = (initialBottom + dy) + 'px';
+                // تحديث موقع النافذة ليتبع الزر
+                const win = document.getElementById('chat-window-portal');
+                win.style.right = fab.style.right;
+                win.style.bottom = (parseInt(fab.style.bottom) + 75) + 'px';
+            }
+        };
+
+        const stopDrag = () => {
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('mouseup', stopDrag);
+            document.removeEventListener('touchmove', drag);
+            document.removeEventListener('touchend', stopDrag);
+        };
+
+        fab.addEventListener('mousedown', startDrag);
+        fab.addEventListener('touchstart', startDrag, {passive: true});
+
         window.handleChatToggle = function() {
+            if (isDragging) return; // لا تفتح النافذة إذا كان المستخدم يسحب الزر
             chatVisible = !chatVisible;
             const win = document.getElementById('chat-window-portal');
             const icon = document.getElementById('chat-btn-icon');
@@ -3909,6 +3956,9 @@ function moveAdSlide(dir) {
             
             if (chatVisible) {
                 win.style.display = 'flex';
+                // تأكد من أن النافذة تفتح فوق الزر الحالي
+                win.style.right = fab.style.right;
+                win.style.bottom = (parseInt(fab.style.bottom) + 75) + 'px';
                 icon.innerText = '✕';
                 badge.style.display = 'none';
                 if (window.deviceId) {
@@ -3919,6 +3969,8 @@ function moveAdSlide(dir) {
                 icon.innerText = '💬';
             }
         };
+
+        fabBtn.onclick = handleChatToggle;
 
         function startChatListener() {
             // ننتظر حتى يتم تعريف db و deviceId
