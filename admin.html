@@ -690,26 +690,28 @@
         </div>
     <!-- End settings-tab -->
 
-        <!-- Previews Tab -->
+       <!-- تبويب معاينات العملاء -->
 <div id="previews-tab" class="tab-content">
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- فورم الرفع -->
         <div class="lg:col-span-1 bg-zinc-900 p-6 rounded-xl gold-border h-fit sticky top-4">
-            <h3 class="text-xl font-bold mb-4 gold-text">إنشاء صالة عرض لعميل</h3>
+            <h3 class="text-xl font-bold mb-4 gold-text">📸 إنشاء ألبوم لعميل</h3>
             <div class="space-y-4">
-                <input type="text" id="prev-client-name" placeholder="اسم العميل" class="w-full p-3 bg-black border border-zinc-700 rounded-lg text-sm outline-none focus:border-gold-text">
-                <input type="text" id="prev-password" placeholder="كلمة مرور الدخول" class="w-full p-3 bg-black border border-zinc-700 rounded-lg text-sm outline-none focus:border-gold-text">
+                <input type="text" id="prev-client-name" placeholder="اسم العميل" class="w-full p-3 bg-black border border-zinc-700 rounded-lg outline-none focus:border-gold-text">
+                <input type="text" id="prev-password" placeholder="باسورد الدخول" class="w-full p-3 bg-black border border-zinc-700 rounded-lg outline-none focus:border-gold-text">
                 <div class="border-2 border-dashed border-zinc-700 p-4 rounded-xl text-center">
                     <input type="file" id="prev-images-file" multiple accept="image/*" class="hidden" onchange="uploadPreviewImages(this)">
-                    <button type="button" onclick="document.getElementById('prev-images-file').click()" class="gold-bg text-black px-4 py-2 rounded-lg font-bold text-xs">رفع الصور</button>
+                    <button type="button" onclick="document.getElementById('prev-images-file').click()" class="gold-bg text-black px-4 py-2 rounded-lg font-bold text-xs">اختر الصور</button>
                     <div id="prev-upload-status" class="text-[10px] mt-2 text-zinc-500"></div>
                 </div>
                 <div id="prev-images-preview" class="grid grid-cols-4 gap-2"></div>
-                <button onclick="savePreviewGroup()" class="w-full p-3 gold-bg text-black font-bold rounded-xl">💾 حفظ ونشر</button>
+                <button onclick="savePreviewGroup()" class="w-full p-3 gold-bg text-black font-bold rounded-xl">💾 حفظ ونشر الألبوم</button>
             </div>
         </div>
+        <!-- عرض الألبومات والتعليقات -->
         <div class="lg:col-span-2 bg-zinc-900 p-6 rounded-xl gold-border">
-            <h3 class="text-xl font-bold mb-4">المعاينات والتعليقات الواردة</h3>
-            <div id="previews-list" class="space-y-4"></div>
+            <h3 class="text-xl font-bold mb-4">الألبومات النشطة وملاحظات العملاء</h3>
+            <div id="previews-list" class="space-y-6"></div>
         </div>
     </div>
 </div>
