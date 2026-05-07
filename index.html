@@ -2172,9 +2172,7 @@ window.loginWithFacebook = async () => {
             });
         } catch (e) { console.error('Error loading testimonials:', e); }
     }
-
-    // 1. تحديث دالة التنقل بين الصفحات لتعمل مع المعاينات
-window.showPage = (page, pushState = true) => {
+    window.showPage = (page, pushState = true) => {
     document.querySelectorAll('[data-page]').forEach(el => el.classList.add('hidden'));
     const target = document.querySelector(`[data-page="${page}"]`);
     if (target) target.classList.remove('hidden');
