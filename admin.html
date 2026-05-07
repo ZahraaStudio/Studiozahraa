@@ -2180,95 +2180,114 @@ window.savePreviewGroup = async () => {
     } catch (e) { alert("خطأ في النشر: " + e.message); }
 };
 
-// 4. جلب الألبومات النشطة (تحديث لحظي)
-window.loadPreviews = () => {
-    const list = document.getElementById('previews-list');
-    const q = query(collection(db, 'client_previews'), orderBy('createdAt', 'desc'));
+let currentPreviewId = null;
+let currentPreviewData = null;
+let previewMode = 'all'; // all or notes
 
-    onSnapshot(q, (snapshot) => {
-        list.innerHTML = '';
-        if (snapshot.empty) {
-            list.innerHTML = '<p class="text-center text-zinc-600 py-10">لا توجد ألبومات معاينة حالياً</p>';
+// 1. جلب قائمة الألبومات للـ Sidebar
+window.loadPreviews = () => {
+    const sidebar = document.getElementById('previews-sidebar-list');
+    onSnapshot(query(collection(db, 'client_previews'), orderBy('createdAt', 'desc')), (snap) => {
+        sidebar.innerHTML = '';
+        if (snap.empty) {
+            sidebar.innerHTML = '<p class="text-center text-zinc-700 py-10 text-[10px]">لا توجد ألبومات</p>';
             return;
         }
-
-        snapshot.forEach(docSnap => {
+        snap.forEach(docSnap => {
             const p = docSnap.data();
             const id = docSnap.id;
-            list.innerHTML += `
-                <div class="bg-black border border-zinc-800 p-5 rounded-2xl mb-4 hover:border-gold-text/30 transition-colors">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <h4 class="font-bold gold-text text-lg">${p.clientName}</h4>
-                            <p class="text-xs text-zinc-500">الباسورد الخاص بالعميل: <b class="text-white">${p.password}</b></p>
-                        </div>
-                        <button onclick="window.deletePreviewGroup('${id}')" class="text-red-500 text-xs border border-red-900/30 px-3 py-1 rounded-lg hover:bg-red-900 hover:text-white transition-all">حذف الألبوم بالكامل 🗑️</button>
-                    </div>
-                    <div class="grid grid-cols-5 md:grid-cols-8 gap-2 mb-4">
-                        ${(p.images || []).map(img => `
-                            <div class="relative group h-12">
-                                <img src="${img}" class="w-full h-full object-cover rounded border border-zinc-900 cursor-pointer" onclick="openPrevImage('${img}')">
-                                <button onclick="window.deleteImageFromAlbum('${id}','${img}')" class="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-3 h-3 text-[7px] opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
-                            </div>`).join('')}
-                    </div>
-                    <div class="border-t border-zinc-900 pt-3">
-                        <p class="text-xs font-bold mb-2 gold-text">💬 ملاحظات العميل على الصور:</p>
-                        <div id="comments-box-${id}" class="space-y-2">
-                            <!-- التعليقات ستظهر هنا -->
-                        </div>
-                    </div>
+            const isActive = currentPreviewId === id;
+            sidebar.innerHTML += `
+                <div onclick="openPreviewGallery('${id}')" class="p-3 rounded-xl cursor-pointer transition-all border ${isActive ? 'bg-yellow-900/20 border-gold-text' : 'bg-zinc-800/30 border-zinc-800'} hover:border-gold-text/50">
+                    <p class="font-bold text-xs ${isActive ? 'gold-text' : 'text-zinc-300'}">${p.clientName}</p>
+                    <p class="text-[9px] text-zinc-500 mt-1">🔑 ${p.password}</p>
                 </div>`;
-            window.loadAlbumComments(id);
         });
     });
 };
 
-// 5. جلب تعليقات العميل على صور معينة
-window.loadAlbumComments = (previewId) => {
-    const q = query(collection(db, 'preview_comments'), where('previewId', '==', previewId), orderBy('createdAt', 'asc'));
+// 2. فتح ألبوم معين
+window.openPreviewGallery = async (id) => {
+    currentPreviewId = id;
+    const header = document.getElementById('preview-main-header');
+    const content = document.getElementById('preview-main-content');
+    header.classList.remove('hidden');
+    content.innerHTML = '<p class="text-center py-20 gold-text animate-pulse text-sm">⏳ جاري جلب الألبوم والملاحظات...</p>';
+
+    // جلب بيانات الألبوم
+    const albumSnap = await getDoc(doc(db, 'client_previews', id));
+    currentPreviewData = albumSnap.data();
+    document.getElementById('active-prev-name').innerText = currentPreviewData.clientName;
+
+    // تشغيل مستمع الملاحظات
+    renderGalleryContent();
+};
+
+// 3. عرض المحتوى (فلترة وعرض)
+function renderGalleryContent() {
+    const content = document.getElementById('preview-main-content');
+    const albumImages = currentPreviewData.images || [];
+
+    // جلب الملاحظات أولاً
+    const q = query(collection(db, 'preview_comments'), where('previewId', '==', currentPreviewId), orderBy('createdAt', 'desc'));
     onSnapshot(q, (snap) => {
-        const box = document.getElementById('comments-box-' + previewId);
-        if (!box) return;
-        if (snap.empty) {
-            box.innerHTML = '<p class="text-zinc-600 italic text-[10px]">لا توجد ملاحظات من العميل بعد</p>';
+        const comments = snap.docs.map(d => d.data());
+        
+        content.innerHTML = '';
+        
+        let filteredImages = albumImages;
+        if (previewMode === 'notes') {
+            filteredImages = albumImages.filter(img => comments.some(c => c.imageUrl === img));
+        }
+
+        if (filteredImages.length === 0) {
+            content.innerHTML = `<p class="text-center py-20 text-zinc-500 text-sm">لا توجد صور ${previewMode === 'notes' ? 'عليها ملاحظات' : ''}</p>`;
             return;
         }
-        box.innerHTML = snap.docs.map(d => {
-            const c = d.data();
-            return `
-                <div class="bg-zinc-900/50 p-2 rounded-xl flex gap-3 items-center border border-zinc-800">
-                    <img src="${c.imageUrl}" class="w-10 h-10 rounded-lg object-cover cursor-pointer" onclick="openPrevImage('${c.imageUrl}')">
-                    <div class="flex-1">
-                        <p class="text-white text-[12px]">${c.text}</p>
-                        <p class="text-[8px] text-zinc-600 mt-1">${new Date(c.createdAt?.toDate()).toLocaleString('ar-EG')}</p>
+
+        filteredImages.forEach(img => {
+            const imgComments = comments.filter(c => c.imageUrl === img);
+            content.innerHTML += `
+                <div class="max-w-2xl mx-auto bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl transition-all hover:border-gold-text/20">
+                    <img src="${img}" class="w-full h-auto cursor-pointer" onclick="openPrevImage('${img}')">
+                    <div class="p-5 bg-black/40">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-[10px] text-zinc-600">ID للصورة: ...${img.slice(-10)}</span>
+                            <button onclick="window.deleteImageFromAlbum('${currentPreviewId}','${img}')" class="text-[10px] text-red-500">حذف الصورة ✕</button>
+                        </div>
+                        <div class="space-y-3">
+                            ${imgComments.length > 0 ? imgComments.map(c => `
+                                <div class="bg-yellow-900/10 border-r-4 border-gold-text p-3 rounded-xl shadow-inner">
+                                    <p class="text-xs text-white leading-relaxed">${c.text}</p>
+                                    <p class="text-[8px] text-zinc-500 mt-2">${new Date(c.createdAt?.toDate()).toLocaleString('ar-EG')}</p>
+                                </div>
+                            `).join('') : '<p class="text-zinc-700 italic text-center text-xs">لا توجد ملاحظات على هذه الصورة</p>'}
+                        </div>
                     </div>
                 </div>`;
-        }).join('');
+        });
     });
+}
+
+// 4. التبديل بين الأوضاع (كل الصور / الملاحظات فقط)
+window.togglePreviewMode = (mode) => {
+    previewMode = mode;
+    document.getElementById('mode-all').className = mode === 'all' ? 'text-[10px] gold-text font-bold border-b-2 border-gold-text' : 'text-[10px] text-zinc-500 font-bold border-b-2 border-transparent';
+    document.getElementById('mode-notes').className = mode === 'notes' ? 'text-[10px] gold-text font-bold border-b-2 border-gold-text' : 'text-[10px] text-zinc-500 font-bold border-b-2 border-transparent';
+    if(currentPreviewId) renderGalleryContent();
 };
 
-// 6. حذف صورة واحدة من الألبوم
-window.deleteImageFromAlbum = async (id, url) => {
-    if(!confirm("هل تريد حذف هذه الصورة فقط من ألبوم العميل؟")) return;
-    try {
-        await updateDoc(doc(db, 'client_previews', id), { images: arrayRemove(url) });
-        zahraaToast('تمت إزالة الصورة بنجاح ✓');
-    } catch (e) { alert(e.message); }
+window.openNewAlbumModal = () => {
+    document.getElementById('new-album-modal').style.display = 'flex';
 };
 
-// 7. حذف ألبوم كامل
-window.deletePreviewGroup = async (id) => {
-    if(!confirm("سيتم حذف الألبوم بالكامل، هل أنت متأكد؟")) return;
-    try {
-        await deleteDoc(doc(db, 'client_previews', id));
-        zahraaToast('تم حذف الألبوم');
-    } catch (e) { alert(e.message); }
-};
-
-// 8. فتح الصورة كبيرة
-window.openPrevImage = (url) => {
-    document.getElementById('prev-modal-img').src = url;
-    document.getElementById('prev-image-modal').style.display = 'flex';
+window.deleteActiveAlbum = async () => {
+    if(confirm("حذف هذا الألبوم بالكامل؟")) {
+        await deleteDoc(doc(db, 'client_previews', currentPreviewId));
+        document.getElementById('preview-main-header').classList.add('hidden');
+        document.getElementById('preview-main-content').innerHTML = '<p class="text-center py-20 text-zinc-500">تم حذف الألبوم</p>';
+        currentPreviewId = null;
+    }
 };
         window.showNotif = (t,type='success') => zahraaToast(t,type);
 
