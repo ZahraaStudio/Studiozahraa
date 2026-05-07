@@ -1152,17 +1152,42 @@
         };
 
         // ==================== ORDERS ====================
-        window.loadOrders = async () => {
-            const snapshot = await getDocs(query(collection(db, 'orders'), orderBy('createdAt', 'desc')));
-            allOrders = [];
-            snapshot.forEach(docSnap => { const o = docSnap.data(); o.id = docSnap.id; allOrders.push(o); });
-            document.getElementById('stat-orders').innerText = allOrders.length;
-            const pendingCount = allOrders.filter(o => o.status === 'قيد التنفيذ').length;
-            const badge = document.getElementById('orders-count-badge');
-            if (pendingCount > 0) { badge.innerText = pendingCount; badge.classList.remove('hidden'); }
-            else { badge.classList.add('hidden'); }
-            renderOrders();
-        };
+        // دالة جلب الطلبات لحظياً (بمجرد وصول طلب جديد يظهر فوراً)
+window.loadOrders = () => {
+    const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+    
+    // استخدام onSnapshot بدلاً من getDocs
+    onSnapshot(q, (snapshot) => {
+        allOrders = [];
+        snapshot.forEach(docSnap => {
+            const o = docSnap.data();
+            o.id = docSnap.id;
+            allOrders.push(o);
+        });
+
+        // تحديث الأرقام في لوحة الإحصائيات (Stats)
+        const statOrdersEl = document.getElementById('stat-orders');
+        if (statOrdersEl) statOrdersEl.innerText = allOrders.length;
+
+        // تحديث جرس التنبيه للطلبات الجديدة
+        const pendingCount = allOrders.filter(o => o.status === 'قيد التنفيذ').length;
+        const badge = document.getElementById('orders-count-badge');
+        if (badge) {
+            if (pendingCount > 0) {
+                badge.innerText = pendingCount;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        // إعادة عرض القائمة فوراً
+        renderOrders();
+        console.log("تم تحديث قائمة الطلبات لحظياً ✅");
+    }, (error) => {
+        console.error("خطأ في التحديث اللحظي للطلبات:", error);
+    });
+};
 
         window.exportOrdersToCSV = async () => {
             try {
