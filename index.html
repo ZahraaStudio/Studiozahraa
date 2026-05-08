@@ -4189,6 +4189,104 @@ window.addGalleryComment = async (pid, url) => {
     zahraaToast('تم إرسال ملاحظتك بنجاح ✓');
 };
 
+‏// ============ برمجة الذكاء الاصطناعي والشات ============
+‏    let activeChatMode = 'admin'; 
+‏    const GEMINI_API_KEY = "AIzaSyAv2grSmse7Nl5M-HyQ2"; // لازم تطلع مفتاح مجاني من Google AI Studio
+‏
+‏    window.setChatMode = (mode) => {
+‏        activeChatMode = mode;
+‏        document.getElementById('chat-selection-screen').classList.add('hidden');
+‏        document.getElementById('chat-messages-container').classList.remove('hidden');
+‏        const welcome = mode === 'ai' ? "🤖 مرحباً! أنا مساعد الزهراء الذكي، كيف نساعدك اليوم؟" : "👤 جاري تحويلك لخدمة العملاء.. من فضلك اترك استفسارك.";
+‏        addMessageToUI(welcome, 'admin');
+‏    };
+‏
+‏    // تعديل دالة الإرسال لتدعم الـ AI
+‏    const originalSend = window.sendZahraaMsg;
+‏    window.sendZahraaMsg = async function() {
+‏        const inp = document.getElementById('chat-msg-input');
+‏        const text = inp.value.trim();
+‏        if(!text) return;
+‏
+‏        if (activeChatMode === 'admin') {
+‏            await originalSend(); // بيبعت للأدمن زي ما هي
+‏        } else {
+‏            // وضع الـ AI
+‏            inp.value = '';
+‏            addMessageToUI(text, 'user');
+‏            const aiResponse = await talkToAI(text);
+‏            setTimeout(() => addMessageToUI(aiResponse, 'admin'), 1000);
+‏        }
+‏    };
+‏
+‏    function addMessageToUI(text, sender) {
+‏        const box = document.getElementById('chat-messages-container');
+‏        const isU = sender === 'user';
+‏        box.innerHTML += `<div style="align-self:${isU?'flex-end':'flex-start'}; max-width:85%; padding:10px 15px; border-radius:15px; background:${isU?'#d4af37':'#222'}; color:${isU?'#000':'#fff'}; font-size:13px; margin-bottom:5px;">${text}</div>`;
+‏        document.getElementById('chat-scroll-area').scrollTop = document.getElementById('chat-scroll-area').scrollHeight;
+‏    }
+‏
+‏    async function talkToAI(q) {
+‏        const prods = allProducts.map(p => `${p.name} بسعر ${p.price}ج`).join(', ');
+‏        const prompt = `أنت مساعد ذكي لاستوديو الزهراء. رد بالمصري العامي فقط. أسعارنا: ${prods}. شجع العميل يشتري.`;
+‏        try {
+‏            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+‏                method: "POST", headers: {"Content-Type": "application/json"},
+‏                body: JSON.stringify({contents: [{parts: [{text: prompt + "\nالعميل: " + q}]}]})
+‏            });
+‏            const data = await res.json();
+‏            return data.candidates[0].content.parts[0].text;
+‏        } catch(e) { return "منورنا يا فنان! ثواني وهرد عليك بنفسي."; }
+‏    }
+‏
+‏    // --- برمجة معمل الصور ---
+‏    window.handleAiClick = () => {
+‏        if (!currentUser) return showLoginModal();
+‏        document.getElementById('ai-file-input').click();
+‏    };
+‏
+‏    window.startImageEnhance = async (input) => {
+‏        let usage = JSON.parse(localStorage.getItem('sz_ai_limit') || '{"count":0, "day":""}');
+‏        const today = new Date().toLocaleDateString();
+‏        if (usage.day !== today) usage = {count: 0, day: today};
+‏        if (usage.count >= 5) return zahraaToast('خلصت الـ 5 صور بتوعك النهاردة يا فنان! ❌', 'error');
+‏
+‏        const file = input.files[0]; if (!file) return;
+‏
+‏        document.getElementById('ai-upload-ui').classList.add('hidden');
+‏        document.getElementById('ai-loading-screen').classList.remove('hidden');
+‏
+‏        const fd = new FormData();
+‏        fd.append('file', file); fd.append('upload_preset', 'zahraa_upload');
+‏
+‏        try {
+‏            const res = await fetch('https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload', {method:'POST', body:fd});
+‏            const data = await res.json();
+‏            if (data.secure_url) {
+‏                const enhanced = data.secure_url.replace('/upload/', '/upload/e_improve,f_auto,q_auto,w_2000,c_limit/');
+‏                
+‏                document.getElementById('ai-img-before').src = data.secure_url;
+‏                document.getElementById('ai-img-after').src = enhanced;
+‏                document.getElementById('ai-download-link').href = enhanced;
+‏                
+‏                usage.count++;
+‏                localStorage.setItem('sz_ai_limit', JSON.stringify(usage));
+‏                document.getElementById('ai-usage-text').innerText = `متبقي: ${5 - usage.count} صور`;
+‏
+‏                setTimeout(() => {
+‏                    document.getElementById('ai-loading-screen').classList.add('hidden');
+‏                    document.getElementById('ai-result-ui').classList.remove('hidden');
+‏                    zahraaToast('تم تحسين الصورة بنجاح! ✨', 'success');
+‏                }, 3000);
+‏            }
+‏        } catch(e) { alert("خطأ في التحسين"); location.reload(); }
+‏    };
+‏
+‏    window.orderAiPrint = () => {
+‏        const url = document.getElementById('ai-img-after').src;
+‏        cart.push({id:'ai-print', name:'طباعة صورة محسنة AI', price:150, images:[url], qty:1});
+‏        persistCart(); updateCartUI(); toggleCart();  
+
 </script>
 
 </body>
