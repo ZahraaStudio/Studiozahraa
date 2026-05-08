@@ -4150,52 +4150,52 @@ window.addGalleryComment = async (pid, url) => {
     zahraaToast('تم إرسال ملاحظتك بنجاح ✓');
 };
 
-  // حط المفتاح بتاعك هنا اللي جبته من جوجل
-const GEMINI_API_KEY = "حط_الـ_API_KEY_هنا"; 
+  // 1. حط المفتاح بتاعك هنا (مهم جداً)
+const GEMINI_API_KEY = "AIzaSyAv2grSmse7Nl5M-HyQ2eH84R4ZIE4J3z0"; 
 
-async function askZahraaAI() {
+let aiChatOpen = false;
+
+// دالة فتح وقفل الشات
+window.toggleAIChat = function() {
+    aiChatOpen = !aiChatOpen;
+    const container = document.getElementById('ai-chat-container');
+    if(container) container.style.display = aiChatOpen ? 'flex' : 'none';
+};
+
+// دالة إرسال الرسالة
+window.askZahraaAI = async function() {
+    console.log("تم الضغط على زرار الـ AI"); // للتأكد في الكونسول
+    
     const inputEl = document.getElementById('ai-input');
     const msg = inputEl.value.trim();
+    
     if (!msg) return;
 
-    if (GEMINI_API_KEY === "AIzaSyAv2grSmse7Nl5M-HyQ2eH84R4ZIE4J3z0") {
-        zahraaToast("لازم تحط الـ API Key الأول يا فنان عشان الـ AI يشتغل!", "error");
-        return;
-    }
-
+    // إظهار رسالة المستخدم
     appendAIMessage(msg, 'user');
     inputEl.value = '';
 
+    // إظهار علامة التحميل
     const typingId = 'ai-typing-' + Date.now();
     appendAIMessage('جاري التفكير... 🤔', 'ai', typingId);
 
     try {
-        // 1. تجميع بيانات المنتجات الحقيقية من متجر الزهراء
-        const productsInfo = allProducts.map(p => 
-            `- ${p.name}: سعره ${effectivePrice(p)} ج، قسم ${p.category || 'عام'}${p.code ? ' كوده ' + p.code : ''}`
-        ).slice(0, 30).join('\n'); // هناخد أول 30 منتج عشان السرعة
+        // تجهيز بيانات المنتجات (مع حماية لو المصفوفة فاضية)
+        let productsInfo = "لا يوجد بيانات حالياً";
+        if (typeof allProducts !== 'undefined' && allProducts.length > 0) {
+            productsInfo = allProducts.map(p => {
+                // التأكد من وجود دالة effectivePrice أو حساب السعر يدوياً
+                let price = p.price || 0;
+                return `- ${p.name}: سعره ${price} ج، قسم ${p.category || 'عام'}`;
+            }).slice(0, 20).join('\n');
+        }
 
-        // 2. تجهيز التعليمات للـ AI
-        const promptContext = `
-            أنت المساعد الذكي لاستوديو الزهراء (Zahraa Studio).
-            مهمتك الرد على الزبائن باللهجة المصرية (العامية) بطريقة محترمة وفرفوشة.
-            الزبون بيسأل عن: "${msg}"
-            
-            معلومات المحل:
-            - واتساب: ${storeSettings.whatsapp1}
-            - سعر التغليف: ${storeSettings.giftPrice} ج
-            
-            المنتجات المتاحة حالياً:
-            ${productsInfo}
-            
-            قواعد الرد:
-            1. رد بلهجة مصرية عامية 100%.
-            2. لو سأل عن سعر حاجة موجودة قولها له.
-            3. لو سأل عن حاجة مش عندنا، قوله "مش موجودة حالياً بس ممكن تسأل الإدارة واتساب على رقم ${storeSettings.whatsapp1}".
-            4. خلي ردك قصير ومفيد.
-        `;
+        const promptContext = `أنت مساعد ذكي لاستوديو الزهراء. رد بلهجة مصرية عامية فرفوشة. 
+        الزبون بيسأل: ${msg}. 
+        المنتجات اللي عندنا: ${productsInfo}. 
+        واتساب المحل: ${storeSettings.whatsapp1 || 'موجود في الموقع'}.`;
 
-        // 3. الاتصال بـ Google Gemini API
+        // الطلب من Gemini
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -4206,22 +4206,56 @@ async function askZahraaAI() {
 
         const data = await response.json();
         
-        if (data.error) throw new Error(data.error.message);
-
-        const aiResponse = data.candidates[0].content.parts[0].text;
-
-        // مسح كلمة جاري التفكير ووضع الرد
+        // حذف علامة التحميل
         const typingEl = document.getElementById(typingId);
-        if(typingEl) typingEl.remove();
-        
-        appendAIMessage(aiResponse, 'ai');
+        if (typingEl) typingEl.remove();
+
+        if (data.candidates && data.candidates[0].content.parts[0].text) {
+            const aiResponse = data.candidates[0].content.parts[0].text;
+            appendAIMessage(aiResponse, 'ai');
+        } else {
+            throw new Error("رد غير متوقع");
+        }
 
     } catch (e) {
         console.error("AI Error:", e);
         const typingEl = document.getElementById(typingId);
-        if(typingEl) typingEl.innerText = "حصل مشكلة في النت، جرب تسألني تاني يا فنان! 😅";
+        if (typingEl) typingEl.innerText = "معلش يا فنان، الشبكة مهنجة شوية. اسألني كمان دقيقة! 😅";
     }
+};
+
+// دالة إضافة الرسائل للشاشة
+function appendAIMessage(text, sender, id = null) {
+    const box = document.getElementById('ai-messages-box');
+    if (!box) return;
+    
+    const msgDiv = document.createElement('div');
+    if(id) msgDiv.id = id;
+    
+    const isUser = sender === 'user';
+    msgDiv.style.cssText = `
+        max-width: 85%;
+        padding: 10px 15px;
+        border-radius: ${isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px'};
+        background: ${isUser ? 'linear-gradient(135deg,#d4af37,#f0c94e)' : '#1e1e1e'};
+        color: ${isUser ? '#000' : '#fff'};
+        font-size: 13px;
+        align-self: ${isUser ? 'flex-end' : 'flex-start'};
+        line-height: 1.5;
+        margin-bottom: 5px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    `;
+    msgDiv.innerText = text;
+    box.appendChild(msgDiv);
+    box.scrollTop = box.scrollHeight;
 }
+
+// تفعيل زرار الـ Enter في الكيبورد
+document.getElementById('ai-input')?.addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') {
+        askZahraaAI();
+    }
+});
   
 </script>
 
