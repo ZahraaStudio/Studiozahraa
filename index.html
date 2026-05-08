@@ -4152,14 +4152,6 @@ window.addGalleryComment = async (pid, url) => {
 
 // حط المفتاح بتاعك هنا (أنا حطيتهولك جاهز)
 const GEMINI_API_KEY = "AIzaSyAv2grSmse7Nl5M-HyQ2eH84R4ZIE4J3z0"; 
-let aiChatOpen = false;
-
-// دالة فتح وقفل الشات
-window.toggleAIChat = function() {
-    aiChatOpen = !aiChatOpen;
-    const container = document.getElementById('ai-chat-container');
-    if(container) container.style.display = aiChatOpen ? 'flex' : 'none';
-};
 
 window.askZahraaAI = async function() {
     const inputEl = document.getElementById('ai-input');
