@@ -663,6 +663,38 @@
         <div id="gallery-grid" class="grid grid-cols-1 md:grid-cols-2 gap-8 select-none" style="-webkit-touch-callout: none;"></div>
     </div>
 </div>
+    <!-- معمل الزهراء الذكي AI -->
+    <section id="ai-lab" class="container mx-auto px-4 py-10">
+        <div class="bg-zinc-900 border border-gold-text/20 p-8 rounded-3xl text-center relative">
+            <div class="absolute top-4 left-4"><span class="points-badge" id="ai-usage-text">متبقي: 5 صور</span></div>
+            <h2 class="text-3xl font-bold gold-text mb-2">✨ معمل الزهراء الذكي</h2>
+            <p class="text-zinc-400 text-sm mb-8">حسن جودة صورتك القديمة أو الباهتة فوراً مجاناً</p>
+
+            <!-- صندوق الرفع -->
+            <div id="ai-upload-ui">
+                <input type="file" id="ai-file-input" accept="image/*" class="hidden" onchange="startImageEnhance(this)">
+                <button onclick="handleAiClick()" class="gold-bg text-black px-10 py-4 rounded-2xl font-bold text-lg hover:scale-105 transition-transform">📸 ارفع الصورة لتحسينها</button>
+            </div>
+
+            <!-- شاشة التحميل الدعائية للمعمل -->
+            <div id="ai-loading-screen" class="hidden flex-col items-center justify-center py-10">
+                <img src="icon-512.png" class="w-24 h-24 ai-loading-logo mb-4">
+                <p class="gold-text font-bold animate-pulse">جاري سحر الذكاء الاصطناعي...</p>
+            </div>
+
+            <!-- عرض النتيجة -->
+            <div id="ai-result-ui" class="hidden mt-8">
+                <div class="grid grid-cols-2 gap-4 max-w-2xl mx-auto mb-6">
+                    <div><p class="text-[10px] text-zinc-500 mb-1">قبل</p><img id="ai-img-before" class="rounded-lg opacity-50"></div>
+                    <div><p class="text-[10px] text-green-500 mb-1">بعد التحسين ✨</p><img id="ai-img-after" class="rounded-lg border-2 border-green-500"></div>
+                </div>
+                <div class="flex flex-wrap justify-center gap-3">
+                    <a id="ai-download-link" href="#" download="Zahraa-Enhanced.jpg" class="bg-green-600 text-white px-6 py-2 rounded-xl font-bold text-sm">📥 تحميل الصورة</a>
+                    <button onclick="orderAiPrint()" class="bg-white text-black px-6 py-2 rounded-xl font-bold text-sm">🛍️ اطلب طباعتها</button>
+                </div>
+            </div>
+        </div>
+    </section>
   </main>
 
   <!-- Product Modal -->
