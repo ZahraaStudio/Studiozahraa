@@ -4150,9 +4150,8 @@ window.addGalleryComment = async (pid, url) => {
     zahraaToast('تم إرسال ملاحظتك بنجاح ✓');
 };
 
-  // 1. حط المفتاح بتاعك هنا (مهم جداً)
+// حط المفتاح بتاعك هنا (أنا حطيتهولك جاهز)
 const GEMINI_API_KEY = "AIzaSyAv2grSmse7Nl5M-HyQ2eH84R4ZIE4J3z0"; 
-
 let aiChatOpen = false;
 
 // دالة فتح وقفل الشات
@@ -4162,64 +4161,76 @@ window.toggleAIChat = function() {
     if(container) container.style.display = aiChatOpen ? 'flex' : 'none';
 };
 
-// دالة إرسال الرسالة
 window.askZahraaAI = async function() {
     const inputEl = document.getElementById('ai-input');
     const msg = inputEl.value.trim();
     if (!msg) return;
 
-    // 1. عرض رسالة المستخدم
+    // 1. عرض رسالة العميل
     appendAIMessage(msg, 'user');
     inputEl.value = '';
 
-    // 2. عرض علامة التفكير
+    // 2. إظهار علامة التفكير
     const typingId = 'ai-typing-' + Date.now();
-    appendAIMessage('جاري التفكير... 🤔', 'ai', typingId);
+    appendAIMessage('ثواني يا فنان بفكرلك في رد... 🤔', 'ai', typingId);
 
     try {
-        // تجهيز بيانات المنتجات بشكل مبسط جداً
-        let productsInfo = "المنتحات: " + allProducts.slice(0,10).map(p => p.name + " بـ " + p.price + "ج").join(", ");
+        // 3. تجهيز بيانات المحل عشان الـ AI يعرفها
+        const productsInfo = typeof allProducts !== 'undefined' ? 
+            allProducts.map(p => `- ${p.name}: سعره ${p.price} ج، قسم ${p.category || 'عام'}`).slice(0, 25).join('\n') : "";
 
-        const promptContext = {
-            contents: [{
-                parts: [{
-                    text: `أنت مساعد ذكي لاستوديو الزهراء. رد باللهجة المصرية. الزبون بيسأل: ${msg}. معلوماتك: ${productsInfo}`
-                }]
-            }]
+        const whatsapp = storeSettings.whatsapp1 || "موجود في الموقع";
+        const giftPrice = storeSettings.giftPrice || "50";
+
+        // 4. بناء الـ Context (شخصية الـ AI)
+        const promptContext = `
+            أنت "مساعد الزهراء الذكي". دي معلومات استوديو الزهراء:
+            - المنتجات المتاحة:
+            ${productsInfo}
+            - رقم الواتساب للاستفسارات: ${whatsapp}
+            - سعر تغليف الهدايا: ${giftPrice} جنيه.
+
+            مهمتك:
+            1. رد بلهجة مصرية (عامية) ودودة وفرفوشة جداً.
+            2. لو العميل سأل عن سعر حاجة موجودة قولها له بوضوح.
+            3. لو سأل عن حاجة مش عندنا، قوله: "للأسف دي مش عندنا حالياً يا فنان، بس ممكن تكلمنا واتساب على ${whatsapp} ونشوف لو نقدر نوفرها لك مخصوص".
+            4. شجعه يشتري أو يطلب هدية.
+            5. الزبون بيسأل: "${msg}"
+        `;
+
+        const payload = {
+            contents: [{ parts: [{ text: promptContext }] }]
         };
 
-        // 3. الاتصال بجوجل
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${AIzaSyAv2grSmse7Nl5M-HyQ2eH84R4ZIE4J3z0}`, {
+        // 5. الاتصال بسيرفر جوجل
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+
+        const response = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(promptContext)
+            body: JSON.stringify(payload)
         });
 
         const data = await response.json();
 
-        // 4. حذف علامة التفكير
+        // 6. مسح علامة التفكير
         const typingEl = document.getElementById(typingId);
         if (typingEl) typingEl.remove();
 
-        // 5. تحليل الرد
-        if (data.error) {
-            // لو فيه مشكلة في المفتاح أو الحساب هيظهر هنا
-            console.error("Gemini Error:", data.error);
-            appendAIMessage("❌ فيه مشكلة في الـ API Key بتاع جوجل: " + data.error.message, 'ai');
-            return;
-        }
-
+        // 7. عرض الرد
         if (data.candidates && data.candidates[0].content.parts[0].text) {
             let aiResponse = data.candidates[0].content.parts[0].text;
             appendAIMessage(aiResponse, 'ai');
         } else {
-            appendAIMessage("الـ AI مطلعش رد، جرب تبعت الرسالة تاني.", 'ai');
+            throw new Error("جوجل استلمت الرسالة بس الـ AI مطلعش رد.");
         }
 
     } catch (e) {
-        console.error("General Error:", e);
+        console.error("AI Error:", e);
         const typingEl = document.getElementById(typingId);
-        if (typingEl) typingEl.innerText = "حصلت مشكلة في الاتصال بالنت، جرب تاني.";
+        if (typingEl) {
+            typingEl.innerText = "❌ معلش حصل عطل فني: " + e.message;
+        }
     }
 };
 
@@ -4241,20 +4252,13 @@ function appendAIMessage(text, sender, id = null) {
         font-size: 13px;
         align-self: ${isUser ? 'flex-end' : 'flex-start'};
         line-height: 1.5;
-        margin-bottom: 5px;
+        margin-bottom: 8px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     `;
     msgDiv.innerText = text;
     box.appendChild(msgDiv);
     box.scrollTop = box.scrollHeight;
 }
-
-// تفعيل زرار الـ Enter في الكيبورد
-document.getElementById('ai-input')?.addEventListener('keypress', function (e) {
-    if (e.key === 'Enter') {
-        askZahraaAI();
-    }
-});
   
 </script>
 
