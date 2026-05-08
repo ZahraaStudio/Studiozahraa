@@ -2382,6 +2382,32 @@ function renderGalleryContent() {
         }
     });
             }
+        // دالة حذف صورة واحدة من ألبوم العميل النشط
+window.deleteImageFromAlbum = async (albumId, imageUrl) => {
+    // التأكد من وصول البيانات
+    if (!albumId || !imageUrl) {
+        return zahraaToast('خطأ في تحديد الصورة', 'error');
+    }
+
+    if (confirm("هل أنت متأكد من حذف هذه الصورة فقط؟")) {
+        try {
+            // الإشارة للوثيقة في الفايربيز
+            const albumRef = doc(db, 'client_previews', albumId);
+
+            // استخدام arrayRemove لمسح الرابط من المصفوفة
+            await updateDoc(albumRef, {
+                images: arrayRemove(imageUrl)
+            });
+
+            zahraaToast('تم حذف الصورة بنجاح ✓', 'success');
+            
+            // ملاحظة: بما أننا نستخدم onSnapshot، الواجهة ستتحدث تلقائياً وتختفي الصورة
+        } catch (e) {
+            console.error("Error deleting image:", e);
+            alert("خطأ أثناء الحذف: " + e.message);
+        }
+    }
+};
         // دالة حذف الألبوم النشط (المفتوح حالياً) بالكامل
 window.deleteActiveAlbum = async () => {
     // التأكد من أن هناك ألبوم مختار فعلياً
