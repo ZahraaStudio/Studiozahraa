@@ -1,4 +1,4 @@
-const CACHE_VERSION = 5;
+const CACHE_VERSION = 6; // تم التحديث لمسح الكاش القديم المسبب للمشاكل
 const CACHE_NAME = "zahraa-studio-v" + CACHE_VERSION;
 const URLS_TO_CACHE = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
@@ -8,20 +8,49 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(caches.keys().then(keys => Promise.all(keys.map(k => k !== CACHE_NAME ? caches.delete(k) : null))));
+  event.waitUntil(
+    caches.keys().then(keys => 
+      Promise.all(keys.map(k => k !== CACHE_NAME ? caches.delete(k) : null))
+    )
+  );
   self.clients.claim();
 });
 
 self.addEventListener("fetch", (event) => {
+  // 1. تجاهل أي طلب مش GET (زي طلبات الـ AI)
   if (event.request.method !== "GET") return;
-  if (event.request.url.includes("firebase") || event.request.url.includes("gstatic") ||
-      event.request.url.includes("googleapis") || event.request.url.includes("firestore") ||
-      event.request.url.includes("cloudinary") || event.request.url.includes("cdn.tailwindcss")) return;
+
+  const url = event.request.url;
+
+  // 2. استثناء روابط الـ AI والخدمات الخارجية تماماً
+  // هذا يمنع خطأ "Response body is already used" نهائياً
+  if (
+    url.includes("googleapis.com") || 
+    url.includes("generativelanguage") || // خاص بـ Gemini AI
+    url.includes("firebase") || 
+    url.includes("firestore") || 
+    url.includes("cloudinary") || 
+    url.includes("gstatic") || 
+    url.includes("cdn.tailwindcss")
+  ) {
+    return; // اترك المتصفح ينفذ الطلب مباشرة دون تدخل السيرفس وركر
+  }
+
+  // 3. استراتيجية (Cache First, then Network) للملفات الثابتة لضمان السرعة
   event.respondWith(
-    fetch(event.request).then(res => {
-      if (res.status === 200) caches.open(CACHE_NAME).then(c => c.put(event.request, res.clone()));
-      return res;
-    }).catch(() => caches.match(event.request))
+    caches.match(event.request).then((cachedResponse) => {
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+      return fetch(event.request).then((res) => {
+        // تخزين نسخة من الملفات الجديدة التي تنجح فقط
+        if (res.status === 200 && res.type === 'basic') {
+          let resClone = res.clone();
+          caches.open(CACHE_NAME).then(c => c.put(event.request, resClone));
+        }
+        return res;
+      }).catch(() => caches.match("./index.html")); // لو مفيش نت خالص
+    })
   );
 });
 
