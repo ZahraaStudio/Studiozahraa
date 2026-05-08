@@ -4149,6 +4149,105 @@ window.addGalleryComment = async (pid, url) => {
     });
     zahraaToast('تم إرسال ملاحظتك بنجاح ✓');
 };
+
+  let aiChatOpen = false;
+
+function toggleAIChat() {
+    aiChatOpen = !aiChatOpen;
+    document.getElementById('ai-chat-container').style.display = aiChatOpen ? 'flex' : 'none';
+}
+
+async function askZahraaAI() {
+    const inputEl = document.getElementById('ai-input');
+    const msg = inputEl.value.trim();
+    if (!msg) return;
+
+    // إضافة رسالة المستخدم للشاشة
+    appendAIMessage(msg, 'user');
+    inputEl.value = '';
+
+    // إظهار علامة "جاري التفكير"
+    const typingId = 'ai-typing-' + Date.now();
+    appendAIMessage('جاري التفكير... 🤔', 'ai', typingId);
+
+    try {
+        // تجهيز بيانات المنتجات لتحويلها لنص يفهمه الـ AI
+        const productsInfo = allProducts.map(p => 
+            `- منتج: ${p.name}, سعره: ${effectivePrice(p)} جنيه, قسم: ${p.category}, كوده: ${p.code || 'غير متوفر'}`
+        ).join('\n');
+
+        const storeInfo = `
+            اسم المحل: استوديو الزهراء (ZAHRAA STUDIO).
+            رقم الواتساب: ${storeSettings.whatsapp1}.
+            سعر تغليف الهدايا: ${storeSettings.giftPrice} جنيه.
+            العروض المتاحة حالياً: ${storeSettings.dailyOffersTitle} و ${storeSettings.weeklyOffersTitle}.
+        `;
+
+        // التعليمات (System Prompt) لضبط الشخصية واللهجة
+        const systemPrompt = `
+            أنت "مساعد الزهراء الذكي"، تعمل في استوديو الزهراء للتصوير والتابلوهات.
+            قواعدك الصارمة:
+            1. الرد حصراً باللهجة المصرية العامية (القاهرية/الشرقاوية) بطريقة ودودة وفرفوشة.
+            2. استخدم معلومات المنتجات دي للرد على الأسعار والاستفسارات:
+            ${productsInfo}
+            ${storeInfo}
+            3. لو العميل سأل عن حاجة مش موجودة، قوله يكلم الإدارة واتساب على رقم ${storeSettings.whatsapp1}.
+            4. شجع العملاء يشتروا ويستفيدوا من الخصومات.
+            5. لو سألك عن "هدية" اقترح عليه تابلوهات أو هدايا من القائمة بناءً على السعر اللي يطلبه.
+        `;
+
+        // استدعاء API (هنا بنستخدم OpenAI كمثال، وممكن نغير لـ Gemini)
+        // ملاحظة: في النسخة الحقيقية يفضل وجود Proxy لحماية الـ Key
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer YOUR_OPENAI_API_KEY' // هنحتاج نحط الـ Key هنا
+            },
+            body: JSON.stringify({
+                model: "gpt-3.5-turbo",
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: msg }
+                ]
+            })
+        });
+
+        const data = await response.json();
+        const aiResponse = data.choices[0].message.content;
+
+        // مسح علامة التفكير ووضع الرد
+        document.getElementById(typingId).remove();
+        appendAIMessage(aiResponse, 'ai');
+
+    } catch (e) {
+        console.error("AI Error:", e);
+        document.getElementById(typingId).innerText = "معلش حصلت مشكلة في الاتصال، اسألني تاني كمان شوية يا فنان! 😅";
+    }
+}
+
+function appendAIMessage(text, sender, id = null) {
+    const box = document.getElementById('ai-messages-box');
+    const msgDiv = document.createElement('div');
+    if(id) msgDiv.id = id;
+    
+    const isUser = sender === 'user';
+    msgDiv.style.cssText = `
+        max-width: 85%;
+        padding: 10px 15px;
+        border-radius: ${isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px'};
+        background: ${isUser ? 'linear-gradient(135deg,#d4af37,#f0c94e)' : '#1e1e1e'};
+        color: ${isUser ? '#000' : '#fff'};
+        font-size: 13px;
+        align-self: ${isUser ? 'flex-end' : 'flex-start'};
+        line-height: 1.5;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    `;
+    msgDiv.innerText = text;
+    box.appendChild(msgDiv);
+    box.scrollTop = box.scrollHeight;
+}
+  
 </script>
 
   <!-- AI Chat Widget -->
