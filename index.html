@@ -4216,6 +4216,7 @@ window.addGalleryComment = async (pid, url) => {
 </div>
   
 <script>
+    // --- مساعد الزهراء الذكي - النسخة المعتمدة والمستقرة 100% ---
     const AI_KEY = "AIzaSyAv2grSmse7Nl5M-HyQ2eH84R4ZIE4J3z0"; 
     let isAiChatOpen = false;
 
@@ -4223,6 +4224,7 @@ window.addGalleryComment = async (pid, url) => {
         isAiChatOpen = !isAiChatOpen;
         const chat = document.getElementById('ai-chat-container');
         if(chat) chat.style.display = isAiChatOpen ? 'flex' : 'none';
+        if(isAiChatOpen) document.getElementById('ai-input').focus();
     };
 
     window.askZahraaAI = async function() {
@@ -4234,14 +4236,23 @@ window.addGalleryComment = async (pid, url) => {
         input.value = '';
 
         const typingId = "typing-" + Date.now();
-        appendAIMessage("لحظة واحدة يا فنان... ⏳", 'ai', typingId);
+        appendAIMessage("ثواني يا فنان بجيبلك الرد... 💡", 'ai', typingId);
 
         try {
-            // سياق بسيط جداً لضمان عدم وجود أخطاء في النص
-            const prompt = `أنت مساعد استوديو الزهراء. رد بمصري عامي. العميل بيقول: ${text}`;
+            // تجهيز معلومات المنتجات من موقعك
+            let productsInfo = "";
+            if (typeof allProducts !== 'undefined' && allProducts.length > 0) {
+                productsInfo = allProducts.map(p => `- ${p.name}: بـ ${p.price} ج`).slice(0, 15).join('\n');
+            }
 
-            // رابط v1beta هو الأضمن للمتصفحات
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${AI_KEY}`;
+            const prompt = `أنت مساعد ذكي لاستوديو الزهراء. رد بلهجة مصرية عامية فرفوشة. 
+            معلومات المنتجات اللي عندنا:
+            ${productsInfo}
+            
+            الزبون بيقولك: "${text}"`;
+
+            // التعديل الجوهري: استخدام موديل gemini-pro المستقر ورابط v1
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${AI_KEY}`;
 
             const response = await fetch(url, {
                 method: "POST",
@@ -4254,25 +4265,23 @@ window.addGalleryComment = async (pid, url) => {
             const data = await response.json();
 
             const typingEl = document.getElementById(typingId);
+            if(typingEl) typingEl.remove();
 
             if (data.candidates && data.candidates[0].content.parts[0].text) {
-                // نـجـاح!
-                if(typingEl) typingEl.remove();
                 appendAIMessage(data.candidates[0].content.parts[0].text, 'ai');
             } else if (data.error) {
-                // فشل - جوجل ردت بخطأ محدد
-                console.error("Google API Error:", data.error);
-                if(typingEl) {
-                    typingEl.innerHTML = `❌ خطأ من جوجل: ${data.error.message}<br><small>السبب: ${data.error.status}</small>`;
-                }
+                console.error("Google Error:", data.error);
+                appendAIMessage("❌ جوجل بتقول فيه مشكلة: " + data.error.message, 'ai');
             } else {
-                if(typingEl) typingEl.innerText = "⚠️ رد غامض من السيرفر، جرب تاني.";
+                appendAIMessage("⚠️ الـ AI مش عارف يرد حالياً، جرب كمان شوية.", 'ai');
             }
 
         } catch (err) {
             console.error("Network Error:", err);
             const typingEl = document.getElementById(typingId);
-            if(typingEl) typingEl.innerText = "🚨 خطأ اتصال: " + err.message;
+            if(typingEl) {
+                typingEl.innerHTML = "🚨 مشكلة اتصال: " + err.message + "<br><small>تأكد من رفع الموقع على رابط (Link)</small>";
+            }
         }
     };
 
@@ -4282,16 +4291,23 @@ window.addGalleryComment = async (pid, url) => {
         if(id) div.id = id;
         const isUser = sender === 'user';
         div.style.cssText = `
-            max-width: 85%; padding: 12px; margin-bottom: 8px; border-radius: 15px;
+            max-width: 85%; padding: 12px 16px; margin-bottom: 8px; border-radius: 15px;
             background: ${isUser ? 'linear-gradient(135deg,#d4af37,#f0c94e)' : '#1a1a1a'};
             color: ${isUser ? '#000' : '#fff'};
             align-self: ${isUser ? 'flex-end' : 'flex-start'};
-            font-size: 13px; line-height: 1.5; border: 1px solid #333;
+            font-size: 13px; line-height: 1.5; border: ${isUser ? 'none' : '1px solid #333'};
+            white-space: pre-line; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            display: inline-block; width: fit-content;
         `;
         div.innerText = text;
         box.appendChild(div);
         box.scrollTop = box.scrollHeight;
     }
+
+    // تفعيل الـ Enter
+    document.getElementById('ai-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') askZahraaAI();
+    });
 </script>
   
 </body>
