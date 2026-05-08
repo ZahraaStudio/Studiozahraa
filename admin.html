@@ -2204,7 +2204,32 @@ window.loadPreviews = () => {
                 </div>`;
         });
     });
-};  // 1. فتح ألبوم معين وجلب بياناته لحظياً
+};  
+        // 1. دالة فتح نافذة إنشاء ألبوم جديد
+window.openNewAlbumModal = () => {
+    const modal = document.getElementById('new-album-modal');
+    if (modal) {
+        modal.style.display = 'flex'; // إظهار النافذة
+        
+        // تصفير الخانات تحسباً لو كان فيه بيانات قديمة
+        document.getElementById('prev-client-name').value = '';
+        document.getElementById('prev-password').value = '';
+        document.getElementById('prev-images-preview').innerHTML = '';
+        document.getElementById('prev-upload-status').innerText = '';
+        previewImagesUrls = []; // تصفير مصفوفة الصور المرفوعة
+    } else {
+        console.error("تعذر العثور على id='new-album-modal'");
+    }
+};
+
+// 2. دالة إغلاق النافذة (تستخدم لزر إغلاق وزر إلغاء)
+window.closeNewAlbumModal = () => {
+    const modal = document.getElementById('new-album-modal');
+    if (modal) {
+        modal.style.display = 'none'; // إخفاء النافذة
+    }
+};
+        // 1. فتح ألبوم معين وجلب بياناته لحظياً
 window.openPreviewGallery = (id) => {
     currentPreviewId = id;
     const header = document.getElementById('preview-main-header');
