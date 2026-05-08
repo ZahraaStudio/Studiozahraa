@@ -4216,7 +4216,6 @@ window.addGalleryComment = async (pid, url) => {
 </div>
   
 <script>
-    // --- برمجة الـ AI - النسخة الذكية المتوافقة مع تحديثات جوجل 2024 ---
     const AI_KEY = "AIzaSyAv2grSmse7Nl5M-HyQ2eH84R4ZIE4J3z0"; 
     let isAiChatOpen = false;
 
@@ -4224,7 +4223,6 @@ window.addGalleryComment = async (pid, url) => {
         isAiChatOpen = !isAiChatOpen;
         const chat = document.getElementById('ai-chat-container');
         if(chat) chat.style.display = isAiChatOpen ? 'flex' : 'none';
-        if(isAiChatOpen) document.getElementById('ai-input').focus();
     };
 
     window.askZahraaAI = async function() {
@@ -4236,59 +4234,45 @@ window.addGalleryComment = async (pid, url) => {
         input.value = '';
 
         const typingId = "typing-" + Date.now();
-        appendAIMessage("ثواني يا فنان بجيبلك الرد... 💡", 'ai', typingId);
+        appendAIMessage("لحظة واحدة يا فنان... ⏳", 'ai', typingId);
 
-        // قائمة بالموديلات اللي هنجربها بالترتيب لو واحد فشل
-        const modelsToTry = [
-            { ver: 'v1beta', name: 'gemini-1.5-flash-latest' },
-            { ver: 'v1beta', name: 'gemini-1.5-flash' },
-            { ver: 'v1beta', name: 'gemini-pro' }
-        ];
+        try {
+            // سياق بسيط جداً لضمان عدم وجود أخطاء في النص
+            const prompt = `أنت مساعد استوديو الزهراء. رد بمصري عامي. العميل بيقول: ${text}`;
 
-        let success = false;
-        
-        // تجهيز سياق المنتجات
-        const productsInfo = (typeof allProducts !== 'undefined' && allProducts.length > 0) 
-            ? allProducts.map(p => `- ${p.name}: بـ ${p.price} ج`).slice(0, 10).join('\n')
-            : "منتجات استوديو الزهراء المتميزة";
+            // رابط v1beta هو الأضمن للمتصفحات
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${AI_KEY}`;
 
-        const prompt = `أنت مساعد استوديو الزهراء. رد بمصري عامي فرفوش. معلوماتك: ${productsInfo}. العميل بيقول: ${text}`;
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }]
+                })
+            });
 
-        for (let model of modelsToTry) {
-            if (success) break;
-            
-            try {
-                const url = `https://generativelanguage.googleapis.com/${model.ver}/models/${model.name}:generateContent?key=${AI_KEY}`;
-                
-                const response = await fetch(url, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }]
-                    }),
-                    cache: "no-store" 
-                });
+            const data = await response.json();
 
-                const data = await response.json();
-
-                if (data.candidates && data.candidates[0].content.parts[0].text) {
-                    const aiText = data.candidates[0].content.parts[0].text;
-                    const typingEl = document.getElementById(typingId);
-                    if(typingEl) typingEl.remove();
-                    appendAIMessage(aiText, 'ai');
-                    success = true;
-                }
-            } catch (err) {
-                console.warn(`فشل الموديل ${model.name}, بنجرب اللي بعده...`);
-            }
-        }
-
-        if (!success) {
             const typingEl = document.getElementById(typingId);
-            if(typingEl) {
-                typingEl.innerHTML = "❌ معلش يا فنان، فيه ضغط كبير على سيرفرات جوجل دلوقتي. جرب كمان دقيقة أو ريفريش للصفحة.";
-                typingEl.style.color = "#ff4d4d";
+
+            if (data.candidates && data.candidates[0].content.parts[0].text) {
+                // نـجـاح!
+                if(typingEl) typingEl.remove();
+                appendAIMessage(data.candidates[0].content.parts[0].text, 'ai');
+            } else if (data.error) {
+                // فشل - جوجل ردت بخطأ محدد
+                console.error("Google API Error:", data.error);
+                if(typingEl) {
+                    typingEl.innerHTML = `❌ خطأ من جوجل: ${data.error.message}<br><small>السبب: ${data.error.status}</small>`;
+                }
+            } else {
+                if(typingEl) typingEl.innerText = "⚠️ رد غامض من السيرفر، جرب تاني.";
             }
+
+        } catch (err) {
+            console.error("Network Error:", err);
+            const typingEl = document.getElementById(typingId);
+            if(typingEl) typingEl.innerText = "🚨 خطأ اتصال: " + err.message;
         }
     };
 
@@ -4298,21 +4282,16 @@ window.addGalleryComment = async (pid, url) => {
         if(id) div.id = id;
         const isUser = sender === 'user';
         div.style.cssText = `
-            max-width: 85%; padding: 12px 16px; margin-bottom: 8px; border-radius: 15px;
+            max-width: 85%; padding: 12px; margin-bottom: 8px; border-radius: 15px;
             background: ${isUser ? 'linear-gradient(135deg,#d4af37,#f0c94e)' : '#1a1a1a'};
             color: ${isUser ? '#000' : '#fff'};
             align-self: ${isUser ? 'flex-end' : 'flex-start'};
-            font-size: 13px; line-height: 1.5; border: ${isUser ? 'none' : '1px solid #333'};
-            white-space: pre-line; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            font-size: 13px; line-height: 1.5; border: 1px solid #333;
         `;
         div.innerText = text;
         box.appendChild(div);
         box.scrollTop = box.scrollHeight;
     }
-
-    document.getElementById('ai-input').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') askZahraaAI();
-    });
 </script>
   
 </body>
