@@ -4224,76 +4224,55 @@ window.addGalleryComment = async (pid, url) => {
         const chat = document.getElementById('ai-chat-container');
         if(chat) chat.style.display = isAiChatOpen ? 'flex' : 'none';
     };
-
     window.askZahraaAI = async function() {
-        const input = document.getElementById('ai-input');
-        const text = input.value.trim();
-        if (!text) return;
+    const input = document.getElementById('ai-input');
+    const text = input.value.trim();
+    if (!text) return;
 
-        appendAIMessage(text, 'user');
-        input.value = '';
+    appendAIMessage(text, 'user');
+    input.value = '';
 
-        const typingId = "typing-" + Date.now();
-        appendAIMessage("ثواني يا فنان بجيبلك الرد... 💡", 'ai', typingId);
+    const typingId = "typing-" + Date.now();
+    appendAIMessage("ثواني يا فنان بجيبلك الرد... 💡", 'ai', typingId);
 
-        try {
-            // تجميع معلومات المنتجات
-            const productsInfo = (typeof allProducts !== 'undefined') 
-                ? allProducts.map(p => `- ${p.name}: بـ ${p.price} ج`).slice(0, 10).join('\n') 
-                : "";
+    try {
+        // تجميع معلومات المنتجات
+        const productsInfo = (typeof allProducts !== 'undefined' && allProducts.length > 0) 
+            ? allProducts.map(p => `- ${p.name}: بـ ${p.price} ج`).slice(0, 15).join('\n') 
+            : "جاري تحميل المنتجات...";
 
-            const prompt = `أنت مساعد استوديو الزهراء. رد بمصري عامي. المنتجات: ${productsInfo}. العميل بيقول: ${text}`;
+        const prompt = `أنت مساعد استوديو الزهراء. رد بمصري عامي فرفوش. المنتجات: ${productsInfo}. العميل بيقول: ${text}`;
 
-            // استخدام v1 المباشر مع إضافة参数 لمنع الكاش تماماً
-            const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${AI_KEY}`;
+        // التعديل هنا: رجعنا لـ v1beta عشان الموديل ده بيشتغل عليه
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${AI_KEY}`;
 
-            const response = await fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-                // أهم سطر لحل مشكلة الـ Service Worker:
-                cache: "no-store", 
-                mode: "cors"
-            });
+        const response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+            // حماية إضافية من الـ Service Worker
+            cache: "no-store"
+        });
 
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.error?.message || "فشل الاتصال");
-            }
+        const data = await response.json();
 
-            const data = await response.json();
-            const aiText = data.candidates[0].content.parts[0].text;
-
-            document.getElementById(typingId).remove();
-            appendAIMessage(aiText, 'ai');
-
-        } catch (err) {
-            console.error("AI Error:", err);
-            const typingEl = document.getElementById(typingId);
-            if(typingEl) {
-                typingEl.innerHTML = "❌ حصل عطل بسيط: " + err.message + "<br>جرب ريفريش للصفحة (F5)";
-            }
+        if (data.error) {
+            throw new Error(data.error.message);
         }
-    };
 
-    function appendAIMessage(text, sender, id = null) {
-        const box = document.getElementById('ai-messages-box');
-        const div = document.createElement('div');
-        if(id) div.id = id;
-        const isUser = sender === 'user';
-        div.style.cssText = `
-            max-width: 85%; padding: 12px; margin-bottom: 8px; border-radius: 15px;
-            background: ${isUser ? 'linear-gradient(135deg,#d4af37,#f0c94e)' : '#1a1a1a'};
-            color: ${isUser ? '#000' : '#fff'};
-            align-self: ${isUser ? 'flex-end' : 'flex-start'};
-            font-size: 13px; line-height: 1.5; border: 1px solid #333;
-        `;
-        div.innerText = text;
-        box.appendChild(div);
-        box.scrollTop = box.scrollHeight;
+        const aiText = data.candidates[0].content.parts[0].text;
+
+        document.getElementById(typingId).remove();
+        appendAIMessage(aiText, 'ai');
+
+    } catch (err) {
+        console.error("AI Error:", err);
+        const typingEl = document.getElementById(typingId);
+        if(typingEl) {
+            typingEl.innerHTML = "❌ حصل عطل: " + err.message;
+        }
     }
-    
-    document.getElementById('ai-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') askZahraaAI(); });
+};
 </script>
   
 </body>
