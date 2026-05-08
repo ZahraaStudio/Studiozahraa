@@ -4245,8 +4245,8 @@ window.addGalleryComment = async (pid, url) => {
                 : "";
 
             // الموديل ده هو "أحدث" حاجة ومستحيل جوجل تقول مش لاقياه لو المفتاح سليم
-            const modelName = "gemini-1.5-flash"; 
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${AI_KEY}`;
+            const modelName = "gemini-2.0-flash"; 
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=API_KEY}`;
 
             const prompt = `أنت مساعد ذكي لاستوديو الزهراء. رد باللهجة المصرية العامية الفرفوشة. 
             المنتجات اللي عندنا: ${productsInfo}
