@@ -4216,7 +4216,7 @@ window.addGalleryComment = async (pid, url) => {
 </div>
   
 <script>
-    // --- مساعد الزهراء الذكي: نسخة "تخطي أعطال جوجل" النهائية ---
+    // --- مساعد الزهراء الذكي: نسخة "الرد النهائي" ---
     const AI_KEY = "AIzaSyCo9Tl5FGVaLMNDcUQWjCjcYi5adW5lbX8"; 
     let isAiChatOpen = false;
 
@@ -4236,57 +4236,50 @@ window.addGalleryComment = async (pid, url) => {
         input.value = '';
 
         const typingId = "typing-" + Date.now();
-        appendAIMessage("ثواني يا فنان بشوفلك الرد... 💡", 'ai', typingId);
+        appendAIMessage("ثواني يا فنان بجيبلك الرد... 💡", 'ai', typingId);
 
-        // قائمة المحاولات (كل الروابط والموديلات الممكنة)
-        const attempts = [
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${AI_KEY}`,
-            `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${AI_KEY}`,
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${AI_KEY}`,
-            `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${AI_KEY}`
-        ];
+        try {
+            // تجهيز معلومات المنتجات
+            const productsInfo = (typeof allProducts !== 'undefined' && allProducts.length > 0) 
+                ? allProducts.map(p => `- ${p.name}: بـ ${p.price} ج`).slice(0, 15).join('\n')
+                : "";
 
-        const productsInfo = (typeof allProducts !== 'undefined' && allProducts.length > 0) 
-            ? allProducts.map(p => `- ${p.name}: بـ ${p.price} ج`).slice(0, 10).join('\n')
-            : "";
+            // الموديل ده هو "أحدث" حاجة ومستحيل جوجل تقول مش لاقياه لو المفتاح سليم
+            const modelName = "gemini-1.5-flash"; 
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${AI_KEY}`;
 
-        const prompt = `أنت مساعد استوديو الزهراء. رد بمصري عامي. المنتجات: ${productsInfo}. العميل بيقول: ${text}`;
-        const requestBody = JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] });
+            const prompt = `أنت مساعد ذكي لاستوديو الزهراء. رد باللهجة المصرية العامية الفرفوشة. 
+            المنتجات اللي عندنا: ${productsInfo}
+            الزبون بيسأل: ${text}`;
 
-        let finalResponse = null;
-        let errorMessage = "جوجل مش مستجيبة حالياً";
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }]
+                })
+            });
 
-        // المحاولة الذكية: هيجرب كل الروابط لحد ما واحد ينجح
-        for (let url of attempts) {
-            try {
-                const response = await fetch(url, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: requestBody
-                });
+            const data = await response.json();
 
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.candidates && data.candidates[0].content.parts[0].text) {
-                        finalResponse = data.candidates[0].content.parts[0].text;
-                        break; // نجاح! اخرج من اللفة
-                    }
-                } else {
-                    const errJson = await response.json();
-                    errorMessage = errJson.error?.message || "خطأ غير معروف";
-                }
-            } catch (e) {
-                errorMessage = e.message;
+            const typingEl = document.getElementById(typingId);
+            if(typingEl) typingEl.remove();
+
+            if (data.candidates && data.candidates[0].content.parts[0].text) {
+                // نجاح!!
+                appendAIMessage(data.candidates[0].content.parts[0].text, 'ai');
+            } else if (data.error) {
+                // لو جوجل ردت بخطأ، هنظهره بشكل شيك
+                console.error("Google Error:", data.error);
+                appendAIMessage(`❌ جوجل بتقول: ${data.error.message}`, 'ai');
+            } else {
+                appendAIMessage("⚠️ الـ AI استلم بس مبعتش رد، جرب تاني يا فنان.", 'ai');
             }
-        }
 
-        const typingEl = document.getElementById(typingId);
-        if (typingEl) typingEl.remove();
-
-        if (finalResponse) {
-            appendAIMessage(finalResponse, 'ai');
-        } else {
-            appendAIMessage(`❌ يا فنان جوجل لسه معصلجة. بتقول: ${errorMessage}. جرب ريفريش للصفحة.`, 'ai');
+        } catch (err) {
+            console.error("Network Error:", err);
+            const typingEl = document.getElementById(typingId);
+            if(typingEl) typingEl.innerHTML = "🚨 عطل في الاتصال.. جرب ريفريش (F5)";
         }
     };
 
@@ -4309,9 +4302,7 @@ window.addGalleryComment = async (pid, url) => {
         box.scrollTop = box.scrollHeight;
     }
 
-    document.getElementById('ai-input').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') askZahraaAI();
-    });
+    document.getElementById('ai-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') askZahraaAI(); });
 </script>
   
 </body>
