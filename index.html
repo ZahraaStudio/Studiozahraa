@@ -4216,16 +4216,64 @@ window.addGalleryComment = async (pid, url) => {
 </div>
   
 <script>
-    // --- مساعد الزهراء الذكي - نسخة "تخطي أعطال جوجل" ---
+    // --- مساعد الزهراء الذكي: نسخة "كاشف الموديلات" النهائية ---
     const AI_KEY = "AIzaSyCo9Tl5FGVaLMNDcUQWjCjcYi5adW5lbX8"; 
     let isAiChatOpen = false;
+    let activeModel = null; // سيتم اكتشافه تلقائياً
 
     window.toggleAIChat = function() {
         isAiChatOpen = !isAiChatOpen;
         const chat = document.getElementById('ai-chat-container');
         if(chat) chat.style.display = isAiChatOpen ? 'flex' : 'none';
-        if(isAiChatOpen) document.getElementById('ai-input').focus();
+        if(isAiChatOpen) {
+            document.getElementById('ai-input').focus();
+            if(!activeModel) discoverModel(); // محاولة اكتشاف الموديل عند فتح الشات
+        }
     };
+
+    // دالة ذكية لاكتشاف الموديل الشغال في حسابك
+    async function discoverModel() {
+        console.log("جاري البحث عن الموديل المناسب لحسابك...");
+        // قائمة بالموديلات المحتملة بالترتيب
+        const potentialModels = [
+            "gemini-1.5-flash",
+            "gemini-1.5-flash-latest",
+            "gemini-pro",
+            "gemini-1.0-pro"
+        ];
+        
+        for (let m of potentialModels) {
+            try {
+                // جرب نكلم الموديل بأبسط رسالة ممكنة
+                const checkUrl = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${AI_KEY}`;
+                const res = await fetch(checkUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: "hi" }] }] })
+                });
+                if (res.ok) {
+                    activeModel = m;
+                    console.log("✅ تم اكتشاف الموديل الشغال: " + m);
+                    return m;
+                }
+            } catch (e) {}
+        }
+        // لو v1beta فشل، جرب v1
+        try {
+            const resV1 = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${AI_KEY}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contents: [{ parts: [{ text: "hi" }] }] })
+            });
+            if (resV1.ok) {
+                activeModel = "gemini-1.5-flash";
+                return "v1";
+            }
+        } catch (e) {}
+        
+        activeModel = "gemini-1.5-flash"; // Fallback
+        return activeModel;
+    }
 
     window.askZahraaAI = async function() {
         const input = document.getElementById('ai-input');
@@ -4236,57 +4284,43 @@ window.addGalleryComment = async (pid, url) => {
         input.value = '';
 
         const typingId = "typing-" + Date.now();
-        appendAIMessage("ثواني يا فنان بشوفلك الرد... 💡", 'ai', typingId);
+        appendAIMessage("ثواني يا فنان بجيبلك الرد... 💡", 'ai', typingId);
 
-        // قائمة الموديلات المتاحة حالياً في جوجل (بكل المسميات الممكنة)
-        const modelsToTry = [
-            "gemini-1.5-flash",
-            "gemini-1.5-pro",
-            "gemini-pro"
-        ];
+        try {
+            if(!activeModel) await discoverModel();
 
-        let finalResponse = null;
-        let lastError = "";
+            const productsInfo = (typeof allProducts !== 'undefined' && allProducts.length > 0) 
+                ? allProducts.map(p => `- ${p.name}: بـ ${p.price} ج`).slice(0, 10).join('\n')
+                : "";
 
-        // محاولة تجربة الموديلات واحد ورا التاني لحد ما واحد يشتغل
-        for (let modelName of modelsToTry) {
-            try {
-                // تجربة نسخة v1 المستقرة أولاً لأنها الأضمن
-                const url = `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${AI_KEY}`;
-                
-                const productsInfo = (typeof allProducts !== 'undefined' && allProducts.length > 0) 
-                    ? allProducts.map(p => `- ${p.name}: بـ ${p.price} ج`).slice(0, 10).join('\n')
-                    : "";
+            const prompt = `أنت مساعد استوديو الزهراء. رد بمصري عامي. المنتجات: ${productsInfo}. العميل بيقول: ${text}`;
 
-                const prompt = `أنت مساعد استوديو الزهراء. رد بمصري عامي. المنتجات: ${productsInfo}. العميل بيقول: ${text}`;
+            // استخدام الموديل اللي اكتشفناه
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:generateContent?key=${AI_KEY}`;
 
-                const response = await fetch(url, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                });
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
 
-                const data = await response.json();
+            const data = await response.json();
 
-                if (data.candidates && data.candidates[0].content.parts[0].text) {
-                    finalResponse = data.candidates[0].content.parts[0].text;
-                    break; // اشتغل! نخرج من اللفة
-                } else if (data.error) {
-                    lastError = data.error.message;
-                }
-            } catch (e) {
-                lastError = e.message;
+            const typingEl = document.getElementById(typingId);
+            if(typingEl) typingEl.remove();
+
+            if (data.candidates && data.candidates[0].content.parts[0].text) {
+                appendAIMessage(data.candidates[0].content.parts[0].text, 'ai');
+            } else if (data.error) {
+                appendAIMessage("❌ حصل عطل في سيرفر جوجل: " + data.error.message, 'ai');
+            } else {
+                appendAIMessage("⚠️ الـ AI مهنج، جرب كمان شوية.", 'ai');
             }
-        }
 
-        const typingEl = document.getElementById(typingId);
-        if(typingEl) typingEl.remove();
-
-        if (finalResponse) {
-            appendAIMessage(finalResponse, 'ai');
-        } else {
-            // لو كل المحاولات فشلت، هنطلع السبب الحقيقي للإصلاح
-            appendAIMessage("❌ لسه فيه مشكلة في الموديلات يا فنان. جوجل بتقول: " + lastError, 'ai');
+        } catch (err) {
+            console.error("AI Error:", err);
+            const typingEl = document.getElementById(typingId);
+            if(typingEl) typingEl.innerText = "🚨 خطأ في الاتصال، جرب ريفريش للصفحة.";
         }
     };
 
@@ -4301,7 +4335,7 @@ window.addGalleryComment = async (pid, url) => {
             color: ${isUser ? '#000' : '#fff'};
             align-self: ${isUser ? 'flex-end' : 'flex-start'};
             font-size: 13px; line-height: 1.5; border: ${isUser ? 'none' : '1px solid #333'};
-            white-space: pre-line; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            white-space: pre-line; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
             display: inline-block; width: fit-content;
         `;
         div.innerText = text;
