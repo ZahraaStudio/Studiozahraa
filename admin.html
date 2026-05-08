@@ -2357,6 +2357,43 @@ function renderGalleryContent() {
         }
     });
             }
+        // دالة حذف الألبوم النشط (المفتوح حالياً) بالكامل
+window.deleteActiveAlbum = async () => {
+    // التأكد من أن هناك ألبوم مختار فعلياً
+    if (!window.currentPreviewId) {
+        return zahraaToast('يرجى اختيار ألبوم أولاً', 'error');
+    }
+
+    if (confirm("⚠️ تحذير: هل أنت متأكد من حذف هذا الألبوم نهائياً؟ سيتم حذف جميع الصور والتعليقات المرتبطة به.")) {
+        try {
+            // الحذف من Firebase
+            await deleteDoc(doc(db, 'client_previews', window.currentPreviewId));
+            
+            zahraaToast('تم حذف الألبوم بنجاح ✅', 'success');
+
+            // إخفاء الهيدر وتصفير محتوى الشاشة بعد الحذف
+            const header = document.getElementById('preview-main-header');
+            const content = document.getElementById('preview-main-content');
+            
+            if (header) header.classList.add('hidden');
+            if (content) {
+                content.innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-zinc-600 py-20">
+                        <div class="text-5xl mb-4">📸</div>
+                        <p>تم حذف الألبوم.. اختر ألبوماً آخر من القائمة الجانبية</p>
+                    </div>`;
+            }
+
+            // تصفير المتغيرات لضمان عدم حدوث خطأ عند الضغط مرة أخرى
+            window.currentPreviewId = null;
+            window.currentPreviewData = null;
+
+        } catch (e) {
+            console.error("Error deleting album:", e);
+            alert("خطأ في الحذف: " + e.message);
+        }
+    }
+};
 
         window.showNotif = (t,type='success') => zahraaToast(t,type);
 
