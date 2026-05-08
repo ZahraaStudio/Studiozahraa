@@ -4164,63 +4164,62 @@ window.toggleAIChat = function() {
 
 // دالة إرسال الرسالة
 window.askZahraaAI = async function() {
-    console.log("تم الضغط على زرار الـ AI"); // للتأكد في الكونسول
-    
     const inputEl = document.getElementById('ai-input');
     const msg = inputEl.value.trim();
-    
     if (!msg) return;
 
-    // إظهار رسالة المستخدم
+    // 1. عرض رسالة المستخدم
     appendAIMessage(msg, 'user');
     inputEl.value = '';
 
-    // إظهار علامة التحميل
+    // 2. عرض علامة التفكير
     const typingId = 'ai-typing-' + Date.now();
     appendAIMessage('جاري التفكير... 🤔', 'ai', typingId);
 
     try {
-        // تجهيز بيانات المنتجات (مع حماية لو المصفوفة فاضية)
-        let productsInfo = "لا يوجد بيانات حالياً";
-        if (typeof allProducts !== 'undefined' && allProducts.length > 0) {
-            productsInfo = allProducts.map(p => {
-                // التأكد من وجود دالة effectivePrice أو حساب السعر يدوياً
-                let price = p.price || 0;
-                return `- ${p.name}: سعره ${price} ج، قسم ${p.category || 'عام'}`;
-            }).slice(0, 20).join('\n');
-        }
+        // تجهيز بيانات المنتجات بشكل مبسط جداً
+        let productsInfo = "المنتحات: " + allProducts.slice(0,10).map(p => p.name + " بـ " + p.price + "ج").join(", ");
 
-        const promptContext = `أنت مساعد ذكي لاستوديو الزهراء. رد بلهجة مصرية عامية فرفوشة. 
-        الزبون بيسأل: ${msg}. 
-        المنتجات اللي عندنا: ${productsInfo}. 
-        واتساب المحل: ${storeSettings.whatsapp1 || 'موجود في الموقع'}.`;
+        const promptContext = {
+            contents: [{
+                parts: [{
+                    text: `أنت مساعد ذكي لاستوديو الزهراء. رد باللهجة المصرية. الزبون بيسأل: ${msg}. معلوماتك: ${productsInfo}`
+                }]
+            }]
+        };
 
-        // الطلب من Gemini
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+        // 3. الاتصال بجوجل
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${AIzaSyAv2grSmse7Nl5M-HyQ2eH84R4ZIE4J3z0}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: promptContext }] }]
-            })
+            body: JSON.stringify(promptContext)
         });
 
         const data = await response.json();
-        
-        // حذف علامة التحميل
+
+        // 4. حذف علامة التفكير
         const typingEl = document.getElementById(typingId);
         if (typingEl) typingEl.remove();
 
+        // 5. تحليل الرد
+        if (data.error) {
+            // لو فيه مشكلة في المفتاح أو الحساب هيظهر هنا
+            console.error("Gemini Error:", data.error);
+            appendAIMessage("❌ فيه مشكلة في الـ API Key بتاع جوجل: " + data.error.message, 'ai');
+            return;
+        }
+
         if (data.candidates && data.candidates[0].content.parts[0].text) {
-            const aiResponse = data.candidates[0].content.parts[0].text;
+            let aiResponse = data.candidates[0].content.parts[0].text;
             appendAIMessage(aiResponse, 'ai');
         } else {
-            throw new Error("رد غير متوقع");
+            appendAIMessage("الـ AI مطلعش رد، جرب تبعت الرسالة تاني.", 'ai');
         }
 
     } catch (e) {
-        console.error("AI Error:", e);
+        console.error("General Error:", e);
         const typingEl = document.getElementById(typingId);
-        if (typingEl) typingEl.innerText = "معلش يا فنان، الشبكة مهنجة شوية. اسألني كمان دقيقة! 😅";
+        if (typingEl) typingEl.innerText = "حصلت مشكلة في الاتصال بالنت، جرب تاني.";
     }
 };
 
