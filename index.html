@@ -4216,63 +4216,123 @@ window.addGalleryComment = async (pid, url) => {
 </div>
   
 <script>
-    const AI_KEY = "AIzaSyAv2grSmse7Nl5M-HyQ2eH84R4ZIE4J3z0";
+    // 1. تعريف المتغيرات الأساسية (تأكد إنها في بداية السكريبت)
+    const AI_KEY = "AIzaSyAv2grSmse7Nl5M-HyQ2eH84R4ZIE4J3z0"; 
     let isAiChatOpen = false;
 
+    // 2. دالة فتح وقفل الشات
     window.toggleAIChat = function() {
+        const chatContainer = document.getElementById('ai-chat-container');
+        if (!chatContainer) return;
+        
         isAiChatOpen = !isAiChatOpen;
-        const chat = document.getElementById('ai-chat-container');
-        if(chat) chat.style.display = isAiChatOpen ? 'flex' : 'none';
+        chatContainer.style.display = isAiChatOpen ? 'flex' : 'none';
+        
+        if (isAiChatOpen) {
+            document.getElementById('ai-input')?.focus();
+        }
     };
+
+    // 3. الدالة الرئيسية للتحدث مع الـ AI
     window.askZahraaAI = async function() {
-    const input = document.getElementById('ai-input');
-    const text = input.value.trim();
-    if (!text) return;
+        const inputEl = document.getElementById('ai-input');
+        if (!inputEl) return;
+        
+        const text = inputEl.value.trim();
+        if (!text) return;
 
-    appendAIMessage(text, 'user');
-    input.value = '';
+        // إظهار رسالة المستخدم فوراً
+        appendAIMessage(text, 'user');
+        inputEl.value = '';
 
-    const typingId = "typing-" + Date.now();
-    appendAIMessage("ثواني يا فنان بجيبلك الرد... 💡", 'ai', typingId);
+        // إنشاء معرف فريد لرسالة "جاري التفكير"
+        const typingId = "typing-" + Date.now();
+        appendAIMessage("ثواني يا فنان بجيبلك الرد... 💡", 'ai', typingId);
 
-    try {
-        // تجميع معلومات المنتجات
-        const productsInfo = (typeof allProducts !== 'undefined' && allProducts.length > 0) 
-            ? allProducts.map(p => `- ${p.name}: بـ ${p.price} ج`).slice(0, 15).join('\n') 
-            : "جاري تحميل المنتجات...";
+        try {
+            // تجميع معلومات المنتجات (مع حماية لو المصفوفة مش موجودة)
+            let productsInfo = "";
+            if (typeof allProducts !== 'undefined' && allProducts.length > 0) {
+                productsInfo = allProducts.map(p => `- ${p.name}: بـ ${p.price} ج`).slice(0, 15).join('\n');
+            }
 
-        const prompt = `أنت مساعد استوديو الزهراء. رد بمصري عامي فرفوش. المنتجات: ${productsInfo}. العميل بيقول: ${text}`;
+            const prompt = `أنت مساعد استوديو الزهراء. رد بمصري عامي فرفوش. المنتجات: ${productsInfo}. العميل بيقول: ${text}`;
 
-        // التعديل هنا: رجعنا لـ v1beta عشان الموديل ده بيشتغل عليه
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${AI_KEY}`;
+            // الاتصال بجوجل (إصدار v1beta)
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${AI_KEY}`;
 
-        const response = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-            // حماية إضافية من الـ Service Worker
-            cache: "no-store"
-        });
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+                cache: "no-store" // لتخطي السيرفس وركر
+            });
 
-        const data = await response.json();
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error?.message || "فشل الاتصال");
+            }
 
-        if (data.error) {
-            throw new Error(data.error.message);
+            const data = await response.json();
+            const aiText = data.candidates[0].content.parts[0].text;
+
+            // مسح علامة التفكير ووضع الرد
+            const typingEl = document.getElementById(typingId);
+            if (typingEl) typingEl.remove();
+            
+            appendAIMessage(aiText, 'ai');
+
+        } catch (err) {
+            console.error("AI Error Details:", err);
+            const typingEl = document.getElementById(typingId);
+            if (typingEl) {
+                typingEl.innerHTML = "❌ حصل عطل: " + err.message;
+                typingEl.style.color = "#ff4d4d";
+            }
         }
+    };
 
-        const aiText = data.candidates[0].content.parts[0].text;
+    // 4. دالة إضافة الرسائل للشاشة (مهمة جداً)
+    function appendAIMessage(text, sender, id = null) {
+        const box = document.getElementById('ai-messages-box');
+        if (!box) return;
 
-        document.getElementById(typingId).remove();
-        appendAIMessage(aiText, 'ai');
-
-    } catch (err) {
-        console.error("AI Error:", err);
-        const typingEl = document.getElementById(typingId);
-        if(typingEl) {
-            typingEl.innerHTML = "❌ حصل عطل: " + err.message;
-        }
+        const div = document.createElement('div');
+        if (id) div.id = id;
+        
+        const isUser = sender === 'user';
+        div.style.cssText = `
+            max-width: 85%;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            border-radius: ${isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px'};
+            background: ${isUser ? 'linear-gradient(135deg,#d4af37,#f0c94e)' : '#1a1a1a'};
+            color: ${isUser ? '#000' : '#fff'};
+            align-self: ${isUser ? 'flex-end' : 'flex-start'};
+            font-size: 13px;
+            line-height: 1.5;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border: ${isUser ? 'none' : '1px solid #333'};
+            white-space: pre-line;
+            display: block;
+            width: fit-content;
+        `;
+        div.innerText = text;
+        box.appendChild(div);
+        
+        // النزول لآخر رسالة
+        box.scrollTop = box.scrollHeight;
     }
-};
+
+    // 5. تفعيل زر Enter للإرسال
+    document.addEventListener('DOMContentLoaded', () => {
+        const aiInput = document.getElementById('ai-input');
+        if (aiInput) {
+            aiInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') askZahraaAI();
+            });
+        }
+    });
 </script>
   
 </body>
