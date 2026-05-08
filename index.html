@@ -4150,107 +4150,76 @@ window.addGalleryComment = async (pid, url) => {
     zahraaToast('تم إرسال ملاحظتك بنجاح ✓');
 };
 
-// حط المفتاح بتاعك هنا (أنا حطيتهولك جاهز)
 const GEMINI_API_KEY = "AIzaSyAv2grSmse7Nl5M-HyQ2eH84R4ZIE4J3z0"; 
 
-window.askZahraaAI = async function() {
+let aiChatOpen = false;
+
+// دالة فتح وقفل الشات
+window.toggleAIChat = function() {
+    aiChatOpen = !aiChatOpen;
+    const container = document.getElementById('ai-chat-container');
+    if(container) container.style.display = aiChatOpen ? 'flex' : 'none';
+};
+  window.askZahraaAI = async function() {
     const inputEl = document.getElementById('ai-input');
     const msg = inputEl.value.trim();
     if (!msg) return;
 
-    // 1. عرض رسالة العميل
     appendAIMessage(msg, 'user');
     inputEl.value = '';
 
-    // 2. إظهار علامة التفكير
     const typingId = 'ai-typing-' + Date.now();
-    appendAIMessage('ثواني يا فنان بفكرلك في رد... 🤔', 'ai', typingId);
+    appendAIMessage('بجيبلك الرد من جوجل... ⚡', 'ai', typingId);
 
     try {
-        // 3. تجهيز بيانات المحل عشان الـ AI يعرفها
-        const productsInfo = typeof allProducts !== 'undefined' ? 
-            allProducts.map(p => `- ${p.name}: سعره ${p.price} ج، قسم ${p.category || 'عام'}`).slice(0, 25).join('\n') : "";
+        // مفتاحك اللي بعتهولي
+        const key = "AIzaSyAv2grSmse7Nl5M-HyQ2eH84R4ZIE4J3z0"; 
+        
+        // تجهيز بيانات بسيطة جداً للتجربة
+        const cleanMsg = msg.replace(/['"]/g, ""); // تنظيف الرسالة من أي علامات تعيق الكود
 
-        const whatsapp = storeSettings.whatsapp1 || "موجود في الموقع";
-        const giftPrice = storeSettings.giftPrice || "50";
-
-        // 4. بناء الـ Context (شخصية الـ AI)
-        const promptContext = `
-            أنت "مساعد الزهراء الذكي". دي معلومات استوديو الزهراء:
-            - المنتجات المتاحة:
-            ${productsInfo}
-            - رقم الواتساب للاستفسارات: ${whatsapp}
-            - سعر تغليف الهدايا: ${giftPrice} جنيه.
-
-            مهمتك:
-            1. رد بلهجة مصرية (عامية) ودودة وفرفوشة جداً.
-            2. لو العميل سأل عن سعر حاجة موجودة قولها له بوضوح.
-            3. لو سأل عن حاجة مش عندنا، قوله: "للأسف دي مش عندنا حالياً يا فنان، بس ممكن تكلمنا واتساب على ${whatsapp} ونشوف لو نقدر نوفرها لك مخصوص".
-            4. شجعه يشتري أو يطلب هدية.
-            5. الزبون بيسأل: "${msg}"
-        `;
-
-        const payload = {
-            contents: [{ parts: [{ text: promptContext }] }]
+        const requestBody = {
+            "contents": [
+                {
+                    "parts": [
+                        {"text": "أنت مساعد ذكي لاستوديو الزهراء. رد باللهجة المصرية على الزبون. الزبون بيقول: " + cleanMsg}
+                    ]
+                }
+            ]
         };
 
-        // 5. الاتصال بسيرفر جوجل
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+        // رابط v1beta هو الأكثر استقراراً حالياً للمتصفحات
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
 
-        const response = await fetch(apiUrl, {
+        const response = await fetch(url, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(requestBody)
         });
 
         const data = await response.json();
 
-        // 6. مسح علامة التفكير
+        // مسح علامة التفكير
         const typingEl = document.getElementById(typingId);
         if (typingEl) typingEl.remove();
 
-        // 7. عرض الرد
         if (data.candidates && data.candidates[0].content.parts[0].text) {
-            let aiResponse = data.candidates[0].content.parts[0].text;
+            const aiResponse = data.candidates[0].content.parts[0].text;
             appendAIMessage(aiResponse, 'ai');
+        } else if (data.error) {
+            appendAIMessage("❌ جوجل بتقول فيه غلط في المفتاح: " + data.error.message, 'ai');
         } else {
-            throw new Error("جوجل استلمت الرسالة بس الـ AI مطلعش رد.");
+            appendAIMessage("⚠️ جوجل استلمت بس مبعتتش كلام. جرب كلمة تانية.", 'ai');
         }
 
     } catch (e) {
-        console.error("AI Error:", e);
+        console.error("Critical Error:", e);
         const typingEl = document.getElementById(typingId);
         if (typingEl) {
-            typingEl.innerText = "❌ معلش حصل عطل فني: " + e.message;
+            typingEl.innerText = "🚨 مشكلة اتصال: لازم ترفع الموقع على GitHub Pages عشان يشتغل!";
+            typingEl.style.background = "#441111";
         }
     }
 };
-
-// دالة إضافة الرسائل للشاشة
-function appendAIMessage(text, sender, id = null) {
-    const box = document.getElementById('ai-messages-box');
-    if (!box) return;
-    
-    const msgDiv = document.createElement('div');
-    if(id) msgDiv.id = id;
-    
-    const isUser = sender === 'user';
-    msgDiv.style.cssText = `
-        max-width: 85%;
-        padding: 10px 15px;
-        border-radius: ${isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px'};
-        background: ${isUser ? 'linear-gradient(135deg,#d4af37,#f0c94e)' : '#1e1e1e'};
-        color: ${isUser ? '#000' : '#fff'};
-        font-size: 13px;
-        align-self: ${isUser ? 'flex-end' : 'flex-start'};
-        line-height: 1.5;
-        margin-bottom: 8px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    `;
-    msgDiv.innerText = text;
-    box.appendChild(msgDiv);
-    box.scrollTop = box.scrollHeight;
-}
   
 </script>
 
