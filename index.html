@@ -238,14 +238,9 @@
         <div style="width: 0%; height: 100%; background: #d4af37; animation: loadBar 3s forwards;"></div>
     </div>
 </div>
-  <style>
+
+<style>
 @keyframes loadBar { 0% { width: 0%; } 100% { width: 100%; } }
-    /* انيميشن لوجو التحميل لمعمل الصور */
-    @keyframes ai-pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.7; } 100% { transform: scale(1); opacity: 1; } }
-    .ai-loading-logo { animation: ai-pulse 1.5s infinite ease-in-out; }
-    .hidden { display: none !important; }
-    .chat-choice-btn { transition: all 0.3s; border: 1px solid #333; }
-    .chat-choice-btn:hover { border-color: #d4af37; background: rgba(212,175,55,0.1); }
 </style>
   <!-- Custom Confirm Modal -->
   <div id="custom-confirm" class="modal fixed inset-0 flex items-center justify-center p-4">
@@ -663,38 +658,6 @@
         <div id="gallery-grid" class="grid grid-cols-1 md:grid-cols-2 gap-8 select-none" style="-webkit-touch-callout: none;"></div>
     </div>
 </div>
-    <!-- معمل الزهراء الذكي AI -->
-    <section id="ai-lab" class="container mx-auto px-4 py-10">
-        <div class="bg-zinc-900 border border-gold-text/20 p-8 rounded-3xl text-center relative">
-            <div class="absolute top-4 left-4"><span class="points-badge" id="ai-usage-text">متبقي: 5 صور</span></div>
-            <h2 class="text-3xl font-bold gold-text mb-2">✨ معمل الزهراء الذكي</h2>
-            <p class="text-zinc-400 text-sm mb-8">حسن جودة صورتك القديمة أو الباهتة فوراً مجاناً</p>
-
-            <!-- صندوق الرفع -->
-            <div id="ai-upload-ui">
-                <input type="file" id="ai-file-input" accept="image/*" class="hidden" onchange="startImageEnhance(this)">
-                <button onclick="handleAiClick()" class="gold-bg text-black px-10 py-4 rounded-2xl font-bold text-lg hover:scale-105 transition-transform">📸 ارفع الصورة لتحسينها</button>
-            </div>
-
-            <!-- شاشة التحميل الدعائية للمعمل -->
-            <div id="ai-loading-screen" class="hidden flex-col items-center justify-center py-10">
-                <img src="icon-512.png" class="w-24 h-24 ai-loading-logo mb-4">
-                <p class="gold-text font-bold animate-pulse">جاري سحر الذكاء الاصطناعي...</p>
-            </div>
-
-            <!-- عرض النتيجة -->
-            <div id="ai-result-ui" class="hidden mt-8">
-                <div class="grid grid-cols-2 gap-4 max-w-2xl mx-auto mb-6">
-                    <div><p class="text-[10px] text-zinc-500 mb-1">قبل</p><img id="ai-img-before" class="rounded-lg opacity-50"></div>
-                    <div><p class="text-[10px] text-green-500 mb-1">بعد التحسين ✨</p><img id="ai-img-after" class="rounded-lg border-2 border-green-500"></div>
-                </div>
-                <div class="flex flex-wrap justify-center gap-3">
-                    <a id="ai-download-link" href="#" download="Zahraa-Enhanced.jpg" class="bg-green-600 text-white px-6 py-2 rounded-xl font-bold text-sm">📥 تحميل الصورة</a>
-                    <button onclick="orderAiPrint()" class="bg-white text-black px-6 py-2 rounded-xl font-bold text-sm">🛍️ اطلب طباعتها</button>
-                </div>
-            </div>
-        </div>
-    </section>
   </main>
 
   <!-- Product Modal -->
@@ -3973,20 +3936,18 @@ function moveAdSlide(dir) {
             </div>
             <button onclick="handleChatToggle()" style="background:none; border:none; color:#000; font-size:22px; cursor:pointer;">✕</button>
         </div>
-        <!-- Messages Area -->   
+        <!-- Messages Area -->
         <div id="chat-scroll-area" style="flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:10px; background:#000;">
-            <!-- شاشة الاختيار -->
-            <div id="chat-selection-screen" style="text-align:center; padding-top:40px;">
-                <p style="color:#d4af37; font-weight:bold; margin-bottom:20px; font-size:14px;">أهلاً بك! كيف يمكننا مساعدتك؟</p>
-                <div style="display:flex; flex-direction:column; gap:12px; align-items:center;">
-                    <button onclick="setChatMode('admin')" class="chat-choice-btn" style="width:85%; background:#1a1a1a; color:#fff; padding:12px; border-radius:15px; cursor:pointer; font-weight:bold;">👤 خدمة العملاء (بشري)</button>
-                    <button onclick="setChatMode('ai')" class="chat-choice-btn" style="width:85%; background:linear-gradient(135deg,#d4af37,#f0c94e); color:#000; padding:12px; border-radius:15px; cursor:pointer; font-weight:bold;">🤖 مساعد الزهراء الذكي AI</button>
-                </div>
-                <p style="color:#555; font-size:10px; margin-top:20px;">المساعد الذكي متاح 24 ساعة للرد على استفساراتك</p>
-            </div>
-            <!-- مكان الرسائل الحقيقي -->
-            <div id="chat-messages-container" class="hidden" style="display:flex; flex-direction:column; gap:10px;"></div>
+            <div style="text-align:center; color:#555; font-size:12px; margin-top:50px;">جاري الاتصال...</div>
         </div>
+        <!-- Input Area -->
+        <div style="padding:15px; background:#111; border-top:1px solid #222; display:flex; gap:8px;">
+            <button onclick="sendChatImage()" style="background:none; border:none; color:#d4af37; font-size:24px; cursor:pointer;">📎</button>
+            <input id="chat-msg-input" type="text" placeholder="اكتب رسالتك..." style="flex:1; background:#1a1a1a; border:1px solid #333; color:#fff; padding:10px 15px; border-radius:15px; outline:none;">
+            <button onclick="sendChatMsg()" style="background:#d4af37; color:#000; width:40px; height:40px; border-radius:10px; border:none; font-weight:bold;">↑</button>
+        </div>
+    </div>
+</div>
 
 <script>
     // التأكد من تحميل البيانات والارتباط بالفايربيز
@@ -4188,8 +4149,7 @@ window.addGalleryComment = async (pid, url) => {
     });
     zahraaToast('تم إرسال ملاحظتك بنجاح ✓');
 };
-
-‏</script>
+</script>
 
 </body>
 </html>
