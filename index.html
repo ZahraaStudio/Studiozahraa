@@ -4216,123 +4216,104 @@ window.addGalleryComment = async (pid, url) => {
 </div>
   
 <script>
-    // 1. تعريف المتغيرات الأساسية (تأكد إنها في بداية السكريبت)
+    // --- برمجة الـ AI - النسخة الذكية المتوافقة مع تحديثات جوجل 2024 ---
     const AI_KEY = "AIzaSyAv2grSmse7Nl5M-HyQ2eH84R4ZIE4J3z0"; 
     let isAiChatOpen = false;
 
-    // 2. دالة فتح وقفل الشات
     window.toggleAIChat = function() {
-        const chatContainer = document.getElementById('ai-chat-container');
-        if (!chatContainer) return;
-        
         isAiChatOpen = !isAiChatOpen;
-        chatContainer.style.display = isAiChatOpen ? 'flex' : 'none';
-        
-        if (isAiChatOpen) {
-            document.getElementById('ai-input')?.focus();
-        }
+        const chat = document.getElementById('ai-chat-container');
+        if(chat) chat.style.display = isAiChatOpen ? 'flex' : 'none';
+        if(isAiChatOpen) document.getElementById('ai-input').focus();
     };
 
-    // 3. الدالة الرئيسية للتحدث مع الـ AI
     window.askZahraaAI = async function() {
-        const inputEl = document.getElementById('ai-input');
-        if (!inputEl) return;
-        
-        const text = inputEl.value.trim();
+        const input = document.getElementById('ai-input');
+        const text = input.value.trim();
         if (!text) return;
 
-        // إظهار رسالة المستخدم فوراً
         appendAIMessage(text, 'user');
-        inputEl.value = '';
+        input.value = '';
 
-        // إنشاء معرف فريد لرسالة "جاري التفكير"
         const typingId = "typing-" + Date.now();
         appendAIMessage("ثواني يا فنان بجيبلك الرد... 💡", 'ai', typingId);
 
-        try {
-            // تجميع معلومات المنتجات (مع حماية لو المصفوفة مش موجودة)
-            let productsInfo = "";
-            if (typeof allProducts !== 'undefined' && allProducts.length > 0) {
-                productsInfo = allProducts.map(p => `- ${p.name}: بـ ${p.price} ج`).slice(0, 15).join('\n');
-            }
+        // قائمة بالموديلات اللي هنجربها بالترتيب لو واحد فشل
+        const modelsToTry = [
+            { ver: 'v1beta', name: 'gemini-1.5-flash-latest' },
+            { ver: 'v1beta', name: 'gemini-1.5-flash' },
+            { ver: 'v1beta', name: 'gemini-pro' }
+        ];
 
-            const prompt = `أنت مساعد استوديو الزهراء. رد بمصري عامي فرفوش. المنتجات: ${productsInfo}. العميل بيقول: ${text}`;
+        let success = false;
+        
+        // تجهيز سياق المنتجات
+        const productsInfo = (typeof allProducts !== 'undefined' && allProducts.length > 0) 
+            ? allProducts.map(p => `- ${p.name}: بـ ${p.price} ج`).slice(0, 10).join('\n')
+            : "منتجات استوديو الزهراء المتميزة";
 
-            // الاتصال بجوجل (إصدار v1beta)
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${AI_KEY}`;
+        const prompt = `أنت مساعد استوديو الزهراء. رد بمصري عامي فرفوش. معلوماتك: ${productsInfo}. العميل بيقول: ${text}`;
 
-            const response = await fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-                cache: "no-store" // لتخطي السيرفس وركر
-            });
-
-            if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.error?.message || "فشل الاتصال");
-            }
-
-            const data = await response.json();
-            const aiText = data.candidates[0].content.parts[0].text;
-
-            // مسح علامة التفكير ووضع الرد
-            const typingEl = document.getElementById(typingId);
-            if (typingEl) typingEl.remove();
+        for (let model of modelsToTry) {
+            if (success) break;
             
-            appendAIMessage(aiText, 'ai');
+            try {
+                const url = `https://generativelanguage.googleapis.com/${model.ver}/models/${model.name}:generateContent?key=${AI_KEY}`;
+                
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }]
+                    }),
+                    cache: "no-store" 
+                });
 
-        } catch (err) {
-            console.error("AI Error Details:", err);
+                const data = await response.json();
+
+                if (data.candidates && data.candidates[0].content.parts[0].text) {
+                    const aiText = data.candidates[0].content.parts[0].text;
+                    const typingEl = document.getElementById(typingId);
+                    if(typingEl) typingEl.remove();
+                    appendAIMessage(aiText, 'ai');
+                    success = true;
+                }
+            } catch (err) {
+                console.warn(`فشل الموديل ${model.name}, بنجرب اللي بعده...`);
+            }
+        }
+
+        if (!success) {
             const typingEl = document.getElementById(typingId);
-            if (typingEl) {
-                typingEl.innerHTML = "❌ حصل عطل: " + err.message;
+            if(typingEl) {
+                typingEl.innerHTML = "❌ معلش يا فنان، فيه ضغط كبير على سيرفرات جوجل دلوقتي. جرب كمان دقيقة أو ريفريش للصفحة.";
                 typingEl.style.color = "#ff4d4d";
             }
         }
     };
 
-    // 4. دالة إضافة الرسائل للشاشة (مهمة جداً)
     function appendAIMessage(text, sender, id = null) {
         const box = document.getElementById('ai-messages-box');
-        if (!box) return;
-
         const div = document.createElement('div');
-        if (id) div.id = id;
-        
+        if(id) div.id = id;
         const isUser = sender === 'user';
         div.style.cssText = `
-            max-width: 85%;
-            padding: 12px 16px;
-            margin-bottom: 8px;
-            border-radius: ${isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px'};
+            max-width: 85%; padding: 12px 16px; margin-bottom: 8px; border-radius: 15px;
             background: ${isUser ? 'linear-gradient(135deg,#d4af37,#f0c94e)' : '#1a1a1a'};
             color: ${isUser ? '#000' : '#fff'};
             align-self: ${isUser ? 'flex-end' : 'flex-start'};
-            font-size: 13px;
-            line-height: 1.5;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            border: ${isUser ? 'none' : '1px solid #333'};
-            white-space: pre-line;
-            display: block;
-            width: fit-content;
+            font-size: 13px; line-height: 1.5; border: ${isUser ? 'none' : '1px solid #333'};
+            white-space: pre-line; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         `;
         div.innerText = text;
         box.appendChild(div);
-        
-        // النزول لآخر رسالة
         box.scrollTop = box.scrollHeight;
     }
 
-    // 5. تفعيل زر Enter للإرسال
-    document.addEventListener('DOMContentLoaded', () => {
-        const aiInput = document.getElementById('ai-input');
-        if (aiInput) {
-            aiInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') askZahraaAI();
-            });
-        }
+    document.getElementById('ai-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') askZahraaAI();
     });
+</script>
 </script>
   
 </body>
