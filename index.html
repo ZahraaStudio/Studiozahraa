@@ -4150,102 +4150,77 @@ window.addGalleryComment = async (pid, url) => {
     zahraaToast('تم إرسال ملاحظتك بنجاح ✓');
 };
 
-  let aiChatOpen = false;
-
-function toggleAIChat() {
-    aiChatOpen = !aiChatOpen;
-    document.getElementById('ai-chat-container').style.display = aiChatOpen ? 'flex' : 'none';
-}
+  // حط المفتاح بتاعك هنا اللي جبته من جوجل
+const GEMINI_API_KEY = "حط_الـ_API_KEY_هنا"; 
 
 async function askZahraaAI() {
     const inputEl = document.getElementById('ai-input');
     const msg = inputEl.value.trim();
     if (!msg) return;
 
-    // إضافة رسالة المستخدم للشاشة
+    if (GEMINI_API_KEY === "AIzaSyAv2grSmse7Nl5M-HyQ2eH84R4ZIE4J3z0") {
+        zahraaToast("لازم تحط الـ API Key الأول يا فنان عشان الـ AI يشتغل!", "error");
+        return;
+    }
+
     appendAIMessage(msg, 'user');
     inputEl.value = '';
 
-    // إظهار علامة "جاري التفكير"
     const typingId = 'ai-typing-' + Date.now();
     appendAIMessage('جاري التفكير... 🤔', 'ai', typingId);
 
     try {
-        // تجهيز بيانات المنتجات لتحويلها لنص يفهمه الـ AI
+        // 1. تجميع بيانات المنتجات الحقيقية من متجر الزهراء
         const productsInfo = allProducts.map(p => 
-            `- منتج: ${p.name}, سعره: ${effectivePrice(p)} جنيه, قسم: ${p.category}, كوده: ${p.code || 'غير متوفر'}`
-        ).join('\n');
+            `- ${p.name}: سعره ${effectivePrice(p)} ج، قسم ${p.category || 'عام'}${p.code ? ' كوده ' + p.code : ''}`
+        ).slice(0, 30).join('\n'); // هناخد أول 30 منتج عشان السرعة
 
-        const storeInfo = `
-            اسم المحل: استوديو الزهراء (ZAHRAA STUDIO).
-            رقم الواتساب: ${storeSettings.whatsapp1}.
-            سعر تغليف الهدايا: ${storeSettings.giftPrice} جنيه.
-            العروض المتاحة حالياً: ${storeSettings.dailyOffersTitle} و ${storeSettings.weeklyOffersTitle}.
-        `;
-
-        // التعليمات (System Prompt) لضبط الشخصية واللهجة
-        const systemPrompt = `
-            أنت "مساعد الزهراء الذكي"، تعمل في استوديو الزهراء للتصوير والتابلوهات.
-            قواعدك الصارمة:
-            1. الرد حصراً باللهجة المصرية العامية (القاهرية/الشرقاوية) بطريقة ودودة وفرفوشة.
-            2. استخدم معلومات المنتجات دي للرد على الأسعار والاستفسارات:
+        // 2. تجهيز التعليمات للـ AI
+        const promptContext = `
+            أنت المساعد الذكي لاستوديو الزهراء (Zahraa Studio).
+            مهمتك الرد على الزبائن باللهجة المصرية (العامية) بطريقة محترمة وفرفوشة.
+            الزبون بيسأل عن: "${msg}"
+            
+            معلومات المحل:
+            - واتساب: ${storeSettings.whatsapp1}
+            - سعر التغليف: ${storeSettings.giftPrice} ج
+            
+            المنتجات المتاحة حالياً:
             ${productsInfo}
-            ${storeInfo}
-            3. لو العميل سأل عن حاجة مش موجودة، قوله يكلم الإدارة واتساب على رقم ${storeSettings.whatsapp1}.
-            4. شجع العملاء يشتروا ويستفيدوا من الخصومات.
-            5. لو سألك عن "هدية" اقترح عليه تابلوهات أو هدايا من القائمة بناءً على السعر اللي يطلبه.
+            
+            قواعد الرد:
+            1. رد بلهجة مصرية عامية 100%.
+            2. لو سأل عن سعر حاجة موجودة قولها له.
+            3. لو سأل عن حاجة مش عندنا، قوله "مش موجودة حالياً بس ممكن تسأل الإدارة واتساب على رقم ${storeSettings.whatsapp1}".
+            4. خلي ردك قصير ومفيد.
         `;
 
-        // استدعاء API (هنا بنستخدم OpenAI كمثال، وممكن نغير لـ Gemini)
-        // ملاحظة: في النسخة الحقيقية يفضل وجود Proxy لحماية الـ Key
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        // 3. الاتصال بـ Google Gemini API
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'AIzaSyAv2grSmse7Nl5M-HyQ2eH84R4ZIE4J3z0' // هنحتاج نحط الـ Key هنا
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                model: "gpt-3.5-turbo",
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: msg }
-                ]
+                contents: [{ parts: [{ text: promptContext }] }]
             })
         });
 
         const data = await response.json();
-        const aiResponse = data.choices[0].message.content;
+        
+        if (data.error) throw new Error(data.error.message);
 
-        // مسح علامة التفكير ووضع الرد
-        document.getElementById(typingId).remove();
+        const aiResponse = data.candidates[0].content.parts[0].text;
+
+        // مسح كلمة جاري التفكير ووضع الرد
+        const typingEl = document.getElementById(typingId);
+        if(typingEl) typingEl.remove();
+        
         appendAIMessage(aiResponse, 'ai');
 
     } catch (e) {
         console.error("AI Error:", e);
-        document.getElementById(typingId).innerText = "معلش حصلت مشكلة في الاتصال، اسألني تاني كمان شوية يا فنان! 😅";
+        const typingEl = document.getElementById(typingId);
+        if(typingEl) typingEl.innerText = "حصل مشكلة في النت، جرب تسألني تاني يا فنان! 😅";
     }
-}
-
-function appendAIMessage(text, sender, id = null) {
-    const box = document.getElementById('ai-messages-box');
-    const msgDiv = document.createElement('div');
-    if(id) msgDiv.id = id;
-    
-    const isUser = sender === 'user';
-    msgDiv.style.cssText = `
-        max-width: 85%;
-        padding: 10px 15px;
-        border-radius: ${isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px'};
-        background: ${isUser ? 'linear-gradient(135deg,#d4af37,#f0c94e)' : '#1e1e1e'};
-        color: ${isUser ? '#000' : '#fff'};
-        font-size: 13px;
-        align-self: ${isUser ? 'flex-end' : 'flex-start'};
-        line-height: 1.5;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    `;
-    msgDiv.innerText = text;
-    box.appendChild(msgDiv);
-    box.scrollTop = box.scrollHeight;
 }
   
 </script>
