@@ -4216,7 +4216,7 @@ window.addGalleryComment = async (pid, url) => {
 </div>
   
 <script>
-    // --- مساعد الزهراء الذكي (النسخة الذكية المحلية - لا تحتاج API Key) ---
+    // --- مساعد الزهراء الذكي (النسخة الاحترافية - محاكي الـ AI الحقيقي) ---
     let isAiChatOpen = false;
 
     window.toggleAIChat = function() {
@@ -4228,70 +4228,91 @@ window.addGalleryComment = async (pid, url) => {
 
     window.askZahraaAI = function() {
         const input = document.getElementById('ai-input');
-        const text = input.value.trim().toLowerCase();
-        if (!text) return;
+        const originalText = input.value.trim();
+        const text = originalText.toLowerCase();
+        if (!originalText) return;
 
-        // 1. عرض رسالة المستخدم
-        appendAIMessage(input.value, 'user');
+        appendAIMessage(originalText, 'user');
         input.value = '';
 
-        // 2. إظهار "جاري التفكير" لثانية واحدة (عشان العميل يحس إنه بيكلم حد)
+        // محاكاة وقت التفكير (عشان يبان طبيعي)
         const typingId = "typing-" + Date.now();
-        appendAIMessage("ثواني يا فنان... 🤔", 'ai', typingId);
+        appendAIMessage("بكتبلك الرد... ✍️", 'ai', typingId);
 
         setTimeout(() => {
-            document.getElementById(typingId).remove();
+            const typingEl = document.getElementById(typingId);
+            if(typingEl) typingEl.remove();
             
-            // 3. منطق الرد الذكي (Smart Matching)
-            let response = generateSmartResponse(text);
+            let response = generateProResponse(text);
             appendAIMessage(response, 'ai');
-        }, 800);
+        }, 1200);
     };
 
-    function generateSmartResponse(msg) {
+    function generateProResponse(msg) {
         const whatsapp = storeSettings.whatsapp1 || "01204194540";
         const gift = storeSettings.giftPrice || "50";
         
-        // كلمات البحث
-        if (msg.includes("بكام") || msg.includes("سعر") || msg.includes("اسعار")) {
-            // محاولة البحث عن منتج محدد في القائمة
+        // 1. منطق "العروض والخصومات"
+        if (msg.includes("عرض") || msg.includes("عروض") || msg.includes("خصم") || msg.includes("تخفيض") || msg.includes("رخيص")) {
+            let discounted = allProducts.filter(p => (p.oldPrice > p.price) || p.isDailyOffer || p.isWeeklyOffer);
+            if (discounted.length > 0) {
+                let p = discounted[Math.floor(Math.random() * discounted.length)];
+                const responses = [
+                    `يا بختك يا فنان! عندنا عروض تفتح النفس دلوقتي، خصوصاً على "${p.name}" سعره نازل لـ ${p.price} ج بس! 🔥`,
+                    `الحق العروض قبل ما تخلص! عندنا خصومات جامدة في قسم العروض، وأرشحلك "${p.name}" عليه خصم ممتاز. 😉`,
+                    `أيوة طبعاً في عروض! بص على "${p.name}" مثلاً بـ ${p.price} ج بدل ${p.oldPrice || (p.price + 50)} ج. في حاجات تانية كتير في صفحة المتجر.`
+                ];
+                return responses[Math.floor(Math.random() * responses.length)];
+            }
+            return "دلوقتي بنجهز عروض جديدة هتنزل قريب جداً! بس داماً في منتجات أسعارها لقطة في المتجر، بص بصه كدة مش هتندم. 😊";
+        }
+
+        // 2. منطق "الأسعار" وبحث المنتجات
+        if (msg.includes("بكام") || msg.includes("سعر") || msg.includes("اسعار") || msg.includes("تكلفة") || msg.includes("price")) {
             let found = allProducts.filter(p => msg.includes(p.name.toLowerCase()));
             if (found.length > 0) {
-                return `عنيا ليك يا فنان، ${found[0].name} سعره حالياً ${found[0].price} ج. تحب أضيفهولك للسلة؟ 😊`;
+                return `عنيا ليك يا ذوق، "${found[0].name}" سعره حالياً ${found[0].price} ج. لو محتاج منه كمية أو مقاس معين قولي! 🖼️`;
             }
-            return `الأسعار عندنا بتبدأ من مبالغ بسيطة جداً، وأغلب التابلوهات موجودة في قسم المتجر. قولي بتدور على تابلوه مقاس كام أو شكل إيه وأنا أقولك سعره بالظبط!`;
+            return `الأسعار عندنا متنوعة جداً عشان تناسب الكل. التابلوهات بتبدأ من مبالغ بسيطة، وتقدر تشوف السعر بالظبط تحت كل صورة في المتجر. قولي بتدور على حاجة معينة؟`;
         }
 
-        if (msg.includes("واتساب") || msg.includes("رقم") || msg.includes("تواصل") || msg.includes("تلفون")) {
-            return `تقدر تنورنا وتكلمنا واتساب مباشرة على الرقم ده: ${whatsapp} .. إحنا موجودين طول اليوم للرد عليك! 📱`;
+        // 3. منطق "الهدايا والتغليف"
+        if (msg.includes("هدية") || msg.includes("هدايا") || msg.includes("تغليف") || msg.includes("مناسبة")) {
+            return `لو بتفكر في هدية فإنت جيت المكان الصح! 🎁 بنقدم تغليف "شيك جداً" بـ ${gift} ج بس. وممكن نبعتها "هدية مفاجأة" للي تحبه ونوصلها لحد بابه من غير ما يعرف السعر. إيه رأيك؟`;
         }
 
-        if (msg.includes("هدية") || msg.includes("هدايا") || msg.includes("تغليف")) {
-            return `عندنا خدمة تغليف هدايا ملكي بـ ${gift} ج بس! 🎁 وممكن كمان تبعت الطلب كهدية مفاجأة لشخص تاني واحنا نوصلها له من غير ما يعرف السعر.`;
+        // 4. منطق "المكان والعنوان"
+        if (msg.includes("فين") || msg.includes("عنوان") || msg.includes("مكان") || msg.includes("روحت فين") || msg.includes("اللوكيشن")) {
+            return `تنورنا في أي وقت! 📍 مكاننا في: بصبيح - ههيا - الشرقية. لو عاوز "اللوكيشن" بالظبط ابعتلنا رسالة على الواتساب وهبعتهولك فوراً.`;
         }
 
-        if (msg.includes("عرض") || msg.includes("خصم") || msg.includes("تخفيض")) {
-            let discounted = allProducts.filter(p => p.oldPrice > p.price);
-            if (discounted.length > 0) {
-                return `يا بختك! عندنا عروض قوية جداً دلوقتي على ${discounted[0].name} ومنتجات تانية كتير. بص بصه على قسم "عروض اليوم" في المتجر. 🔥`;
-            }
-            return `عندنا عروض متجددة دايماً! تابع قسم العروض في الصفحة الرئيسية عشان تلحق الخصومات أول بأول.`;
+        // 5. منطق "التواصل والواتساب"
+        if (msg.includes("واتساب") || msg.includes("رقم") || msg.includes("تلفون") || msg.includes("اكلمكم") || msg.includes("تواصل")) {
+            return `أسهل طريقة تكلمنا بيها هي الواتساب على الرقم ده: ${whatsapp} .. هنرد عليك في ثواني ونظبط معاك كل اللي محتاجه! 📱`;
         }
 
-        if (msg.includes("فين") || msg.includes("مكان") || msg.includes("عنوان")) {
-            return `استوديو الزهراء موجود في بصبيح - ههيا - الشرقية. وتشرفنا في أي وقت! 📍`;
+        // 6. التحيات والكلام الفرفوش
+        if (msg.includes("ازيك") || msg.includes("سلام") || msg.includes("منور") || msg.includes("يا فنان")) {
+            const hi = [
+                "ده نورك يا غالي! أنا مساعد استوديو الزهراء، تحت أمرك في أي سؤال. 😊",
+                "يا أهلاً بيك يا فنان، نورت الاستوديو! تحب تعرف أسعارنا ولا العروض النهاردة؟",
+                "بخير طول ما إنت بخير يا ذوق.. أقدر أساعدك تختار هدية ولا بتسأل عن تابلوه معين؟"
+            ];
+            return hi[Math.floor(Math.random() * hi.length)];
         }
 
-        if (msg.includes("شكرا") || msg.includes("تسلم") || msg.includes("يا ذوق")) {
-            return `الشكر ليك يا فنان! إحنا في خدمتك دايماً في استوديو الزهراء. لو احتجت أي حاجة تانية أنا موجود. ❤️`;
+        if (msg.includes("شكرا") || msg.includes("تسلم") || msg.includes("حبيبي") || msg.includes("تمام")) {
+            return `العفو يا فنان، ده واجبنا! لو في أي حاجة تانية شاغلة بالك قولي، أنا هنا عشانك. ❤️`;
         }
 
-        if (msg.includes("سلام") || msg.includes("باي")) {
-            return `في رعاية الله يا فنان! مستنيين طلبك ينورنا. 👋`;
-        }
-
-        // الرد الافتراضي (لو مفهمش السؤال)
-        return `أهلاً بيك يا فنان في استوديو الزهراء! أنا مساعدك الذكي. قولي بتسأل عن سعر منتج معين؟ ولا عاوز تعرف العروض؟ ولا حابب تكلمنا واتساب؟ أنا معاك! 😊`;
+        // 7. الرد الذكي العشوائي (Fallback)
+        const fallbacks = [
+            "والله يا فنان مش متأكد من النقطة دي بالظبط، بس عشان متوهكش، ممكن تكلمنا واتساب وهما هيفيدوك أكتر مني بكتير! 😉",
+            "سؤالك ذكي بس أنا لسه "ببوت" صغير بتعلم.. ممكن تقولي بتسأل عن سعر ولا عرض بالظبط؟",
+            "يا ريت توضحلي أكتر يا ذوق.. بتقصد تابلوهات مودرن ولا خدمات تصوير ولا حابب تطلب هدية؟",
+            "أنا معاك وسامعك.. قولي بس إنت محتاج إيه من استوديو الزهراء وأنا هظبطك! 😊"
+        ];
+        return fallbacks[Math.floor(Math.random() * fallbacks.length)];
     }
 
     function appendAIMessage(text, sender, id = null) {
@@ -4312,8 +4333,6 @@ window.addGalleryComment = async (pid, url) => {
         box.appendChild(div);
         box.scrollTop = box.scrollHeight;
     }
-
-    document.getElementById('ai-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') askZahraaAI(); });
 </script>
   
 </body>
