@@ -4216,8 +4216,7 @@ window.addGalleryComment = async (pid, url) => {
 </div>
   
 <script>
-    // --- مساعد الزهراء الذكي: نسخة "الرد النهائي" ---
-    const AI_KEY = "AIzaSyCo9Tl5FGVaLMNDcUQWjCjcYi5adW5lbX8"; 
+    // --- مساعد الزهراء الذكي (النسخة الذكية المحلية - لا تحتاج API Key) ---
     let isAiChatOpen = false;
 
     window.toggleAIChat = function() {
@@ -4227,61 +4226,73 @@ window.addGalleryComment = async (pid, url) => {
         if(isAiChatOpen) document.getElementById('ai-input').focus();
     };
 
-    window.askZahraaAI = async function() {
+    window.askZahraaAI = function() {
         const input = document.getElementById('ai-input');
-        const text = input.value.trim();
+        const text = input.value.trim().toLowerCase();
         if (!text) return;
 
-        appendAIMessage(text, 'user');
+        // 1. عرض رسالة المستخدم
+        appendAIMessage(input.value, 'user');
         input.value = '';
 
+        // 2. إظهار "جاري التفكير" لثانية واحدة (عشان العميل يحس إنه بيكلم حد)
         const typingId = "typing-" + Date.now();
-        appendAIMessage("ثواني يا فنان بجيبلك الرد... 💡", 'ai', typingId);
+        appendAIMessage("ثواني يا فنان... 🤔", 'ai', typingId);
 
-        try {
-            // تجهيز معلومات المنتجات
-            const productsInfo = (typeof allProducts !== 'undefined' && allProducts.length > 0) 
-                ? allProducts.map(p => `- ${p.name}: بـ ${p.price} ج`).slice(0, 15).join('\n')
-                : "";
-
-            // الموديل ده هو "أحدث" حاجة ومستحيل جوجل تقول مش لاقياه لو المفتاح سليم
-            const modelName = "gemini-2.0-flash"; 
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyCo9Tl5FGVaLMNDcUQWjCjcYi5adW5lbX8`;
-
-            const prompt = `أنت مساعد ذكي لاستوديو الزهراء. رد باللهجة المصرية العامية الفرفوشة. 
-            المنتجات اللي عندنا: ${productsInfo}
-            الزبون بيسأل: ${text}`;
-
-            const response = await fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }]
-                })
-            });
-
-            const data = await response.json();
-
-            const typingEl = document.getElementById(typingId);
-            if(typingEl) typingEl.remove();
-
-            if (data.candidates && data.candidates[0].content.parts[0].text) {
-                // نجاح!!
-                appendAIMessage(data.candidates[0].content.parts[0].text, 'ai');
-            } else if (data.error) {
-                // لو جوجل ردت بخطأ، هنظهره بشكل شيك
-                console.error("Google Error:", data.error);
-                appendAIMessage(`❌ جوجل بتقول: ${data.error.message}`, 'ai');
-            } else {
-                appendAIMessage("⚠️ الـ AI استلم بس مبعتش رد، جرب تاني يا فنان.", 'ai');
-            }
-
-        } catch (err) {
-            console.error("Network Error:", err);
-            const typingEl = document.getElementById(typingId);
-            if(typingEl) typingEl.innerHTML = "🚨 عطل في الاتصال.. جرب ريفريش (F5)";
-        }
+        setTimeout(() => {
+            document.getElementById(typingId).remove();
+            
+            // 3. منطق الرد الذكي (Smart Matching)
+            let response = generateSmartResponse(text);
+            appendAIMessage(response, 'ai');
+        }, 800);
     };
+
+    function generateSmartResponse(msg) {
+        const whatsapp = storeSettings.whatsapp1 || "01204194540";
+        const gift = storeSettings.giftPrice || "50";
+        
+        // كلمات البحث
+        if (msg.includes("بكام") || msg.includes("سعر") || msg.includes("اسعار")) {
+            // محاولة البحث عن منتج محدد في القائمة
+            let found = allProducts.filter(p => msg.includes(p.name.toLowerCase()));
+            if (found.length > 0) {
+                return `عنيا ليك يا فنان، ${found[0].name} سعره حالياً ${found[0].price} ج. تحب أضيفهولك للسلة؟ 😊`;
+            }
+            return `الأسعار عندنا بتبدأ من مبالغ بسيطة جداً، وأغلب التابلوهات موجودة في قسم المتجر. قولي بتدور على تابلوه مقاس كام أو شكل إيه وأنا أقولك سعره بالظبط!`;
+        }
+
+        if (msg.includes("واتساب") || msg.includes("رقم") || msg.includes("تواصل") || msg.includes("تلفون")) {
+            return `تقدر تنورنا وتكلمنا واتساب مباشرة على الرقم ده: ${whatsapp} .. إحنا موجودين طول اليوم للرد عليك! 📱`;
+        }
+
+        if (msg.includes("هدية") || msg.includes("هدايا") || msg.includes("تغليف")) {
+            return `عندنا خدمة تغليف هدايا ملكي بـ ${gift} ج بس! 🎁 وممكن كمان تبعت الطلب كهدية مفاجأة لشخص تاني واحنا نوصلها له من غير ما يعرف السعر.`;
+        }
+
+        if (msg.includes("عرض") || msg.includes("خصم") || msg.includes("تخفيض")) {
+            let discounted = allProducts.filter(p => p.oldPrice > p.price);
+            if (discounted.length > 0) {
+                return `يا بختك! عندنا عروض قوية جداً دلوقتي على ${discounted[0].name} ومنتجات تانية كتير. بص بصه على قسم "عروض اليوم" في المتجر. 🔥`;
+            }
+            return `عندنا عروض متجددة دايماً! تابع قسم العروض في الصفحة الرئيسية عشان تلحق الخصومات أول بأول.`;
+        }
+
+        if (msg.includes("فين") || msg.includes("مكان") || msg.includes("عنوان")) {
+            return `استوديو الزهراء موجود في بصبيح - ههيا - الشرقية. وتشرفنا في أي وقت! 📍`;
+        }
+
+        if (msg.includes("شكرا") || msg.includes("تسلم") || msg.includes("يا ذوق")) {
+            return `الشكر ليك يا فنان! إحنا في خدمتك دايماً في استوديو الزهراء. لو احتجت أي حاجة تانية أنا موجود. ❤️`;
+        }
+
+        if (msg.includes("سلام") || msg.includes("باي")) {
+            return `في رعاية الله يا فنان! مستنيين طلبك ينورنا. 👋`;
+        }
+
+        // الرد الافتراضي (لو مفهمش السؤال)
+        return `أهلاً بيك يا فنان في استوديو الزهراء! أنا مساعدك الذكي. قولي بتسأل عن سعر منتج معين؟ ولا عاوز تعرف العروض؟ ولا حابب تكلمنا واتساب؟ أنا معاك! 😊`;
+    }
 
     function appendAIMessage(text, sender, id = null) {
         const box = document.getElementById('ai-messages-box');
