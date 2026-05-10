@@ -4216,136 +4216,107 @@ window.addGalleryComment = async (pid, url) => {
 </div>
   
 <script>
-    // ======================================================
-    // عقل مساعد الزهراء الذكي (Real AI Simulation - Local Engine)
-    // ======================================================
-    window.isAiChatOpen = false;
+    // --- مساعد الزهراء الـ AI (الجيل الجديد - ذكاء اصطناعي حقيقي) ---
+    // 1. حط الـ API Key الجديد هنا (مهم جداً)
+    const MY_REAL_AI_KEY = "AIzaSyBTOcctGlMnRPNbdAHAP9iYAZLyxvQ_xn0"; 
 
+    window.isAiChatOpen = false;
     window.toggleAIChat = function() {
-        const container = document.getElementById('ai-chat-container');
+        const chat = document.getElementById('ai-chat-container');
         window.isAiChatOpen = !window.isAiChatOpen;
-        if(container) container.style.display = window.isAiChatOpen ? 'flex' : 'none';
+        if(chat) chat.style.display = window.isAiChatOpen ? 'flex' : 'none';
         if (window.isAiChatOpen) document.getElementById('ai-input')?.focus();
     };
 
-    // 1. معالج اللغة العربية (تجهيز النص للفهم العميق)
-    function processAr(text) {
-        return text.replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي')
-                   .replace(/ال/g, '').replace(/[ًٌٍَُِّ]/g, '').trim().toLowerCase();
-    }
+    window.askZahraaAI = async function() {
+        const inputEl = document.getElementById('ai-input');
+        const userText = inputEl.value.trim();
+        if (!userText) return;
 
-    window.askZahraaAI = function() {
-        const input = document.getElementById('ai-input');
-        const originalText = input.value.trim();
-        if (!originalText) return;
+        appendAIMessage(userText, 'user');
+        inputEl.value = '';
 
-        appendAIMessage(originalText, 'user');
-        input.value = '';
-
-        // تأثير الكتابة البشري
         const typingId = "ai-typing-" + Date.now();
-        appendAIMessage("بكتبلك الرد... ✍️", 'ai', typingId);
+        appendAIMessage("بفكرلك في رد يا فنان... 🤔", 'ai', typingId);
 
-        setTimeout(() => {
+        try {
+            // تجميع بيانات المنتجات الحقيقية عشان الـ AI يذاكرها
+            const productsInfo = (typeof allProducts !== 'undefined') 
+                ? allProducts.map(p => `- اسم المنتج: ${p.name}, سعره: ${p.price} ج, قسم: ${p.category}`).join('\n')
+                : "";
+
+            // الـ Prompt ده هو اللي بيخليه "بشري" زيك
+            const systemInstructions = `
+                أنت مساعد ذكي "بشري" في استوديو الزهراء. لست بوتاً، أنت خبير في الفن والتصوير.
+                شخصيتك: مصري، فرفوش، ابن بلد، ودود جداً، وبتفهم في الأصول.
+                لغتك: العامية المصرية المودرن (بتاعة الشباب والناس الذوق).
+                
+                معلوماتك عن الاستوديو:
+                - المكان: بصبيح، ههيا، الشرقية.
+                - خدماتنا: تابلوهات مودرن، طباعة فخمة، تصوير فوتوغرافي، هدايا.
+                - واتساب الإدارة: ${storeSettings.whatsapp1}.
+                - المنتجات المتوفرة عندك بالأسعار:
+                ${productsInfo}
+
+                مهمتك:
+                1. دردش مع الزبون كأنه صاحبك، مش لازم ترد فوراً على الأسعار، ممكن ترحب بيه الأول.
+                2. لو سأل عن "عندك إيه" احكيله بأسلوب قصصي جميل عن التابلوهات اللي عندك.
+                3. لو سأل عن "بكام" قوله السعر من القائمة فوق، ولو مش موجود قوله "هسألك الإدارة حالاً".
+                4. ممنوع تكرر نفسك، وممنوع تقول "أنا نموذج لغوي".
+                5. اطلب منه يبعت الصور واتساب عشان الجودة تكون أعلى.
+                
+                الزبون بيقولك: "${userText}"
+            `;
+
+            // الاتصال بالمحرك العالمي (Gemini 1.5 Flash)
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${AIzaSyBTOcctGlMnRPNbdAHAP9iYAZLyxvQ_xn0}`,
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: systemInstructions }] }],
+                    generationConfig: {
+                        temperature: 0.9, // يخليه مبدع وغير مكرر
+                        topP: 0.95,
+                        maxOutputTokens: 800,
+                    }
+                })
+            });
+
+            const data = await response.json();
             document.getElementById(typingId)?.remove();
-            
-            // تحويل النص لمفاهيم (Concepts)
-            const rawMsg = originalText;
-            const msg = processAr(rawMsg);
-            
-            let response = brainEngine(msg, rawMsg);
-            appendAIMessage(response, 'ai');
-        }, 1200);
+
+            if (data.candidates && data.candidates[0].content.parts[0].text) {
+                const aiResponse = data.candidates[0].content.parts[0].text;
+                appendAIMessage(aiResponse, 'ai');
+            } else {
+                throw new Error("جوجل مهنجة");
+            }
+
+        } catch (err) {
+            console.error("AI Error:", err);
+            document.getElementById(typingId).innerHTML = "❌ معلش يا فنان، فيه ضغط على السيرفر، جرب تبعت رسالتك تاني!";
+        }
     };
 
-    // 2. المحرك الدلالي (The Semantic Brain)
-    function brainEngine(msg, raw) {
-        const wa = storeSettings.whatsapp1 || "01204194540";
-        const gift = storeSettings.giftPrice || "50";
-        
-        // مصفوفة الردود العشوائية لكل حالة عشان ميكررش نفسه
-        const vibes = {
-            welcome: ["يا مية أهلاً بنورك يا فنان! نورت استوديو الزهراء. 😊", "يا أهلاً يا ذوق، نورتنا والله.. تحت أمرك في أي سؤال.", "يا مرحب بيك في استوديو الفن.. قولي أقدر أساعدك في إيه؟"],
-            unknown: ["والله يا فنان مش متأكد من النقطة دي، بس عشان مألفش عليك، ابعتلي واتساب وهرد عليك فوراً! 😉", "سؤالك ذكي بس محتاج تفاصيل أكتر.. تحب تكلمنا واتساب أسهل؟", "أنا لسه بتعلم يا ذوق، ممكن توضحلي بتسأل عن تابلوه معين ولا إيه؟"],
-            price_info: ["الأسعار عندنا لقطة وبتبدأ من مبالغ بسيطة.. قولي مقاس التابلوه كام وأنا أظبطك! 💰", "كل حاجة وليها سعرها يا فنان، بس دايماً بنعمل واجب مع حبايبنا. لف لفة في المتجر وشوف الأسعار بنفسك."],
-        };
-
-        // أ. البحث عن منتج معين في كلام العميل
-        let suggestedProduct = allProducts.find(p => msg.includes(processAr(p.name)));
-
-        // ب. تحليل نية العميل (Intent Analysis)
-        
-        // 1. نية السؤال عن "الموجود / عندك إيه"
-        if (msg.includes("عندك") || msg.includes("موجود") || msg.includes("فرجني") || msg.includes("بتبيع")) {
-            const randomP = allProducts[Math.floor(Math.random() * allProducts.length)];
-            return `عندنا كل اللي يسعدك! 🖼️ بنعمل تابلوهات مودرن وتصوير فوتوغرافي وهدايا. مرشحلك النهاردة تشوف "${randomP.name}"، ده واكل الجو عندنا! تحب أعرفك سعره؟`;
-        }
-
-        // 2. نية السؤال عن "السعر" لمنتج لقطناه
-        if (suggestedProduct && (msg.includes("بكام") || msg.includes("سعر") || msg.includes("تمن"))) {
-            return `من عيوني! الـ "${suggestedProduct.name}" سعره النهاردة ${suggestedProduct.price} ج بس. وده سعر مش هتلاقيه برا الاستوديو. 😉 تحب أحطهولك في السلة؟`;
-        }
-
-        // 3. نية "العروض"
-        if (msg.includes("عرض") || msg.includes("خصم") || msg.includes("تخفيض") || msg.includes("رخيص")) {
-            const discounted = allProducts.filter(p => p.oldPrice > p.price);
-            if (discounted.length > 0) {
-                return `إنت جيت في وقتك! 🔥 عندنا عروض نار على "${discounted[0].name}" ومنتجات تانية كتير في قسم العروض.. الحق الخصم قبل ما يخلص!`;
-            }
-            return "عندنا دايماً عروض مخفية! كلمنا واتساب وقولهم إنك جاي من طرف المساعد الذكي وهيعملوا معاك أحلى واجب. 😉";
-        }
-
-        // 4. نية "الهدايا"
-        if (msg.includes("هدي") || msg.includes("تغليف") || msg.includes("مناسبه") || msg.includes("عيد ميلاد")) {
-            return `الهدايا دي لعبتنا! 🎁 بنقدم تغليف ملكي بـ ${gift} ج، وممكن نبعتها "هدية مفاجأة" للي تحبه من غير ما يعرف السعر. إيه رأيك؟`;
-        }
-
-        // 5. نية "التواصل"
-        if (msg.includes("واتساب") || msg.includes("رقم") || msg.includes("تواصل") || msg.includes("تلفون")) {
-            return `سجل الرقم ده عندك يا فنان: ${wa} .. ابعتلنا أي صورة وهنحولها لتحفة فنية في ثواني! 📱`;
-        }
-
-        // 6. نية "المكان"
-        if (msg.includes("فين") || msg.includes("عنوان") || msg.includes("مكان") || msg.includes("لوكيشن")) {
-            return "تنورنا في أي وقت! 📍 إحنا في الشرقية - ههيا - بصبيح. ولو محتاج اللوكيشن بالظبط ابعتلنا واتساب وهبعتهولك فوراً.";
-        }
-
-        // 7. التحيات
-        if (msg.includes("ازيك") || msg.includes("عامل ايه") || msg.includes("سلام") || msg.includes("منور")) {
-            return vibes.welcome[Math.floor(Math.random() * vibes.welcome.length)];
-        }
-
-        if (msg.includes("شكرا") || msg.includes("تسلم") || msg.includes("حبيبي")) {
-            return "العفو يا غالي، الشكر ليك إنت على ذوقك! لو احتجت أي حاجة تانية أنا موجود دايماً. ❤️";
-        }
-
-        // دال. لو مفهمش خالص (رد ذكي عشوائي)
-        return vibes.unknown[Math.floor(Math.random() * vibes.unknown.length)];
-    }
-
-    // 3. دالة إضافة الرسائل (ستايل احترافي متجاوب)
     function appendAIMessage(text, sender, id = null) {
         const box = document.getElementById('ai-messages-box');
-        if (!box) return;
         const div = document.createElement('div');
         if(id) div.id = id;
         const isUser = sender === 'user';
-        
         div.style.cssText = `
-            max-width: 85%; padding: 12px 18px; margin-bottom: 12px; border-radius: 20px;
+            max-width: 85%; padding: 12px 16px; margin-bottom: 12px; border-radius: 20px;
             background: ${isUser ? 'linear-gradient(135deg,#d4af37,#f0c94e)' : '#1a1a1a'};
             color: ${isUser ? '#000' : '#fff'};
             align-self: ${isUser ? 'flex-end' : 'flex-start'};
-            font-size: 13.5px; line-height: 1.6; border: ${isUser ? 'none' : '1px solid #333'};
+            font-size: 14px; line-height: 1.6; border: ${isUser ? 'none' : '1px solid #333'};
             box-shadow: 0 4px 15px rgba(0,0,0,0.3); white-space: pre-line;
-            display: inline-block; width: fit-content; font-weight: ${isUser ? 'bold' : 'normal'};
+            display: inline-block; width: fit-content;
         `;
         div.innerText = text;
         box.appendChild(div);
         box.scrollTop = box.scrollHeight;
     }
 
-    // تفعيل زر Enter
     document.getElementById('ai-input')?.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') window.askZahraaAI();
     });
