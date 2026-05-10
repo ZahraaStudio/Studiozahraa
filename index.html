@@ -3914,28 +3914,7 @@ function moveAdSlide(dir) {
     <div id="sticky-ad-content" style="flex:1;overflow:hidden;display:flex;align-items:center;gap:10px;min-width:0;"></div>
     <button onclick="closeStickyAd()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#666;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:15px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.color='#ccc'" onmouseout="this.style.color='#666'">✕</button>
   </div>
-  <!-- ====================================================== -->
-<!-- نظام دردشة استوديو الزهراء المستقل (حل مشكلة الطفو والبيانات) -->
-<!-- ====================================================== -->
-<div id="zahraa-standalone-chat">
-    <!-- الزر العائم (مفصول تماماً عن أي حاويات) -->
-    <div id="chat-fab-portal" style="position: fixed !important; bottom: 25px !important; right: 25px !important; z-index: 2147483647 !important; width: 65px; height: 65px; touch-action: none; cursor: move;">
-        <span id="chat-notif-count" style="display:none; position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; width:22px; height:22px; font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center; border:2px solid black; z-index: 10;">0</span>
-        <button id="chat-fab-button" style="width:100%; height:100%; border-radius:50%; background:linear-gradient(135deg,#d4af37,#f0c94e); border:none; cursor:pointer; box-shadow:0 8px 32px rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; font-size:30px; position: relative; pointer-events: auto;">
-            <span id="chat-btn-icon">💬</span>
-        </button>
-    </div>
-
-    <!-- نافذة الدردشة -->
-    <div id="chat-window-portal" style="display:none; position:fixed !important; bottom:100px !important; right:25px !important; z-index: 2147483646 !important; width:350px; max-width:calc(100vw - 50px); height:500px; background:#0a0a0a; border-radius:24px; border:1px solid #d4af3750; box-shadow:0 25px 80px rgba(0,0,0,0.9); flex-direction:column; overflow:hidden; direction:rtl; font-family: 'Cairo', sans-serif;">
-        <!-- Header -->
-        <div style="background:linear-gradient(135deg,#d4af37,#f0c94e); padding:15px 20px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <div style="width:10px; height:10px; background:#22c55e; border-radius:50%; box-shadow:0 0 8px #22c55e;"></div>
-                <span style="font-weight:bold; color:#000;">الدعم الفني</span>
-            </div>
-            <button onclick="handleChatToggle()" style="background:none; border:none; color:#000; font-size:22px; cursor:pointer;">✕</button>
-        </div>
+ 
         <!-- Messages Area -->
         <div id="chat-scroll-area" style="flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:10px; background:#000;">
             <div style="text-align:center; color:#555; font-size:12px; margin-top:50px;">جاري الاتصال...</div>
@@ -4181,168 +4160,125 @@ window.addGalleryComment = async (pid, url) => {
 </div>
 
 <!-- ====================================================== -->
-<!-- نظام مساعد الزهراء الذكي (AI Chatbot) - النسخة الكاملة -->
+<!-- نظام مساعد الزهراء الذكي - النسخة الصاروخية (حل نهائي) -->
 <!-- ====================================================== -->
-
-<!-- 1. واجهة الشات -->
-<div id="ai-chat-container" style="position: fixed; bottom: 100px; right: 25px; z-index: 2147483645; display: none; width: 350px; max-width: calc(100vw - 50px); height: 500px; background: #0a0a0a; border-radius: 24px; border: 1px solid #d4af37; box-shadow: 0 25px 80px rgba(0,0,0,0.9); flex-direction: column; overflow: hidden; direction: rtl; font-family: 'Cairo', sans-serif;">
-    <!-- الهيدر -->
-    <div style="background: linear-gradient(135deg,#d4af37,#f0c94e); padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;">
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 22px;">🤖</span>
-            <span style="font-weight: 900; color: #000; font-size: 15px;">مساعد الزهراء الذكي</span>
-        </div>
-        <button onclick="toggleAIChat()" style="background: none; border: none; color: #000; font-size: 25px; cursor: pointer; line-height: 1;">✕</button>
+<div id="zahraa-ai-system">
+    <!-- الزر العائم -->
+    <div id="ai-fab-new" onclick="window.toggleZahraaChat()" style="position: fixed; bottom: 25px; right: 25px; z-index: 2147483647; width: 65px; height: 65px; background: linear-gradient(135deg,#d4af37,#f0c94e); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 8px 32px rgba(0,0,0,0.5); font-size: 30px;">
+        <span id="ai-icon-status">💬</span>
     </div>
 
-    <!-- منطقة الرسائل -->
-    <div id="ai-messages-box" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; background: #000; scrollbar-width: thin;">
-        <div style="align-self: flex-start; max-width: 85%; padding: 12px 16px; border-radius: 18px 18px 18px 4px; background: #1a1a1a; color: #fff; font-size: 13px; line-height: 1.6; border: 1px solid #222;">
-            يا أهلاً بيك في استوديو الزهراء! أنا المساعد الذكي بتاعك. 😊<br>
-            اقدر أقولك أسعار التابلوهات، وأرشحلك هدايا، وأقولك إيه العروض اللي شغالة. تحب تسأل عن إيه؟
+    <!-- نافذة الشات -->
+    <div id="ai-window-new" style="display: none; position: fixed; bottom: 100px; right: 25px; z-index: 2147483646; width: 350px; max-width: calc(100vw - 50px); height: 500px; background: #0a0a0a; border-radius: 24px; border: 1px solid #d4af37; box-shadow: 0 25px 80px rgba(0,0,0,0.9); flex-direction: column; overflow: hidden; direction: rtl; font-family: 'Cairo', sans-serif;">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg,#d4af37,#f0c94e); padding: 15px 20px; display: flex; align-items: center; justify-content: space-between;">
+            <span style="font-weight: bold; color: #000;">🤖 مساعد الزهراء الذكي</span>
+            <button onclick="window.toggleZahraaChat()" style="background: none; border: none; color: #000; font-size: 22px; cursor: pointer;">✕</button>
         </div>
-    </div>
-
-    <!-- منطقة الإدخال -->
-    <div style="padding: 15px; background: #111; border-top: 1px solid #222; display: flex; gap: 8px;">
-        <input id="ai-input" type="text" placeholder="اسألني عن أي حاجة..." style="flex: 1; background: #000; border: 1px solid #333; color: #fff; padding: 12px 15px; border-radius: 15px; outline: none; font-size: 13px; font-family: inherit;">
-        <button onclick="askZahraaAI()" style="background: linear-gradient(135deg,#d4af37,#f0c94e); color: #000; width: 50px; height: 42px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px;">إرسال</button>
+        <!-- Messages Area -->
+        <div id="ai-scroll-new" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; background: #000;">
+            <div style="align-self: flex-start; max-width: 85%; padding: 10px 15px; border-radius: 18px 18px 18px 4px; background: #1a1a1a; color: #fff; font-size: 13px; line-height: 1.5; border: 1px solid #222;">
+                أهلاً بيك يا فنان في استوديو الزهراء! 😊 أنا المساعد الذكي بتاعك، تحب تعرف أسعار إيه النهاردة؟
+            </div>
+        </div>
+        <!-- Input Area -->
+        <div style="padding: 15px; background: #111; border-top: 1px solid #222; display: flex; gap: 8px;">
+            <input id="ai-input-new" type="text" placeholder="اسألني عن أي حاجة..." style="flex: 1; background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 10px 15px; border-radius: 15px; outline: none; font-size: 13px;">
+            <button onclick="window.sendZahraaAiMsg()" style="background: #d4af37; color: #000; width: 45px; height: 40px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer;">↑</button>
+        </div>
     </div>
 </div>
 
-<!-- 2. زر التشغيل العائم (الروبوت) -->
-<div id="ai-fab" onclick="toggleAIChat()" style="position: fixed; bottom: 25px; left: 25px; z-index: 2147483647; width: 65px; height: 65px; background: #000; border: 2px solid #d4af37; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 10px 30px rgba(212,175,55,0.4); transition: transform 0.3s ease;">
-    <span style="font-size: 32px;">🤖</span>
-</div>
-  
 <script>
-// ======================================================
-// مساعد الزهراء الذكي - النسخة الاحترافية الشاملة (بدون API Key)
-// ======================================================
+// تعريف الدوال على الـ window عشان الزرار يشوفها فوراً
+window.isZahraaChatOpen = false;
 
-// تأكيد تعريف المتغيرات عالمياً لعدم حدوث "Button Not Defined"
-window.isAiChatOpen = false;
-
-// 1. دالة فتح وقفل الشات
-window.handleChatToggle = function() {
-    const win = document.getElementById('chat-window-portal');
-    const icon = document.getElementById('chat-btn-icon');
-    if (!win) return;
-
-    window.isAiChatOpen = !window.isAiChatOpen;
-    if (window.isAiChatOpen) {
+window.toggleZahraaChat = function() {
+    const win = document.getElementById('ai-window-new');
+    const icon = document.getElementById('ai-icon-status');
+    window.isZahraaChatOpen = !window.isZahraaChatOpen;
+    
+    if (window.isZahraaChatOpen) {
         win.style.display = 'flex';
-        if(icon) icon.innerText = '✕';
-        document.getElementById('chat-msg-input')?.focus();
+        icon.innerText = '✕';
+        document.getElementById('ai-input-new').focus();
     } else {
         win.style.display = 'none';
-        if(icon) icon.innerText = '💬';
+        icon.innerText = '💬';
     }
 };
 
-// 2. المحرك الذكي للردود (الـ AI المحلي)
-window.generateZahraaResponse = function(rawText) {
-    const msg = rawText.toLowerCase()
-        .replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي')
-        .replace(/ال/g, '').replace(/[ًٌٍَُِّ]/g, '').trim();
-
-    const wa = (typeof storeSettings !== 'undefined' && storeSettings.whatsapp1) ? storeSettings.whatsapp1 : "01204194540";
-    const gift = (typeof storeSettings !== 'undefined' && storeSettings.giftPrice) ? storeSettings.giftPrice : "50";
-
-    // نية العروض
-    if (msg.includes("عرض") || msg.includes("خصم") || msg.includes("رخيص") || msg.includes("وفر")) {
-        return "إنت جيت في لقطة! 🔥 الاستوديو مروق على الكل اليومين دول.. بص بصه على قسم 'عروض اليوم' في المتجر هتلاقي تابلوهات أسعارها لقطة!";
-    }
-    // نية المنتجات
-    if (msg.includes("عندك") || msg.includes("موجود") || msg.includes("بتبيع") || msg.includes("فرجني")) {
-        return "عندنا كل اللي يدلع بيتك يا فنان! 🖼️ من أول التابلوهات المودرن لحد طباعة الصور الفوتوغرافية الفخمة.. لف لفة في المتجر وشوف الجمال بنفسك.";
-    }
-    // نية الأسعار
-    if (msg.includes("بكام") || msg.includes("سعر") || msg.includes("تمن") || msg.includes("فلوس")) {
-        return "الأسعار عندنا متنوعة جداً وبتبدأ من مبالغ بسيطة.. كل تابلوه مكتوب سعره تحته بالظبط في المتجر. قولي بتدور على مقاس كام وأنا أظبطك! 💰";
-    }
-    // نية العنوان
-    if (msg.includes("فين") || msg.includes("عنوان") || msg.includes("مكان") || msg.includes("لوكيشن")) {
-        return "تنورنا وتشرفنا يا فنان! 📍 إحنا في الشرقية - ههيا - بصبيح. ولو محتاج اللوكيشن يجيلك على الموبايل كلمنا واتساب فوراً.";
-    }
-    // نية الهدايا
-    if (msg.includes("هدي") || msg.includes("تغليف") || msg.includes("مناسبه")) {
-        return `الهدايا تخصصنا! 🎁 بنغلف تغليف ملكي بـ ${gift} ج، وممكن نبعتها هدية مفاجأة لأي حد تحبه من غير ما يعرف السعر. إيه رأيك؟ 😉`;
-    }
-    // نية التواصل
-    if (msg.includes("واتساب") || msg.includes("رقم") || msg.includes("تواصل")) {
-        return `من عيوني! سجل الرقم ده عندك: ${wa} .. ابعتلنا أي صورة وهنرد عليك في ثواني! 📱`;
-    }
-    // التحيات
-    if (msg.includes("ازيك") || msg.includes("عامل ايه") || msg.includes("سلام") || msg.includes("منور")) {
-        return "ده نورك يا فنان! 😊 أنا مساعدك الشخصي في استوديو الزهراء، قولي تحب تعرف أسعار إيه النهاردة؟";
-    }
-    
-    return "يا فنان أنا معاك وسامعك.. بس وضحلي أكتر، هل بتسأل عن سعر تابلوه معين؟ ولا محتاج تعرف مكان الاستوديو؟ أنا هنا عشانك! 😊";
-};
-
-// 3. دالة إرسال الرسالة (التي يناديها الزر)
-window.sendChatMsg = function() {
-    const input = document.getElementById('chat-msg-input');
-    if (!input) return;
+window.sendZahraaAiMsg = function() {
+    const input = document.getElementById('ai-input-new');
     const text = input.value.trim();
     if (!text) return;
 
-    // عرض رسالة المستخدم
-    appendZahraaMessage(text, 'user');
+    // 1. رسالة المستخدم
+    appendNewMsg(text, 'user');
     input.value = '';
 
-    // تأثير "بكتبلك الرد..."
-    const typingId = "typing-" + Date.now();
-    appendZahraaMessage("بكتبلك الرد يا ذوق... ✍️", 'ai', typingId);
+    // 2. تفكير الـ AI
+    const tid = "t-" + Date.now();
+    appendNewMsg("بكتبلك الرد... ✍️", 'ai', tid);
 
     setTimeout(() => {
-        const typingEl = document.getElementById(typingId);
-        if (typingEl) typingEl.remove();
+        const el = document.getElementById(tid);
+        if(el) el.remove();
         
-        const response = window.generateZahraaResponse(text);
-        appendZahraaMessage(response, 'ai');
+        // المحرك الذكي
+        const reply = generateAiBrain(text);
+        appendNewMsg(reply, 'ai');
     }, 1000);
 };
 
-// 4. دالة إضافة الرسائل للشاشة
-function appendZahraaMessage(text, sender, id = null) {
-    const box = document.getElementById('chat-scroll-area');
-    if (!box) return;
-    const div = document.createElement('div');
-    if (id) div.id = id;
-    const isUser = sender === 'user';
+function generateAiBrain(raw) {
+    const msg = raw.toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ال/g, '').trim();
+    const wa = (typeof storeSettings !== 'undefined') ? storeSettings.whatsapp1 : "01204194540";
+
+    if (msg.includes("عرض") || msg.includes("خصم") || msg.includes("وفر")) 
+        return "يا بختك! عندنا عروض لقطة دلوقتي في قسم 'عروض اليوم' بالمتجر، خصومات هتعجبك جداً! 🔥";
     
+    if (msg.includes("بكام") || msg.includes("سعر") || msg.includes("تمن")) 
+        return "الأسعار بتبدأ من مبالغ بسيطة جداً وكل تابلوه مكتوب سعره تحته في المتجر.. قولي بتدور على مقاس كام وأنا أظبطك! 💰";
+
+    if (msg.includes("عندك") || msg.includes("موجود") || msg.includes("بتبيع")) 
+        return "عندنا كل اللي يسعدك! تابلوهات مودرن، طباعة صور فخمة، وهدايا. لف لفة في المتجر وشوف الجمال. 🖼️";
+
+    if (msg.includes("فين") || msg.includes("عنوان") || msg.includes("مكان")) 
+        return "تنورنا في أي وقت! 📍 إحنا في الشرقية - ههيا - بصبيح. وممكن نبعتلك اللوكيشن واتساب لو حبيت.";
+
+    if (msg.includes("هديه") || msg.includes("تغليف")) 
+        return "الهدايا تخصصنا! 🎁 بنغلف تغليف ملكي، وممكن نبعتها هدية مفاجأة لأي حد تحبه من غير ما يعرف السعر.";
+
+    if (msg.includes("واتساب") || msg.includes("رقم")) 
+        return `سجل الرقم ده عندك يا فنان: ${wa} .. ابعتلنا رسالة وهنرد عليك في ثواني! 📱`;
+
+    if (msg.includes("ازيك") || msg.includes("سلام") || msg.includes("منور")) 
+        return "ده نورك يا فنان! أنا مساعدك الذكي، تحت أمرك في أي سؤال عن التابلوهات أو العروض. 😊";
+
+    return "كلامك زي الفل يا فنان، بس وضحلي أكتر.. بتسأل عن سعر ولا عنوان ولا حابب تطلب هدية؟ أنا معاك! 😊";
+}
+
+function appendNewMsg(text, sender, id = null) {
+    const box = document.getElementById('ai-scroll-new');
+    const div = document.createElement('div');
+    if(id) div.id = id;
+    const isUser = sender === 'user';
     div.style.cssText = `
-        max-width: 85%; padding: 10px 15px; margin-bottom: 10px; border-radius: ${isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px'};
+        max-width: 85%; padding: 10px 15px; margin-bottom: 8px; border-radius: ${isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px'};
         background: ${isUser ? 'linear-gradient(135deg,#d4af37,#f0c94e)' : '#222'};
         color: ${isUser ? '#000' : '#fff'};
         align-self: ${isUser ? 'flex-end' : 'flex-start'};
         font-size: 13px; line-height: 1.5; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        display: inline-block; width: fit-content; font-family: 'Cairo', sans-serif;
     `;
     div.innerText = text;
     box.appendChild(div);
     box.scrollTop = box.scrollHeight;
 }
 
-// 5. زر تحسين جودة الصور بالـ AI (استخدام Cloudinary AI)
-window.improveImageQuality = function(imgUrl, idx, imgIdx) {
-    // إضافة فلاتر الذكاء الاصطناعي للرابط
-    const improvedUrl = imgUrl.replace('/upload/', '/upload/e_improve,f_auto,q_auto,e_sharpen:100/');
-    imageGroups[idx].images[imgIdx] = improvedUrl;
-    if (typeof renderImageGroups === 'function') renderImageGroups();
-    
-    // تنبيه بالنجاح
-    if (typeof zahraaToast === 'function') zahraaToast('تم تحسين الجودة بالـ AI! ✨');
-    else alert('تم تحسين جودة الصورة بنجاح! ✨');
-};
-
-// ربط زرار الـ Enter بالكيبورد
-document.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter' && document.activeElement.id === 'chat-msg-input') {
-        window.sendChatMsg();
-    }
+// تفعيل زر Enter
+document.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && document.activeElement.id === 'ai-input-new') window.sendZahraaAiMsg();
 });
 </script>
   </body>
