@@ -3914,7 +3914,28 @@ function moveAdSlide(dir) {
     <div id="sticky-ad-content" style="flex:1;overflow:hidden;display:flex;align-items:center;gap:10px;min-width:0;"></div>
     <button onclick="closeStickyAd()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#666;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:15px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.color='#ccc'" onmouseout="this.style.color='#666'">✕</button>
   </div>
- 
+  <!-- ====================================================== -->
+<!-- نظام دردشة استوديو الزهراء المستقل (حل مشكلة الطفو والبيانات) -->
+<!-- ====================================================== -->
+<div id="zahraa-standalone-chat">
+    <!-- الزر العائم (مفصول تماماً عن أي حاويات) -->
+    <div id="chat-fab-portal" style="position: fixed !important; bottom: 25px !important; right: 25px !important; z-index: 2147483647 !important; width: 65px; height: 65px; touch-action: none; cursor: move;">
+        <span id="chat-notif-count" style="display:none; position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; width:22px; height:22px; font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center; border:2px solid black; z-index: 10;">0</span>
+        <button id="chat-fab-button" style="width:100%; height:100%; border-radius:50%; background:linear-gradient(135deg,#d4af37,#f0c94e); border:none; cursor:pointer; box-shadow:0 8px 32px rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; font-size:30px; position: relative; pointer-events: auto;">
+            <span id="chat-btn-icon">💬</span>
+        </button>
+    </div>
+
+    <!-- نافذة الدردشة -->
+    <div id="chat-window-portal" style="display:none; position:fixed !important; bottom:100px !important; right:25px !important; z-index: 2147483646 !important; width:350px; max-width:calc(100vw - 50px); height:500px; background:#0a0a0a; border-radius:24px; border:1px solid #d4af3750; box-shadow:0 25px 80px rgba(0,0,0,0.9); flex-direction:column; overflow:hidden; direction:rtl; font-family: 'Cairo', sans-serif;">
+        <!-- Header -->
+        <div style="background:linear-gradient(135deg,#d4af37,#f0c94e); padding:15px 20px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:10px; height:10px; background:#22c55e; border-radius:50%; box-shadow:0 0 8px #22c55e;"></div>
+                <span style="font-weight:bold; color:#000;">الدعم الفني</span>
+            </div>
+            <button onclick="handleChatToggle()" style="background:none; border:none; color:#000; font-size:22px; cursor:pointer;">✕</button>
+        </div>
         <!-- Messages Area -->
         <div id="chat-scroll-area" style="flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:10px; background:#000;">
             <div style="text-align:center; color:#555; font-size:12px; margin-top:50px;">جاري الاتصال...</div>
@@ -4128,7 +4149,7 @@ window.addGalleryComment = async (pid, url) => {
     });
     zahraaToast('تم إرسال ملاحظتك بنجاح ✓');
 };
-  
 </script>
-  </body>
+
+</body>
 </html>
