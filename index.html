@@ -1549,6 +1549,9 @@
                 // Load wishlist from Firestore
                 loadWishlistFromFirestore();
 
+                // مراقبة مكافآت الإحالة للمُحيل بشكل لحظي
+                setTimeout(() => listenForReferrerReward(user.uid), 2000);
+
                 // Referral banner: hide if user already received earned coupon
                 let hideReferral = false;
                 try {
@@ -1638,7 +1641,48 @@ window.loginWithFacebook = async () => {
         }
     };
 
+    function playZahraaSound(type) {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const master = ctx.createGain();
+            master.gain.setValueAtTime(0.22, ctx.currentTime);
+            master.connect(ctx.destination);
+            if (type === 'success') {
+                [[523.25,0,0.12],[659.25,0.1,0.12],[783.99,0.22,0.18]].forEach(([f,t,d])=>{
+                    const o=ctx.createOscillator(),g=ctx.createGain();
+                    o.type='sine';o.frequency.value=f;
+                    g.gain.setValueAtTime(0,ctx.currentTime+t);g.gain.linearRampToValueAtTime(1,ctx.currentTime+t+0.04);
+                    g.gain.linearRampToValueAtTime(0,ctx.currentTime+t+d);
+                    o.connect(g);g.connect(master);o.start(ctx.currentTime+t);o.stop(ctx.currentTime+t+d+0.02);
+                });
+            } else if (type === 'error') {
+                [[311.13,0,0.14],[277.18,0.15,0.18]].forEach(([f,t,d])=>{
+                    const o=ctx.createOscillator(),g=ctx.createGain();
+                    o.type='sawtooth';o.frequency.value=f;
+                    g.gain.setValueAtTime(0,ctx.currentTime+t);g.gain.linearRampToValueAtTime(0.7,ctx.currentTime+t+0.03);
+                    g.gain.linearRampToValueAtTime(0,ctx.currentTime+t+d);
+                    o.connect(g);g.connect(master);o.start(ctx.currentTime+t);o.stop(ctx.currentTime+t+d+0.02);
+                });
+            } else if (type === 'warning') {
+                [[440,0,0.1],[440,0.14,0.1]].forEach(([f,t,d])=>{
+                    const o=ctx.createOscillator(),g=ctx.createGain();
+                    o.type='triangle';o.frequency.value=f;
+                    g.gain.setValueAtTime(0,ctx.currentTime+t);g.gain.linearRampToValueAtTime(0.9,ctx.currentTime+t+0.02);
+                    g.gain.linearRampToValueAtTime(0,ctx.currentTime+t+d);
+                    o.connect(g);g.connect(master);o.start(ctx.currentTime+t);o.stop(ctx.currentTime+t+d+0.02);
+                });
+            } else {
+                const o=ctx.createOscillator(),g=ctx.createGain();
+                o.type='sine';o.frequency.setValueAtTime(880,ctx.currentTime);o.frequency.linearRampToValueAtTime(660,ctx.currentTime+0.15);
+                g.gain.setValueAtTime(0,ctx.currentTime);g.gain.linearRampToValueAtTime(1,ctx.currentTime+0.03);g.gain.linearRampToValueAtTime(0,ctx.currentTime+0.2);
+                o.connect(g);g.connect(master);o.start();o.stop(ctx.currentTime+0.22);
+            }
+            setTimeout(()=>ctx.close(),1000);
+        } catch(e){}
+    }
+
     function showNotification(message, type = 'info') {
+        playZahraaSound(type);
         const container = document.getElementById('notification-container');
         const notification = document.createElement('div');
         notification.className = `notification ${type} active`;
@@ -2548,16 +2592,17 @@ window.loginWithFacebook = async () => {
     };
 
     // ============ My Orders ============
-    async function loadMyOrders() {
+    let _ordersUnsubscribe = null;
+    function loadMyOrders() {
         const wrap = document.getElementById('my-orders-list');
         if (!wrap) return;
         if (!currentUser) {
             wrap.innerHTML = '<div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl text-center"><p class="text-zinc-400 mb-4">يرجى تسجيل الدخول لعرض طلباتك</p><button onclick="showLoginModal()" class="gold-bg text-black px-6 py-3 rounded-xl font-bold">تسجيل الدخول</button></div>';
             return;
         }
+        if (_ordersUnsubscribe) _ordersUnsubscribe();
         wrap.innerHTML = '<div class="text-center text-zinc-500 py-8">جاري التحميل...</div>';
-        try {
-            const snap = await db.collection('orders').where('userId', '==', currentUser.uid).get();
+        _ordersUnsubscribe = db.collection('orders').where('userId', '==', currentUser.uid).onSnapshot(snap => {
             if (snap.empty) {
                 wrap.innerHTML = '<div class="bg-zinc-900 border border-zinc-800 p-8 rounded-2xl text-center"><p class="text-zinc-400">لا توجد طلبات بعد</p></div>';
                 return;
@@ -2609,10 +2654,9 @@ window.loginWithFacebook = async () => {
                     </button>
                 </div>`;
             }).join('');
-        } catch (e) {
-            console.error(e);
+        }, err => {
             wrap.innerHTML = '<div class="text-center text-red-400 py-8">تعذر تحميل طلباتك</div>';
-        }
+        });
     }
 
     window.openOrderDetail = (o) => {
@@ -3560,6 +3604,101 @@ window.loginWithFacebook = async () => {
         localStorage.setItem('zahraa_scratch_seen','1');
     };
 
+    // ============ REFERRER REWARD POPUP ============
+    let _referrerRewardCode = null;
+    let _userDocUnsubscribe = null;
+
+    function listenForReferrerReward(uid) {
+        if (_userDocUnsubscribe) _userDocUnsubscribe();
+        _userDocUnsubscribe = db.collection('users').doc(uid).onSnapshot(snap => {
+            if (!snap.exists) return;
+            const data = snap.data();
+            const reward = data.pendingReferralReward;
+            if (reward && !reward.claimed && !localStorage.getItem('referrer_reward_shown_' + uid)) {
+                _referrerRewardCode = reward.coupon || reward.code || '';
+                document.getElementById('ref-reward-code').textContent = _referrerRewardCode || '••••••';
+                document.getElementById('ref-reward-desc').textContent = reward.desc || 'كوبون خصم خاص لك!';
+                showReferrerRewardModal();
+            }
+        });
+    }
+
+    function showReferrerRewardModal() {
+        const modal = document.getElementById('referrer-reward-modal');
+        if (!modal) return;
+        modal.style.display = 'flex';
+        playZahraaSound('success');
+        setTimeout(() => {
+            const canvas = document.getElementById('ref-reward-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const reveal = document.getElementById('ref-reward-reveal');
+            canvas.width = reveal.offsetWidth || 260;
+            canvas.height = reveal.offsetHeight || 104;
+            const g = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            g.addColorStop(0, '#8b6914'); g.addColorStop(0.5, '#d4af37'); g.addColorStop(1, '#8b6914');
+            ctx.fillStyle = g; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#fff'; ctx.font = 'bold 15px Cairo'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('🎁 اخدش واكشف مكافأتك!', canvas.width / 2, canvas.height / 2);
+            let scratching = false;
+            function doScratch(x, y) {
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath(); ctx.arc(x, y, 28, 0, Math.PI * 2); ctx.fill();
+                const d = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+                let t = 0; for (let i = 3; i < d.length; i += 4) if (d[i] < 128) t++;
+                if ((t / (canvas.width * canvas.height)) > 0.45) {
+                    canvas.style.display = 'none';
+                    document.getElementById('ref-reward-hint').style.display = 'none';
+                    document.getElementById('ref-reward-actions').style.display = 'flex';
+                    playZahraaSound('success');
+                    if (currentUser) localStorage.setItem('referrer_reward_shown_' + currentUser.uid, '1');
+                }
+            }
+            function getPos(e) {
+                const r = canvas.getBoundingClientRect(), sx = canvas.width / r.width, sy = canvas.height / r.height;
+                if (e.touches) return { x: (e.touches[0].clientX - r.left) * sx, y: (e.touches[0].clientY - r.top) * sy };
+                return { x: (e.clientX - r.left) * sx, y: (e.clientY - r.top) * sy };
+            }
+            canvas.addEventListener('mousedown', e => { scratching = true; const p = getPos(e); doScratch(p.x, p.y); });
+            canvas.addEventListener('mousemove', e => { if (!scratching) return; const p = getPos(e); doScratch(p.x, p.y); });
+            canvas.addEventListener('mouseup', () => scratching = false);
+            canvas.addEventListener('touchstart', e => { e.preventDefault(); scratching = true; const p = getPos(e); doScratch(p.x, p.y); }, { passive: false });
+            canvas.addEventListener('touchmove', e => { e.preventDefault(); if (!scratching) return; const p = getPos(e); doScratch(p.x, p.y); }, { passive: false });
+            canvas.addEventListener('touchend', () => scratching = false);
+        }, 300);
+    }
+
+    window.copyReferrerRewardCode = () => {
+        if (!_referrerRewardCode) return;
+        navigator.clipboard.writeText(_referrerRewardCode).catch(() => {
+            const ta = document.createElement('textarea');
+            ta.value = _referrerRewardCode; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+        });
+        showNotification('تم نسخ كود مكافأتك: ' + _referrerRewardCode + ' ✓', 'success');
+        // mark as claimed in Firestore
+        if (currentUser) {
+            db.collection('users').doc(currentUser.uid).update({ 'pendingReferralReward.claimed': true }).catch(() => {});
+        }
+    };
+
+    window.applyReferrerRewardToCart = () => {
+        if (!_referrerRewardCode) return;
+        const inp = document.getElementById('coupon-input');
+        if (inp) inp.value = _referrerRewardCode;
+        document.getElementById('referrer-reward-modal').style.display = 'none';
+        showNotification('تم تطبيق كود المكافأة: ' + _referrerRewardCode + ' ✓', 'success');
+        openCheckout();
+        if (currentUser) {
+            db.collection('users').doc(currentUser.uid).update({ 'pendingReferralReward.claimed': true }).catch(() => {});
+        }
+    };
+
+    window.closeReferrerReward = () => {
+        document.getElementById('referrer-reward-modal').style.display = 'none';
+        if (currentUser) localStorage.setItem('referrer_reward_shown_' + currentUser.uid, '1');
+    };
+
     // ============ FIRST ORDER COUPON BANNER ============
     async function checkFirstOrderBanner(){
         if(localStorage.getItem('zahraa_first_order_seen'))return;
@@ -3654,6 +3793,7 @@ window.loginWithFacebook = async () => {
 
     // ============ ZAHRAA TOAST (index.html) ============
     function zahraaToast(msg, type = 'success') {
+        playZahraaSound(type);
         const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
         const colors = { success: '#22c55e', error: '#ef4444', warning: '#f59e0b', info: '#60a5fa' };
         let container = document.getElementById('zahraa-toast-container');
@@ -4225,6 +4365,28 @@ function moveAdSlide(dir) {
       <button onclick="closeScratchGift()" style="background:transparent;border:none;color:#555;font-size:12px;cursor:pointer;font-family:'Cairo',sans-serif;">تخطي</button>
     </div>
   </div>
+  <!-- ===== REFERRER REWARD SCRATCH MODAL ===== -->
+  <div id="referrer-reward-modal" style="display:none;position:fixed;inset:0;z-index:9900;background:rgba(0,0,0,0.95);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:16px;font-family:'Cairo',sans-serif;direction:rtl;">
+    <div style="background:linear-gradient(160deg,#0d0d0d,#1a1400);border-radius:28px;max-width:360px;width:100%;padding:28px 22px;border:2px solid rgba(212,175,55,0.6);box-shadow:0 24px 80px rgba(212,175,55,0.2);text-align:center;position:relative;">
+      <div style="font-size:52px;margin-bottom:10px;animation:pulse 1.5s infinite;">🎉</div>
+      <h2 style="color:#d4af37;font-size:22px;font-weight:800;margin:0 0 6px;">مبروك! اتحلتك مكافأة! 🎁</h2>
+      <p style="color:#aaa;font-size:12px;margin:0 0 20px;line-height:1.7;">صديقك أتمّ أول طلبه عن طريقك 🌟<br>اخدش الكارت عشان تكشف كودك الحصري!</p>
+      <div style="position:relative;width:260px;margin:0 auto 14px;border-radius:16px;overflow:hidden;">
+        <div id="ref-reward-reveal" style="background:linear-gradient(135deg,#1a1400,#241c00);padding:28px 16px;border-radius:16px;border:2px solid rgba(212,175,55,0.5);">
+          <p style="color:#aaa;font-size:10px;margin:0 0 6px;">كود الخصم الخاص بيك:</p>
+          <p id="ref-reward-code" style="color:#d4af37;font-size:26px;font-weight:800;letter-spacing:5px;margin:0;font-family:monospace;">••••••</p>
+          <p id="ref-reward-desc" style="color:#666;font-size:11px;margin:8px 0 0;">جاري التحميل...</p>
+        </div>
+        <canvas id="ref-reward-canvas" style="position:absolute;inset:0;width:100%;height:100%;cursor:crosshair;touch-action:none;border-radius:16px;" width="260" height="104"></canvas>
+      </div>
+      <p id="ref-reward-hint" style="color:#d4af37;font-size:11px;font-weight:700;margin:0 0 14px;">← اخدش هنا عشان تكشف الهدية →</p>
+      <div id="ref-reward-actions" style="display:none;gap:8px;flex-direction:column;">
+        <button onclick="copyReferrerRewardCode()" style="width:100%;padding:13px;border-radius:14px;background:linear-gradient(135deg,#d4af37,#f0c94e);color:#000;font-weight:800;font-size:14px;border:none;cursor:pointer;font-family:'Cairo',sans-serif;">📋 نسخ الكود</button>
+        <button onclick="applyReferrerRewardToCart()" style="width:100%;padding:11px;border-radius:14px;background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.4);color:#d4af37;font-weight:700;font-size:13px;cursor:pointer;font-family:'Cairo',sans-serif;">🛒 تطبيق على السلة</button>
+      </div>
+      <button onclick="closeReferrerReward()" style="background:transparent;border:none;color:#555;font-size:12px;cursor:pointer;font-family:'Cairo',sans-serif;margin-top:12px;display:block;width:100%;">تخطي</button>
+    </div>
+  </div>
   <!-- ===== FIRST ORDER BANNER ===== -->
   <div id="first-order-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:4000;background:linear-gradient(135deg,#1a0d00,#2a1800);border-bottom:2px solid rgba(212,175,55,0.5);padding:10px 16px;font-family:'Cairo',sans-serif;direction:rtl;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;">
     <span style="font-size:20px;">🎁</span>
@@ -4610,16 +4772,20 @@ async function callPollinationsAI(messages, model = 'openai') {
 async function generateRealAIResponse(userMessage) {
   const storeCtx = buildStoreContext();
 
-  const systemPrompt = `أنت مساعد ذكي حقيقي لمتجر "استوديو الزهراء". تتحدث بالعربية العامية المصرية بشكل طبيعي وودود.
+  const systemPrompt = `أنت "زهرة"، المساعدة الذكية لمتجر "استوديو الزهراء". شخصيتك ودودة، فرفوشة، وبتتكلمي بالعامية المصرية الجميلة 🌸
 معلومات المتجر:
 ${storeCtx}
 
 قواعد مهمة:
-- رد بشكل طبيعي مثل إنسان، مش روبوت
-- اجوبتك مختصرة (2-3 جمل بحد أقصى)
-- لو سألوا عن التواصل أو الرقم أو الواتساب، ابعت الرقم الموجود في معلومات المتجر
-- لو سألوا عن منتج معين، أجب من قائمة المنتجات الموجودة
-- ممكن تساعد في أي سؤال عام مش بس عن المتجر`;
+- تكلمي بشكل طبيعي ومبهج زي صاحبة بتساعد صاحبتها
+- خلّي ردودك خفيفة ومختصرة (جملتين أو ثلاثة بحد أقصى)
+- استخدمي إيموجي بشكل طبيعي ومعتدل 😊✨
+- لو حد سأل عن منتج، اقترحي منتجات مشابهة من عندنا
+- لو حد سأل عن الرقم أو التواصل، ابعتيلهم الرقم الموجود في المعلومات
+- لو حد عنده شك أو مشكلة، طمّنيه بأسلوب حلو وقوليه كيف تتعامل معاها
+- ممكن تساعدي في أي سؤال عام حتى لو مش عن المتجر
+- لو حد بيقارن منتجات، اعطيهم رأيك بشكل طبيعي
+- ابدأ ردودك بتنويع التحيات والمقدمات عشان ما تبقيش رتيبة`;
 
   const history = aiChatHistory.slice(-8).map(m => ({
     role: m.sender === 'user' ? 'user' : 'assistant',
@@ -4673,7 +4839,7 @@ function closeFAB() {
 // ====== IMAGE ENHANCEMENT FUNCTIONALITY ======
 let currentImageData = null;
 let enhanceUsageCount = 0;
-const MAX_ENHANCE_USES = 5;
+const MAX_ENHANCE_USES = 50;
 
 function getEnhanceUsageFromStorage() {
   const today = new Date().toDateString();
@@ -4801,7 +4967,7 @@ function enhanceImage() {
       zahraaToast('خطأ: ' + e.message, 'error');
     }
   };
-  setTimeout(doEnhance, 1800);
+  setTimeout(doEnhance, 300);
 }
 
 function downloadEnhancedImage() {

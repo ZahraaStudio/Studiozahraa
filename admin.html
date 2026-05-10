@@ -1548,8 +1548,20 @@ window.loadOrders = () => {
 
                 // Mark order as reward processed + set earnedReferralCoupon on referrer's user doc
                 await updateDoc(doc(db, 'orders', orderId), { rewardProcessed: true });
+                const rewardDesc = settings.type === 'percentage'
+                    ? `خصم ${settings.amount}% على أي طلب 🎁`
+                    : `خصم ${settings.amount} ج على أي طلب 🎁`;
                 try {
-                    await setDoc(doc(db, 'users', referrerUid), { earnedReferralCoupon: couponCode }, { merge: true });
+                    await setDoc(doc(db, 'users', referrerUid), {
+                        earnedReferralCoupon: couponCode,
+                        pendingReferralReward: {
+                            coupon: couponCode,
+                            code: couponCode,
+                            desc: rewardDesc,
+                            claimed: false,
+                            createdAt: new Date().toISOString()
+                        }
+                    }, { merge: true });
                 } catch(e) {}
 
                 // Log referral
