@@ -4561,82 +4561,88 @@ async function sendAIMessage() {
   addAIMessage(response || 'عذراً، حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى.', 'assistant');
 }
 
-async function generateRealAIResponse(userMessage) {
-  // بناء context المتجر
-  let storeContext = `اسم المتجر: استوديو الزهراء (ZAHRAA STUDIO).
-الموقع: بصبيح، ههيا، الشرقية، مصر.
-التخصص: تصاميم، طباعة فاخرة، هدايا، تابلوهات، مجات مخصصة.
-للتواصل: واتساب 01204194540.`;
+function buildStoreContext() {
+  // رقم الواتساب من الإعدادات أو الافتراضي
+  const wa = (typeof storeSettings !== 'undefined' && (storeSettings.whatsapp1 || storeSettings.whatsapp))
+    ? (storeSettings.whatsapp1 || storeSettings.whatsapp).replace(/\D/g,'').replace(/^20/,'0')
+    : '01204194540';
+  const fb = (typeof storeSettings !== 'undefined' && storeSettings.facebook) ? storeSettings.facebook : '';
+  const ig = (typeof storeSettings !== 'undefined' && storeSettings.instagram) ? storeSettings.instagram : '';
+  const storeName = (typeof storeSettings !== 'undefined' && storeSettings.storeName) ? storeSettings.storeName : 'استوديو الزهراء';
+
+  let ctx = `اسم المتجر: ${storeName} (ZAHRAA STUDIO)
+الموقع: بصبيح، ههيا، الشرقية، مصر
+التخصص: تصاميم، طباعة فاخرة، تابلوهات، مجات، هدايا
+رقم الواتساب: ${wa}`;
+  if (fb) ctx += `\nفيسبوك: ${fb}`;
+  if (ig) ctx += `\nإنستاغرام: ${ig}`;
+
   if (typeof allProducts !== 'undefined' && allProducts.length > 0) {
-    const sample = allProducts.slice(0, 10).map(p => `${p.name} بـ${p.price} ج`).join('، ');
-    storeContext += `\nبعض منتجاتنا: ${sample}.`;
+    const prods = allProducts.slice(0, 12).map(p => `"${p.name}" بـ${p.price} ج`).join('، ');
+    ctx += `\nمنتجات المتجر: ${prods}`;
   }
   if (typeof coupons !== 'undefined') {
-    const activeCoupons = coupons.filter(c => c.active).map(c => `${c.code} (${c.description})`).join('، ');
-    if (activeCoupons) storeContext += `\nكودات الخصم المتاحة: ${activeCoupons}.`;
+    const active = coupons.filter(c => c.active).map(c => `${c.code} (${c.description})`).join('، ');
+    if (active) ctx += `\nكودات خصم متاحة: ${active}`;
   }
+  return ctx;
+}
+
+async function callPollinationsAI(messages, model = 'openai') {
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), 13000);
+  try {
+    const res = await fetch('https://text.pollinations.ai/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages, model, seed: Math.floor(Math.random() * 9999), private: true }),
+      signal: controller.signal
+    });
+    clearTimeout(t);
+    if (res.ok) {
+      const txt = await res.text();
+      if (txt && txt.trim().length > 4) return txt.trim();
+    }
+  } catch (e) { clearTimeout(t); }
+  return null;
+}
+
+async function generateRealAIResponse(userMessage) {
+  const storeCtx = buildStoreContext();
+
+  const systemPrompt = `أنت مساعد ذكي حقيقي لمتجر "استوديو الزهراء". تتحدث بالعربية العامية المصرية بشكل طبيعي وودود.
+معلومات المتجر:
+${storeCtx}
+
+قواعد مهمة:
+- رد بشكل طبيعي مثل إنسان، مش روبوت
+- اجوبتك مختصرة (2-3 جمل بحد أقصى)
+- لو سألوا عن التواصل أو الرقم أو الواتساب، ابعت الرقم الموجود في معلومات المتجر
+- لو سألوا عن منتج معين، أجب من قائمة المنتجات الموجودة
+- ممكن تساعد في أي سؤال عام مش بس عن المتجر`;
+
+  const history = aiChatHistory.slice(-8).map(m => ({
+    role: m.sender === 'user' ? 'user' : 'assistant',
+    content: m.text
+  }));
 
   const messages = [
-    {
-      role: 'system',
-      content: `أنت مساعد ذكي ومفيد لمتجر "استوديو الزهراء". معلومات المتجر:\n${storeContext}\nأجب بالعربية بشكل طبيعي وودود ومختصر (جملة أو جملتين). لا تُطوّل الردود.`
-    },
-    ...aiChatHistory.slice(-6).map(m => ({
-      role: m.sender === 'user' ? 'user' : 'assistant',
-      content: m.text
-    })),
+    { role: 'system', content: systemPrompt },
+    ...history,
     { role: 'user', content: userMessage }
   ];
 
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
-    const response = await fetch('https://text.pollinations.ai/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages, model: 'mistral', seed: Math.floor(Math.random() * 999) }),
-      signal: controller.signal
-    });
-    clearTimeout(timeout);
-    if (response.ok) {
-      const text = await response.text();
-      if (text && text.trim().length > 3) return text.trim();
-    }
-  } catch (error) {
-    // timeout أو خطأ شبكة - نستخدم الرد المحلي
-  }
+  // محاولة أولى بـ openai (أعلى جودة)
+  let response = await callPollinationsAI(messages, 'openai');
+  if (response) return response;
 
-  return generateLocalFallback(userMessage);
-}
+  // محاولة ثانية بـ mistral (أسرع)
+  response = await callPollinationsAI(messages, 'mistral');
+  if (response) return response;
 
-function generateLocalFallback(userMessage) {
-  const msg = userMessage.toLowerCase();
-  if (msg.includes('سعر') || msg.includes('كم') || msg.includes('بكم')) {
-    if (typeof allProducts !== 'undefined' && allProducts.length > 0) {
-      const sample = allProducts.slice(0, 3);
-      return 'إليك بعض أسعارنا:\n' + sample.map(p => `• ${p.name}: ${p.price} ج`).join('\n') + '\nهل تريد معرفة المزيد؟';
-    }
-  }
-  if (msg.includes('هدية') || msg.includes('هدايا')) {
-    return 'لدينا تشكيلة رائعة من الهدايا الفاخرة! أخبرني بالمناسبة وسأساعدك باختيار الأنسب 🎁';
-  }
-  if (msg.includes('عرض') || msg.includes('خصم') || msg.includes('كوبون')) {
-    const activeCoupons = (typeof coupons !== 'undefined') ? coupons.filter(c=>c.active).map(c=>`${c.code}: ${c.description}`).join('\n') : '';
-    return activeCoupons ? `الكودات المتاحة حالياً:\n${activeCoupons}` : 'تابع متجرنا للحصول على أحدث العروض! 🔥';
-  }
-  if (msg.includes('تواصل') || msg.includes('واتس') || msg.includes('رقم') || msg.includes('اتصل') || msg.includes('خط')) {
-    return 'للتواصل معنا:\n📱 واتساب: 01204194540\n📍 بصبيح، ههيا، الشرقية';
-  }
-  if (msg.includes('عنوان') || msg.includes('فين') || msg.includes('مكان')) {
-    return 'موقعنا: بصبيح، ههيا، الشرقية 📍\nللتواصل: واتساب 01204194540';
-  }
-  if (msg.includes('شكر')) {
-    return 'على الرحب والسعة! يسعدنا خدمتك دائماً 😊';
-  }
-  if (msg.includes('مرحب') || msg.includes('هلا') || msg.includes('أهلا') || msg.includes('السلام')) {
-    return 'أهلاً وسهلاً! يسعدني مساعدتك في أي استفسار عن المنتجات أو الأسعار أو التواصل 🌟';
-  }
-  return 'شكراً لتواصلك! للاستفسار يمكنك سؤالي أو التواصل معنا على واتساب 01204194540 📱';
+  // رد احتياطي بسيط فقط لو فشل الاتصال تمامًا
+  return 'آسف، في مشكلة في الاتصال دلوقتي. تقدر تتواصل معانا على واتساب ' +
+    buildStoreContext().match(/رقم الواتساب: (\S+)/)?.[1] || '01204194540';
 }
 
 // ====== FAB (Floating Action Button) ======
