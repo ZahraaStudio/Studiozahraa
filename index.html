@@ -538,14 +538,6 @@
         <span class="fab-item-label">مساعد ذكي</span>
         <button class="fab-item-btn" style="background:linear-gradient(135deg,#d4af37,#f0c94e);box-shadow:0 4px 14px rgba(212,175,55,0.4);" onclick="closeFAB();toggleAIChat()">🤖</button>
       </div>
-      <div class="fab-item">
-        <span class="fab-item-label">تحسين الصور</span>
-        <button class="fab-item-btn" style="background:linear-gradient(135deg,#8b6914,#d4af37);box-shadow:0 4px 14px rgba(212,175,55,0.4);" onclick="closeFAB();openImageEnhanceModal()">🖼️</button>
-      </div>
-      <div class="fab-item">
-        <span class="fab-item-label">الدعم المباشر</span>
-        <button class="fab-item-btn" style="background:linear-gradient(135deg,#1a7a3a,#25D366);box-shadow:0 4px 14px rgba(37,211,102,0.4);" onclick="closeFAB();(typeof chatSystem!=='undefined'&&chatSystem.toggleChat())">💬</button>
-      </div>
     </div>
   </div>
 
@@ -1551,6 +1543,9 @@
 
                 // مراقبة مكافآت الإحالة للمُحيل بشكل لحظي
                 setTimeout(() => listenForReferrerReward(user.uid), 2000);
+
+                // ===== مراقبة إشعارات المتجر الفورية (Firestore onSnapshot) =====
+                listenForStoreNotifications(user.uid);
 
                 // Referral banner: hide if user already received earned coupon
                 let hideReferral = false;
@@ -3414,12 +3409,16 @@ window.loginWithFacebook = async () => {
             const diff = end - now;
 
             if (diff <= 0) {
+                // إخفاء قسم العروض اليومية كاملاً عند انتهاء الوقت
                 const sec = document.getElementById('daily-offers-section');
-                const cdWrap = sec ? sec.querySelector('.countdown-wrap') : null;
-                if (cdWrap) {
-                    cdWrap.innerHTML = '<div class="text-center py-2"><span class="bg-zinc-800 text-zinc-300 text-sm px-4 py-2 rounded-xl font-bold">⏱ انتهى العرض — تابعنا لعروض قادمة!</span></div>';
+                if (sec) sec.style.display = 'none';
+                const sideBtn = document.getElementById('sidebar-daily-btn');
+                if (sideBtn) sideBtn.classList.add('hidden');
+                // إزالة العروض المنتهية من قائمة المنتجات المعروضة
+                if (typeof allProducts !== 'undefined') {
+                    allProducts = allProducts.map(p => ({ ...p, isDailyOffer: false }));
+                    if (typeof renderProducts === 'function') renderProducts(allProducts);
                 }
-                document.getElementById('sidebar-daily-btn').classList.add('hidden');
                 return;
             }
 
@@ -3677,6 +3676,51 @@ window.loginWithFacebook = async () => {
                 showReferrerRewardModal();
             }
         });
+    }
+
+    // ===== مراقبة إشعارات المتجر عبر Firestore =====
+    let _notifUnsubscribe = null;
+    const _shownNotifIds = new Set(JSON.parse(localStorage.getItem('_zahraa_seen_notifs')||'[]'));
+
+    function listenForStoreNotifications(uid) {
+        if (_notifUnsubscribe) _notifUnsubscribe();
+        const cutoff = firebase.firestore.Timestamp.fromDate(new Date(Date.now() - 86400000));
+        _notifUnsubscribe = db.collection('notifications')
+            .where('createdAt', '>', cutoff)
+            .orderBy('createdAt', 'desc')
+            .limit(10)
+            .onSnapshot(snap => {
+                snap.forEach(doc => {
+                    if (_shownNotifIds.has(doc.id)) return;
+                    const n = doc.data();
+                    // إشعار للكل أو لهذا المستخدم تحديدًا
+                    if (n.target !== 'all' && n.target !== uid) return;
+                    _shownNotifIds.add(doc.id);
+                    localStorage.setItem('_zahraa_seen_notifs', JSON.stringify([..._shownNotifIds].slice(-50)));
+                    // عرض إشعار في الموقع
+                    if (typeof showNotification === 'function') showNotification(n.title + (n.body ? ': ' + n.body : ''), 'info');
+                    // إشعار المتصفح المحلي
+                    if ('Notification' in window && Notification.permission === 'granted') {
+                        try {
+                            const bn = new Notification('🌸 ' + (n.title || 'استوديو الزهراء'), {
+                                body: n.body || '',
+                                icon: './icon-192.png',
+                                badge: './icon-192.png',
+                                tag: doc.id,
+                                dir: 'rtl',
+                                lang: 'ar',
+                                requireInteraction: true
+                            });
+                            bn.onclick = () => { window.focus(); bn.close(); };
+                            setTimeout(() => bn.close(), 12000);
+                        } catch(e) {}
+                    }
+                });
+            });
+        // طلب إذن الإشعارات تلقائيًا
+        if ('Notification' in window && Notification.permission === 'default') {
+            setTimeout(() => Notification.requestPermission(), 3000);
+        }
     }
 
     function showReferrerRewardModal() {
@@ -4913,8 +4957,9 @@ ${storeCtx}
   if (response) return response;
 
   // رد احتياطي بسيط فقط لو فشل الاتصال تمامًا
-  return 'آسف، في مشكلة في الاتصال دلوقتي. تقدر تتواصل معانا على واتساب ' +
-    buildStoreContext().match(/رقم الواتساب: (\S+)/)?.[1] || '01204194540';
+  const ss2 = typeof storeSettings !== 'undefined' ? storeSettings : {};
+  const waNum = (ss2.whatsapp1 || ss2.whatsapp || '01204194540').replace(/\D/g,'').replace(/^20/,'0');
+  return `آسف، في مشكلة في الاتصال دلوقتي 😔 تقدري تتواصلي معانا على واتساب: ${waNum}`;
 }
 
 // ====== FAB (Floating Action Button) ======
