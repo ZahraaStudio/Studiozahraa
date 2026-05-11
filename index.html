@@ -1641,9 +1641,24 @@ window.loginWithFacebook = async () => {
         }
     };
 
+    // ===== نظام صوت موحّد مع حل مشكلة الـ autoplay policy =====
+    let _audioCtx = null;
+    let _audioReady = false;
+    function _getAudioCtx() {
+        if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (_audioCtx.state === 'suspended') _audioCtx.resume();
+        return _audioCtx;
+    }
+    // استئناف الصوت عند أول تفاعل من المستخدم
+    ['click','touchstart','keydown'].forEach(ev => document.addEventListener(ev, () => {
+        _audioReady = true;
+        if (_audioCtx && _audioCtx.state === 'suspended') _audioCtx.resume();
+    }, { once: false, passive: true }));
+
     function playZahraaSound(type) {
+        if (!_audioReady) return; // لا صوت قبل تفاعل المستخدم
         try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const ctx = _getAudioCtx();
             const master = ctx.createGain();
             master.gain.setValueAtTime(0.22, ctx.currentTime);
             master.connect(ctx.destination);
@@ -1677,7 +1692,6 @@ window.loginWithFacebook = async () => {
                 g.gain.setValueAtTime(0,ctx.currentTime);g.gain.linearRampToValueAtTime(1,ctx.currentTime+0.03);g.gain.linearRampToValueAtTime(0,ctx.currentTime+0.2);
                 o.connect(g);g.connect(master);o.start();o.stop(ctx.currentTime+0.22);
             }
-            setTimeout(()=>ctx.close(),1000);
         } catch(e){}
     }
 
@@ -1835,20 +1849,26 @@ window.loginWithFacebook = async () => {
         const hasDiscount = (product.oldPrice && product.oldPrice > product.price) || (product.discountType && product.discountValue);
         const oos = isOutOfStock(product);
 
+        // دمج الفيديوهات مع الصور في السلايدر
+        const isVideoUrl = u => u && (u.includes('.mp4')||u.includes('.mov')||u.includes('.webm')||u.includes('/video/upload/'));
+        const videoUrls = (product.videos || []).concat(product.videoUrl ? [product.videoUrl] : []);
+        const allMedia = [...images, ...videoUrls.filter(v => !images.includes(v))];
+
         content.innerHTML = `
             <div class="space-y-4">
                 <div class="slider-container bg-zinc-900 rounded-2xl overflow-hidden">
                     <div class="slider-track" id="slider-track">
-                        ${images.map(img => `<div class="slider-item"><img src="${img}" class="w-full h-96 object-cover cursor-pointer" onclick="openImageViewer('${img}')"></div>`).join('')}
+                        ${allMedia.map(url => isVideoUrl(url)
+                            ? `<div class="slider-item" style="position:relative;">
+                                <video src="${url}" controls playsinline muted preload="metadata" class="w-full" style="height:384px;object-fit:contain;background:#000;"></video>
+                                <div style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.7);color:#d4af37;font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;">🎬 فيديو</div>
+                              </div>`
+                            : `<div class="slider-item"><img src="${url}" class="w-full h-96 object-cover cursor-pointer" onclick="openImageViewer('${url}')"></div>`
+                        ).join('')}
                     </div>
-                    ${images.length > 1 ? `<div class="swipe-indicator">← اسحب للتنقل →</div>` : ''}
+                    ${allMedia.length > 1 ? `<div class="swipe-indicator">← اسحب للتنقل →</div>` : ''}
                 </div>
-                ${images.length > 1 ? `<div class="flex gap-2 justify-center">${images.map((_, i) => `<div id="dot-${i}" class="w-2 h-2 rounded-full cursor-pointer" onclick="goToSlide(${i})"></div>`).join('')}</div>` : ''}
-                ${product.videoUrl ? `
-                    <div class="rounded-2xl overflow-hidden border border-zinc-800">
-                        <video src="${product.videoUrl}" controls class="w-full"></video>
-                    </div>
-                ` : ''}
+                ${allMedia.length > 1 ? `<div class="flex gap-2 justify-center flex-wrap">${allMedia.map((u, i) => `<div id="dot-${i}" class="w-2 h-2 rounded-full cursor-pointer ${isVideoUrl(u)?'bg-yellow-400':'bg-zinc-600'}" onclick="goToSlide(${i})" title="${isVideoUrl(u)?'فيديو':'صورة'}"></div>`).join('')}</div>` : ''}
             </div>
             <div class="space-y-5">
                 <div>
@@ -2602,13 +2622,49 @@ window.loginWithFacebook = async () => {
         }
         if (_ordersUnsubscribe) _ordersUnsubscribe();
         wrap.innerHTML = '<div class="text-center text-zinc-500 py-8">جاري التحميل...</div>';
+        // تتبع حالات الطلبات السابقة لاكتشاف التغييرات
+        const _prevOrderStatus = {};
+
+        // طلب إذن الإشعارات عند فتح صفحة الطلبات
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+
+        function _sendOrderBrowserNotif(order) {
+            if (!('Notification' in window) || Notification.permission !== 'granted') return;
+            const statusEmojis = { 'قيد التنفيذ': '⏳', 'تم الشحن': '🚚', 'تم التوصيل': '📦', 'مكتمل': '✅', 'ملغي': '❌' };
+            const emoji = statusEmojis[order.status] || '📋';
+            try {
+                const notif = new Notification(`${emoji} تحديث طلبك — استوديو الزهراء`, {
+                    body: `طلب #${order.orderNumber} أصبح: ${order.status}`,
+                    icon: '/favicon.ico',
+                    badge: '/favicon.ico',
+                    tag: `order-${order.id}`,
+                    renotify: true,
+                    dir: 'rtl',
+                    lang: 'ar'
+                });
+                notif.onclick = () => { window.focus(); showPage('orders'); notif.close(); };
+                setTimeout(() => notif.close(), 8000);
+            } catch(e) {}
+        }
+
         _ordersUnsubscribe = db.collection('orders').where('userId', '==', currentUser.uid).onSnapshot(snap => {
             if (snap.empty) {
                 wrap.innerHTML = '<div class="bg-zinc-900 border border-zinc-800 p-8 rounded-2xl text-center"><p class="text-zinc-400">لا توجد طلبات بعد</p></div>';
                 return;
             }
             const orders = [];
-            snap.forEach(d => orders.push({ id: d.id, ...d.data() }));
+            snap.forEach(d => {
+                const order = { id: d.id, ...d.data() };
+                // اكتشاف تغيير الحالة وإرسال إشعار محلي
+                if (_prevOrderStatus[order.id] && _prevOrderStatus[order.id] !== order.status) {
+                    _sendOrderBrowserNotif(order);
+                    if (typeof showNotification === 'function') showNotification(`طلب #${order.orderNumber}: ${order.status}`, 'info');
+                }
+                _prevOrderStatus[order.id] = order.status;
+                orders.push(order);
+            });
             orders.sort((a, b) => {
                 const ta = a.createdAt?.toDate?.() || new Date(0);
                 const tb = b.createdAt?.toDate?.() || new Date(0);
@@ -3861,15 +3917,29 @@ window.loginWithFacebook = async () => {
     } catch(e) { console.error('Ad System Error:', e); }
 }
 
+// دالة مساعدة لفحص روابط الفيديو
+function _isAdVideo(url) {
+    return url && (url.includes('.mp4')||url.includes('.mov')||url.includes('.webm')||url.includes('/video/upload/'));
+}
+
 // --- 1. طريقة العرض المنبثق (Popup) ---
 function renderPopupAd(ad) {
-    adImages = ad.images || [];
+    adImages = (ad.images || []).concat(ad.videoUrl ? [ad.videoUrl] : []);
     const adDuration = parseInt(ad.duration) || 30;
     const adSkipDelay = parseInt(ad.skipDelay) || 5;
 
     document.getElementById('ad-title').innerText = ad.title || '';
     const track = document.getElementById('ad-track');
-    if(track) track.innerHTML = adImages.map(img => `<div style="min-width:100%;height:420px;"><img src="${img}" style="width:100%;height:100%;object-fit:cover;"></div>`).join('');
+    if(track) track.innerHTML = adImages.map(url => _isAdVideo(url)
+        ? `<div style="min-width:100%;height:420px;background:#000;display:flex;align-items:center;justify-content:center;">
+             <video src="${url}" autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;"></video>
+             <div style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.7);color:#d4af37;font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;">🎬</div>
+           </div>`
+        : `<div style="min-width:100%;height:420px;position:relative;">
+             <img src="${url}" style="width:100%;height:100%;object-fit:cover;">
+             ${ad.discount ? `<div style="position:absolute;top:14px;left:14px;background:linear-gradient(135deg,#d4af37,#f0c94e);color:#000;font-size:18px;font-weight:900;padding:8px 16px;border-radius:12px;box-shadow:0 4px 20px rgba(212,175,55,0.5);">خصم ${ad.discount}</div>` : ''}
+           </div>`
+    ).join('');
 
     // إعداد زر التخطي
     const skipBtn = document.getElementById('ad-skip');
@@ -3909,10 +3979,18 @@ function renderPopupAd(ad) {
 
 // --- 2. طريقة الشريط العلوي (Banner) ---
 function renderTopBannerAd(ad) {
+    const old = document.getElementById('zahraa-top-banner');
+    if (old) old.remove();
     const banner = document.createElement('div');
-    banner.style.cssText = "position:fixed; top:0; left:0; right:0; background:linear-gradient(90deg,#d4af37,#f0c94e); color:#000; padding:10px; text-align:center; z-index:99999; font-weight:800; font-size:13px; box-shadow:0 2px 15px rgba(0,0,0,0.3);";
-    banner.innerHTML = `🔥 ${ad.title} ${ad.buttonLink ? `<a href="${ad.buttonLink}" style="margin-right:15px; background:#000; color:#d4af37; padding:2px 10px; border-radius:5px; text-decoration:none;">${ad.buttonText}</a>` : ''} <span onclick="this.parentElement.remove()" style="margin-right:15px; cursor:pointer;">✕</span>`;
+    banner.id = 'zahraa-top-banner';
+    banner.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:99999;background:linear-gradient(90deg,#1a0a00,#d4af37,#1a0a00);color:#000;padding:11px 16px;text-align:center;font-weight:800;font-size:13px;box-shadow:0 2px 20px rgba(212,175,55,0.5);display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;font-family:'Cairo',sans-serif;direction:rtl;";
+    banner.innerHTML = `<span style="font-size:16px;">🔥</span>
+      <span style="color:#fff;text-shadow:0 1px 4px rgba(0,0,0,0.8);">${ad.title}</span>
+      ${ad.discount ? `<span style="background:#fff;color:#c8910a;font-size:12px;font-weight:900;padding:2px 10px;border-radius:20px;">${ad.discount}</span>` : ''}
+      ${ad.buttonLink ? `<a href="${ad.buttonLink}" target="_blank" style="background:#fff;color:#a07000;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:800;text-decoration:none;flex-shrink:0;">${ad.buttonText||'عرض'}</a>` : ''}
+      <span onclick="document.getElementById('zahraa-top-banner').remove()" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);cursor:pointer;color:rgba(255,255,255,0.7);font-size:18px;line-height:1;">✕</span>`;
     document.body.prepend(banner);
+    document.body.style.paddingTop = (parseInt(document.body.style.paddingTop)||0) + banner.offsetHeight + 'px';
 }
 
 // --- 3. طريقة الشريط السفلي (Sticky) ---
@@ -3920,12 +3998,17 @@ function renderStickyAd(ad) {
     const bar = document.getElementById('sticky-ad-bar');
     const content = document.getElementById('sticky-ad-content');
     if (!bar || !content) return;
-    
-    content.innerHTML = `<p style="color:#fff; font-size:12px; font-weight:bold; margin:0;">📢 ${ad.title}</p>` +
-        (ad.buttonLink ? `<a href="${ad.buttonLink}" target="_blank" style="background:#d4af37; color:#000; padding:5px 12px; border-radius:8px; font-size:11px; font-weight:800; text-decoration:none; margin-right:10px;">${ad.buttonText}</a>` : '');
-    
+    const imgs = ad.images || [];
+    const firstMedia = imgs[0] || '';
+    const mediaHtml = _isAdVideo(firstMedia)
+        ? `<video src="${firstMedia}" autoplay muted loop playsinline style="height:38px;width:56px;object-fit:cover;border-radius:7px;flex-shrink:0;"></video>`
+        : firstMedia ? `<img src="${firstMedia}" style="height:38px;width:56px;object-fit:cover;border-radius:7px;flex-shrink:0;">` : '';
+    content.innerHTML = mediaHtml +
+        `<div style="flex:1;min-width:0;"><p style="color:#fff;font-size:12px;font-weight:bold;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📢 ${ad.title}</p>
+         ${ad.discount ? `<p style="color:#d4af37;font-size:10px;font-weight:800;margin:2px 0 0;">✨ ${ad.discount}</p>` : ''}</div>` +
+        (ad.buttonLink ? `<a href="${ad.buttonLink}" target="_blank" style="background:linear-gradient(135deg,#d4af37,#f0c94e);color:#000;padding:5px 14px;border-radius:10px;font-size:11px;font-weight:800;text-decoration:none;flex-shrink:0;white-space:nowrap;">${ad.buttonText||'اعرف أكثر'}</a>` : '');
     bar.style.display = 'flex';
-              }
+}
 
 
 
@@ -4321,25 +4404,34 @@ function moveAdSlide(dir) {
 }
   </script>
 
-  <!-- ===== Ad Modal — تصميم احترافي طولي ===== -->
-<div id="ad-modal" style="display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,0.92);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:16px;font-family:'Cairo',sans-serif;">
-  <div style="background:#0d0d0d;border-radius:24px;max-width:360px;width:100%;overflow:hidden;box-shadow:0 28px 80px rgba(0,0,0,0.95);border:1px solid rgba(212,175,55,0.35);position:relative;">
-    <!-- Image/Slides area -->
-    <div style="position:relative;height:420px;overflow:hidden;background:#111;" id="ad-slides-wrap">
-      <div id="ad-track" style="display:flex;height:100%;transition:transform 0.5s cubic-bezier(0.4,0,0.2,1);will-change:transform;"></div>
+  <!-- ===== Ad Modal — تصميم ترويجي فاخر ===== -->
+<div id="ad-modal" style="display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,0.94);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:12px;font-family:'Cairo',sans-serif;">
+  <div style="background:linear-gradient(160deg,#0d0d0d 0%,#1a1200 100%);border-radius:24px;max-width:370px;width:100%;overflow:hidden;box-shadow:0 32px 90px rgba(0,0,0,0.98),0 0 0 1px rgba(212,175,55,0.4),0 0 40px rgba(212,175,55,0.08) inset;position:relative;">
+    <!-- Media Slides area -->
+    <div style="position:relative;height:430px;overflow:hidden;background:#0a0a0a;" id="ad-slides-wrap">
+      <div id="ad-track" style="display:flex;height:100%;transition:transform 0.55s cubic-bezier(0.4,0,0.2,1);will-change:transform;"></div>
+      <!-- Overlay gradient at bottom for text legibility -->
+      <div style="position:absolute;bottom:0;left:0;right:0;height:80px;background:linear-gradient(to top,rgba(13,13,13,0.9),transparent);z-index:2;pointer-events:none;"></div>
       <!-- Dots indicator -->
-      <div id="ad-dots" style="position:absolute;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:7px;z-index:3;"></div>
+      <div id="ad-dots" style="position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:7px;z-index:3;"></div>
       <!-- Timer pill -->
-      <div style="position:absolute;top:14px;right:14px;background:rgba(0,0,0,0.7);color:#d4af37;font-size:12px;font-weight:700;padding:5px 13px;border-radius:20px;z-index:3;display:flex;align-items:center;gap:4px;">
+      <div style="position:absolute;top:13px;right:13px;background:rgba(0,0,0,0.75);color:#d4af37;font-size:11px;font-weight:800;padding:5px 12px;border-radius:30px;z-index:4;display:flex;align-items:center;gap:5px;border:1px solid rgba(212,175,55,0.3);letter-spacing:0.5px;">
         <span>⏱</span><span id="ad-timer">--</span><span>ث</span>
       </div>
+      <!-- Swipe left/right hints -->
+      <button onclick="moveAdSlide(-1)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.5);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer;z-index:4;display:flex;align-items:center;justify-content:center;line-height:1;">›</button>
+      <button onclick="moveAdSlide(1)" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.5);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer;z-index:4;display:flex;align-items:center;justify-content:center;line-height:1;">‹</button>
       <!-- Skip/Close -->
-      <button id="ad-skip" onclick="closeAd()" style="display:none;position:absolute;top:14px;left:14px;background:rgba(255,255,255,0.18);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,0.25);color:#fff;padding:5px 13px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;z-index:3;">تخطي ✕</button>
+      <button id="ad-skip" onclick="closeAd()" style="display:none;position:absolute;top:13px;left:13px;background:rgba(255,255,255,0.15);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:5px 13px;border-radius:30px;font-size:11px;font-weight:700;cursor:pointer;z-index:4;">تخطي ✕</button>
     </div>
-    <!-- Content -->
-    <div style="padding:18px 20px 22px;">
-      <h3 id="ad-title" style="color:#fff;font-size:17px;font-weight:700;margin:0 0 4px;text-align:center;"></h3>
-      <a id="ad-button" href="#" target="_blank" style="display:none;width:100%;padding:13px;border-radius:14px;font-weight:700;text-align:center;font-size:14px;margin-top:14px;text-decoration:none;"></a>
+    <!-- Content area -->
+    <div style="padding:16px 20px 20px;background:linear-gradient(180deg,transparent,rgba(212,175,55,0.05));">
+      <h3 id="ad-title" style="color:#fff;font-size:16px;font-weight:800;margin:0 0 12px;text-align:center;line-height:1.5;"></h3>
+      <a id="ad-button" href="#" target="_blank"
+         style="display:none;width:100%;padding:13px 20px;border-radius:14px;font-weight:800;text-align:center;font-size:14px;text-decoration:none;background:linear-gradient(135deg,#d4af37,#f0c94e);color:#000;box-shadow:0 4px 20px rgba(212,175,55,0.4);transition:all 0.3s;letter-spacing:0.3px;">
+      </a>
+      <!-- Powered by -->
+      <p style="text-align:center;color:rgba(255,255,255,0.2);font-size:9px;margin:10px 0 0;letter-spacing:1px;">استوديو الزهراء ✦</p>
     </div>
   </div>
 </div>
@@ -4724,29 +4816,43 @@ async function sendAIMessage() {
 }
 
 function buildStoreContext() {
-  // رقم الواتساب من الإعدادات أو الافتراضي
-  const wa = (typeof storeSettings !== 'undefined' && (storeSettings.whatsapp1 || storeSettings.whatsapp))
-    ? (storeSettings.whatsapp1 || storeSettings.whatsapp).replace(/\D/g,'').replace(/^20/,'0')
-    : '01204194540';
-  const fb = (typeof storeSettings !== 'undefined' && storeSettings.facebook) ? storeSettings.facebook : '';
-  const ig = (typeof storeSettings !== 'undefined' && storeSettings.instagram) ? storeSettings.instagram : '';
-  const storeName = (typeof storeSettings !== 'undefined' && storeSettings.storeName) ? storeSettings.storeName : 'استوديو الزهراء';
+  const ss = typeof storeSettings !== 'undefined' ? storeSettings : {};
+  const wa = (ss.whatsapp1 || ss.whatsapp || '01204194540').replace(/\D/g,'').replace(/^20/,'0');
+  const storeName = ss.storeName || 'استوديو الزهراء';
 
   let ctx = `اسم المتجر: ${storeName} (ZAHRAA STUDIO)
 الموقع: بصبيح، ههيا، الشرقية، مصر
-التخصص: تصاميم، طباعة فاخرة، تابلوهات، مجات، هدايا
-رقم الواتساب: ${wa}`;
-  if (fb) ctx += `\nفيسبوك: ${fb}`;
-  if (ig) ctx += `\nإنستاغرام: ${ig}`;
+التخصص: تصاميم، طباعة فاخرة، تابلوهات، مجات مخصصة، هدايا
+رقم الواتساب للطلب والتواصل: ${wa}`;
+  if (ss.facebook) ctx += `\nفيسبوك: ${ss.facebook}`;
+  if (ss.instagram) ctx += `\nإنستاغرام: ${ss.instagram}`;
+  if (ss.storeAddress) ctx += `\nالعنوان: ${ss.storeAddress}`;
 
+  // كل تفاصيل المنتجات بالمقاسات والأصناف
   if (typeof allProducts !== 'undefined' && allProducts.length > 0) {
-    const prods = allProducts.slice(0, 12).map(p => `"${p.name}" بـ${p.price} ج`).join('، ');
-    ctx += `\nمنتجات المتجر: ${prods}`;
+    ctx += `\n\n=== قائمة المنتجات الكاملة ===`;
+    allProducts.slice(0, 30).forEach(p => {
+      const fp = (typeof effectivePrice === 'function') ? effectivePrice(p) : p.price;
+      const oldP = (p.oldPrice && p.oldPrice > fp) ? ` (كان ${p.oldPrice} ج)` : '';
+      const oos = (typeof isOutOfStock === 'function') ? isOutOfStock(p) : (p.outOfStock || false);
+      ctx += `\n• ${p.name}${p.code ? ` [كود: ${p.code}]` : ''} — ${fp} ج${oldP} — ${p.category || 'عام'}${oos ? ' [غير متاح]' : ' [متاح]'}`;
+      if (p.description) ctx += ` — ${p.description.substring(0, 80)}`;
+      if (p.variants && p.variants.length > 0) {
+        const vars = p.variants.map(v => `${v.name}${v.price ? ` (+${v.price} ج)` : ''}${v.available === false ? ' [غير متاح]' : ''}`).join('، ');
+        ctx += `\n  المقاسات/الأنواع: ${vars}`;
+      }
+    });
   }
+
   if (typeof coupons !== 'undefined') {
-    const active = coupons.filter(c => c.active).map(c => `${c.code} (${c.description})`).join('، ');
-    if (active) ctx += `\nكودات خصم متاحة: ${active}`;
+    const active = coupons.filter(c => c.active || c.isActive).map(c => `${c.code}: ${c.description || c.discount}`).join('، ');
+    if (active) ctx += `\n\nكودات خصم متاحة الآن: ${active}`;
   }
+
+  // إعدادات المتجر المهمة
+  if (ss.referralEnabled) ctx += `\nنظام الإحالة: مفعّل — شارك رابطك واحصل على كوبون`;
+  if (ss.spendSave?.enabled) ctx += `\nعرض "اشتري أكثر واوفر": عند شراء ${ss.spendSave.threshold} ج تحصل على خصم ${ss.spendSave.amount}${ss.spendSave.type==='percentage'?'%':' ج'}`;
+
   return ctx;
 }
 
