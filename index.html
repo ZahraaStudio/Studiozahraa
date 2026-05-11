@@ -227,15 +227,21 @@
     
     /* ====== FAB STYLES ====== */
     #chat-button { display: none !important; }
-    #fab-container { position:fixed; bottom:18px; right:16px; z-index:1001; display:flex; flex-direction:column-reverse; align-items:flex-end; gap:12px; }
+    /* إخفاء الـ FAB المستقل للدردشة — مدموج مع الـ FAB الرئيسي */
+    #chat-fab-portal { display: none !important; }
+    #fab-container { position:fixed; bottom:18px; right:16px; z-index:9999; display:flex; flex-direction:column-reverse; align-items:flex-end; gap:12px; }
+    #fab-main-wrap { position:relative; }
     #fab-main { width:58px; height:58px; background:linear-gradient(135deg,#d4af37,#f0c94e); border-radius:50%; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:26px; box-shadow:0 6px 22px rgba(212,175,55,0.55); transition:all 0.3s; }
-    #fab-main:hover { transform:scale(1.08); }
-    #fab-items { display:flex; flex-direction:column-reverse; gap:10px; opacity:0; pointer-events:none; transition:opacity 0.25s, transform 0.25s; transform:translateY(12px); }
+    #fab-main:hover { transform:scale(1.08); box-shadow:0 8px 28px rgba(212,175,55,0.7); }
+    #fab-chat-badge { display:none; position:absolute; top:-4px; right:-4px; background:#ef4444; color:#fff; border-radius:50%; width:20px; height:20px; font-size:11px; font-weight:800; align-items:center; justify-content:center; border:2px solid #000; z-index:10; }
+    #fab-items { display:flex; flex-direction:column-reverse; gap:10px; opacity:0; pointer-events:none; transition:opacity 0.3s, transform 0.3s; transform:translateY(16px); }
     #fab-items.open { opacity:1; pointer-events:auto; transform:translateY(0); }
-    .fab-item { display:flex; align-items:center; gap:8px; justify-content:flex-end; }
-    .fab-item-label { background:#1a1a1a; color:#d4af37; padding:5px 12px; border-radius:20px; font-size:12px; font-weight:bold; white-space:nowrap; box-shadow:0 2px 8px rgba(0,0,0,0.5); }
-    .fab-item-btn { width:48px; height:48px; border-radius:50%; border:none; cursor:pointer; font-size:22px; transition:all 0.2s; }
+    .fab-item { display:flex; align-items:center; gap:10px; justify-content:flex-end; }
+    .fab-item-label { background:#111; color:#d4af37; padding:6px 14px; border-radius:20px; font-size:12px; font-weight:700; white-space:nowrap; box-shadow:0 3px 12px rgba(0,0,0,0.6); border:1px solid rgba(212,175,55,0.2); }
+    .fab-item-btn { width:50px; height:50px; border-radius:50%; border:none; cursor:pointer; font-size:22px; transition:all 0.25s; box-shadow:0 4px 14px rgba(0,0,0,0.4); }
     .fab-item-btn:hover { transform:scale(1.12); }
+    /* نافذة الدردشة مربوطة بالـ FAB الرئيسي */
+    #chat-window-portal { bottom:90px !important; right:16px !important; }
     
     .ai-chat-modal { 
       position: fixed; 
@@ -532,11 +538,18 @@
 
   <!-- ====== FLOATING ACTION BUTTON ====== -->
   <div id="fab-container">
-    <button id="fab-main" onclick="toggleFAB()" title="القائمة">✨</button>
+    <div id="fab-main-wrap">
+      <span id="fab-chat-badge">0</span>
+      <button id="fab-main" onclick="toggleFAB()" title="القائمة">✨</button>
+    </div>
     <div id="fab-items">
       <div class="fab-item">
-        <span class="fab-item-label">مساعد ذكي</span>
-        <button class="fab-item-btn" style="background:linear-gradient(135deg,#d4af37,#f0c94e);box-shadow:0 4px 14px rgba(212,175,55,0.4);" onclick="closeFAB();toggleAIChat()">🤖</button>
+        <span class="fab-item-label">مساعد ذكي 🤖</span>
+        <button class="fab-item-btn" style="background:linear-gradient(135deg,#d4af37,#f0c94e);" onclick="closeFAB();toggleAIChat()">🤖</button>
+      </div>
+      <div class="fab-item">
+        <span class="fab-item-label">الدعم الفني 💬</span>
+        <button class="fab-item-btn" style="background:linear-gradient(135deg,#1a7a3a,#25D366);" onclick="closeFAB();openSupportChat()">💬</button>
       </div>
     </div>
   </div>
@@ -2336,7 +2349,40 @@ window.loginWithFacebook = async () => {
                 earnedCoupon = couponDoc;
             }
 
-            // Referral: المكافأة تُعطى عند اكتمال الطلب من الأدمن تجنبًا للتلاعب
+            // Referral: إشعار فوري للمُحيل عند تسجيل الطلب
+            if (referralBy) {
+                try {
+                    const refSettings = await db.collection('settings').doc('rewards').get();
+                    const rs = refSettings.exists ? refSettings.data() : { amount: 50, type: 'fixed', enabled: true };
+                    if (rs.enabled !== false) {
+                        const refUserSnap = await db.collection('users').doc(referralBy).get();
+                        const alreadyRewarded = refUserSnap.exists && refUserSnap.data().earnedReferralCoupon;
+                        if (!alreadyRewarded) {
+                            const couponCode = 'REF-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+                            const rewardDesc = rs.type === 'percentage'
+                                ? `خصم ${rs.amount}% على أي طلب 🎁`
+                                : `خصم ${rs.amount} ج على أي طلب 🎁`;
+                            // إنشاء كوبون
+                            await db.collection('coupons').add({
+                                code: couponCode, discount: rs.amount, type: rs.type || 'fixed',
+                                limit: 1, usedCount: 0, isActive: true, linkedUser: referralBy,
+                                expiryDate: new Date(Date.now() + ((rs.expiry || 30) * 86400000)),
+                                note: 'كوبون إحالة - طلب ' + orderNumber,
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                            // إشعار المُحيل
+                            await db.collection('users').doc(referralBy).set({
+                                earnedReferralCoupon: couponCode,
+                                pendingReferralReward: {
+                                    coupon: couponCode, code: couponCode,
+                                    desc: rewardDesc, claimed: false,
+                                    createdAt: new Date().toISOString()
+                                }
+                            }, { merge: true });
+                        }
+                    }
+                } catch(e) { /* referral reward non-blocking */ }
+            }
 
             currentOrder = { ...orderData, id: orderRef.id, createdAt: new Date() };
             document.getElementById('success-order-number').innerText = orderNumber;
@@ -3669,12 +3715,14 @@ window.loginWithFacebook = async () => {
             if (!snap.exists) return;
             const data = snap.data();
             const reward = data.pendingReferralReward;
-            if (reward && !reward.claimed && !localStorage.getItem('referrer_reward_shown_' + uid)) {
-                _referrerRewardCode = reward.coupon || reward.code || '';
-                document.getElementById('ref-reward-code').textContent = _referrerRewardCode || '••••••';
-                document.getElementById('ref-reward-desc').textContent = reward.desc || 'كوبون خصم خاص لك!';
-                showReferrerRewardModal();
-            }
+            if (!reward || reward.claimed) return;
+            const shownKey = 'referrer_reward_shown_' + uid + '_' + (reward.coupon || reward.code || '');
+            if (localStorage.getItem(shownKey)) return; // نفس الكوبون سبق وظهر
+            _referrerRewardCode = reward.coupon || reward.code || '';
+            document.getElementById('ref-reward-code').textContent = _referrerRewardCode || '••••••';
+            document.getElementById('ref-reward-desc').textContent = reward.desc || 'كوبون خصم خاص لك! 🎁';
+            localStorage.setItem(shownKey, '1');
+            showReferrerRewardModal();
         });
     }
 
@@ -4683,6 +4731,10 @@ function moveAdSlide(dir) {
                 if (!chatVisible && unread > 0) {
                     badge.style.display = 'flex';
                     badge.innerText = unread;
+                    // تحديث badge الـ FAB الرئيسي
+                    if (typeof _updateFabChatBadge === 'function') _updateFabChatBadge(unread);
+                } else if (unread === 0) {
+                    if (typeof _updateFabChatBadge === 'function') _updateFabChatBadge(0);
                 }
 
                 // عرض الرسائل
@@ -4970,11 +5022,13 @@ function toggleFAB() {
   const main = document.getElementById('fab-main');
   if (fabOpen) {
     items.classList.add('open');
-    main.textContent = '✕';
-    main.style.background = 'linear-gradient(135deg,#333,#555)';
+    main.innerHTML = '✕';
+    main.style.transform = 'rotate(45deg) scale(1.05)';
+    main.style.background = 'linear-gradient(135deg,#2a2a2a,#444)';
   } else {
     items.classList.remove('open');
-    main.textContent = '✨';
+    main.innerHTML = '✨';
+    main.style.transform = '';
     main.style.background = 'linear-gradient(135deg,#d4af37,#f0c94e)';
   }
 }
@@ -4983,8 +5037,40 @@ function closeFAB() {
   fabOpen = false;
   document.getElementById('fab-items').classList.remove('open');
   const main = document.getElementById('fab-main');
-  main.textContent = '✨';
+  main.innerHTML = '✨';
+  main.style.transform = '';
   main.style.background = 'linear-gradient(135deg,#d4af37,#f0c94e)';
+}
+
+// فتح نافذة الدعم الفني من الـ FAB الرئيسي
+function openSupportChat() {
+  const win = document.getElementById('chat-window-portal');
+  if (!win) return;
+  const isOpen = win.style.display === 'flex';
+  if (isOpen) { win.style.display = 'none'; return; }
+  win.style.display = 'flex';
+  win.style.right = '16px';
+  win.style.bottom = '90px';
+  // مسح badge
+  const badge = document.getElementById('fab-chat-badge');
+  if (badge) badge.style.display = 'none';
+  if (window.deviceId) {
+    try { db.collection('support_chats').doc(window.deviceId).update({ unreadByUser: 0 }).catch(()=>{}); } catch(e){}
+  }
+  const inp = document.getElementById('chat-msg-input');
+  if (inp) setTimeout(() => inp.focus(), 300);
+}
+
+// تحديث badge الدردشة على الزر الرئيسي
+function _updateFabChatBadge(count) {
+  const badge = document.getElementById('fab-chat-badge');
+  if (!badge) return;
+  if (count > 0) {
+    badge.style.display = 'flex';
+    badge.textContent = count;
+  } else {
+    badge.style.display = 'none';
+  }
 }
 
 // ====== IMAGE ENHANCEMENT FUNCTIONALITY ======
