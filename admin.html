@@ -88,6 +88,7 @@
             <button onclick="showTab('push-tab')" id="btn-push-tab" class="px-4 py-2 font-bold text-zinc-500 whitespace-nowrap">🔔 الإشعارات</button>
             <button onclick="showTab('chat-tab');loadChats();" id="btn-chat-tab" class="px-4 py-2 font-bold text-zinc-500 whitespace-nowrap relative">💬 الدعم <span id="chat-unread-count" class="hidden absolute top-1 right-1 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">0</span></button>
             <button onclick="showTab('previews-tab')" id="btn-previews-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">📸 معاينات العملاء</button>
+            <button onclick="showTab('occasions-tab');loadOccasions();" id="btn-occasions-tab" class="px-4 py-2 font-bold text-zinc-500 whitespace-nowrap">🎊 المناسبات</button>
         </div>
 
         <!-- Products Tab -->
@@ -2993,6 +2994,7 @@ window.deleteActiveAlbum = async () => {
                         <div class="flex-1 min-w-0">
                             <p class="font-bold truncate">${ad.title||'بدون عنوان'}</p>
                             <p class="text-xs text-zinc-500">${ad.images?.length||0} صورة • ${ad.duration||30} ثانية • تخطي بعد ${ad.skipDelay||5} ث</p>
+                            <p class="text-xs text-yellow-400 font-bold mt-1">👁️ ${(ad.views||0).toLocaleString('ar-EG')} مشاهدة</p>
                             <span class="text-xs px-2 py-0.5 rounded ${ad.isActive?'bg-green-700 text-white':'bg-zinc-700 text-zinc-400'}">${ad.isActive?'✅ نشط':'⛔ متوقف'}</span>
                         </div>
                         <div class="flex gap-2">
@@ -3501,8 +3503,213 @@ window.deleteOrder = async (id) => {
     }, 'هذا الإجراء سيقوم بمسح بيانات الطلب تماماً من قاعدة البيانات ولا يمكن التراجع عنه.', '🗑️');
 };
 
+
+// ===== ADMIN CHAT NOTIFICATION SOUND =====
+(function setupAdminChatNotifications() {
+    var lastUnreadCount = -1;
+    var audioCtx = null;
+    function getAudioCtx() {
+        if(!audioCtx) try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){}
+        return audioCtx;
+    }
+    function playMsgSound() {
+        try {
+            var ctx = getAudioCtx(); if(!ctx) return;
+            if(ctx.state==='suspended') ctx.resume();
+            [[880,0,0.15],[1100,0.15,0.15]].forEach(function(cfg){
+                var osc=ctx.createOscillator(), gain=ctx.createGain();
+                osc.type='sine'; osc.frequency.setValueAtTime(cfg[0],ctx.currentTime+cfg[1]);
+                gain.gain.setValueAtTime(0,ctx.currentTime+cfg[1]);
+                gain.gain.linearRampToValueAtTime(0.35,ctx.currentTime+cfg[1]+0.02);
+                gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+cfg[1]+cfg[2]);
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.start(ctx.currentTime+cfg[1]); osc.stop(ctx.currentTime+cfg[1]+cfg[2]+0.05);
+            });
+        } catch(e) {}
+    }
+    document.addEventListener('click',function unlock(){
+        try{ if(audioCtx&&audioCtx.state==='suspended') audioCtx.resume(); }catch(e){}
+    },{once:true});
+    function startChatListener() {
+        if(typeof onSnapshot==='undefined'||typeof collection==='undefined'){setTimeout(startChatListener,2000);return;}
+        try {
+            onSnapshot(collection(db,'support_chats'),function(snap){
+                var totalUnread=0;
+                snap.forEach(function(d){ totalUnread+=(d.data().unreadByAdmin||0); });
+                var badge=document.getElementById('chat-unread-count');
+                if(badge){
+                    if(totalUnread>0){ badge.textContent=totalUnread>99?'99+':totalUnread; badge.classList.remove('hidden'); }
+                    else badge.classList.add('hidden');
+                }
+                if(totalUnread>lastUnreadCount && lastUnreadCount!==-1){
+                    playMsgSound();
+                    if(Notification.permission==='granted'){
+                        try{ new Notification('رسالة جديدة - استوديو الزهراء',{body:'لديك '+totalUnread+' رسالة غير مقروءة',icon:'./icon-192.png',dir:'rtl'}); }catch(e){}
+                    }
+                }
+                lastUnreadCount=totalUnread;
+            });
+        } catch(e){ setTimeout(startChatListener,3000); }
+    }
+    if(Notification.permission==='default') try{Notification.requestPermission();}catch(e){}
+    setTimeout(startChatListener,3000);
+})();
+
+// ===== OCCASIONS & CELEBRATION THEMES =====
+var _occasionsData = [];
+var PREDEFINED_OCCASIONS = [
+    {id:'new_year',      name:'رأس السنة الميلادية',    emoji:'🎆', theme:'gold',     defaultStart:'01-01', defaultEnd:'01-02', message:'كل عام وأنتم بخير! نتمنى لكم عاماً مليئاً بالفرح'},
+    {id:'coptic_xmas',   name:'عيد الميلاد القبطي',     emoji:'⛪', theme:'christmas', defaultStart:'01-07', defaultEnd:'01-08', message:'كل عام وأنتم بخير بمناسبة عيد الميلاد المجيد'},
+    {id:'police_day',    name:'عيد الشرطة',              emoji:'🇪🇬', theme:'national',  defaultStart:'01-25', defaultEnd:'01-25', message:'تهنئة بعيد الشرطة المصرية - حماة الوطن والشعب'},
+    {id:'mothers_day',   name:'عيد الأم',                emoji:'🌷', theme:'spring',    defaultStart:'03-21', defaultEnd:'03-21', message:'كل عام وكل الأمهات بخير - أغلى كلمة في الدنيا: أمي'},
+    {id:'sinai_day',     name:'تحرير سيناء',             emoji:'🇪🇬', theme:'national',  defaultStart:'04-25', defaultEnd:'04-25', message:'تحية إجلال لأبطال تحرير سيناء - أرضنا أعز من الغالي'},
+    {id:'july23',        name:'ثورة 23 يوليو',           emoji:'🇪🇬', theme:'national',  defaultStart:'07-23', defaultEnd:'07-23', message:'عيد ثورة 23 يوليو المجيدة - تحيا مصر'},
+    {id:'oct6',          name:'عيد القوات المسلحة',      emoji:'🛡️', theme:'national',  defaultStart:'10-06', defaultEnd:'10-06', message:'تحية إجلال لأبطال أكتوبر - العبور العظيم لن ينسى'},
+    {id:'ramadan',       name:'شهر رمضان',               emoji:'🌙', theme:'ramadan',   defaultStart:'', defaultEnd:'', message:'رمضان كريم - كل عام وأنتم أقرب إلى الله'},
+    {id:'eid_fitr',      name:'عيد الفطر المبارك',       emoji:'🌙', theme:'eid',       defaultStart:'', defaultEnd:'', message:'عيد فطر مبارك - تقبل الله صيامكم وقيامكم'},
+    {id:'eid_adha',      name:'عيد الأضحى المبارك',      emoji:'🐑', theme:'eid',       defaultStart:'', defaultEnd:'', message:'عيد أضحى مبارك - تقبل الله منا ومنكم الطاعات'},
+    {id:'mawlid',        name:'المولد النبوي الشريف',    emoji:'☪️', theme:'ramadan',   defaultStart:'', defaultEnd:'', message:'بمناسبة المولد النبوي الشريف - أطيب التهاني'},
+    {id:'sham_nessim',   name:'شم النسيم',               emoji:'🌸', theme:'spring',    defaultStart:'', defaultEnd:'', message:'شم النسيم - نسمة الربيع تعطر أيامكم بالبهجة'}
+];
+
+window.loadOccasions = async function() {
+    var list = document.getElementById('occasions-list');
+    if(!list) return;
+    list.innerHTML = '<p class="text-zinc-500 text-sm text-center py-4">جاري التحميل...</p>';
+    try {
+        var snap = await getDoc(doc(db,'settings','celebration'));
+        var saved = snap.exists() ? (snap.data().occasions||[]) : [];
+        _occasionsData = PREDEFINED_OCCASIONS.map(function(p){
+            var found = saved.find(function(s){return s.id===p.id;});
+            return Object.assign({},p, found||{}, {id:p.id, name:p.name, emoji:p.emoji, theme:found&&found.theme||p.theme});
+        });
+        saved.forEach(function(s){
+            if(!PREDEFINED_OCCASIONS.find(function(p){return p.id===s.id;})) _occasionsData.push(s);
+        });
+        renderOccasionsList();
+    } catch(e) { list.innerHTML='<p class="text-red-400 text-sm p-3">خطأ: '+e.message+'</p>'; }
+};
+
+function renderOccasionsList() {
+    var list = document.getElementById('occasions-list');
+    if(!list) return;
+    var yr = new Date().getFullYear();
+    list.innerHTML = _occasionsData.map(function(occ,idx){
+        var active = !!occ.active;
+        var sv = occ.startDate || (occ.defaultStart ? yr+'-'+occ.defaultStart : '');
+        var ev = occ.endDate   || (occ.defaultEnd   ? yr+'-'+occ.defaultEnd   : '');
+        var bc = active ? 'border-yellow-500' : 'border-zinc-700';
+        var themes = {gold:'✨ ذهبي',ramadan:'🌙 رمضاني',eid:'🎉 عيد',national:'🇪🇬 وطني',spring:'🌸 ربيعي',christmas:'⛪ ميلاد'};
+        var thOpts = Object.entries(themes).map(function(e){ return '<option value="'+e[0]+'" '+(occ.theme===e[0]?'selected':'')+'>'+e[1]+'</option>'; }).join('');
+        var inp = 'class="w-full bg-black border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white outline-none focus:border-yellow-500"';
+        var sel = 'class="bg-black border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white outline-none focus:border-yellow-500"';
+        var isCustom = !PREDEFINED_OCCASIONS.find(function(p){return p.id===occ.id;});
+        return '<div class="bg-zinc-800 rounded-xl p-4 border '+bc+'">'
+          +'<div class="flex items-center justify-between mb-3">'
+            +'<div class="flex items-center gap-2"><span class="text-xl">'+occ.emoji+'</span><p class="font-bold text-sm text-white">'+occ.name+'</p></div>'
+            +'<label class="flex items-center gap-2 cursor-pointer">'
+              +'<span class="text-xs text-zinc-400">'+(active?'مفعّل':'معطّل')+'</span>'
+              +'<input type="checkbox" style="width:18px;height:18px;accent-color:#d4af37;" '+(active?'checked':'')
+              +' onchange="toggleOccasion('+idx+',this.checked)">'
+            +'</label>'
+          +'</div>'
+          +'<div class="grid grid-cols-2 gap-2 mb-2">'
+            +'<div><label class="text-[10px] text-zinc-500 block mb-1">من تاريخ</label><input type="date" '+inp+' value="'+sv+'" onchange="updateOccasion('+idx+','startDate',this.value)"></div>'
+            +'<div><label class="text-[10px] text-zinc-500 block mb-1">إلى تاريخ</label><input type="date" '+inp+' value="'+ev+'" onchange="updateOccasion('+idx+','endDate',this.value)"></div>'
+          +'</div>'
+          +'<div class="mb-2"><label class="text-[10px] text-zinc-500 block mb-1">رسالة الترحيب</label>'
+            +'<input type="text" '+inp+' value="'+(occ.message||'')+'" placeholder="رسالة احتفالية..." onchange="updateOccasion('+idx+','message',this.value)"></div>'
+          +'<div class="flex gap-2 items-end">'
+            +'<div class="flex-1"><label class="text-[10px] text-zinc-500 block mb-1">الثيم</label><select '+sel+' onchange="updateOccasion('+idx+','theme',this.value)">'+thOpts+'</select></div>'
+            +'<div><label class="text-[10px] text-zinc-500 block mb-1">الكثافة</label><select '+sel+' onchange="updateOccasion('+idx+','intensity',this.value)">'
+              +'<option value="low" '+(occ.intensity==='low'?'selected':'')+'>منخفض</option>'
+              +'<option value="medium" '+((!occ.intensity||occ.intensity==='medium')?'selected':'')+'>متوسط</option>'
+              +'<option value="high" '+(occ.intensity==='high'?'selected':'')+'>عالي</option>'
+            +'</select></div>'
+            +(isCustom ? '<button onclick="removeOccasion('+idx+')" class="text-red-500 text-xs px-2 py-1.5 border border-red-800 rounded-lg hover:bg-red-900/30">حذف</button>' : '')
+          +'</div>'
+        +'</div>';
+    }).join('');
+}
+
+window.toggleOccasion=function(idx,val){ _occasionsData[idx].active=val; renderOccasionsList(); };
+window.updateOccasion=function(idx,f,v){ _occasionsData[idx][f]=v; };
+window.removeOccasion=function(idx){ _occasionsData.splice(idx,1); renderOccasionsList(); };
+window.addCustomOccasion=function(){
+    _occasionsData.push({id:'custom_'+Date.now(),name:'مناسبة جديدة',emoji:'🎉',theme:'gold',active:false,startDate:'',endDate:'',message:'',intensity:'medium'});
+    renderOccasionsList();
+    var l=document.getElementById('occasions-list'); if(l) l.scrollTop=l.scrollHeight;
+};
+window.saveOccasions=async function(){
+    try{
+        await setDoc(doc(db,'settings','celebration'),{occasions:_occasionsData},{merge:true});
+        zahraaToast('تم حفظ إعدادات المناسبات بنجاح','success');
+    }catch(e){zahraaToast('خطأ: '+e.message,'error');}
+};
+window.testOccasionPreview=function(){
+    var preview=document.getElementById('occasion-preview'); if(!preview) return;
+    var active=_occasionsData.find(function(o){return o.active&&o.startDate&&o.endDate;});
+    if(!active){preview.innerHTML='<p class="text-zinc-500 text-sm">لا يوجد ثيم نشط حالياً.<br><small class="text-zinc-600">فعّل مناسبة وحدد التواريخ أولاً</small></p>';return;}
+    var colors={gold:'#d4af37',ramadan:'#8b5cf6',eid:'#22c55e',national:'#c8102e',spring:'#86efac',christmas:'#ef4444'};
+    var c=colors[active.theme]||'#d4af37';
+    preview.innerHTML='<div style="border:2px solid '+c+';border-radius:12px;padding:12px;background:rgba(0,0,0,0.5);text-align:center;">'
+      +'<p style="color:'+c+';font-weight:bold;font-size:15px;margin:0 0 6px;">'+active.emoji+' '+active.name+'</p>'
+      +'<p style="color:#ccc;font-size:12px;margin:0 0 6px;">'+active.message+'</p>'
+      +'<p style="color:#666;font-size:10px;margin:0;">'+active.startDate+' حتى '+active.endDate+'</p>'
+    +'</div>';
+};
+
     </script>
-    <!-- نافذة عرض محتوى البلاغ -->
+    
+        <!-- ===== OCCASIONS & CELEBRATORY THEMES TAB ===== -->
+        <div id="occasions-tab" class="tab-content">
+            <div class="mb-6 flex items-center justify-between">
+                <h2 class="text-2xl font-bold gradient-text">🎊 المناسبات والثيمات الاحتفالية</h2>
+                <button onclick="saveOccasions()" class="gold-bg text-black font-bold px-6 py-2 rounded-xl hover:opacity-90 transition-all">💾 حفظ التغييرات</button>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- Left: Egyptian Occasions List -->
+                <div class="bg-zinc-900 rounded-2xl p-6 gold-border">
+                    <h3 class="font-bold text-lg mb-4 gold-text">📅 المناسبات المصرية</h3>
+                    <p class="text-zinc-500 text-xs mb-4">فعّل أي مناسبة وحدد تاريخ البداية والنهاية. المناسبات الإسلامية تتغير كل عام.</p>
+                    <div id="occasions-list" class="space-y-3 max-h-[600px] overflow-y-auto pr-1"></div>
+                    <button onclick="addCustomOccasion()" class="w-full mt-4 bg-zinc-800 hover:bg-zinc-700 text-white py-2 rounded-xl text-sm font-bold transition-all border border-dashed border-zinc-600">+ إضافة مناسبة مخصصة</button>
+                </div>
+                
+                <!-- Right: Preview + Instructions -->
+                <div class="space-y-4">
+                    <div class="bg-zinc-900 rounded-2xl p-6 gold-border">
+                        <h3 class="font-bold text-lg mb-3 gold-text">👁️ معاينة الثيم الحالي</h3>
+                        <div id="occasion-preview" class="bg-black rounded-xl p-4 min-h-[80px] flex items-center justify-center text-center text-zinc-500 text-sm">
+                            لا يوجد ثيم نشط حالياً
+                        </div>
+                        <button onclick="testOccasionPreview()" class="w-full mt-3 bg-zinc-800 hover:bg-zinc-700 text-white py-2 rounded-xl text-sm font-bold transition-all">🔍 معاينة الثيم النشط</button>
+                    </div>
+                    <div class="bg-zinc-900 rounded-2xl p-5 border border-zinc-800">
+                        <h4 class="font-bold text-sm gold-text mb-3">🎨 أنواع الثيمات المتاحة</h4>
+                        <div class="space-y-2 text-xs text-zinc-400">
+                            <div class="flex items-center gap-2 p-2 bg-zinc-800 rounded-lg"><span>🌙</span><div><span class="font-bold text-white">رمضاني:</span> هلال ونجوم ذهبية</div></div>
+                            <div class="flex items-center gap-2 p-2 bg-zinc-800 rounded-lg"><span>🎉</span><div><span class="font-bold text-white">عيد:</span> كونفيتي ملون ونجوم</div></div>
+                            <div class="flex items-center gap-2 p-2 bg-zinc-800 rounded-lg"><span>🇪🇬</span><div><span class="font-bold text-white">وطني:</span> ألوان العلم المصري</div></div>
+                            <div class="flex items-center gap-2 p-2 bg-zinc-800 rounded-lg"><span>🌸</span><div><span class="font-bold text-white">ربيعي:</span> زهور وألوان الطبيعة</div></div>
+                            <div class="flex items-center gap-2 p-2 bg-zinc-800 rounded-lg"><span>✨</span><div><span class="font-bold text-white">ذهبي:</span> جزيئات ذهبية (الافتراضي)</div></div>
+                        </div>
+                    </div>
+                    <div class="bg-zinc-900 rounded-2xl p-5 border border-zinc-800">
+                        <h4 class="font-bold text-sm gold-text mb-2">📝 ملاحظات</h4>
+                        <ul class="text-xs text-zinc-500 space-y-1 list-disc list-inside">
+                            <li>يظهر الثيم تلقائياً للزوار خلال فترة المناسبة</li>
+                            <li>حدد رسالة ترحيبية تظهر في أعلى الموقع</li>
+                            <li>يمكن تفعيل مناسبة واحدة فقط في وقت واحد</li>
+                            <li>المناسبات الإسلامية: حدد التاريخ يدوياً كل عام</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- نافذة عرض محتوى البلاغ -->
 <div id="report-content-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(5px);">
     <div style="background:#1a1a1a; border:1px solid #d4af37; border-radius:20px; padding:25px; max-width:500px; width:90%; max-height:80vh; overflow-y:auto;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:1px solid #333;padding-bottom:10px;">
