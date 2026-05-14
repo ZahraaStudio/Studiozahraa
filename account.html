@@ -223,13 +223,56 @@
 
   <!-- ===== POINTS TAB ===== -->
   <div id="tab-points" class="tab-content pb-20">
+
+    <!-- VIP PASS CARD -->
+    <div id="vip-pass-card" class="mb-6 rounded-2xl overflow-hidden relative" style="background:linear-gradient(135deg,#1a1a1a,#111);border:1px solid #333;min-height:160px;">
+      <div style="position:absolute;inset:0;opacity:0.12;background:repeating-linear-gradient(45deg,transparent,transparent 20px,rgba(255,255,255,0.05) 20px,rgba(255,255,255,0.05) 40px);pointer-events:none;"></div>
+      <div style="padding:24px;position:relative;z-index:1;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <div>
+            <p id="vip-tier-label" style="font-size:10px;font-weight:800;letter-spacing:3px;opacity:0.7;margin:0 0 4px;">LOADING</p>
+            <h2 id="vip-holder-name" style="font-size:18px;font-weight:800;margin:0;color:#fff;">استوديو الزهراء</h2>
+          </div>
+          <div id="vip-badge" style="font-size:32px;width:52px;height:52px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(255,255,255,0.08);">💳</div>
+        </div>
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:16px;">
+          <div>
+            <p style="font-size:10px;opacity:0.6;margin:0 0 2px;">نقاطك المتاحة</p>
+            <p id="vip-points" style="font-size:26px;font-weight:800;margin:0;color:#d4af37;">0 ⭐</p>
+          </div>
+          <div style="text-align:left;">
+            <p style="font-size:10px;opacity:0.6;margin:0 0 2px;">إجمالي مشترياتك</p>
+            <p id="vip-spent" style="font-size:18px;font-weight:800;margin:0;color:#fff;">0 ج</p>
+          </div>
+        </div>
+        <div style="border-top:1px solid rgba(255,255,255,0.12);padding-top:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <p id="vip-next-tier" style="font-size:10px;opacity:0.6;margin:0;"></p>
+            <p id="vip-member-id" style="font-size:9px;opacity:0.4;font-family:monospace;margin:0;"></p>
+          </div>
+          <div style="height:4px;background:rgba(255,255,255,0.12);border-radius:4px;overflow:hidden;">
+            <div id="vip-progress-fill" style="height:100%;width:0%;border-radius:4px;transition:width 1.2s ease;background:#d4af37;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div class="card text-center">
         <div class="text-5xl mb-3">⭐</div>
         <p class="text-zinc-400 mb-1">رصيد نقاطك الحالي</p>
         <p id="acc-points-balance" class="text-5xl font-bold gold-text mb-2">0</p>
-        <p class="text-sm text-zinc-500">نقطة</p>
-        <div class="mt-4 p-3 bg-zinc-900 rounded-xl text-xs text-zinc-500">
+        <p class="text-sm text-zinc-500 mb-3">نقطة</p>
+        <!-- Redemption box -->
+        <div id="acc-points-redeem-box" class="hidden mt-2">
+          <div class="p-3 bg-zinc-900 rounded-xl text-xs text-zinc-400 mb-3 text-right">
+            <p>معدل الاستبدال: <span id="acc-redeem-rate" class="gold-text font-bold">40</span> نقطة = 1 جنيه</p>
+            <p class="mt-0.5">نقاطك تساوي: <span id="acc-pts-value" class="gold-text font-bold">0</span> ج خصم</p>
+          </div>
+          <button onclick="accRedeemPoints()" class="btn-gold w-full text-sm">🎟️ استبدل نقاطك بكوبون</button>
+          <p id="acc-redeem-msg" class="text-xs text-center mt-2"></p>
+        </div>
+        <div class="mt-3 p-3 bg-zinc-900 rounded-xl text-xs text-zinc-500">
           تكسب نقاطاً بكل عملية شراء. النقاط تُضاف تلقائياً بعد تأكيد الطلب.
         </div>
       </div>
@@ -317,45 +360,18 @@
           </div>
         </div>
 
-        <!-- Referral -->
-<div class="card">
+        <!-- Referral — hidden after referral is completed -->
+<div id="referral-card" class="card">
   <h3 class="font-bold gold-text mb-3">🎁 دعوة الأصدقاء</h3>
   <p class="text-zinc-400 text-xs mb-3">
-    شارك الرابط وكسب كوبون خصم عند أول طلب لصديقك
+    شارك الرابط مرة واحدة وكسب كوبون خصم عند أول طلب لصديقك
   </p>
-
   <div class="flex gap-2">
-    <!-- استخدم value بدل placeholder -->
-    <input 
-      id="referral-link" 
-      readonly 
-      class="input-field flex-1 text-xs overflow-x-auto"
-      value=""
-    >
-
-    <button onclick="copyReferral()" class="btn-gold text-sm px-3">
-      نسخ
-    </button>
+    <input id="referral-link" readonly class="input-field flex-1 text-xs overflow-x-auto" value="">
+    <button onclick="copyReferral()" class="btn-gold text-sm px-3">نسخ</button>
   </div>
+  <p id="referral-done-note" class="hidden mt-3 text-xs text-green-400 text-center">✅ تم استخدام الإحالة بنجاح من قبل</p>
 </div>
-
-<script>
-  // مثال لتوليد رابط الإحالة (تأكد إن userId موجود عندك)
-  const userId = localStorage.getItem("userId") || "guest";
-
-  const referralLink = window.location.origin + "/?ref=" + userId;
-
-  document.getElementById("referral-link").value = referralLink;
-
-  function copyReferral() {
-    const input = document.getElementById("referral-link");
-    input.select();
-    input.setSelectionRange(0, 99999);
-    document.execCommand("copy");
-
-    alert("تم نسخ رابط الإحالة");
-  }
-</script>
 
         <!-- Danger Zone -->
         <div class="card border-red-900/30">
@@ -488,20 +504,23 @@
     document.getElementById('acc-provider').textContent = providerName;
     document.getElementById('acc-code').textContent = user.uid.substring(0, 12).toUpperCase();
 
-    // Referral link
-    document.getElementById('referral-link').value = window.location.origin + '/Studiozahraa/index.html?ref=' + user.uid;
-
-    // Load from Firestore
+    // Referral link + once-per-lifetime check
     try {
-      const snap = await db.collection('users').doc(user.uid).get();
-      if (snap.exists) {
-        userDoc = snap.data();
-        if (userDoc.phone) document.getElementById('edit-phone').value = userDoc.phone;
-        if (userDoc.address) document.getElementById('edit-address').value = userDoc.address;
-        if (userDoc.governorate) document.getElementById('edit-governorate').value = userDoc.governorate;
-      }
-      // Pre-fill name
+      const uSnap = await db.collection('users').doc(user.uid).get();
+      userDoc = uSnap.exists ? uSnap.data() : {};
+      if (userDoc.phone) document.getElementById('edit-phone').value = userDoc.phone;
+      if (userDoc.address) document.getElementById('edit-address').value = userDoc.address;
+      if (userDoc.governorate) document.getElementById('edit-governorate').value = userDoc.governorate;
       document.getElementById('edit-name').value = user.displayName || userDoc.name || '';
+
+      const refCard = document.getElementById('referral-card');
+      if (userDoc.hasCompletedReferral) {
+        // hide the link, show done note
+        document.getElementById('referral-link').parentElement.style.display = 'none';
+        document.getElementById('referral-done-note').classList.remove('hidden');
+      } else {
+        document.getElementById('referral-link').value = window.location.origin + '/index.html?ref=' + user.uid;
+      }
     } catch (e) {
       console.error('loadUserData error:', e);
     }
@@ -935,12 +954,34 @@
   // ===== POINTS =====
   async function loadPoints(uid) {
     try {
-      const snap = await db.collection('points').doc(uid).get();
-      const balance = snap.exists ? (snap.data().balance || 0) : 0;
+      const [ptsSnap, pSettSnap, ordersSnap] = await Promise.all([
+        db.collection('points').doc(uid).get(),
+        db.collection('settings').doc('points').get(),
+        db.collection('orders').where('userId','==',uid).where('status','in',['مكتمل','تم التوصيل','completed','delivered']).get()
+      ]);
+      const balance = ptsSnap.exists ? (ptsSnap.data().balance || 0) : 0;
+      const ps = pSettSnap.exists ? pSettSnap.data() : {};
+      const rate = ps.redeemRate || 40;
+      const minPts = ps.redeemMin || 200;
+      const totalSpent = ordersSnap.docs.reduce((s,d) => s + (d.data().totalPrice||0), 0);
+
+      // Balance display
       const balEl = document.getElementById('acc-points-balance');
       if (balEl) balEl.textContent = balance;
 
-      const histSnap = await db.collection('points_history').where('userId', '==', uid).orderBy('createdAt', 'desc').limit(20).get();
+      // Redemption box
+      const redeemBox = document.getElementById('acc-points-redeem-box');
+      if (redeemBox && balance >= minPts) {
+        redeemBox.classList.remove('hidden');
+        document.getElementById('acc-redeem-rate').textContent = rate;
+        document.getElementById('acc-pts-value').textContent = Math.floor(balance / rate);
+      }
+
+      // VIP card
+      renderVipCard(uid, balance, totalSpent);
+
+      // History
+      const histSnap = await db.collection('points_history').where('userId','==',uid).orderBy('createdAt','desc').limit(20).get();
       const histEl = document.getElementById('acc-points-history');
       if (!histEl) return;
       if (histSnap.empty) { histEl.innerHTML = '<p class="text-zinc-500 text-sm text-center">لا سجل نقاط بعد</p>'; return; }
@@ -950,14 +991,72 @@
         histEl.innerHTML += `
           <div class="flex justify-between items-center py-2 border-b border-zinc-800">
             <div>
-              <p class="text-sm font-bold">${h.type === 'earn' ? '⬆️ مكتسب' : '⬇️ مُصرف'}</p>
-              <p class="text-xs text-zinc-500">طلب: ${h.orderNumber || '—'}</p>
-              <p class="text-xs text-zinc-600">${h.createdAt?.toDate?.()?.toLocaleDateString('ar-EG') || ''}</p>
+              <p class="text-sm font-bold">${h.type==='earn'?'⬆️ مكتسب':'⬇️ مُصرف'}</p>
+              <p class="text-xs text-zinc-500">طلب: ${h.orderNumber||'—'}</p>
+              <p class="text-xs text-zinc-600">${h.createdAt?.toDate?.()?.toLocaleDateString('ar-EG')||''}</p>
             </div>
-            <span class="${h.type === 'earn' ? 'text-green-400' : 'text-red-400'} font-bold text-lg">${h.type === 'earn' ? '+' : '-'}${h.points}</span>
+            <span class="${h.type==='earn'?'text-green-400':'text-red-400'} font-bold text-lg">${h.type==='earn'?'+':'-'}${h.points}</span>
           </div>`;
       });
     } catch (e) { console.error('points load error', e); }
+  }
+
+  // ===== VIP PASS CARD =====
+  function renderVipCard(uid, balance, totalSpent) {
+    const tiers = [
+      {name:'برونزي', label:'BRONZE', emoji:'🥉', min:0,    max:499,      grad:'linear-gradient(135deg,#3d1c00,#6b3a1a)', fill:'#cd7f32', next:'فضي',   nextAt:500},
+      {name:'فضي',   label:'SILVER', emoji:'🥈', min:500,  max:1999,     grad:'linear-gradient(135deg,#1a1a2e,#2a2a40)', fill:'#c0c0c0', next:'ذهبي',  nextAt:2000},
+      {name:'ذهبي',  label:'GOLD',   emoji:'🥇', min:2000, max:4999,     grad:'linear-gradient(135deg,#1a1500,#2a2000)', fill:'#d4af37', next:'ماسي',  nextAt:5000},
+      {name:'ماسي',  label:'DIAMOND',emoji:'💎', min:5000, max:Infinity, grad:'linear-gradient(135deg,#0d0d1a,#18102e)', fill:'#7c3aed', next:null,    nextAt:null},
+    ];
+    const tier = tiers.find(t => totalSpent >= t.min && totalSpent <= t.max) || tiers[0];
+    const card = document.getElementById('vip-pass-card');
+    if (!card) return;
+    card.style.background = tier.grad;
+    document.getElementById('vip-tier-label').textContent = tier.label;
+    document.getElementById('vip-badge').textContent = tier.emoji;
+    document.getElementById('vip-holder-name').textContent = firebase.auth().currentUser?.displayName || 'عميل استوديو الزهراء';
+    document.getElementById('vip-points').textContent = balance.toLocaleString('ar-EG') + ' ⭐';
+    document.getElementById('vip-spent').textContent = totalSpent.toLocaleString('ar-EG') + ' ج';
+    document.getElementById('vip-member-id').textContent = uid.substring(0,10).toUpperCase();
+    const fill = document.getElementById('vip-progress-fill');
+    fill.style.background = tier.fill;
+    if (tier.next) {
+      const pct = Math.min(((totalSpent - tier.min) / (tier.nextAt - tier.min)) * 100, 100);
+      fill.style.width = pct + '%';
+      document.getElementById('vip-next-tier').textContent = (tier.nextAt - totalSpent).toLocaleString('ar-EG') + ' ج للوصول لـ ' + tier.next;
+    } else {
+      fill.style.width = '100%';
+      document.getElementById('vip-next-tier').textContent = '🏆 أعلى مستوى! أنت عميلنا الماسي';
+    }
+  }
+
+  // ===== REDEEM POINTS (account page) =====
+  async function accRedeemPoints() {
+    const uid = firebase.auth().currentUser?.uid; if (!uid) return;
+    const btn = document.querySelector('#acc-points-redeem-box button');
+    const msg = document.getElementById('acc-redeem-msg');
+    if (btn) btn.disabled = true;
+    try {
+      const [pSnap, sSnap] = await Promise.all([db.collection('points').doc(uid).get(), db.collection('settings').doc('points').get()]);
+      const balance = pSnap.data()?.balance || 0;
+      const ps = sSnap.data() || {};
+      const rate = ps.redeemRate || 40;
+      const minPts = ps.redeemMin || 200;
+      if (balance < minPts) { msg.textContent = 'تحتاج على الأقل '+minPts+' نقطة'; msg.style.color='#ef4444'; if(btn)btn.disabled=false; return; }
+      const discount = Math.floor(balance / rate);
+      const code = 'PTS-' + Math.random().toString(36).substr(2,6).toUpperCase();
+      await db.collection('coupons').add({ code, type:'fixed', discount, enabled:true, maxUses:1, perUser:1, assignedTo:uid, note:'استبدال '+balance+' نقطة', createdAt:firebase.firestore.FieldValue.serverTimestamp() });
+      await db.collection('points').doc(uid).update({ balance:0 });
+      await db.collection('points_history').add({ userId:uid, type:'redeem', points:balance, orderNumber:'REDEEM', createdAt:firebase.firestore.FieldValue.serverTimestamp() });
+      document.getElementById('acc-points-balance').textContent = '0';
+      document.getElementById('vip-points').textContent = '0 ⭐';
+      msg.innerHTML = '✅ كودك: <strong style="color:#d4af37;font-size:16px;letter-spacing:2px;">'+code+'</strong> — خصم '+discount+' ج';
+      msg.style.color = '#10b981';
+      showNotif('تم إنشاء كوبون: '+code+' بقيمة '+discount+' ج ✓','success');
+      document.getElementById('acc-points-redeem-box')?.classList.add('hidden');
+    } catch(e) { msg.textContent='خطأ: '+e.message; msg.style.color='#ef4444'; }
+    if(btn)btn.disabled=false;
   }
 
   // ===== COMMUNITY POSTS =====

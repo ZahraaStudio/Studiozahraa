@@ -1525,10 +1525,17 @@
                 // ===== مراقبة إشعارات المتجر الفورية (Firestore onSnapshot) =====
                 listenForStoreNotifications(user.uid);
 
-                // Referral banner: always show (يمكن الإحالة لعدد غير محدود من الأصدقاء)
+                // Referral banner: once per lifetime — hide after referral is completed
                 if (storeSettings.referralEnabled) {
-                    refBanner.classList.remove('hidden');
-                    document.getElementById('referral-link').value = window.location.origin + window.location.pathname + '?ref=' + user.uid;
+                    try {
+                        const uRefSnap = await db.collection('users').doc(user.uid).get();
+                        if (!uRefSnap.data()?.hasCompletedReferral) {
+                            refBanner.classList.remove('hidden');
+                            document.getElementById('referral-link').value = window.location.origin + window.location.pathname + '?ref=' + user.uid;
+                        } else {
+                            refBanner.classList.add('hidden');
+                        }
+                    } catch(e) { refBanner.classList.add('hidden'); }
                 } else {
                     refBanner.classList.add('hidden');
                 }
@@ -2366,6 +2373,9 @@ window.loginWithFacebook = async () => {
                             .where('referrerId', '==', referralBy)
                             .where('referredUserId', '==', currentUser.uid)
                             .limit(1).get();
+                        // Check referrer hasn't already completed a referral (once per lifetime)
+                        const referrerDocSnap = await db.collection('users').doc(referralBy).get();
+                        if (referrerDocSnap.data()?.hasCompletedReferral) { /* skip */ } else
                         if (alreadyRewardedSnap.empty) {
                             const couponCode = 'REF-' + Math.random().toString(36).substring(2, 8).toUpperCase();
                             const rewardDesc = rs.type === 'percentage'
@@ -3730,6 +3740,98 @@ window.loginWithFacebook = async () => {
         localStorage.setItem('zahraa_scratch_seen','1');
     };
 
+    // ============ SPIN THE WHEEL ============
+    let _spinCouponCode=null;
+    const WHEEL_PRIZES=[
+        {label:'خصم 5%',   emoji:'🎯', color:'#7c3aed', type:'percentage', value:5},
+        {label:'تغليف مجاني',emoji:'🎀', color:'#059669', type:'giftWrap',  value:0},
+        {label:'قطعة إضافية',emoji:'🎁', color:'#d4af37', type:'extra',     value:0},
+        {label:'خصم 5%',   emoji:'🎯', color:'#7c3aed', type:'percentage', value:5},
+        {label:'تغليف مجاني',emoji:'🎀', color:'#059669', type:'giftWrap',  value:0},
+        {label:'قطعة إضافية',emoji:'🎁', color:'#d4af37', type:'extra',     value:0},
+    ];
+
+    function drawWheel(rot){
+        const cv=document.getElementById('spin-canvas');if(!cv)return;
+        const ctx=cv.getContext('2d');
+        const cx=cv.width/2,cy=cv.height/2,r=cx-8;
+        const seg=(Math.PI*2)/WHEEL_PRIZES.length;
+        ctx.clearRect(0,0,cv.width,cv.height);
+        WHEEL_PRIZES.forEach((p,i)=>{
+            const s=rot+i*seg,e=s+seg;
+            ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,s,e);ctx.closePath();
+            ctx.fillStyle=p.color;ctx.fill();ctx.strokeStyle='#000';ctx.lineWidth=2;ctx.stroke();
+            ctx.save();ctx.translate(cx,cy);ctx.rotate(s+seg/2);
+            ctx.textAlign='right';ctx.fillStyle='#fff';ctx.font='bold 11px Cairo';
+            ctx.fillText(p.emoji+' '+p.label,r-8,4);ctx.restore();
+        });
+        ctx.beginPath();ctx.arc(cx,cy,18,0,Math.PI*2);ctx.fillStyle='#0a0a0a';ctx.fill();ctx.strokeStyle='#d4af37';ctx.lineWidth=3;ctx.stroke();
+    }
+
+    async function initSpinWheel(){
+        if(localStorage.getItem('zahraa_wheel_shown'))return;
+        if(new URLSearchParams(window.location.search).get('ref'))return;
+        if(localStorage.getItem('zahraa_scratch_seen'))return;
+        try{const sd=(await db.collection('settings').doc('general').get()).data()||{};if(sd.referralGiftCouponEnabled===false)return;}catch(e){}
+        localStorage.setItem('zahraa_wheel_shown','1');
+        const modal=document.getElementById('spin-wheel-modal');
+        if(modal){modal.style.display='flex';drawWheel(0);}
+    }
+
+    window.startSpinWheel=async()=>{
+        const contact=document.getElementById('spin-contact')?.value?.trim();
+        if(!contact){showNotification('أدخل بريدك أو رقم هاتفك أولاً','error');return;}
+        try{await db.collection('wheel_leads').add({contact,createdAt:firebase.firestore.FieldValue.serverTimestamp(),userId:currentUser?.uid||null});}catch(e){}
+        document.getElementById('spin-step-1').style.display='none';
+        document.getElementById('spin-step-2').style.display='block';
+        drawWheel(0);
+        const prizeIndex=Math.floor(Math.random()*WHEEL_PRIZES.length);
+        const segAngle=(Math.PI*2)/WHEEL_PRIZES.length;
+        const totalSpins=(Math.PI*2)*(6+Math.random()*4);
+        const targetOffset=(Math.PI*2)-(prizeIndex*segAngle+segAngle/2)-Math.PI/2;
+        const finalRot=totalSpins+(((targetOffset%(Math.PI*2))+(Math.PI*2))%(Math.PI*2));
+        let start=null;const dur=4500;
+        function ease(t){return 1-Math.pow(1-t,3);}
+        function anim(ts){
+            if(!start)start=ts;
+            const prog=Math.min((ts-start)/dur,1);
+            drawWheel(ease(prog)*finalRot);
+            if(prog<1){requestAnimationFrame(anim);}
+            else{document.getElementById('spin-status').textContent='🎉 تهانينا!';showSpinResult(prizeIndex);}
+        }
+        requestAnimationFrame(anim);
+    };
+
+    async function showSpinResult(idx){
+        const prize=WHEEL_PRIZES[idx];
+        const rand=Math.random().toString(36).substr(2,6).toUpperCase();
+        const code='WHEEL-'+rand;
+        try{
+            const sData=(await db.collection('settings').doc('general').get()).data()||{};
+            let cd={code,enabled:true,maxUses:1,note:'عجلة الحظ - '+prize.label,createdAt:firebase.firestore.FieldValue.serverTimestamp()};
+            if(prize.type==='percentage'){cd.type='percentage';cd.discount=prize.value;}
+            else if(prize.type==='giftWrap'){cd.type='fixed';cd.discount=sData.giftWrapPrice||50;cd.extraNote='تغليف كهدية مجاني';}
+            else{cd.type='fixed';cd.discount=0;cd.extraNote='قطعة إضافية مجانية مع الطلب';}
+            await db.collection('coupons').add(cd);
+        }catch(e){}
+        _spinCouponCode=code;
+        document.getElementById('spin-step-2').style.display='none';
+        document.getElementById('spin-step-3').style.display='block';
+        document.getElementById('spin-result-emoji').textContent=prize.emoji;
+        document.getElementById('spin-result-text').textContent='فزت بـ '+prize.label+' 🎉';
+        document.getElementById('spin-coupon-code').textContent=code;
+    }
+
+    window.applySpinCoupon=()=>{
+        if(!_spinCouponCode)return;
+        document.getElementById('spin-wheel-modal').style.display='none';
+        document.getElementById('coupon-input').value=_spinCouponCode;
+        showNotification('تم تطبيق كود الجائزة: '+_spinCouponCode+' ✓','success');
+        openCheckout();
+    };
+
+    window.closeSpinWheel=()=>{ document.getElementById('spin-wheel-modal').style.display='none'; };
+
     // ============ REFERRER REWARD POPUP ============
     let _referrerRewardCode = null;
     let _userDocUnsubscribe = null;
@@ -3849,10 +3951,13 @@ window.loginWithFacebook = async () => {
             ta.value = _referrerRewardCode; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
         });
         showNotification('تم نسخ كود مكافأتك: ' + _referrerRewardCode + ' ✓', 'success');
-        // mark as claimed in Firestore
         if (currentUser) {
-            db.collection('users').doc(currentUser.uid).update({ 'pendingReferralReward.claimed': true }).catch(() => {});
+            db.collection('users').doc(currentUser.uid).update({
+                'pendingReferralReward.claimed': true,
+                hasCompletedReferral: true
+            }).catch(() => {});
         }
+        document.getElementById('referral-banner')?.classList.add('hidden');
     };
 
     window.applyReferrerRewardToCart = () => {
@@ -3863,8 +3968,12 @@ window.loginWithFacebook = async () => {
         showNotification('تم تطبيق كود المكافأة: ' + _referrerRewardCode + ' ✓', 'success');
         openCheckout();
         if (currentUser) {
-            db.collection('users').doc(currentUser.uid).update({ 'pendingReferralReward.claimed': true }).catch(() => {});
+            db.collection('users').doc(currentUser.uid).update({
+                'pendingReferralReward.claimed': true,
+                hasCompletedReferral: true
+            }).catch(() => {});
         }
+        document.getElementById('referral-banner')?.classList.add('hidden');
     };
 
     window.closeReferrerReward = () => {
@@ -3882,10 +3991,34 @@ window.loginWithFacebook = async () => {
             if(!hasOrders){
                 const snap=await db.collection('settings').doc('general').get();
                 const sData=snap.data()||{};
-                // check if first-order coupon banner is enabled (default: true)
                 if(sData.firstOrderCouponEnabled===false)return;
-                const code=sData.firstOrderCoupon||'FIRST10';
-                const desc=sData.firstOrderDesc||'خصم 10% على أول طلب!';
+
+                let code=sData.firstOrderCoupon||'FIRST10';
+
+                // For logged-in users: generate a unique one-time code per user
+                if(currentUser){
+                    const uSnap=await db.collection('users').doc(currentUser.uid).get();
+                    const uData=uSnap.data()||{};
+                    if(uData.usedFirstOrderCoupon)return; // already redeemed once in lifetime
+                    if(uData.uniqueFirstOrderCoupon){
+                        code=uData.uniqueFirstOrderCoupon;
+                    }else{
+                        const rand=Math.random().toString(36).substr(2,6).toUpperCase();
+                        code='FIRST-'+rand;
+                        const discVal=sData.firstOrderDiscount||10;
+                        const discType=sData.firstOrderDiscountType||'percentage';
+                        await db.collection('users').doc(currentUser.uid).update({uniqueFirstOrderCoupon:code}).catch(()=>{});
+                        await db.collection('coupons').add({
+                            code, type:discType, discount:discVal,
+                            enabled:true, maxUses:1, perUser:1,
+                            assignedTo:currentUser.uid,
+                            note:'كوبون أول طلب تلقائي - '+currentUser.email,
+                            createdAt:firebase.firestore.FieldValue.serverTimestamp()
+                        }).catch(()=>{});
+                    }
+                }
+
+                const desc=sData.firstOrderDesc||'خصم على أول طلب!';
                 const banner=document.getElementById('first-order-banner');
                 if(!banner)return;
                 document.getElementById('first-order-text').textContent=desc;
@@ -3992,6 +4125,7 @@ window.loginWithFacebook = async () => {
         checkAbandonedCart();
         setTimeout(checkFirstOrderBanner,3000);
         setTimeout(initScratchCard,1500);
+        setTimeout(initSpinWheel,5000);
         setTimeout(showLoginNudge, 30000);
     },2000);
 
@@ -4608,6 +4742,39 @@ function moveAdSlide(dir) {
     </div>
   </div>
   <!-- ===== FIRST ORDER BANNER ===== -->
+  <!-- SPIN THE WHEEL MODAL -->
+  <div id="spin-wheel-modal" style="display:none;position:fixed;inset:0;z-index:9900;background:rgba(0,0,0,0.96);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:16px;font-family:'Cairo',sans-serif;direction:rtl;flex-direction:column;gap:12px;">
+    <!-- Step 1: contact -->
+    <div id="spin-step-1" style="text-align:center;max-width:340px;width:100%;">
+      <div style="font-size:52px;margin-bottom:8px;">🎡</div>
+      <h2 style="color:#d4af37;font-size:22px;font-weight:800;margin:0 0 8px;">عجلة الحظ!</h2>
+      <p style="color:#aaa;font-size:12px;margin:0 0 20px;">أدخل بريدك أو هاتفك وادوّر العجلة لتكسب جائزتك</p>
+      <input id="spin-contact" type="text" placeholder="بريد إلكتروني أو رقم هاتف" style="width:100%;padding:13px;background:#111;border:1.5px solid #d4af37;border-radius:12px;color:#fff;font-family:'Cairo',sans-serif;font-size:13px;outline:none;box-sizing:border-box;margin-bottom:12px;text-align:center;">
+      <button onclick="startSpinWheel()" style="width:100%;padding:14px;background:linear-gradient(135deg,#d4af37,#f0c94e);color:#000;font-weight:800;font-size:15px;border:none;border-radius:14px;cursor:pointer;font-family:'Cairo',sans-serif;letter-spacing:1px;">🎰 ادوّر العجلة!</button>
+      <button onclick="closeSpinWheel()" style="display:block;margin:12px auto 0;background:none;border:none;color:#444;cursor:pointer;font-size:12px;font-family:'Cairo',sans-serif;">لا شكراً، مش محتاج خصم</button>
+    </div>
+    <!-- Step 2: spinning -->
+    <div id="spin-step-2" style="display:none;text-align:center;max-width:320px;width:100%;">
+      <div style="position:relative;display:inline-block;margin-bottom:16px;">
+        <div style="position:absolute;top:-20px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-top:24px solid #d4af37;z-index:2;filter:drop-shadow(0 0 6px #d4af37);"></div>
+        <canvas id="spin-canvas" width="280" height="280" style="display:block;border-radius:50%;border:4px solid #d4af37;box-shadow:0 0 40px rgba(212,175,55,0.5);"></canvas>
+      </div>
+      <p id="spin-status" style="color:#d4af37;font-size:14px;font-weight:700;margin:0;">جاري التدوير...</p>
+    </div>
+    <!-- Step 3: result -->
+    <div id="spin-step-3" style="display:none;text-align:center;max-width:340px;width:100%;">
+      <div id="spin-result-emoji" style="font-size:56px;margin-bottom:12px;">🎉</div>
+      <h2 style="color:#d4af37;font-size:24px;font-weight:800;margin:0 0 8px;">مبروك!</h2>
+      <p id="spin-result-text" style="color:#ccc;font-size:14px;margin:0 0 18px;"></p>
+      <div style="background:linear-gradient(135deg,#111800,#1a2200);padding:20px 16px;border-radius:16px;border:2px solid rgba(212,175,55,0.45);margin-bottom:16px;">
+        <p style="color:#777;font-size:11px;margin:0 0 8px;">كود الخصم الخاص بك:</p>
+        <p id="spin-coupon-code" style="color:#d4af37;font-size:24px;font-weight:800;letter-spacing:5px;margin:0;font-family:monospace;"></p>
+      </div>
+      <button onclick="applySpinCoupon()" style="width:100%;padding:14px;background:linear-gradient(135deg,#d4af37,#f0c94e);color:#000;font-weight:800;font-size:14px;border:none;border-radius:14px;cursor:pointer;margin-bottom:10px;font-family:'Cairo',sans-serif;">✅ تطبيق الكود والتسوق الآن</button>
+      <button onclick="closeSpinWheel()" style="width:100%;padding:11px;background:none;border:1px solid #333;color:#555;border-radius:12px;cursor:pointer;font-size:12px;font-family:'Cairo',sans-serif;">إغلاق</button>
+    </div>
+  </div>
+
   <div id="first-order-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:4000;background:linear-gradient(135deg,#1a0d00,#2a1800);border-bottom:2px solid rgba(212,175,55,0.5);padding:10px 16px;font-family:'Cairo',sans-serif;direction:rtl;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;">
     <span style="font-size:20px;">🎁</span>
     <span style="color:#fff;font-size:13px;font-weight:700;" id="first-order-text">أول طلب لك؟ احصل على خصم خاص!</span>
