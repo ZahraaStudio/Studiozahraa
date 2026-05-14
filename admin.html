@@ -635,26 +635,56 @@
                                 <input type="number" id="setting-ss-amount" placeholder="50" class="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-sm outline-none">
                             </div>
                         </div>
-                        <p class="text-[10px] text-zinc-500 mt-2">عند تجاوز السلة الحد، نُصدر للعميل كوبون GIFT صالح لاستخدام واحد.</p>
+                        <p class="text-[10px] text-zinc-500 mt-2">⚡ الخصم يُطبَّق تلقائياً على الفاتورة مباشرةً عند الدفع بدون كود — لا حاجة لكوبون.</p>
                     </div>
 
                     <h4 class="gold-text font-bold border-b border-zinc-800 pb-2 pt-2">كوبونات تلقائية</h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="text-sm text-zinc-400 block mb-2">كود خصم أول طلب:</label>
-                            <input type="text" id="setting-first-order-coupon" placeholder="FIRST10" class="w-full p-3 bg-black border border-zinc-700 rounded outline-none focus:border-gold-text">
+
+                    <!-- كوبون أول طلب -->
+                    <div class="p-4 bg-black rounded-xl border border-zinc-800">
+                        <div class="flex items-center justify-between mb-3">
+                            <div>
+                                <p class="font-bold text-sm">🎁 كوبون أول طلب</p>
+                                <p class="text-xs text-zinc-500">يظهر تلقائياً للعملاء الجدد بدون طلبات سابقة</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="setting-first-order-enabled" class="sr-only peer">
+                                <div class="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-600"></div>
+                            </label>
                         </div>
-                        <div>
-                            <label class="text-sm text-zinc-400 block mb-2">وصف خصم أول طلب:</label>
-                            <input type="text" id="setting-first-order-desc" placeholder="خصم 10% على أول طلب!" class="w-full p-3 bg-black border border-zinc-700 rounded outline-none focus:border-gold-text">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-xs text-zinc-400 block mb-1">الكود:</label>
+                                <input type="text" id="setting-first-order-coupon" placeholder="FIRST10" class="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-sm outline-none focus:border-yellow-600">
+                            </div>
+                            <div>
+                                <label class="text-xs text-zinc-400 block mb-1">الوصف:</label>
+                                <input type="text" id="setting-first-order-desc" placeholder="خصم 10% على أول طلب!" class="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-sm outline-none focus:border-yellow-600">
+                            </div>
                         </div>
-                        <div>
-                            <label class="text-sm text-zinc-400 block mb-2">كود هدية الإحالة:</label>
-                            <input type="text" id="setting-referral-coupon" placeholder="WELCOME10" class="w-full p-3 bg-black border border-zinc-700 rounded outline-none focus:border-gold-text">
+                    </div>
+
+                    <!-- كوبون ترحيب/إحالة -->
+                    <div class="p-4 bg-black rounded-xl border border-zinc-800">
+                        <div class="flex items-center justify-between mb-3">
+                            <div>
+                                <p class="font-bold text-sm">🎰 كوبون لعبة الخدش (ترحيب)</p>
+                                <p class="text-xs text-zinc-500">يُعطى للعملاء عند أول دخول عبر لعبة الخدش</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="setting-referral-coupon-enabled" class="sr-only peer">
+                                <div class="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-600"></div>
+                            </label>
                         </div>
-                        <div>
-                            <label class="text-sm text-zinc-400 block mb-2">وصف هدية الإحالة:</label>
-                            <input type="text" id="setting-referral-desc" placeholder="خصم 10% مع الإحالة" class="w-full p-3 bg-black border border-zinc-700 rounded outline-none focus:border-gold-text">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-xs text-zinc-400 block mb-1">الكود:</label>
+                                <input type="text" id="setting-referral-coupon" placeholder="WELCOME10" class="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-sm outline-none focus:border-yellow-600">
+                            </div>
+                            <div>
+                                <label class="text-xs text-zinc-400 block mb-1">الوصف:</label>
+                                <input type="text" id="setting-referral-desc" placeholder="خصم 10% مع الإحالة" class="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-sm outline-none focus:border-yellow-600">
+                            </div>
                         </div>
                     </div>
 
@@ -1792,14 +1822,17 @@ window.loadOrders = () => {
         window.editCoupon = (id) => {
             const c = allCoupons.find(x => x.id === id);
             if (!c) return;
+            editingCouponId = id;
             document.getElementById('coupon-id').value = id;
-            document.getElementById('coupon-code').value = c.code || '';
-            document.getElementById('coupon-discount').value = c.discount || '';
-            document.getElementById('coupon-type').value = c.type || 'fixed';
-            document.getElementById('coupon-limit').value = c.limit || '';
-            document.getElementById('coupon-min').value = c.minOrder || '';
-            document.getElementById('coupon-active').checked = c.isActive !== false;
-            document.getElementById('coupon-note').value = c.note || '';
+            document.getElementById('c-code').value = c.code || '';
+            document.getElementById('c-discount').value = c.discount || '';
+            document.getElementById('c-type').value = c.type || 'fixed';
+            document.getElementById('c-limit').value = c.limit || '';
+            document.getElementById('c-per-user').value = c.perUserLimit || '';
+            const ed = c.expiryDate;
+            if (ed && document.getElementById('c-expiry-date')) {
+                try { document.getElementById('c-expiry-date').value = new Date(ed.toDate ? ed.toDate() : ed).toISOString().split('T')[0]; } catch(e2) {}
+            }
             document.getElementById('coupon-form-title').textContent = 'تعديل الكوبون';
             document.getElementById('save-coupon-btn').textContent = 'حفظ التعديل';
             document.getElementById('cancel-coupon-btn').classList.remove('hidden');
@@ -1895,6 +1928,8 @@ window.loadOrders = () => {
             document.getElementById('setting-ss-type').value = ss.type || 'fixed';
             set('setting-ss-amount', ss.amount || '');
 
+            if (document.getElementById('setting-first-order-enabled')) document.getElementById('setting-first-order-enabled').checked = g.firstOrderCouponEnabled !== false;
+            if (document.getElementById('setting-referral-coupon-enabled')) document.getElementById('setting-referral-coupon-enabled').checked = g.referralGiftCouponEnabled !== false;
             document.getElementById('setting-referral-enabled').checked = g.referralEnabled !== false;
             document.getElementById('setting-store-status').checked = g.isOpen ?? true;
 
@@ -1922,6 +1957,8 @@ window.loadOrders = () => {
                 firstOrderDesc: document.getElementById('setting-first-order-desc').value.trim() || 'خصم 10% على أول طلب!',
                 referralGiftCoupon: document.getElementById('setting-referral-coupon').value.trim() || 'WELCOME10',
                 referralGiftDesc: document.getElementById('setting-referral-desc').value.trim() || 'خصم 10% مع الإحالة',
+                firstOrderCouponEnabled: document.getElementById('setting-first-order-enabled')?.checked ?? true,
+                referralGiftCouponEnabled: document.getElementById('setting-referral-coupon-enabled')?.checked ?? true,
                 spendSave: {
                     enabled: document.getElementById('setting-ss-enabled').checked,
                     threshold: parseFloat(document.getElementById('setting-ss-threshold').value) || 0,
@@ -2044,6 +2081,7 @@ window.loadOrders = () => {
                 filtered = filtered.filter(c =>
                     (c.name || '').toLowerCase().includes(search) ||
                     (c.email || '').toLowerCase().includes(search) ||
+                    (c.phone || '').toLowerCase().includes(search) ||
                     (c.userCode || '').toLowerCase().includes(search) ||
                     (c.id || '').toLowerCase().includes(search)
                 );
@@ -2055,22 +2093,26 @@ window.loadOrders = () => {
             list.innerHTML = filtered.map(c => {
                 const orders = allOrders.filter(o => o.userId === c.id);
                 const totalSpent = orders.reduce((a, b) => a + (b.totalPrice || 0), 0);
+                const pendingOrders = orders.filter(o => o.status === 'قيد التنفيذ' || o.status === 'جاري التحضير');
                 const isBlocked = !!c.isBlocked;
                 return `
-                    <div class="p-4 bg-black rounded-xl border border-zinc-800">
+                    <div class="p-4 bg-black rounded-xl border border-zinc-800 cursor-pointer hover:border-yellow-600 transition-colors" onclick="openCustomerProfile('${c.id}')">
                         <div class="flex justify-between items-start gap-3 flex-wrap">
                             <div>
                                 <p class="font-bold">${c.name || c.email || 'بدون اسم'}</p>
-                                <p class="text-xs text-zinc-500">${c.email || ''}</p>
+                                <p class="text-xs text-zinc-500">${c.email || ''} ${c.phone ? '| ' + c.phone : ''}</p>
                                 <p class="text-[10px] text-zinc-500 font-mono">كود: ${c.userCode || c.id.substring(0,10)}</p>
                                 ${c.earnedReferralCoupon ? `<p class="text-[10px] text-green-400">✓ كوبون إحالة: ${c.earnedReferralCoupon}</p>` : ''}
                                 ${isBlocked ? '<span class="text-[10px] bg-red-600 px-2 py-0.5 rounded mt-1 inline-block">محظور</span>' : ''}
                             </div>
                             <div class="text-left">
-                                <p class="text-xs text-zinc-500">عدد الطلبات: <span class="text-white font-bold">${orders.length}</span></p>
-                                <p class="text-xs text-zinc-500">إجمالي الإنفاق: <span class="gold-text font-bold">${totalSpent} ج</span></p>
-                                <button onclick="toggleBlockUser('${c.id}', ${isBlocked})" class="mt-2 text-[10px] px-3 py-1 rounded ${isBlocked ? 'bg-green-600' : 'bg-red-600'} text-white">
-                                    ${isBlocked ? 'إلغاء الحظر' : 'حظر العميل'}
+                                <p class="text-xs text-zinc-500">الطلبات: <span class="text-white font-bold">${orders.length}</span> ${pendingOrders.length > 0 ? `<span class="text-yellow-400">(${pendingOrders.length} معلق)</span>` : ''}</p>
+                                <p class="text-xs text-zinc-500">الإنفاق: <span class="gold-text font-bold">${totalSpent} ج</span></p>
+                                <button onclick="event.stopPropagation();openCustomerProfile('${c.id}')" class="mt-2 text-[10px] px-3 py-1 rounded bg-blue-700 text-white">
+                                    👁️ عرض التفاصيل
+                                </button>
+                                <button onclick="event.stopPropagation();toggleBlockUser('${c.id}', ${isBlocked})" class="mt-2 mr-1 text-[10px] px-3 py-1 rounded ${isBlocked ? 'bg-green-600' : 'bg-red-600'} text-white">
+                                    ${isBlocked ? 'إلغاء الحظر' : 'حظر'}
                                 </button>
                             </div>
                         </div>
@@ -2080,21 +2122,114 @@ window.loadOrders = () => {
             document.getElementById('stat-customers') && (document.getElementById('stat-customers').innerText = allCustomers.length);
         };
 
+        window.openCustomerProfile = async (uid) => {
+            const c = allCustomers.find(x => x.id === uid);
+            if (!c) return;
+            const orders = allOrders.filter(o => o.userId === uid);
+            const totalSpent = orders.reduce((a, b) => a + (b.totalPrice || 0), 0);
+            const pendingOrders = orders.filter(o => o.status === 'قيد التنفيذ' || o.status === 'جاري التحضير');
+
+            // fetch coupons for this user
+            let couponsHtml = '<p class="text-zinc-600 text-xs">لا توجد كوبونات</p>';
+            try {
+                const cSnap = await getDocs(query(collection(db, 'coupons'), where('linkedUser', '==', uid)));
+                if (!cSnap.empty) {
+                    couponsHtml = cSnap.docs.map(d => {
+                        const cp = d.data();
+                        return `<div class="flex justify-between items-center py-1.5 border-b border-zinc-800 text-xs">
+                            <span class="font-mono text-yellow-400">${cp.code}</span>
+                            <span class="text-zinc-400">${cp.type === 'percentage' ? cp.discount + '%' : cp.discount + ' ج'}</span>
+                            <span class="${cp.isActive ? 'text-green-400' : 'text-red-400'}">${cp.isActive ? 'نشط' : 'منتهي'}</span>
+                        </div>`;
+                    }).join('');
+                }
+            } catch(e) {}
+
+            // points balance
+            let pointsBal = 0;
+            try {
+                const pSnap = await getDoc(doc(db, 'points', uid));
+                if (pSnap.exists()) pointsBal = pSnap.data().balance || 0;
+            } catch(e) {}
+
+            const ordersHtml = orders.slice(0,10).map(o => {
+                const date = o.createdAt?.toDate?.()?.toLocaleDateString('ar-EG') || '';
+                const statusColor = o.status === 'تم التسليم' ? 'text-green-400' : o.status === 'ملغي' ? 'text-red-400' : 'text-yellow-400';
+                return `<div class="flex justify-between items-center py-1.5 border-b border-zinc-800 text-xs">
+                    <span class="text-zinc-400">${o.orderNumber || o.id?.substring(0,8)}</span>
+                    <span class="${statusColor} font-bold">${o.status}</span>
+                    <span class="gold-text">${o.totalPrice} ج</span>
+                    <span class="text-zinc-600">${date}</span>
+                </div>`;
+            }).join('') || '<p class="text-zinc-600 text-xs">لا توجد طلبات</p>';
+
+            const modal = document.createElement('div');
+            modal.id = 'customer-profile-modal';
+            modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)';
+            modal.innerHTML = `
+                <div style="background:#111;border:1px solid #d4af37;border-radius:20px;padding:24px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                        <h3 style="color:#d4af37;font-weight:bold;font-size:18px;margin:0;">👤 ${c.name || c.email || 'بدون اسم'}</h3>
+                        <button onclick="document.getElementById('customer-profile-modal').remove()" style="background:none;border:none;color:#777;font-size:22px;cursor:pointer;">✕</button>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+                        <div style="background:#1a1a1a;border-radius:12px;padding:12px;text-align:center;"><p style="color:#666;font-size:10px;margin:0 0 4px;">إجمالي الطلبات</p><p style="color:#fff;font-weight:bold;font-size:22px;margin:0;">${orders.length}</p></div>
+                        <div style="background:#1a1a1a;border-radius:12px;padding:12px;text-align:center;"><p style="color:#666;font-size:10px;margin:0 0 4px;">إجمالي الإنفاق</p><p style="color:#d4af37;font-weight:bold;font-size:22px;margin:0;">${totalSpent} ج</p></div>
+                        <div style="background:#1a1a1a;border-radius:12px;padding:12px;text-align:center;"><p style="color:#666;font-size:10px;margin:0 0 4px;">طلبات معلقة</p><p style="color:#facc15;font-weight:bold;font-size:22px;margin:0;">${pendingOrders.length}</p></div>
+                        <div style="background:#1a1a1a;border-radius:12px;padding:12px;text-align:center;"><p style="color:#666;font-size:10px;margin:0 0 4px;">رصيد النقاط</p><p style="color:#60a5fa;font-weight:bold;font-size:22px;margin:0;">${pointsBal}</p></div>
+                    </div>
+                    <div style="margin-bottom:8px;padding:10px;background:#1a1a1a;border-radius:10px;">
+                        <p style="color:#999;font-size:11px;margin:0 0 2px;">${c.email || '—'} ${c.phone ? '| ' + c.phone : ''}</p>
+                        <p style="color:#555;font-size:10px;margin:0;font-family:monospace;">UID: ${uid}</p>
+                        ${c.earnedReferralCoupon ? `<p style="color:#4ade80;font-size:10px;margin:4px 0 0;">✓ كوبون إحالة: ${c.earnedReferralCoupon}</p>` : ''}
+                    </div>
+                    <details style="margin-bottom:10px;" open>
+                        <summary style="color:#d4af37;font-weight:bold;font-size:13px;cursor:pointer;margin-bottom:8px;">📦 آخر 10 طلبات</summary>
+                        ${ordersHtml}
+                    </details>
+                    <details style="margin-bottom:10px;">
+                        <summary style="color:#d4af37;font-weight:bold;font-size:13px;cursor:pointer;margin-bottom:8px;">🎫 كوبوناته</summary>
+                        ${couponsHtml}
+                    </details>
+                    <div style="display:flex;gap:8px;margin-top:12px;">
+                        <button onclick="toggleBlockUser('${uid}', ${!!c.isBlocked});document.getElementById('customer-profile-modal').remove();" style="flex:1;padding:10px;border-radius:10px;font-weight:bold;font-size:12px;cursor:pointer;border:none;background:${c.isBlocked ? '#16a34a' : '#dc2626'};color:#fff;">${c.isBlocked ? '✅ إلغاء الحظر' : '🚫 حظر العميل'}</button>
+                        <button onclick="document.getElementById('customer-profile-modal').remove()" style="padding:10px 20px;border-radius:10px;font-weight:bold;font-size:12px;cursor:pointer;border:1px solid #444;background:none;color:#999;">إغلاق</button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('customer-profile-modal')?.remove();
+            document.body.appendChild(modal);
+            modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+        };
+
         // ==================== VISITORS ====================
         async function loadVisitors() {
             const snap = await getDocs(collection(db, 'visitors'));
-            document.getElementById('stat-visitors').innerText = snap.size;
+            // Count registered users (have userId) vs guests
+            let registeredCount = 0, guestCount = 0;
+            snap.forEach(d => {
+                const v = d.data();
+                if (v.userId) registeredCount++;
+                else guestCount++;
+            });
+            const statEl = document.getElementById('stat-visitors');
+            if (statEl) {
+                statEl.innerHTML = `${registeredCount} <span style="font-size:10px;color:#71717a;font-weight:normal;">عميل مسجل / ${snap.size} إجمالي</span>`;
+            }
             
             // Online visitors (active in last 5 mins)
             const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000);
             const onlineSnap = await getDocs(query(collection(db, 'visitors'), where('lastActive', '>=', fiveMinsAgo)));
             const list = document.getElementById('online-visitors-list');
+            if (!list) return;
             list.innerHTML = "";
             onlineSnap.forEach(v => {
+                const vd = v.data();
+                const isReg = !!vd.userId;
                 list.innerHTML += `
-                    <div class="bg-green-500/10 border border-green-500/30 p-2 rounded text-center">
-                        <div class="w-2 h-2 bg-green-500 rounded-full mx-auto mb-1 animate-pulse"></div>
-                        <p class="text-[10px] text-green-500 font-bold">نشط الآن</p>
+                    <div class="${isReg ? 'bg-green-500/10 border-green-500/30' : 'bg-zinc-800/50 border-zinc-700/30'} border p-2 rounded text-center">
+                        <div class="w-2 h-2 ${isReg ? 'bg-green-500' : 'bg-zinc-500'} rounded-full mx-auto mb-1 ${isReg ? 'animate-pulse' : ''}"></div>
+                        <p class="text-[10px] ${isReg ? 'text-green-500' : 'text-zinc-500'} font-bold">${isReg ? '✅ مسجل' : '👤 زائر'}</p>
                     </div>
                 `;
             });
@@ -2506,12 +2641,57 @@ window.deleteActiveAlbum = async () => {
                                 <p class="text-xs text-zinc-500">${b.isActive ? '✅ نشط' : '⛔ غير نشط'} • ترتيب: ${b.order || 0}</p>
                             </div>
                             <div class="flex gap-2">
+                                <button onclick="editBanner('${d.id}')" class="text-xs px-2 py-1 rounded-lg bg-blue-700 text-white">تعديل</button>
                                 <button onclick="toggleBanner('${d.id}', ${!b.isActive})" class="text-xs px-2 py-1 rounded-lg ${b.isActive ? 'bg-zinc-700 text-zinc-300' : 'bg-green-700 text-white'}">${b.isActive ? 'إيقاف' : 'تفعيل'}</button>
                                 <button onclick="deleteBanner('${d.id}')" class="text-xs px-2 py-1 rounded-lg bg-red-800 text-white">حذف</button>
                             </div>
                         </div>`;
                 });
             } catch (e) { list.innerHTML = `<p class="text-red-400 text-sm">خطأ: ${e.message}</p>`; }
+        };
+
+        window.editBanner = async (id) => {
+            try {
+                const snap = await getDoc(doc(db,'banners',id));
+                if (!snap.exists()) return;
+                const b = snap.data();
+                const modal = document.createElement('div');
+                modal.id = 'edit-banner-modal';
+                modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)';
+                modal.innerHTML = `
+                    <div style="background:#111;border:1px solid #d4af37;border-radius:20px;padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                            <h3 style="color:#d4af37;font-weight:bold;font-size:17px;margin:0;">✏️ تعديل البانر</h3>
+                            <button onclick="document.getElementById('edit-banner-modal').remove()" style="background:none;border:none;color:#777;font-size:22px;cursor:pointer;">✕</button>
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:12px;">
+                            <div><label style="color:#999;font-size:12px;display:block;margin-bottom:4px;">العنوان</label>
+                                <input id="eb-title" value="${(b.title||'').replace(/"/g,'&quot;')}" style="width:100%;padding:8px 12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;font-size:13px;outline:none;box-sizing:border-box;"></div>
+                            <div><label style="color:#999;font-size:12px;display:block;margin-bottom:4px;">العنوان الفرعي</label>
+                                <input id="eb-subtitle" value="${(b.subtitle||'').replace(/"/g,'&quot;')}" style="width:100%;padding:8px 12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;font-size:13px;outline:none;box-sizing:border-box;"></div>
+                            <div><label style="color:#999;font-size:12px;display:block;margin-bottom:4px;">الرابط عند الضغط</label>
+                                <input id="eb-link" value="${(b.link||'').replace(/"/g,'&quot;')}" style="width:100%;padding:8px 12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;font-size:13px;outline:none;box-sizing:border-box;"></div>
+                            <div><label style="color:#999;font-size:12px;display:block;margin-bottom:4px;">نص الزر</label>
+                                <input id="eb-btn-text" value="${(b.btnText||'').replace(/"/g,'&quot;')}" style="width:100%;padding:8px 12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;font-size:13px;outline:none;box-sizing:border-box;"></div>
+                            <div><label style="color:#999;font-size:12px;display:block;margin-bottom:4px;">الترتيب</label>
+                                <input id="eb-order" type="number" value="${b.order||0}" style="width:100%;padding:8px 12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;font-size:13px;outline:none;box-sizing:border-box;"></div>
+                            <div style="display:flex;align-items:center;gap:8px;padding:10px;background:#1a1a1a;border-radius:8px;">
+                                <input type="checkbox" id="eb-active" ${b.isActive ? 'checked' : ''} style="width:18px;height:18px;accent-color:#d4af37;">
+                                <label for="eb-active" style="color:#ccc;font-size:13px;cursor:pointer;">نشط</label>
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:8px;margin-top:16px;">
+                            <button onclick="(async()=>{
+                                const d={title:document.getElementById('eb-title').value,subtitle:document.getElementById('eb-subtitle').value,link:document.getElementById('eb-link').value,btnText:document.getElementById('eb-btn-text').value,order:parseInt(document.getElementById('eb-order').value)||0,isActive:document.getElementById('eb-active').checked};
+                                try{await updateDoc(doc(db,'banners','${id}'),d);zahraaToast('تم التعديل ✅','success');loadAdminBanners();document.getElementById('edit-banner-modal').remove();}catch(e){zahraaToast(e.message,'error');}
+                            })()" style="flex:1;padding:10px;border-radius:10px;font-weight:bold;font-size:13px;cursor:pointer;border:none;background:#d4af37;color:#000;">💾 حفظ التعديل</button>
+                            <button onclick="document.getElementById('edit-banner-modal').remove()" style="padding:10px 16px;border-radius:10px;font-size:13px;cursor:pointer;border:1px solid #444;background:none;color:#999;">إلغاء</button>
+                        </div>
+                    </div>`;
+                document.getElementById('edit-banner-modal')?.remove();
+                document.body.appendChild(modal);
+                modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+            } catch(e) { zahraaToast(e.message,'error'); }
         };
 
         window.saveBanner = async () => {
@@ -2800,17 +2980,82 @@ window.deleteActiveAlbum = async () => {
         };
 
         window.searchUserPoints = async () => {
-            const uid = document.getElementById('pts-search-user').value.trim();
-            if (!uid) return zahraaToast('أدخل UID المستخدم','warning');
+            const query_val = document.getElementById('pts-search-user').value.trim();
+            if (!query_val) return zahraaToast('أدخل اسم أو إيميل أو رقم هاتف أو UID','warning');
             const list = document.getElementById('pts-history-list');
-            list.innerHTML = '<p class="text-zinc-500 text-sm">جاري البحث...</p>';
+            list.innerHTML = '<p class="text-zinc-500 text-sm text-center py-4">⏳ جاري البحث...</p>';
             try {
-                const balSnap = await getDoc(doc(db, 'points', uid));
+                // resolve UID: try direct match first, then search customers by name/email/phone
+                let resolvedUid = null;
+                let customerInfo = null;
+
+                // check if it's a UID directly (matches a points doc)
+                const directBalSnap = await getDoc(doc(db, 'points', query_val));
+                if (directBalSnap.exists()) {
+                    resolvedUid = query_val;
+                    // try to get customer info from users collection
+                    const userSnap = await getDoc(doc(db, 'users', query_val));
+                    if (userSnap.exists()) customerInfo = userSnap.data();
+                } else {
+                    // search by name / email / phone in users collection
+                    const usersSnap = await getDocs(collection(db, 'users'));
+                    const q = query_val.toLowerCase();
+                    usersSnap.forEach(d => {
+                        const u = d.data();
+                        if (!resolvedUid && (
+                            (u.name || '').toLowerCase().includes(q) ||
+                            (u.email || '').toLowerCase().includes(q) ||
+                            (u.phone || '').toLowerCase().includes(q) ||
+                            (u.userCode || '').toLowerCase().includes(q)
+                        )) {
+                            resolvedUid = d.id;
+                            customerInfo = u;
+                        }
+                    });
+                }
+
+                if (!resolvedUid) {
+                    list.innerHTML = '<p class="text-zinc-500 text-sm text-center py-6">❌ لم يتم العثور على عميل بهذا البحث</p>';
+                    return;
+                }
+
+                const balSnap = await getDoc(doc(db, 'points', resolvedUid));
                 const balance = balSnap.exists() ? (balSnap.data().balance || 0) : 0;
-                const histSnap = await getDocs(query(collection(db, 'points_history'), where('userId', '==', uid), orderBy('createdAt', 'desc'), limit(20)));
-                let html = `<div class="mb-3 p-3 bg-zinc-900 rounded-xl"><p class="text-sm">الرصيد الحالي: <span class="gold-text font-bold text-lg">${balance}</span> نقطة</p></div>`;
-                if (histSnap.empty) { html += '<p class="text-zinc-500 text-sm">لا سجل نقاط</p>'; }
+
+                // calc total earned & spent from history
+                const histSnap = await getDocs(query(collection(db, 'points_history'), where('userId', '==', resolvedUid), orderBy('createdAt', 'desc'), limit(50)));
+                let totalEarned = 0, totalSpent = 0;
+                histSnap.forEach(d => {
+                    const h = d.data();
+                    if (h.type === 'earn') totalEarned += (h.points || 0);
+                    else totalSpent += (h.points || 0);
+                });
+
+                // customer orders total spending
+                const ordersSnap = await getDocs(query(collection(db, 'orders'), where('userId', '==', resolvedUid)));
+                let moneySpent = 0;
+                ordersSnap.forEach(d => { moneySpent += (d.data().totalPrice || 0); });
+
+                let html = `<div class="mb-3 p-4 bg-zinc-900 rounded-xl border border-zinc-700">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 rounded-full bg-yellow-900/30 border border-yellow-600 flex items-center justify-center text-lg">👤</div>
+                        <div>
+                            <p class="font-bold text-white">${customerInfo?.name || customerInfo?.email || 'غير معروف'}</p>
+                            <p class="text-xs text-zinc-500">${customerInfo?.email || ''} ${customerInfo?.phone ? '| ' + customerInfo.phone : ''}</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-center">
+                        <div class="bg-black rounded-lg p-2"><p class="text-[10px] text-zinc-500">النقاط المتبقية</p><p class="gold-text font-bold text-lg">${balance}</p></div>
+                        <div class="bg-black rounded-lg p-2"><p class="text-[10px] text-zinc-500">إجمالي الإنفاق</p><p class="text-green-400 font-bold text-lg">${moneySpent} ج</p></div>
+                        <div class="bg-black rounded-lg p-2"><p class="text-[10px] text-zinc-500">نقاط مكتسبة</p><p class="text-blue-400 font-bold">${totalEarned}</p></div>
+                        <div class="bg-black rounded-lg p-2"><p class="text-[10px] text-zinc-500">نقاط مُصرفة</p><p class="text-red-400 font-bold">${totalSpent}</p></div>
+                    </div>
+                    <p class="text-[9px] text-zinc-600 mt-2 text-center font-mono">UID: ${resolvedUid}</p>
+                </div>`;
+
+                if (histSnap.empty) { html += '<p class="text-zinc-500 text-sm text-center py-3">لا يوجد سجل نقاط</p>'; }
                 else {
+                    html += '<p class="text-xs text-zinc-400 font-bold mb-2">📋 سجل النقاط:</p>';
                     histSnap.forEach(d => {
                         const h = d.data();
                         html += `<div class="flex justify-between items-center py-2 border-b border-zinc-800">
@@ -2998,6 +3243,7 @@ window.deleteActiveAlbum = async () => {
                             <span class="text-xs px-2 py-0.5 rounded ${ad.isActive?'bg-green-700 text-white':'bg-zinc-700 text-zinc-400'}">${ad.isActive?'✅ نشط':'⛔ متوقف'}</span>
                         </div>
                         <div class="flex gap-2">
+                            <button onclick="editAd('${d.id}')" class="text-xs px-3 py-1.5 rounded-lg bg-blue-700 text-white">تعديل</button>
                             <button onclick="toggleAd('${d.id}',${!ad.isActive})" class="text-xs px-3 py-1.5 rounded-lg ${ad.isActive?'bg-zinc-700':'bg-green-700 text-white'}">${ad.isActive?'إيقاف':'تفعيل'}</button>
                             <button onclick="deleteAd('${d.id}')" class="text-xs px-3 py-1.5 rounded-lg bg-red-800 text-white">حذف</button>
                         </div>
@@ -3011,6 +3257,51 @@ window.deleteActiveAlbum = async () => {
         };
         window.deleteAd = async (id) => {
             zahraaConfirm('حذف هذا الإعلان؟', async()=>{ try{await deleteDoc(doc(db,'ads',id));loadAdsList();zahraaToast('تم الحذف ✅','success');}catch(e){zahraaToast(e.message,'error');} },'','🗑️');
+        };
+        window.editAd = async (id) => {
+            try {
+                const snap = await getDoc(doc(db,'ads',id));
+                if (!snap.exists()) return;
+                const ad = snap.data();
+                const modal = document.createElement('div');
+                modal.id = 'edit-ad-modal';
+                modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)';
+                modal.innerHTML = `
+                    <div style="background:#111;border:1px solid #d4af37;border-radius:20px;padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                            <h3 style="color:#d4af37;font-weight:bold;font-size:17px;margin:0;">✏️ تعديل الإعلان</h3>
+                            <button onclick="document.getElementById('edit-ad-modal').remove()" style="background:none;border:none;color:#777;font-size:22px;cursor:pointer;">✕</button>
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:12px;">
+                            <div><label style="color:#999;font-size:12px;display:block;margin-bottom:4px;">عنوان الإعلان</label>
+                                <input id="ea-title" value="${(ad.title||'').replace(/"/g,'&quot;')}" style="width:100%;padding:8px 12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;font-size:13px;outline:none;box-sizing:border-box;"></div>
+                            <div><label style="color:#999;font-size:12px;display:block;margin-bottom:4px;">نص الخصم (اختياري)</label>
+                                <input id="ea-discount" value="${(ad.discount||'').replace(/"/g,'&quot;')}" placeholder="مثال: خصم 20%" style="width:100%;padding:8px 12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;font-size:13px;outline:none;box-sizing:border-box;"></div>
+                            <div><label style="color:#999;font-size:12px;display:block;margin-bottom:4px;">مدة الإعلان (ثانية)</label>
+                                <input id="ea-duration" type="number" value="${ad.duration||30}" style="width:100%;padding:8px 12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;font-size:13px;outline:none;box-sizing:border-box;"></div>
+                            <div><label style="color:#999;font-size:12px;display:block;margin-bottom:4px;">تخطي بعد (ثانية)</label>
+                                <input id="ea-skip" type="number" value="${ad.skipDelay||5}" style="width:100%;padding:8px 12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;font-size:13px;outline:none;box-sizing:border-box;"></div>
+                            <div><label style="color:#999;font-size:12px;display:block;margin-bottom:4px;">رابط الزر (اختياري)</label>
+                                <input id="ea-link" value="${(ad.buttonLink||'').replace(/"/g,'&quot;')}" style="width:100%;padding:8px 12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;font-size:13px;outline:none;box-sizing:border-box;"></div>
+                            <div><label style="color:#999;font-size:12px;display:block;margin-bottom:4px;">نص الزر (اختياري)</label>
+                                <input id="ea-btn-text" value="${(ad.buttonText||'').replace(/"/g,'&quot;')}" style="width:100%;padding:8px 12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;font-size:13px;outline:none;box-sizing:border-box;"></div>
+                            <div style="display:flex;align-items:center;gap:8px;padding:10px;background:#1a1a1a;border-radius:8px;">
+                                <input type="checkbox" id="ea-active" ${ad.isActive ? 'checked' : ''} style="width:18px;height:18px;accent-color:#d4af37;">
+                                <label for="ea-active" style="color:#ccc;font-size:13px;cursor:pointer;">نشط</label>
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:8px;margin-top:16px;">
+                            <button onclick="(async()=>{
+                                const d={title:document.getElementById('ea-title').value,discount:document.getElementById('ea-discount').value,duration:parseInt(document.getElementById('ea-duration').value)||30,skipDelay:parseInt(document.getElementById('ea-skip').value)||5,buttonLink:document.getElementById('ea-link').value,buttonText:document.getElementById('ea-btn-text').value,isActive:document.getElementById('ea-active').checked};
+                                try{await updateDoc(doc(db,'ads','${id}'),d);zahraaToast('تم التعديل ✅','success');loadAdsList();document.getElementById('edit-ad-modal').remove();}catch(e){zahraaToast(e.message,'error');}
+                            })()" style="flex:1;padding:10px;border-radius:10px;font-weight:bold;font-size:13px;cursor:pointer;border:none;background:#d4af37;color:#000;">💾 حفظ التعديل</button>
+                            <button onclick="document.getElementById('edit-ad-modal').remove()" style="padding:10px 16px;border-radius:10px;font-size:13px;cursor:pointer;border:1px solid #444;background:none;color:#999;">إلغاء</button>
+                        </div>
+                    </div>`;
+                document.getElementById('edit-ad-modal')?.remove();
+                document.body.appendChild(modal);
+                modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+            } catch(e) { zahraaToast(e.message,'error'); }
         };
 
         // ============ PUSH NOTIFICATIONS ============
@@ -3456,34 +3747,8 @@ window.closeAdminChat = () => {
         document.getElementById('btn-push-tab')?.addEventListener('click', loadPushTokens);
 
         // ===== SETTINGS: save/load first-order & referral coupons =====
-        const _origSaveSettings = window.saveSettings;
-        window.saveSettings = async function() {
-            // Capture extra fields before calling original
-            const extra = {
-                firstOrderCoupon: document.getElementById('s-first-order-coupon')?.value?.trim()||'FIRST10',
-                firstOrderDesc:   document.getElementById('s-first-order-desc')?.value?.trim()||'خصم 10% على أول طلب',
-                referralGiftCoupon: document.getElementById('s-referral-coupon')?.value?.trim()||'WELCOME10',
-                referralGiftDesc:   document.getElementById('s-referral-desc')?.value?.trim()||'خصم 10% مع الإحالة'
-            };
-            await _origSaveSettings?.();
-            try{
-                const {setDoc,doc} = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
-                await setDoc(doc(db,'settings','general'), extra, {merge:true});
-            }catch(e){}
-        };
-        const _origLoadSettings = window.loadSettings;
-        window.loadSettings = async function(){
-            await _origLoadSettings?.();
-            try{
-                const {getDoc,doc} = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
-                const snap = await getDoc(doc(db,'settings','general'));
-                const d = snap.data()||{};
-                if(document.getElementById('s-first-order-coupon')) document.getElementById('s-first-order-coupon').value=d.firstOrderCoupon||'FIRST10';
-                if(document.getElementById('s-first-order-desc'))   document.getElementById('s-first-order-desc').value=d.firstOrderDesc||'خصم 10% على أول طلب';
-                if(document.getElementById('s-referral-coupon'))     document.getElementById('s-referral-coupon').value=d.referralGiftCoupon||'WELCOME10';
-                if(document.getElementById('s-referral-desc'))       document.getElementById('s-referral-desc').value=d.referralGiftDesc||'خصم 10% مع الإحالة';
-            }catch(e){}
-        };
+        // settings save is handled by saveGeneralSettings which already includes all fields
+        // (settings load/save handled in main loadSettings / saveGeneralSettings above)
         // دالة حذف الطلب نهائياً
 window.deleteOrder = async (id) => {
     zahraaConfirm('حذف الطلب نهائياً؟', async () => {
@@ -3553,6 +3818,100 @@ window.deleteOrder = async (id) => {
     }
     if(Notification.permission==='default') try{Notification.requestPermission();}catch(e){}
     setTimeout(startChatListener,3000);
+})();
+
+// ===== NEW ORDER SOUND NOTIFICATION =====
+(function setupOrderNotifications() {
+    var _knownOrderIds = null; // null = first load (don't alert)
+    var _orderAudioCtx = null;
+
+    function getOrderAudioCtx() {
+        if (!_orderAudioCtx) try { _orderAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+        return _orderAudioCtx;
+    }
+
+    // Unlock audio on first user click
+    document.addEventListener('click', function unlock() {
+        try { if (_orderAudioCtx && _orderAudioCtx.state === 'suspended') _orderAudioCtx.resume(); } catch(e) {}
+    }, { once: true });
+
+    function playOrderSound() {
+        try {
+            var ctx = getOrderAudioCtx(); if (!ctx) return;
+            if (ctx.state === 'suspended') ctx.resume();
+            // Play a cheerful 3-tone "ka-ching" style sound
+            var notes = [
+                { freq: 880,  start: 0,    dur: 0.18 },
+                { freq: 1100, start: 0.18, dur: 0.18 },
+                { freq: 1320, start: 0.36, dur: 0.35 },
+            ];
+            notes.forEach(function(n) {
+                var osc  = ctx.createOscillator();
+                var gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(n.freq, ctx.currentTime + n.start);
+                gain.gain.setValueAtTime(0, ctx.currentTime + n.start);
+                gain.gain.linearRampToValueAtTime(0.5, ctx.currentTime + n.start + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + n.start + n.dur);
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.start(ctx.currentTime + n.start);
+                osc.stop(ctx.currentTime + n.start + n.dur + 0.05);
+            });
+        } catch(e) {}
+    }
+
+    function showOrderToast(order) {
+        // Use zahraaToast if available
+        var msg = '🛒 طلب جديد! ' + (order.orderNumber || '') + ' — ' + (order.customerName || 'عميل') + ' (' + (order.totalPrice || 0) + ' ج)';
+        if (typeof zahraaToast === 'function') {
+            zahraaToast(msg, 'success');
+        }
+        // Browser notification
+        try {
+            if (Notification.permission === 'granted') {
+                new Notification('🛒 طلب جديد — استوديو الزهراء', {
+                    body: (order.customerName || 'عميل') + '\n' + (order.totalPrice || 0) + ' ج — ' + (order.orderNumber || ''),
+                    icon: './icon-192.png',
+                    dir: 'rtl'
+                });
+            }
+        } catch(e) {}
+    }
+
+    function startOrderListener() {
+        if (typeof onSnapshot === 'undefined' || typeof collection === 'undefined') {
+            setTimeout(startOrderListener, 2000);
+            return;
+        }
+        try {
+            onSnapshot(
+                collection(db, 'orders'),
+                function(snap) {
+                    var ids = {};
+                    snap.forEach(function(d) { ids[d.id] = d.data(); });
+
+                    if (_knownOrderIds === null) {
+                        // First load — just record existing IDs quietly
+                        _knownOrderIds = ids;
+                        return;
+                    }
+
+                    // Detect genuinely new orders
+                    Object.keys(ids).forEach(function(id) {
+                        if (!_knownOrderIds[id]) {
+                            // New order arrived!
+                            playOrderSound();
+                            showOrderToast(ids[id]);
+                        }
+                    });
+
+                    _knownOrderIds = ids;
+                }
+            );
+        } catch(e) { setTimeout(startOrderListener, 3000); }
+    }
+
+    setTimeout(startOrderListener, 4000);
 })();
 
 // ===== OCCASIONS & CELEBRATION THEMES =====

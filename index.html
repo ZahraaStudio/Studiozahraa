@@ -2189,6 +2189,25 @@ window.loginWithFacebook = async () => {
             discount = appliedCoupon.type === 'percentage' ? subtotal * (appliedCoupon.discount / 100) : appliedCoupon.discount;
         }
 
+        // Spend & Save: apply discount directly at checkout if eligible
+        const ss = storeSettings.spendSave || {};
+        let spendSaveDiscount = 0;
+        if (ss.enabled && subtotal >= parseFloat(ss.threshold || 0) && !appliedCoupon) {
+            spendSaveDiscount = ss.type === 'percentage'
+                ? subtotal * (parseFloat(ss.amount || 0) / 100)
+                : parseFloat(ss.amount || 0);
+            discount += spendSaveDiscount;
+            // show a note in the coupon message area
+            const msg = document.getElementById('coupon-msg');
+            if (msg && !appliedCoupon) {
+                msg.innerText = `🎁 خصم Spend & Save مُطبَّق تلقائياً (${ss.type === 'percentage' ? ss.amount + '%' : ss.amount + ' ج'})`;
+                msg.className = 'text-green-500 text-[10px]';
+            }
+        } else if (!appliedCoupon) {
+            const msg = document.getElementById('coupon-msg');
+            if (msg && msg.innerText.includes('Spend & Save')) { msg.innerText = ''; }
+        }
+
         const shipping = getShippingCost();
         const giftWrap = document.getElementById('gift-wrap').checked ? giftPrice : 0;
         let finalTotal = Math.max(0, subtotal - discount) + shipping + giftWrap;
@@ -2202,6 +2221,8 @@ window.loginWithFacebook = async () => {
             dRow.style.display = 'none';
         }
         document.getElementById('checkout-total').innerText = Math.round(finalTotal) + ' ج';
+        // store spendSaveDiscount for use in submitOrder
+        window._currentSpendSaveDiscount = spendSaveDiscount;
     }
 
     window.toggleSurpriseGift = () => {
@@ -2275,6 +2296,9 @@ window.loginWithFacebook = async () => {
         const subtotal = cart.reduce((a, b) => a + (b.price * b.qty), 0);
         let discount = 0;
         if (appliedCoupon) discount = appliedCoupon.type === 'percentage' ? subtotal * (appliedCoupon.discount / 100) : appliedCoupon.discount;
+        // Spend & Save: use pre-calculated discount from checkout UI
+        const spendSaveApplied = window._currentSpendSaveDiscount || 0;
+        if (!appliedCoupon) discount += spendSaveApplied;
         const shipping = getShippingCost();
         const giftWrapPrice = giftWrap ? giftPrice : 0;
         const totalPrice = Math.max(0, subtotal - discount) + shipping + giftWrapPrice;
@@ -2292,7 +2316,8 @@ window.loginWithFacebook = async () => {
             items: cart.map(i => ({ name: i.name, code: i.code || '', price: i.price, qty: i.qty, image: i.images?.[0] || '' })),
             subtotal,
             discountAmount: Math.round(discount),
-            couponCode: appliedCoupon ? appliedCoupon.code : null,
+            couponCode: appliedCoupon ? appliedCoupon.code : (spendSaveApplied > 0 ? 'SPEND&SAVE' : null),
+            spendSaveDiscount: spendSaveApplied > 0 ? Math.round(spendSaveApplied) : 0,
             shippingCost: shipping,
             giftWrap,
             giftPrice: giftWrapPrice,
@@ -2326,23 +2351,9 @@ window.loginWithFacebook = async () => {
                 }
             }
 
-            // Spend & Save: issue auto coupon
+            // Spend & Save: discount already applied at checkout UI level
             earnedCoupon = null;
-            const ss = storeSettings.spendSave || {};
-            if (ss.enabled && subtotal >= (parseFloat(ss.threshold) || 0)) {
-                const code = 'GIFT' + Math.floor(1000 + Math.random() * 9000);
-                const couponDoc = {
-                    code, isActive: true,
-                    type: ss.type === 'percentage' ? 'percentage' : 'fixed',
-                    discount: parseFloat(ss.amount) || 0,
-                    limit: 1, perUserLimit: 1, usedCount: 0,
-                    linkedUser: currentUser ? currentUser.uid : null,
-                    note: 'كوبون مكافأة من نظام Spend & Save - طلب ' + orderNumber,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                };
-                try { await db.collection('coupons').add(couponDoc); } catch (e) { console.error(e); }
-                earnedCoupon = couponDoc;
-            }
+            window._currentSpendSaveDiscount = 0; // reset after order
 
             // Referral: مكافأة المُحيل - كل مستخدم مُحال يمنح المُحيل كوبون واحد فقط
             if (referralBy && currentUser && referralBy !== currentUser.uid) {
@@ -3665,7 +3676,10 @@ window.loginWithFacebook = async () => {
         // Gift card shows for anyone who arrived via referral link
         try{
             const snap=await db.collection('settings').doc('general').get();
-            const code=snap.data()?.referralGiftCoupon||'WELCOME10';
+            const sData=snap.data()||{};
+            // check if referral/scratch coupon is enabled (default: true)
+            if(sData.referralGiftCouponEnabled===false)return;
+            const code=sData.referralGiftCoupon||'WELCOME10';
             const desc=snap.data()?.referralGiftDesc||'خصم 10% على أول طلب';
             document.getElementById('scratch-coupon-code').textContent=code;
             document.getElementById('scratch-coupon-desc').textContent=desc;
@@ -3867,8 +3881,11 @@ window.loginWithFacebook = async () => {
             else{const s=await db.collection('orders').where('deviceId','==',deviceId).limit(1).get();hasOrders=!s.empty;}
             if(!hasOrders){
                 const snap=await db.collection('settings').doc('general').get();
-                const code=snap.data()?.firstOrderCoupon||'FIRST10';
-                const desc=snap.data()?.firstOrderDesc||'خصم 10% على أول طلب!';
+                const sData=snap.data()||{};
+                // check if first-order coupon banner is enabled (default: true)
+                if(sData.firstOrderCouponEnabled===false)return;
+                const code=sData.firstOrderCoupon||'FIRST10';
+                const desc=sData.firstOrderDesc||'خصم 10% على أول طلب!';
                 const banner=document.getElementById('first-order-banner');
                 if(!banner)return;
                 document.getElementById('first-order-text').textContent=desc;
@@ -4016,10 +4033,12 @@ window.loginWithFacebook = async () => {
 
         // 5. تحديث وقت الظهور
         localStorage.setItem(lastShownKey, now);
-        // 6. زيادة عداد المشاهدات في Firestore
-        db.collection('ads').doc(adId).update({
-            views: firebase.firestore.FieldValue.increment(1)
-        }).catch(()=>{});
+        // 6. زيادة عداد المشاهدات في Firestore (العملاء المسجلين فقط)
+        if (currentUser) {
+            db.collection('ads').doc(adId).update({
+                views: firebase.firestore.FieldValue.increment(1)
+            }).catch(()=>{});
+        }
 
     } catch(e) { console.error('Ad System Error:', e); }
 }
@@ -4872,7 +4891,7 @@ window.addGalleryComment = async (pid, url) => {
     zahraaToast('تم إرسال ملاحظتك بنجاح ✓');
 };
 
-	// تم إزالة وظائف مساعد الذكاء الاصطناعي وزر القائمة العائم بناءً على طلب المستخدم
+        // تم إزالة وظائف مساعد الذكاء الاصطناعي وزر القائمة العائم بناءً على طلب المستخدم
 function toggleFAB() { openSupportChat(); }
 function closeFAB() {}
 
