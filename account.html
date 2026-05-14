@@ -368,13 +368,37 @@
 
   <!-- ===== COUPONS TAB ===== -->
   <div id="tab-coupons" class="tab-content pb-20">
-    <h3 class="text-lg font-bold mb-4">كوبوناتي وخصوماتي</h3>
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="text-lg font-bold">🏷️ كوبوناتي وخصوماتي</h3>
+      <button onclick="loadCoupons(firebase.auth().currentUser?.uid)" class="text-xs text-zinc-500 hover:text-white border border-zinc-800 px-3 py-1.5 rounded-lg transition-colors">تحديث</button>
+    </div>
     <div id="coupons-loading" class="text-center py-12 text-zinc-500">جاري التحميل...</div>
-    <div id="coupons-list" class="space-y-3 hidden"></div>
+
+    <!-- قسم الكوبونات النشطة -->
+    <div id="coupons-active-section" class="hidden mb-8">
+      <div class="flex items-center gap-2 mb-4">
+        <div style="width:8px;height:8px;border-radius:50%;background:#10b981;"></div>
+        <h4 class="text-sm font-bold text-green-400">كوبونات صالحة للاستخدام</h4>
+        <span id="coupons-active-count" class="text-xs bg-green-900/30 text-green-400 px-2 py-0.5 rounded-full border border-green-800/50">0</span>
+      </div>
+      <div id="coupons-active-list" class="space-y-3"></div>
+    </div>
+
+    <!-- قسم الكوبونات المستخدمة/المنتهية -->
+    <div id="coupons-used-section" class="hidden">
+      <div class="flex items-center gap-2 mb-4">
+        <div style="width:8px;height:8px;border-radius:50%;background:#6b7280;"></div>
+        <h4 class="text-sm font-bold text-zinc-400">كوبونات مستخدمة / منتهية</h4>
+        <span id="coupons-used-count" class="text-xs bg-zinc-900 text-zinc-500 px-2 py-0.5 rounded-full border border-zinc-800">0</span>
+      </div>
+      <div id="coupons-used-list" class="space-y-3 opacity-60"></div>
+    </div>
+
     <div id="coupons-empty" class="hidden text-center py-16">
       <div class="text-5xl mb-4">🏷️</div>
-      <p class="text-zinc-400 font-bold mb-2">لا توجد كوبونات</p>
-      <p class="text-zinc-500 text-sm">تجمع النقاط وكسب كوبونات عبر الإحالة أو طلبات كبيرة</p>
+      <p class="text-zinc-400 font-bold mb-2">لا توجد كوبونات بعد</p>
+      <p class="text-zinc-500 text-sm mb-4">ادعُ أصدقاءك عبر رابط الإحالة أو أكمل طلبات لكسب كوبونات</p>
+      <a href="index.html" class="btn-gold inline-block text-sm">🛍️ تسوق وكسب كوبونات</a>
     </div>
   </div>
 
@@ -819,51 +843,92 @@
   }
 
   // ===== COUPONS =====
+  function _couponCard(c, showCopy = true) {
+    const expired = c.expiryDate && new Date(c.expiryDate.toDate?.() || c.expiryDate) < new Date();
+    const used = c.usedCount > 0 || (c.limit && c.usedCount >= c.limit);
+    const isUsedUp = c.limit && c.usedCount >= c.limit;
+    const valid = !expired && !isUsedUp && c.isActive;
+    const isReferral = c.code?.startsWith('REF-');
+    const isGift = c.code?.startsWith('GIFT');
+    const icon = isReferral ? '🎁' : (isGift ? '🎉' : '🏷️');
+    const expiryDate = c.expiryDate ? new Date(c.expiryDate.toDate?.() || c.expiryDate) : null;
+    const daysLeft = expiryDate ? Math.ceil((expiryDate - new Date()) / 86400000) : null;
+    
+    return `
+      <div class="card border ${valid ? 'border-yellow-700/40 bg-zinc-950' : 'border-zinc-800 bg-zinc-950/50'}">
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex items-center gap-4">
+            <div style="width:52px;height:52px;border-radius:14px;background:${valid?'linear-gradient(135deg,#d4af37,#a07d20)':'#222'};color:${valid?'#000':'#555'};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">${icon}</div>
+            <div>
+              <p class="font-bold text-base gold-text tracking-widest font-mono">${c.code}</p>
+              <p class="text-sm font-bold text-white mt-0.5">خصم <span class="text-yellow-400">${c.discount}${c.type === 'percentage' ? '%' : ' ج'}</span></p>
+              ${c.note ? `<p class="text-xs text-zinc-500 mt-0.5 leading-relaxed">${c.note}</p>` : ''}
+            </div>
+          </div>
+          <div class="text-left flex-shrink-0">
+            <span style="display:inline-block;padding:4px 10px;border-radius:20px;font-size:10px;font-weight:bold;background:${isUsedUp?'#ef444420':expired?'#f59e0b20':valid?'#10b98120':'#6b728020'};color:${isUsedUp?'#ef4444':expired?'#f59e0b':valid?'#10b981':'#9ca3af'};border:1px solid ${isUsedUp?'#ef444440':expired?'#f59e0b40':valid?'#10b98140':'#6b728040'};">
+              ${isUsedUp ? '✓ مستخدم' : (expired ? '⏰ منتهي' : (valid ? '✓ نشط' : '○ معطل'))}
+            </span>
+            ${expiryDate && valid ? `<p class="text-xs mt-1.5 ${daysLeft <= 5 ? 'text-orange-400' : 'text-zinc-500'}">${daysLeft <= 5 ? '⚠️ ' : ''}ينتهي خلال ${daysLeft} يوم</p>` : ''}
+            ${expiryDate && !valid ? `<p class="text-xs text-zinc-600 mt-1">${expiryDate.toLocaleDateString('ar-EG')}</p>` : ''}
+          </div>
+        </div>
+        ${valid && showCopy ? `
+          <div class="mt-4 flex gap-2">
+            <input value="${c.code}" readonly class="input-field flex-1 text-center font-mono font-bold gold-text text-sm">
+            <button onclick="navigator.clipboard.writeText('${c.code}').then(()=>showNotif('تم نسخ الكوبون ✓','success'))" class="btn-gold text-sm px-5">نسخ</button>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
+
   async function loadCoupons(uid) {
+    if (!uid) return;
+    document.getElementById('coupons-loading').classList.remove('hidden');
+    document.getElementById('coupons-active-section').classList.add('hidden');
+    document.getElementById('coupons-used-section').classList.add('hidden');
+    document.getElementById('coupons-empty').classList.add('hidden');
     try {
       const snap = await db.collection('coupons').where('linkedUser', '==', uid).get();
       document.getElementById('coupons-loading').classList.add('hidden');
+      
       if (snap.empty) {
         document.getElementById('coupons-empty').classList.remove('hidden');
         return;
       }
+      
       const coupons = [];
       snap.forEach(d => coupons.push({ id: d.id, ...d.data() }));
-      const list = document.getElementById('coupons-list');
-      list.classList.remove('hidden');
-      list.innerHTML = coupons.map(c => {
-        const expired = c.expiryDate && new Date(c.expiryDate.toDate?.() || c.expiryDate) < new Date();
-        const used = c.limit && c.usedCount >= c.limit;
-        const valid = !expired && !used && c.isActive;
-        return `
-          <div class="card ${valid ? 'border-yellow-700/50' : 'opacity-60'}">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-4">
-                <div style="width:50px;height:50px;border-radius:12px;background:${valid?'#d4af37':'#333'};color:${valid?'#000':'#666'};display:flex;align-items:center;justify-content:center;font-size:24px;">🏷️</div>
-                <div>
-                  <p class="font-bold text-lg gold-text font-mono">${c.code}</p>
-                  <p class="text-xs text-zinc-400">خصم ${c.discount}${c.type === 'percentage' ? '%' : ' ج'}</p>
-                  ${c.note ? `<p class="text-xs text-zinc-500">${c.note}</p>` : ''}
-                </div>
-              </div>
-              <div class="text-left">
-                <span style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:bold;background:${valid?'#10b98130':'#ef444430'};color:${valid?'#10b981':'#ef4444'}">
-                  ${used ? 'مستخدم' : (expired ? 'منتهي الصلاحية' : (c.isActive ? 'نشط ✓' : 'معطل'))}
-                </span>
-                ${c.expiryDate ? `<p class="text-xs text-zinc-500 mt-1">ينتهي: ${new Date(c.expiryDate.toDate?.() || c.expiryDate).toLocaleDateString('ar-EG')}</p>` : ''}
-              </div>
-            </div>
-            ${valid ? `
-              <div class="mt-3 flex gap-2">
-                <input value="${c.code}" readonly class="input-field flex-1 text-center font-mono font-bold gold-text text-sm">
-                <button onclick="navigator.clipboard.writeText('${c.code}').then(()=>showNotif('تم نسخ الكوبون ✓','success'))" class="btn-gold text-sm px-4">نسخ</button>
-              </div>
-            ` : ''}
-          </div>
-        `;
-      }).join('');
+      coupons.sort((a,b) => (b.createdAt?.toDate?.() || 0) - (a.createdAt?.toDate?.() || 0));
+
+      const now = new Date();
+      const active = coupons.filter(c => {
+        const expired = c.expiryDate && new Date(c.expiryDate.toDate?.() || c.expiryDate) < now;
+        const usedUp = c.limit && c.usedCount >= c.limit;
+        return !expired && !usedUp && c.isActive;
+      });
+      const used = coupons.filter(c => {
+        const expired = c.expiryDate && new Date(c.expiryDate.toDate?.() || c.expiryDate) < now;
+        const usedUp = c.limit && c.usedCount >= c.limit;
+        return expired || usedUp || !c.isActive;
+      });
+
+      if (active.length > 0) {
+        document.getElementById('coupons-active-section').classList.remove('hidden');
+        document.getElementById('coupons-active-count').textContent = active.length;
+        document.getElementById('coupons-active-list').innerHTML = active.map(c => _couponCard(c, true)).join('');
+      }
+      if (used.length > 0) {
+        document.getElementById('coupons-used-section').classList.remove('hidden');
+        document.getElementById('coupons-used-count').textContent = used.length;
+        document.getElementById('coupons-used-list').innerHTML = used.map(c => _couponCard(c, false)).join('');
+      }
+      if (active.length === 0 && used.length === 0) {
+        document.getElementById('coupons-empty').classList.remove('hidden');
+      }
     } catch (e) {
-      document.getElementById('coupons-loading').innerHTML = '<p class="text-zinc-500 text-sm text-center">لا يمكن تحميل الكوبونات</p>';
+      document.getElementById('coupons-loading').innerHTML = '<p class="text-zinc-500 text-sm text-center py-4">تعذر تحميل الكوبونات</p>';
     }
   }
 

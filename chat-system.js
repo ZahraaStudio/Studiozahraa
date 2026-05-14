@@ -20,40 +20,8 @@ class ChatSystem {
 
   // Setup chat UI
   setupChatUI() {
-    const chatHTML = `
-      <div id="chat-widget" class="fixed bottom-4 right-4 z-1000 hidden">
-        <div class="bg-zinc-900 border border-gold-text rounded-2xl shadow-2xl w-96 max-h-96 flex flex-col">
-          <!-- Chat Header -->
-          <div class="bg-gradient-to-r from-gold-text to-yellow-400 text-black p-4 rounded-t-2xl flex justify-between items-center">
-            <h3 class="font-bold">💬 الدعم المباشر</h3>
-            <button onclick="chatSystem.toggleChat()" class="text-xl">✕</button>
-          </div>
-
-          <!-- Messages Container -->
-          <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-black">
-            <p class="text-zinc-500 text-center text-sm">مرحباً! كيف يمكننا مساعدتك؟</p>
-          </div>
-
-          <!-- Input Area -->
-          <div class="p-4 border-t border-zinc-800 bg-black rounded-b-2xl">
-            <div class="flex gap-2">
-              <input type="text" id="chat-input" placeholder="اكتب رسالتك..." 
-                class="flex-1 p-2 bg-zinc-800 border border-zinc-700 rounded text-white text-sm outline-none focus:border-gold-text">
-              <button onclick="chatSystem.sendMessage()" class="gold-bg text-black px-4 py-2 rounded font-bold hover:opacity-90">
-                إرسال
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Chat Button -->
-      <button id="chat-button" onclick="chatSystem.toggleChat()" 
-        class="fixed bottom-4 right-4 z-999 gold-bg text-black p-4 rounded-full shadow-lg hover:opacity-90 font-bold text-xl">
-        💬
-        <span id="chat-badge" class="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center hidden">0</span>
-      </button>
-    `;
+    // لا نضيف زر دردشة إضافي - الموقع يستخدم نظام الدردشة المدمج
+    return;
 
     if (!document.getElementById('chat-widget')) {
       document.body.insertAdjacentHTML('beforeend', chatHTML);

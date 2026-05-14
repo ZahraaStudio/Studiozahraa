@@ -225,75 +225,117 @@
     .zahraa-toast-item.error { border-color:#ef4444; }
     .zahraa-toast-item.warning { border-color:#f59e0b; }
     
-    /* ====== FLOATING CHAT BUTTON STYLES ====== */
+    /* ====== FLOATING CHAT BUTTON STYLES - Professional ====== */
+    @keyframes chatPulse {
+        0% { box-shadow: 0 0 0 0 rgba(212,175,55,0.55); }
+        70% { box-shadow: 0 0 0 16px rgba(212,175,55,0); }
+        100% { box-shadow: 0 0 0 0 rgba(212,175,55,0); }
+    }
+    @keyframes chatBounceIn {
+        0% { transform: scale(0); opacity: 0; }
+        70% { transform: scale(1.12); }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes chatWiggle {
+        0%,100% { transform: rotate(0deg); }
+        20% { transform: rotate(-10deg); }
+        40% { transform: rotate(10deg); }
+        60% { transform: rotate(-6deg); }
+        80% { transform: rotate(6deg); }
+    }
     #chat-fab-portal { 
         position: fixed !important; 
-        bottom: 25px !important; 
-        right: 25px !important; 
+        bottom: 28px !important; 
+        right: 28px !important; 
         z-index: 9999 !important; 
-        width: 60px; 
-        height: 60px; 
+        width: 64px; 
+        height: 64px; 
         touch-action: none; 
         cursor: grab;
-        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        animation: chatBounceIn 0.6s cubic-bezier(0.175,0.885,0.32,1.275) 1s both;
+        filter: drop-shadow(0 8px 24px rgba(212,175,55,0.35));
+        transition: transform 0.25s cubic-bezier(0.175,0.885,0.32,1.275), filter 0.25s ease;
     }
-    #chat-fab-portal:active { cursor: grabbing; transform: scale(0.9); }
-    #chat-fab-portal:hover { transform: scale(1.1); }
+    #chat-fab-portal:active { cursor: grabbing; }
+    #chat-fab-portal:hover { 
+        transform: scale(1.1) translateY(-3px); 
+        filter: drop-shadow(0 12px 28px rgba(212,175,55,0.55));
+    }
     
     #chat-fab-button { 
         width: 100%; 
         height: 100%; 
         border-radius: 50%; 
-        background: linear-gradient(135deg, #d4af37, #f0c94e); 
+        background: linear-gradient(145deg, #f0c94e 0%, #d4af37 50%, #b8941f 100%); 
         border: none; 
-        cursor: pointer; 
-        box-shadow: 0 8px 32px rgba(212, 175, 55, 0.4); 
+        cursor: pointer;
+        animation: chatPulse 2.5s infinite 3s;
+        box-shadow: 0 6px 20px rgba(212,175,55,0.5), 0 2px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.3); 
         display: flex; 
         align-items: center; 
         justify-content: center; 
-        font-size: 28px; 
+        font-size: 26px; 
         position: relative; 
         pointer-events: auto;
-        transition: all 0.3s ease;
+        transition: all 0.3s cubic-bezier(0.175,0.885,0.32,1.275);
+    }
+    #chat-fab-button:hover {
+        background: linear-gradient(145deg, #f9e29c 0%, #f0c94e 50%, #d4af37 100%);
+        box-shadow: 0 10px 30px rgba(212,175,55,0.6), 0 4px 10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.4);
+    }
+    #chat-fab-button.has-unread {
+        animation: chatPulse 1.5s infinite, chatWiggle 1s ease-in-out 0.5s;
     }
     
+    @keyframes badgePop {
+        0% { transform: scale(0); }
+        60% { transform: scale(1.3); }
+        100% { transform: scale(1); }
+    }
     #chat-notif-count { 
         display: none; 
         position: absolute; 
-        top: -5px; 
-        right: -5px; 
-        background: #ef4444; 
+        top: -6px; 
+        right: -6px; 
+        background: linear-gradient(135deg,#ff4f4f,#cc2222); 
         color: white; 
         border-radius: 50%; 
-        width: 22px; 
-        height: 22px; 
-        font-size: 12px; 
-        font-weight: bold; 
+        width: 24px; 
+        height: 24px; 
+        font-size: 11px; 
+        font-weight: 800; 
         align-items: center; 
         justify-content: center; 
-        border: 2px solid #000; 
-        z-index: 10; 
+        border: 2.5px solid #000; 
+        z-index: 10;
+        box-shadow: 0 2px 8px rgba(239,68,68,0.6);
+        animation: badgePop 0.4s cubic-bezier(0.175,0.885,0.32,1.275) both;
     }
 
+    @keyframes chatWindowSlideUp {
+        0% { opacity:0; transform: scale(0.85) translateY(24px); }
+        100% { opacity:1; transform: scale(1) translateY(0); }
+    }
     #chat-window-portal { 
         display: none; 
         position: fixed !important; 
-        bottom: 95px !important; 
-        right: 25px !important; 
+        bottom: 102px !important; 
+        right: 28px !important; 
         z-index: 9998 !important; 
-        width: 350px; 
+        width: 360px; 
         max-width: calc(100vw - 50px); 
-        height: 500px; 
-        background: #0a0a0a; 
-        border-radius: 24px; 
-        border: 1px solid rgba(212, 175, 55, 0.3); 
-        box-shadow: 0 25px 80px rgba(0,0,0,0.9); 
+        height: 510px; 
+        background: #080808; 
+        border-radius: 28px; 
+        border: 1px solid rgba(212,175,55,0.2); 
+        box-shadow: 0 30px 90px rgba(0,0,0,0.95), 0 0 0 1px rgba(212,175,55,0.08); 
         flex-direction: column; 
         overflow: hidden; 
         direction: rtl; 
         font-family: 'Cairo', sans-serif;
-        animation: chatWindowFadeIn 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        animation: chatWindowSlideUp 0.35s cubic-bezier(0.175,0.885,0.32,1.275) both;
         transform-origin: bottom right;
+        backdrop-filter: blur(16px);
     }
 
     @keyframes chatWindowFadeIn {
@@ -1476,13 +1518,8 @@
                 // ===== مراقبة إشعارات المتجر الفورية (Firestore onSnapshot) =====
                 listenForStoreNotifications(user.uid);
 
-                // Referral banner: hide if user already received earned coupon
-                let hideReferral = false;
-                try {
-                    const userDoc = await db.collection('users').doc(user.uid).get();
-                    if (userDoc.exists && userDoc.data().earnedReferralCoupon) hideReferral = true;
-                } catch (e) {}
-                if (storeSettings.referralEnabled && !hideReferral) {
+                // Referral banner: always show (يمكن الإحالة لعدد غير محدود من الأصدقاء)
+                if (storeSettings.referralEnabled) {
                     refBanner.classList.remove('hidden');
                     document.getElementById('referral-link').value = window.location.origin + window.location.pathname + '?ref=' + user.uid;
                 } else {
@@ -1565,7 +1602,7 @@ window.loginWithFacebook = async () => {
         }
     };
 
-    // ===== نظام صوت موحّد مع حل مشكلة الـ autoplay policy =====
+    // ===== نظام صوت احترافي - Professional Audio System =====
     let _audioCtx = null;
     let _audioReady = false;
     function _getAudioCtx() {
@@ -1573,48 +1610,83 @@ window.loginWithFacebook = async () => {
         if (_audioCtx.state === 'suspended') _audioCtx.resume();
         return _audioCtx;
     }
-    // استئناف الصوت عند أول تفاعل من المستخدم
     ['click','touchstart','keydown'].forEach(ev => document.addEventListener(ev, () => {
         _audioReady = true;
         if (_audioCtx && _audioCtx.state === 'suspended') _audioCtx.resume();
     }, { once: false, passive: true }));
 
+    function _createReverb(ctx, duration = 0.6, decay = 0.5) {
+        const len = ctx.sampleRate * duration;
+        const buf = ctx.createBuffer(2, len, ctx.sampleRate);
+        for (let c = 0; c < 2; c++) {
+            const d = buf.getChannelData(c);
+            for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+        }
+        const conv = ctx.createConvolver();
+        conv.buffer = buf;
+        return conv;
+    }
+
+    function _tone(ctx, dest, freq, start, dur, vol, type='sine', fadeIn=0.015, vibrato=0) {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+        if (vibrato > 0) {
+            const lfo = ctx.createOscillator();
+            const lfoGain = ctx.createGain();
+            lfo.frequency.value = 5.5;
+            lfoGain.gain.value = vibrato;
+            lfo.connect(lfoGain);
+            lfoGain.connect(osc.frequency);
+            lfo.start(ctx.currentTime + start + 0.05);
+            lfo.stop(ctx.currentTime + start + dur);
+        }
+        gain.gain.setValueAtTime(0, ctx.currentTime + start);
+        gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + start + fadeIn);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+        osc.connect(gain); gain.connect(dest);
+        osc.start(ctx.currentTime + start);
+        osc.stop(ctx.currentTime + start + dur + 0.02);
+    }
+
     function playZahraaSound(type) {
-        if (!_audioReady) return; // لا صوت قبل تفاعل المستخدم
+        if (!_audioReady) return;
         try {
             const ctx = _getAudioCtx();
             const master = ctx.createGain();
-            master.gain.setValueAtTime(0.22, ctx.currentTime);
-            master.connect(ctx.destination);
+            master.gain.setValueAtTime(0.18, ctx.currentTime);
+            const reverb = _createReverb(ctx, 0.8, 0.4);
+            const dryGain = ctx.createGain(); dryGain.gain.value = 0.75;
+            const wetGain = ctx.createGain(); wetGain.gain.value = 0.25;
+            master.connect(dryGain); dryGain.connect(ctx.destination);
+            master.connect(reverb); reverb.connect(wetGain); wetGain.connect(ctx.destination);
+
             if (type === 'success') {
-                [[523.25,0,0.12],[659.25,0.1,0.12],[783.99,0.22,0.18]].forEach(([f,t,d])=>{
-                    const o=ctx.createOscillator(),g=ctx.createGain();
-                    o.type='sine';o.frequency.value=f;
-                    g.gain.setValueAtTime(0,ctx.currentTime+t);g.gain.linearRampToValueAtTime(1,ctx.currentTime+t+0.04);
-                    g.gain.linearRampToValueAtTime(0,ctx.currentTime+t+d);
-                    o.connect(g);g.connect(master);o.start(ctx.currentTime+t);o.stop(ctx.currentTime+t+d+0.02);
-                });
+                // نغمة ماجورة ناعمة صاعدة - ثلاثة أوتار متناغمة
+                _tone(ctx, master, 523.25, 0,    0.35, 0.9, 'sine', 0.01, 3);   // C5
+                _tone(ctx, master, 659.25, 0.12, 0.35, 0.85,'sine', 0.01, 3);   // E5
+                _tone(ctx, master, 783.99, 0.24, 0.45, 0.9, 'sine', 0.01, 4);   // G5
+                _tone(ctx, master, 1046.5, 0.36, 0.35, 0.7, 'sine', 0.015, 5);  // C6 (octave)
+                // طبقة خشبية ناعمة تحت الأوتار
+                _tone(ctx, master, 261.63, 0,    0.25, 0.3, 'triangle', 0.02);
             } else if (type === 'error') {
-                [[311.13,0,0.14],[277.18,0.15,0.18]].forEach(([f,t,d])=>{
-                    const o=ctx.createOscillator(),g=ctx.createGain();
-                    o.type='sawtooth';o.frequency.value=f;
-                    g.gain.setValueAtTime(0,ctx.currentTime+t);g.gain.linearRampToValueAtTime(0.7,ctx.currentTime+t+0.03);
-                    g.gain.linearRampToValueAtTime(0,ctx.currentTime+t+d);
-                    o.connect(g);g.connect(master);o.start(ctx.currentTime+t);o.stop(ctx.currentTime+t+d+0.02);
-                });
+                // صوت تنبيه هادئ واضح (ليس حاداً)
+                _tone(ctx, master, 349.23, 0,    0.22, 0.9, 'sine', 0.01);      // F4
+                _tone(ctx, master, 293.66, 0.18, 0.28, 0.85,'sine', 0.01);      // D4
+                _tone(ctx, master, 261.63, 0.34, 0.32, 0.8, 'sine', 0.01);      // C4
+                // نبضة مميزة
+                _tone(ctx, master, 220,    0,    0.08, 0.4, 'triangle', 0.005);
             } else if (type === 'warning') {
-                [[440,0,0.1],[440,0.14,0.1]].forEach(([f,t,d])=>{
-                    const o=ctx.createOscillator(),g=ctx.createGain();
-                    o.type='triangle';o.frequency.value=f;
-                    g.gain.setValueAtTime(0,ctx.currentTime+t);g.gain.linearRampToValueAtTime(0.9,ctx.currentTime+t+0.02);
-                    g.gain.linearRampToValueAtTime(0,ctx.currentTime+t+d);
-                    o.connect(g);g.connect(master);o.start(ctx.currentTime+t);o.stop(ctx.currentTime+t+d+0.02);
-                });
+                // صوت تنبيه لطيف نغمتان
+                _tone(ctx, master, 587.33, 0,    0.18, 0.85,'sine', 0.01, 2);   // D5
+                _tone(ctx, master, 493.88, 0.2,  0.22, 0.8, 'sine', 0.01, 2);   // B4
+                _tone(ctx, master, 293.66, 0,    0.15, 0.25,'triangle', 0.01);
             } else {
-                const o=ctx.createOscillator(),g=ctx.createGain();
-                o.type='sine';o.frequency.setValueAtTime(880,ctx.currentTime);o.frequency.linearRampToValueAtTime(660,ctx.currentTime+0.15);
-                g.gain.setValueAtTime(0,ctx.currentTime);g.gain.linearRampToValueAtTime(1,ctx.currentTime+0.03);g.gain.linearRampToValueAtTime(0,ctx.currentTime+0.2);
-                o.connect(g);g.connect(master);o.start();o.stop(ctx.currentTime+0.22);
+                // صوت لمسة خفيفة - اشعار عام
+                _tone(ctx, master, 880,    0,    0.18, 0.8, 'sine', 0.01, 3);
+                _tone(ctx, master, 1108.7, 0.08, 0.15, 0.5, 'sine', 0.01);
+                _tone(ctx, master, 440,    0,    0.12, 0.2, 'triangle', 0.01);
             }
         } catch(e){}
     }
@@ -2265,28 +2337,40 @@ window.loginWithFacebook = async () => {
                 earnedCoupon = couponDoc;
             }
 
-            // Referral: إشعار فوري للمُحيل عند تسجيل الطلب
-            if (referralBy) {
+            // Referral: مكافأة المُحيل - كل مستخدم مُحال يمنح المُحيل كوبون واحد فقط
+            if (referralBy && currentUser && referralBy !== currentUser.uid) {
                 try {
                     const refSettings = await db.collection('settings').doc('rewards').get();
                     const rs = refSettings.exists ? refSettings.data() : { amount: 50, type: 'fixed', enabled: true };
                     if (rs.enabled !== false) {
-                        const refUserSnap = await db.collection('users').doc(referralBy).get();
-                        const alreadyRewarded = refUserSnap.exists && refUserSnap.data().earnedReferralCoupon;
-                        if (!alreadyRewarded) {
+                        // التحقق أن هذا المستخدم المُحال لم يمنح المُحيل مكافأة من قبل
+                        const alreadyRewardedSnap = await db.collection('referral_records')
+                            .where('referrerId', '==', referralBy)
+                            .where('referredUserId', '==', currentUser.uid)
+                            .limit(1).get();
+                        if (alreadyRewardedSnap.empty) {
                             const couponCode = 'REF-' + Math.random().toString(36).substring(2, 8).toUpperCase();
                             const rewardDesc = rs.type === 'percentage'
                                 ? `خصم ${rs.amount}% على أي طلب 🎁`
                                 : `خصم ${rs.amount} ج على أي طلب 🎁`;
-                            // إنشاء كوبون
-                            await db.collection('coupons').add({
-                                code: couponCode, discount: rs.amount, type: rs.type || 'fixed',
-                                limit: 1, usedCount: 0, isActive: true, linkedUser: referralBy,
-                                expiryDate: new Date(Date.now() + ((rs.expiry || 30) * 86400000)),
-                                note: 'كوبون إحالة - طلب ' + orderNumber,
+                            // تسجيل سجل الإحالة أولاً لمنع التكرار
+                            await db.collection('referral_records').add({
+                                referrerId: referralBy,
+                                referredUserId: currentUser.uid,
+                                orderNumber: orderNumber,
+                                couponCode: couponCode,
                                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
                             });
-                            // إشعار المُحيل
+                            // إنشاء كوبون شخصي للمُحيل فقط
+                            await db.collection('coupons').add({
+                                code: couponCode, discount: rs.amount, type: rs.type || 'fixed',
+                                limit: 1, usedCount: 0, isActive: true,
+                                linkedUser: referralBy, // الكوبون مرتبط بالمُحيل فقط
+                                expiryDate: new Date(Date.now() + ((rs.expiry || 30) * 86400000)),
+                                note: 'كوبون إحالة من طلب ' + orderNumber + ' - صالح للمُحيل فقط',
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                            // إشعار المُحيل بالكوبون الجديد
                             await db.collection('users').doc(referralBy).set({
                                 earnedReferralCoupon: couponCode,
                                 pendingReferralReward: {
@@ -2295,11 +2379,15 @@ window.loginWithFacebook = async () => {
                                     createdAt: new Date().toISOString()
                                 }
                             }, { merge: true });
+                            // مسح referral من localStorage لمنع إعادة الاستخدام
+                            // (يحدث من جانب العميل لاحقاً)
                         }
                     }
                 } catch(e) { /* referral reward non-blocking */ }
             }
 
+            // مسح referral بعد تسجيل الطلب لمنع إعطاء المُحيل مكافأة مرتين
+            localStorage.removeItem('referral_by');
             currentOrder = { ...orderData, id: orderRef.id, createdAt: new Date() };
             document.getElementById('success-order-number').innerText = orderNumber;
             const waBase = `https://wa.me/${cleanPhone(storeSettings.whatsapp1 || storeSettings.whatsapp)}`;
@@ -4524,23 +4612,29 @@ function moveAdSlide(dir) {
 
     <!-- نافذة الدردشة -->
     <div id="chat-window-portal">
-        <!-- Header -->
-        <div style="background:linear-gradient(135deg,#d4af37,#f0c94e); padding:15px 20px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <div style="width:10px; height:10px; background:#22c55e; border-radius:50%; box-shadow:0 0 8px #22c55e;"></div>
-                <span style="font-weight:bold; color:#000;">الدعم الفني</span>
+        <!-- Header - Sleek Professional Design -->
+        <div style="background:linear-gradient(135deg,#1a1500 0%,#2a2000 50%,#1a1500 100%); padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; border-bottom:1px solid rgba(212,175,55,0.15);">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(145deg,#f0c94e,#d4af37);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 12px rgba(212,175,55,0.4);">👑</div>
+                <div>
+                    <p style="font-weight:bold;color:#f0c94e;font-size:14px;margin:0;">الدعم الفني</p>
+                    <div style="display:flex;align-items:center;gap:5px;margin-top:2px;">
+                        <div style="width:7px;height:7px;background:#22c55e;border-radius:50%;box-shadow:0 0 6px #22c55e;"></div>
+                        <span style="font-size:10px;color:#4ade80;">متاحون الآن</span>
+                    </div>
+                </div>
             </div>
-            <button onclick="handleChatToggle()" style="background:none; border:none; color:#000; font-size:22px; cursor:pointer;">✕</button>
+            <button onclick="handleChatToggle()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#888;font-size:16px;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.12)'" onmouseout="this.style.color='#888';this.style.background='rgba(255,255,255,0.06)'">✕</button>
         </div>
         <!-- Messages Area -->
         <div id="chat-scroll-area" style="flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:10px; background:#000;">
             <div style="text-align:center; color:#555; font-size:12px; margin-top:50px;">جاري الاتصال...</div>
         </div>
-        <!-- Input Area -->
-        <div style="padding:15px; background:#111; border-top:1px solid #222; display:flex; gap:8px;">
-            <button onclick="sendChatImage()" style="background:none; border:none; color:#d4af37; font-size:24px; cursor:pointer;">📎</button>
-            <input id="chat-msg-input" type="text" placeholder="اكتب رسالتك..." style="flex:1; background:#1a1a1a; border:1px solid #333; color:#fff; padding:10px 15px; border-radius:15px; outline:none;">
-            <button onclick="sendChatMsg()" style="background:#d4af37; color:#000; width:40px; height:40px; border-radius:10px; border:none; font-weight:bold;">↑</button>
+        <!-- Input Area - Sleek Design -->
+        <div style="padding:12px 16px;background:#0d0d0d;border-top:1px solid rgba(212,175,55,0.12);display:flex;gap:8px;align-items:center;">
+            <button onclick="sendChatImage()" style="background:rgba(212,175,55,0.08);border:1px solid rgba(212,175,55,0.15);color:#d4af37;font-size:18px;cursor:pointer;width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;" title="إرفاق ملف" onmouseover="this.style.background='rgba(212,175,55,0.18)'" onmouseout="this.style.background='rgba(212,175,55,0.08)'">📎</button>
+            <input id="chat-msg-input" type="text" placeholder="اكتب رسالتك..." style="flex:1;background:#1c1c1c;border:1px solid rgba(255,255,255,0.1);color:#fff;padding:10px 16px;border-radius:20px;outline:none;font-family:'Cairo',sans-serif;font-size:13px;transition:border-color 0.2s;" onfocus="this.style.borderColor='rgba(212,175,55,0.4)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+            <button onclick="sendChatMsg()" style="background:linear-gradient(135deg,#f0c94e,#d4af37);color:#000;width:40px;height:40px;border-radius:50%;border:none;font-weight:bold;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 12px rgba(212,175,55,0.4);transition:all 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">↑</button>
         </div>
     </div>
 </div>
