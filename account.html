@@ -571,6 +571,8 @@
       const total = allOrders.reduce((s, o) => s + (o.totalPrice || 0), 0);
       document.getElementById('profile-total-spent').textContent = total;
       renderOrders(allOrders);
+      // Check for unrated delivered orders
+      setTimeout(() => checkDeliveryRatings(uid), 1200);
     } catch (e) {
       console.error('loadOrders error:', e);
       document.getElementById('orders-loading').innerHTML = '<p class="text-red-400">تعذر تحميل الطلبات - تأكد من إعدادات Firebase</p>';
@@ -909,16 +911,24 @@
     document.getElementById('coupons-used-section').classList.add('hidden');
     document.getElementById('coupons-empty').classList.add('hidden');
     try {
-      const snap = await db.collection('coupons').where('linkedUser', '==', uid).get();
+      // Query both linkedUser and assignedTo fields to catch all user coupons
+      const [snap1, snap2] = await Promise.all([
+        db.collection('coupons').where('linkedUser', '==', uid).get(),
+        db.collection('coupons').where('assignedTo', '==', uid).get()
+      ]);
       document.getElementById('coupons-loading').classList.add('hidden');
-      
-      if (snap.empty) {
+
+      const seen = new Set();
+      const coupons = [];
+      [snap1, snap2].forEach(snap => snap.forEach(d => {
+        if (!seen.has(d.id)) { seen.add(d.id); coupons.push({ id: d.id, ...d.data() }); }
+      }));
+
+      if (coupons.length === 0) {
         document.getElementById('coupons-empty').classList.remove('hidden');
         return;
       }
-      
-      const coupons = [];
-      snap.forEach(d => coupons.push({ id: d.id, ...d.data() }));
+
       coupons.sort((a,b) => (b.createdAt?.toDate?.() || 0) - (a.createdAt?.toDate?.() || 0));
 
       const now = new Date();
@@ -1046,17 +1056,83 @@
       if (balance < minPts) { msg.textContent = 'تحتاج على الأقل '+minPts+' نقطة'; msg.style.color='#ef4444'; if(btn)btn.disabled=false; return; }
       const discount = Math.floor(balance / rate);
       const code = 'PTS-' + Math.random().toString(36).substr(2,6).toUpperCase();
-      await db.collection('coupons').add({ code, type:'fixed', discount, enabled:true, maxUses:1, perUser:1, assignedTo:uid, note:'استبدال '+balance+' نقطة', createdAt:firebase.firestore.FieldValue.serverTimestamp() });
+      // Save with BOTH linkedUser AND assignedTo so it shows in coupons list
+      await db.collection('coupons').add({
+        code, type:'fixed', discount, enabled:true, isActive:true,
+        maxUses:1, limit:1, usedCount:0, perUser:1,
+        linkedUser:uid, assignedTo:uid,
+        note:'استبدال '+balance+' نقطة',
+        createdAt:firebase.firestore.FieldValue.serverTimestamp()
+      });
       await db.collection('points').doc(uid).update({ balance:0 });
       await db.collection('points_history').add({ userId:uid, type:'redeem', points:balance, orderNumber:'REDEEM', createdAt:firebase.firestore.FieldValue.serverTimestamp() });
       document.getElementById('acc-points-balance').textContent = '0';
       document.getElementById('vip-points').textContent = '0 ⭐';
-      msg.innerHTML = '✅ كودك: <strong style="color:#d4af37;font-size:16px;letter-spacing:2px;">'+code+'</strong> — خصم '+discount+' ج';
-      msg.style.color = '#10b981';
-      showNotif('تم إنشاء كوبون: '+code+' بقيمة '+discount+' ج ✓','success');
       document.getElementById('acc-points-redeem-box')?.classList.add('hidden');
+      // Show scratch card modal to reveal the code
+      showRedeemScratch(code, discount);
+      // Reload coupons tab after a moment
+      setTimeout(() => loadCoupons(uid), 1000);
     } catch(e) { msg.textContent='خطأ: '+e.message; msg.style.color='#ef4444'; }
     if(btn)btn.disabled=false;
+  }
+
+  // ===== SCRATCH CARD MODAL FOR POINTS REDEMPTION =====
+  function showRedeemScratch(code, discount) {
+    const modal = document.getElementById('redeem-scratch-modal');
+    document.getElementById('redeem-scratch-code').textContent = code;
+    document.getElementById('redeem-scratch-discount').textContent = 'خصم ' + discount + ' ج';
+    modal.style.display = 'flex';
+
+    const canvas = document.getElementById('redeem-scratch-canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = canvas.offsetWidth || 280;
+    canvas.height = canvas.offsetHeight || 100;
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#d4af37';
+    ctx.font = 'bold 18px Cairo, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🎁 اخدش هنا عشان تكشف كودك', canvas.width/2, canvas.height/2);
+
+    let scratching = false;
+    let scratchedPixels = 0;
+    const totalPixels = canvas.width * canvas.height;
+
+    function doScratch(x, y) {
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.beginPath();
+      ctx.arc(x, y, 22, 0, Math.PI * 2);
+      ctx.fill();
+      scratchedPixels += Math.PI * 22 * 22;
+      if (scratchedPixels / totalPixels > 0.45) {
+        canvas.style.display = 'none';
+        document.getElementById('redeem-scratch-hint').style.display = 'none';
+      }
+    }
+    function getPos(e) {
+      const r = canvas.getBoundingClientRect();
+      if (e.touches) return { x: e.touches[0].clientX - r.left, y: e.touches[0].clientY - r.top };
+      return { x: e.clientX - r.left, y: e.clientY - r.top };
+    }
+    canvas.addEventListener('mousedown', e => { scratching = true; doScratch(...Object.values(getPos(e))); });
+    canvas.addEventListener('mousemove', e => { if (scratching) doScratch(...Object.values(getPos(e))); });
+    canvas.addEventListener('mouseup', () => scratching = false);
+    canvas.addEventListener('touchstart', e => { e.preventDefault(); scratching = true; const p = getPos(e); doScratch(p.x, p.y); }, { passive: false });
+    canvas.addEventListener('touchmove', e => { e.preventDefault(); if (scratching) { const p = getPos(e); doScratch(p.x, p.y); } }, { passive: false });
+    canvas.addEventListener('touchend', () => scratching = false);
+  }
+
+  function copyRedeemCode() {
+    const code = document.getElementById('redeem-scratch-code').textContent;
+    navigator.clipboard.writeText(code).catch(() => {
+      const ta = document.createElement('textarea'); ta.value = code; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    });
+    const btn = document.getElementById('redeem-copy-btn');
+    btn.textContent = '✅ تم النسخ!'; btn.style.background = '#10b981';
+    setTimeout(() => { btn.textContent = '📋 اضغط هنا لنسخ الكود'; btn.style.background = 'linear-gradient(135deg,#d4af37,#f0c94e)'; }, 2000);
+    showNotif('تم نسخ الكود: ' + code + ' ✓', 'success');
   }
 
   // ===== COMMUNITY POSTS =====
@@ -1127,6 +1203,129 @@
 
   // Allow Enter key for track input
   document.getElementById('track-input').addEventListener('keydown', e => { if (e.key === 'Enter') trackOrder(); });
+
+  // ===== DELIVERY RATING =====
+  let _drRatings = { speed: 0, courtesy: 0, packaging: 0 };
+  let _drOrderId = null;
+  let _drOrderNum = null;
+
+  function renderStarGroup(containerId, key) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    el.innerHTML = [1,2,3,4,5].map(n => `
+      <span onclick="setDrStar('${key}',${n})" id="drstar-${key}-${n}"
+        style="font-size:28px;cursor:pointer;transition:transform 0.1s;display:inline-block;" 
+        title="${n} نجوم">☆</span>`).join('');
+  }
+
+  window.setDrStar = function(key, val) {
+    _drRatings[key] = val;
+    [1,2,3,4,5].forEach(n => {
+      const el = document.getElementById(`drstar-${key}-${n}`);
+      if (el) { el.textContent = n <= val ? '⭐' : '☆'; el.style.transform = n === val ? 'scale(1.3)' : 'scale(1)'; setTimeout(()=>{if(el)el.style.transform='scale(1)';},200); }
+    });
+  };
+
+  async function checkDeliveryRatings(uid) {
+    if (!uid) return;
+    const delivered = (allOrders||[]).filter(o =>
+      (o.status === 'تم التوصيل' || o.status === 'مكتمل') && !o.deliveryRated
+    );
+    if (!delivered.length) return;
+    const order = delivered[0];
+    _drOrderId = order.id;
+    _drOrderNum = order.orderNumber || order.id.slice(0, 8);
+    _drRatings = { speed: 0, courtesy: 0, packaging: 0 };
+    renderStarGroup('dr-stars-speed', 'speed');
+    renderStarGroup('dr-stars-courtesy', 'courtesy');
+    renderStarGroup('dr-stars-packaging', 'packaging');
+    document.getElementById('dr-order-num').textContent = 'طلب رقم: ' + _drOrderNum;
+    document.getElementById('dr-note').value = '';
+    const modal = document.getElementById('delivery-rating-modal');
+    modal.style.display = 'flex';
+  }
+
+  window.submitDeliveryRating = async function() {
+    if (!_drOrderId) return;
+    const user = firebase.auth().currentUser;
+    if (!user) return;
+    if (_drRatings.speed === 0 || _drRatings.courtesy === 0 || _drRatings.packaging === 0) {
+      alert('يرجى تقييم جميع المعايير أولاً'); return;
+    }
+    try {
+      await db.collection('delivery_ratings').add({
+        orderId: _drOrderId, orderNum: _drOrderNum,
+        uid: user.uid, userName: user.displayName || user.email,
+        speed: _drRatings.speed, courtesy: _drRatings.courtesy, packaging: _drRatings.packaging,
+        note: document.getElementById('dr-note').value.trim(),
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        avg: Math.round((_drRatings.speed + _drRatings.courtesy + _drRatings.packaging) / 3 * 10) / 10
+      });
+      await db.collection('orders').doc(_drOrderId).update({ deliveryRated: true });
+      document.getElementById('delivery-rating-modal').style.display = 'none';
+      showNotif('شكراً على تقييمك! 🌟', 'success');
+      const o = (allOrders||[]).find(x => x.id === _drOrderId);
+      if (o) o.deliveryRated = true;
+    } catch(e) { console.error(e); alert('خطأ في الحفظ: ' + e.message); }
+  };
 </script>
+
+<!-- ===== DELIVERY RATING MODAL ===== -->
+<div id="delivery-rating-modal" style="display:none;position:fixed;inset:0;z-index:9800;background:rgba(0,0,0,0.95);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px;font-family:'Cairo',sans-serif;direction:rtl;">
+  <div style="background:#111;border:1px solid #d4af37;border-radius:24px;padding:28px 24px;max-width:400px;width:100%;text-align:center;position:relative;">
+    <div style="font-size:40px;margin-bottom:8px;">🚚</div>
+    <h3 style="color:#d4af37;font-weight:800;font-size:18px;margin:0 0 4px;">كيف كانت تجربة التوصيل؟</h3>
+    <p id="dr-order-num" style="color:#666;font-size:12px;margin:0 0 20px;"></p>
+    <div style="space-y:12px;text-align:right;">
+      <!-- Speed -->
+      <div style="margin-bottom:16px;background:#1a1a1a;border-radius:12px;padding:12px 14px;">
+        <p style="color:#aaa;font-size:13px;margin:0 0 8px;font-weight:700;">⚡ سرعة التوصيل</p>
+        <div id="dr-stars-speed" style="display:flex;gap:6px;justify-content:center;"></div>
+      </div>
+      <!-- Courtesy -->
+      <div style="margin-bottom:16px;background:#1a1a1a;border-radius:12px;padding:12px 14px;">
+        <p style="color:#aaa;font-size:13px;margin:0 0 8px;font-weight:700;">😊 لباقة المندوب</p>
+        <div id="dr-stars-courtesy" style="display:flex;gap:6px;justify-content:center;"></div>
+      </div>
+      <!-- Packaging -->
+      <div style="margin-bottom:20px;background:#1a1a1a;border-radius:12px;padding:12px 14px;">
+        <p style="color:#aaa;font-size:13px;margin:0 0 8px;font-weight:700;">📦 حالة التغليف</p>
+        <div id="dr-stars-packaging" style="display:flex;gap:6px;justify-content:center;"></div>
+      </div>
+      <!-- Note -->
+      <textarea id="dr-note" placeholder="ملاحظة إضافية (اختياري)..." rows="2" style="width:100%;background:#0a0a0a;border:1px solid #333;border-radius:10px;color:#fff;padding:10px 12px;font-family:'Cairo',sans-serif;font-size:13px;outline:none;resize:none;box-sizing:border-box;margin-bottom:16px;"></textarea>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="submitDeliveryRating()" style="flex:1;padding:14px;border-radius:14px;background:linear-gradient(135deg,#d4af37,#f0c94e);color:#000;font-weight:800;font-size:14px;border:none;cursor:pointer;font-family:'Cairo',sans-serif;">✅ إرسال التقييم</button>
+      <button onclick="document.getElementById('delivery-rating-modal').style.display='none'" style="padding:14px 18px;border-radius:14px;background:transparent;color:#666;font-weight:700;font-size:13px;border:1px solid #333;cursor:pointer;font-family:'Cairo',sans-serif;">لاحقاً</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== REDEEM SCRATCH CARD MODAL ===== -->
+<div id="redeem-scratch-modal" style="display:none;position:fixed;inset:0;z-index:9900;background:rgba(0,0,0,0.95);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px;font-family:'Cairo',sans-serif;direction:rtl;">
+  <div style="background:#111;border:1px solid #d4af37;border-radius:24px;padding:32px 24px;max-width:360px;width:100%;text-align:center;position:relative;">
+    <button onclick="document.getElementById('redeem-scratch-modal').style.display='none'" style="position:absolute;top:12px;left:12px;background:transparent;border:none;color:#666;font-size:22px;cursor:pointer;line-height:1;">×</button>
+    <div style="font-size:40px;margin-bottom:8px;">🎟️</div>
+    <h3 style="color:#d4af37;font-weight:800;font-size:18px;margin:0 0 4px;">مبروك! تم استبدال نقاطك</h3>
+    <p id="redeem-scratch-discount" style="color:#aaa;font-size:13px;margin:0 0 20px;"></p>
+
+    <!-- Scratch area -->
+    <div style="position:relative;border-radius:14px;overflow:hidden;margin-bottom:16px;background:linear-gradient(135deg,#111800,#1a2200);border:2px solid rgba(212,175,55,0.3);">
+      <div style="padding:22px 16px;">
+        <p style="color:#aaa;font-size:10px;margin:0 0 6px;">كود كوبون الخصم</p>
+        <p id="redeem-scratch-code" style="color:#d4af37;font-size:22px;font-weight:800;letter-spacing:4px;margin:0;font-family:monospace;">••••••</p>
+      </div>
+      <canvas id="redeem-scratch-canvas" style="position:absolute;inset:0;width:100%;height:100%;cursor:crosshair;touch-action:none;border-radius:14px;" width="280" height="90"></canvas>
+    </div>
+
+    <p id="redeem-scratch-hint" style="color:#d4af37;font-size:12px;font-weight:700;margin:0 0 14px;">← اخدش هنا لكشف الكود →</p>
+
+    <button id="redeem-copy-btn" onclick="copyRedeemCode()" style="width:100%;padding:14px;border-radius:14px;background:linear-gradient(135deg,#d4af37,#f0c94e);color:#000;font-weight:800;font-size:14px;border:none;cursor:pointer;font-family:'Cairo',sans-serif;">
+      📋 اضغط هنا لنسخ الكود
+    </button>
+    <p style="color:#666;font-size:10px;margin:10px 0 0;">الكود محفوظ في قائمة كوبوناتي ويمكنك استخدامه لاحقاً</p>
+  </div>
+</div>
 </body>
   </html>

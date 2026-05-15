@@ -203,6 +203,22 @@
     @keyframes stockPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.7;transform:scale(1.05)} }
     .stock-pulse { animation: stockPulse 1.2s ease-in-out infinite; }
 
+    /* ====== SKELETON LOADERS ====== */
+    @keyframes shimmer { 0%{background-position:-600px 0} 100%{background-position:600px 0} }
+    .skeleton { background:linear-gradient(90deg,#1c1c1c 25%,#2a2a2a 50%,#1c1c1c 75%); background-size:600px 100%; animation:shimmer 1.4s infinite linear; border-radius:8px; }
+    .skeleton-card { background:#111; border:1px solid #222; border-radius:16px; overflow:hidden; padding:0; }
+    .skeleton-img { height:200px; }
+    .skeleton-line { height:14px; margin:10px 12px 0; }
+    .skeleton-line.short { width:55%; height:11px; margin-bottom:12px; }
+    .skeleton-line.price { width:35%; height:18px; background:linear-gradient(90deg,#1a1400 25%,#2a2200 50%,#1a1400 75%); background-size:600px 100%; animation:shimmer 1.4s infinite linear; border-radius:8px; }
+
+    /* ====== FLASH PENNY AUCTION ====== */
+    @keyframes auctionPulse { 0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.4)} 50%{box-shadow:0 0 0 12px rgba(239,68,68,0)} }
+    .auction-live { animation:auctionPulse 1.5s infinite; }
+    .auction-price-drop { animation:stockPulse 0.4s ease-in-out 2; }
+    @keyframes priceFlash { 0%{color:#ef4444;transform:scale(1.2)} 100%{color:#d4af37;transform:scale(1)} }
+    .price-flash { animation:priceFlash 0.5s ease-out; }
+
     /* ====== ORDER DETAIL MODAL ====== */
     .order-timeline { position: relative; padding-right: 24px; }
     .order-timeline::before { content:''; position:absolute; right:8px; top:0; bottom:0; width:2px; background:linear-gradient(to bottom,#d4af37,rgba(212,175,55,0.1)); }
@@ -787,6 +803,53 @@
         <div id="weekly-offers-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
       </section>
 
+      <!-- ===== FLASH PENNY AUCTION SECTION ===== -->
+      <section id="auction-section" class="hidden mb-12">
+        <div class="flex justify-between items-center mb-4">
+          <div>
+            <h2 class="text-2xl md:text-3xl font-bold flex items-center gap-2">⚡ <span id="auction-title-text">المزايدة العكسية</span> <span class="auction-live bg-red-600 text-white text-[10px] px-2 py-1 rounded-full font-bold">🔴 مباشر</span></h2>
+            <p class="text-zinc-500 text-sm mt-1">السعر ينزل تلقائياً كل ساعة — الأول يقتنصها بالسعر الحالي!</p>
+          </div>
+        </div>
+        <div class="bg-gradient-to-br from-zinc-950 to-zinc-900 border border-red-900/40 rounded-2xl p-6 md:flex gap-6 items-center">
+          <div class="md:w-48 flex-shrink-0 mb-4 md:mb-0">
+            <img id="auction-img" src="" class="w-full h-44 object-cover rounded-xl border border-zinc-800">
+          </div>
+          <div class="flex-1">
+            <p id="auction-product-name" class="text-xl font-bold text-white mb-1"></p>
+            <p id="auction-product-desc" class="text-zinc-500 text-sm mb-4 line-clamp-2"></p>
+            <div class="flex flex-wrap gap-4 items-end mb-4">
+              <div>
+                <p class="text-xs text-zinc-500 mb-1">السعر الحالي</p>
+                <p id="auction-price" class="text-4xl font-black text-yellow-400"></p>
+              </div>
+              <div>
+                <p class="text-xs text-zinc-500 mb-1">ينخفض كل ساعة بـ</p>
+                <p id="auction-drop" class="text-xl font-bold text-red-400"></p>
+              </div>
+              <div>
+                <p class="text-xs text-zinc-500 mb-1">الحد الأدنى</p>
+                <p id="auction-min" class="text-xl font-bold text-zinc-400"></p>
+              </div>
+            </div>
+            <!-- Countdown to next price drop -->
+            <div class="flex items-center gap-2 mb-4">
+              <span class="text-xs text-zinc-500">السعر ينزل خلال:</span>
+              <span id="auction-next-drop" class="bg-zinc-900 border border-zinc-700 text-yellow-400 font-mono text-sm px-3 py-1 rounded-lg font-bold">--:--:--</span>
+            </div>
+            <!-- Auction ends countdown -->
+            <div class="flex items-center gap-2 mb-5">
+              <span class="text-xs text-zinc-500">المزايدة تنتهي:</span>
+              <span id="auction-ends" class="text-xs text-red-400 font-bold"></span>
+            </div>
+            <button onclick="buyAuction()" id="auction-buy-btn" class="gold-bg text-black font-black px-8 py-3 rounded-xl text-base hover:opacity-90 transition-opacity">
+              🛒 اشتري الآن بالسعر الحالي
+            </button>
+            <p class="text-xs text-zinc-600 mt-2">* السعر يُثبَّت لك في لحظة الضغط فقط</p>
+          </div>
+        </div>
+      </section>
+
       <!-- Quick categories pills -->
       <section id="home-categories" class="mb-10 hidden">
         <p class="text-xs text-zinc-500 mb-3 uppercase tracking-widest">تسوق حسب القسم</p>
@@ -1280,6 +1343,7 @@
 
         // Start 24hr countdown for daily offers
         startCountdown();
+        loadAuction();
         setTimeout(()=>{try{loadAd();}catch(e){}},3000);
     }
 
@@ -1719,7 +1783,22 @@ window.loginWithFacebook = async () => {
     }
 
     // ============ Products ============
+    function renderSkeletons(gridId, count = 6) {
+        const grid = document.getElementById(gridId);
+        if (!grid) return;
+        grid.innerHTML = Array(count).fill(0).map(() => `
+          <div class="skeleton-card">
+            <div class="skeleton skeleton-img"></div>
+            <div class="skeleton skeleton-line" style="width:80%"></div>
+            <div class="skeleton skeleton-line short"></div>
+            <div class="skeleton skeleton-line price" style="margin:0 12px 16px;"></div>
+          </div>`).join('');
+    }
+
     async function loadProducts() {
+    // Show skeleton loaders immediately while products load
+    renderSkeletons('featured-grid', 6);
+    renderSkeletons('products-grid', 8);
     // نستخدم onSnapshot بدلاً من get() لفتح قناة اتصال دائمة
     db.collection('products').orderBy('updatedAt', 'desc').onSnapshot(snapshot => {
         allProducts = [];
@@ -3557,14 +3636,15 @@ window.loginWithFacebook = async () => {
     window.shareProduct = async (productId) => {
         const p = allProducts.find(x => x.id === productId);
         if (!p) return;
-        const url = `${location.origin}${location.pathname}?p=${productId}`;
-        const text = `${p.name} - ${effectivePrice(p)} ج\n${url}`;
+        // Smart Deep Link: embed referral code if user is logged in
+        const refParam = currentUser ? `&ref=${currentUser.uid}` : '';
+        const url = `${location.origin}${location.pathname}?p=${productId}${refParam}`;
         if (navigator.share) {
-            try { await navigator.share({ title: p.name, text: p.description || '', url }); return; } catch (e) {}
+            try { await navigator.share({ title: p.name, text: (p.description||'').substring(0,80), url }); return; } catch (e) {}
         }
         try {
             await navigator.clipboard.writeText(url);
-            showNotification('تم نسخ رابط المنتج ✓', 'success');
+            showNotification(currentUser ? 'تم نسخ رابطك الشخصي — ستكسب نقاطاً عند طلب صديقك ✓' : 'تم نسخ رابط المنتج ✓', 'success');
         } catch (e) {
             showAlert('رابط المنتج', url, 'info');
         }
@@ -4007,11 +4087,14 @@ window.loginWithFacebook = async () => {
                         code='FIRST-'+rand;
                         const discVal=sData.firstOrderDiscount||10;
                         const discType=sData.firstOrderDiscountType||'percentage';
+                        const expDays = sData.firstOrderExpiry || 30;
                         await db.collection('users').doc(currentUser.uid).update({uniqueFirstOrderCoupon:code}).catch(()=>{});
                         await db.collection('coupons').add({
                             code, type:discType, discount:discVal,
-                            enabled:true, maxUses:1, perUser:1,
-                            assignedTo:currentUser.uid,
+                            enabled:true, isActive:true,
+                            maxUses:1, limit:1, usedCount:0, perUser:1,
+                            linkedUser:currentUser.uid, assignedTo:currentUser.uid,
+                            expiryDate: new Date(Date.now() + expDays*86400000),
                             note:'كوبون أول طلب تلقائي - '+currentUser.email,
                             createdAt:firebase.firestore.FieldValue.serverTimestamp()
                         }).catch(()=>{});
@@ -4032,6 +4115,107 @@ window.loginWithFacebook = async () => {
     window.applyFirstOrderCode=()=>{
         const code=document.getElementById('first-order-code')?.textContent;
         if(code){document.getElementById('first-order-banner').style.display='none';document.body.style.paddingTop='';document.getElementById('coupon-input').value=code;showNotification('تم تطبيق الكود ✓','success');openCheckout();}
+    };
+
+    // ============ FLASH PENNY AUCTION ============
+    let _auctionData = null;
+    let _auctionDropTimer = null;
+    let _auctionEndsTimer = null;
+    let _auctionUnsub = null;
+
+    async function loadAuction() {
+        try {
+            if (_auctionUnsub) _auctionUnsub();
+            _auctionUnsub = db.collection('settings').doc('auction').onSnapshot(snap => {
+                if (!snap.exists) { document.getElementById('auction-section')?.classList.add('hidden'); return; }
+                const a = snap.data();
+                if (!a.enabled || a.isWon) { document.getElementById('auction-section')?.classList.add('hidden'); return; }
+                const now = new Date();
+                const endsAt = a.endsAt?.toDate ? a.endsAt.toDate() : (a.endsAt ? new Date(a.endsAt) : null);
+                if (endsAt && now > endsAt) { document.getElementById('auction-section')?.classList.add('hidden'); return; }
+                _auctionData = a;
+                renderAuction(a);
+            });
+        } catch(e) {}
+    }
+
+    function renderAuction(a) {
+        const sec = document.getElementById('auction-section'); if (!sec) return;
+        sec.classList.remove('hidden');
+        const titleEl = document.getElementById('auction-title-text');
+        if (titleEl && a.title) titleEl.textContent = a.title;
+        const img = document.getElementById('auction-img');
+        if (img) img.src = a.productImage || '';
+        const nameEl = document.getElementById('auction-product-name');
+        if (nameEl) nameEl.textContent = a.productName || '';
+        const descEl = document.getElementById('auction-product-desc');
+        if (descEl) descEl.textContent = a.productDesc || '';
+        const priceEl = document.getElementById('auction-price');
+        if (priceEl) { priceEl.textContent = (a.currentPrice || a.startPrice) + ' ج'; priceEl.classList.add('price-flash'); setTimeout(() => priceEl.classList.remove('price-flash'), 600); }
+        const dropEl = document.getElementById('auction-drop');
+        if (dropEl) dropEl.textContent = (a.dropAmount || 5) + ' ج ↓';
+        const minEl = document.getElementById('auction-min');
+        if (minEl) minEl.textContent = (a.minPrice || 50) + ' ج';
+
+        // Ends countdown
+        const endsAt = a.endsAt?.toDate ? a.endsAt.toDate() : (a.endsAt ? new Date(a.endsAt) : null);
+        if (_auctionEndsTimer) clearInterval(_auctionEndsTimer);
+        if (endsAt) {
+            const endsEl = document.getElementById('auction-ends');
+            function tickEnds() {
+                const diff = Math.max(0, endsAt - new Date());
+                if (diff === 0) { clearInterval(_auctionEndsTimer); sec.classList.add('hidden'); return; }
+                const d = Math.floor(diff/86400000), h = Math.floor((diff%86400000)/3600000), m = Math.floor((diff%3600000)/60000), s = Math.floor((diff%60000)/1000);
+                if (endsEl) endsEl.textContent = d > 0 ? `بعد ${d} يوم ${h} ساعة` : `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            }
+            tickEnds();
+            _auctionEndsTimer = setInterval(tickEnds, 1000);
+        }
+
+        // Next drop countdown: align to next top-of-hour from lastDropAt or startedAt
+        if (_auctionDropTimer) clearInterval(_auctionDropTimer);
+        const refTime = (a.lastDropAt?.toDate ? a.lastDropAt.toDate() : null) || (a.startedAt?.toDate ? a.startedAt.toDate() : null);
+        const dropIntervalMs = (a.dropIntervalHours || 1) * 3600000;
+        function tickDrop() {
+            const now2 = new Date();
+            let nextDrop;
+            if (refTime) {
+                const elapsed = now2 - refTime;
+                const intervals = Math.floor(elapsed / dropIntervalMs);
+                nextDrop = new Date(refTime.getTime() + (intervals + 1) * dropIntervalMs);
+            } else {
+                nextDrop = new Date(Math.ceil(now2/3600000)*3600000);
+            }
+            const diff2 = Math.max(0, nextDrop - now2);
+            const h2 = Math.floor(diff2/3600000), m2 = Math.floor((diff2%3600000)/60000), s2 = Math.floor((diff2%60000)/1000);
+            const el = document.getElementById('auction-next-drop');
+            if (el) el.textContent = `${String(h2).padStart(2,'0')}:${String(m2).padStart(2,'0')}:${String(s2).padStart(2,'0')}`;
+        }
+        tickDrop();
+        _auctionDropTimer = setInterval(tickDrop, 1000);
+    }
+
+    window.buyAuction = async () => {
+        if (!_auctionData) return;
+        if (!currentUser) { showNotification('سجّل دخولك أولاً لإتمام الشراء', 'error'); showPage('login'); return; }
+        const btn = document.getElementById('auction-buy-btn');
+        if (btn) { btn.disabled = true; btn.textContent = 'جاري التأكيد...'; }
+        const capturedPrice = _auctionData.currentPrice || _auctionData.startPrice;
+        try {
+            // Check if already won
+            const fresh = await db.collection('settings').doc('auction').get();
+            if (!fresh.exists || fresh.data().isWon) { showNotification('المزايدة انتهت بالفعل!', 'error'); if(btn){btn.disabled=false;btn.textContent='🛒 اشتري الآن بالسعر الحالي';} return; }
+            // Add product to cart at auction price
+            const product = { id: _auctionData.productId||'auction', name: _auctionData.productName, price: capturedPrice, images: [_auctionData.productImage||''], qty: 1, isAuction: true };
+            cart.push(product);
+            persistCart();
+            updateCartUI();
+            // Mark auction as won
+            await db.collection('settings').doc('auction').update({ isWon: true, winnerUid: currentUser.uid, winnerName: currentUser.displayName||currentUser.email, winnerAt: firebase.firestore.FieldValue.serverTimestamp(), finalPrice: capturedPrice });
+            document.getElementById('auction-section')?.classList.add('hidden');
+            showNotification(`🎉 مبروك! اقتنصت المنتج بسعر ${capturedPrice} ج — افتح السلة وأكمل الطلب`, 'success');
+            openCart();
+        } catch(e) { showNotification('خطأ: '+e.message, 'error'); if(btn){btn.disabled=false;btn.textContent='🛒 اشتري الآن بالسعر الحالي';} }
     };
 
     // ============ ABANDONED CART ============

@@ -89,6 +89,8 @@
             <button onclick="showTab('chat-tab');loadChats();" id="btn-chat-tab" class="px-4 py-2 font-bold text-zinc-500 whitespace-nowrap relative">💬 الدعم <span id="chat-unread-count" class="hidden absolute top-1 right-1 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">0</span></button>
             <button onclick="showTab('previews-tab')" id="btn-previews-tab" class="px-6 py-3 font-bold text-zinc-500 whitespace-nowrap">📸 معاينات العملاء</button>
             <button onclick="showTab('occasions-tab');loadOccasions();" id="btn-occasions-tab" class="px-4 py-2 font-bold text-zinc-500 whitespace-nowrap">🎊 المناسبات</button>
+            <button onclick="showTab('auction-tab');loadAdminAuction();" id="btn-auction-tab" class="px-4 py-2 font-bold text-zinc-500 whitespace-nowrap">⚡ المزايدة</button>
+            <button onclick="showTab('delivery-ratings-tab');loadDeliveryRatings();" id="btn-delivery-ratings-tab" class="px-4 py-2 font-bold text-zinc-500 whitespace-nowrap">⭐ تقييمات التوصيل</button>
         </div>
 
         <!-- Products Tab -->
@@ -644,24 +646,37 @@
                     <div class="p-4 bg-black rounded-xl border border-zinc-800">
                         <div class="flex items-center justify-between mb-3">
                             <div>
-                                <p class="font-bold text-sm">🎁 كوبون أول طلب</p>
-                                <p class="text-xs text-zinc-500">يظهر تلقائياً للعملاء الجدد بدون طلبات سابقة</p>
+                                <p class="font-bold text-sm">🎁 كوبون أول طلب (تلقائي وعشوائي لكل عميل)</p>
+                                <p class="text-xs text-zinc-500">كل عميل يحصل على كود فريد خاص به — FIRST-XXXXXX — مرة واحدة في العمر</p>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" id="setting-first-order-enabled" class="sr-only peer">
                                 <div class="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-600"></div>
                             </label>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <div>
-                                <label class="text-xs text-zinc-400 block mb-1">الكود:</label>
-                                <input type="text" id="setting-first-order-coupon" placeholder="FIRST10" class="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-sm outline-none focus:border-yellow-600">
+                                <label class="text-xs text-zinc-400 block mb-1">قيمة الخصم:</label>
+                                <input type="number" id="setting-first-order-discount" placeholder="10" class="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-sm outline-none focus:border-yellow-600">
                             </div>
                             <div>
-                                <label class="text-xs text-zinc-400 block mb-1">الوصف:</label>
-                                <input type="text" id="setting-first-order-desc" placeholder="خصم 10% على أول طلب!" class="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-sm outline-none focus:border-yellow-600">
+                                <label class="text-xs text-zinc-400 block mb-1">نوع الخصم:</label>
+                                <select id="setting-first-order-type" class="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-sm outline-none focus:border-yellow-600">
+                                    <option value="percentage">نسبة مئوية %</option>
+                                    <option value="fixed">مبلغ ثابت ج</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-xs text-zinc-400 block mb-1">صلاحية (أيام):</label>
+                                <input type="number" id="setting-first-order-expiry" placeholder="30" value="30" class="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-sm outline-none focus:border-yellow-600">
                             </div>
                         </div>
+                        <div class="mt-2">
+                            <label class="text-xs text-zinc-400 block mb-1">الوصف المعروض للعميل:</label>
+                            <input type="text" id="setting-first-order-desc" placeholder="خصم 10% على أول طلب!" class="w-full p-2 bg-zinc-900 border border-zinc-700 rounded text-sm outline-none focus:border-yellow-600">
+                        </div>
+                        <!-- hidden for backward compat -->
+                        <input type="hidden" id="setting-first-order-coupon" value="">
                     </div>
 
                     <!-- كوبون ترحيب/إحالة -->
@@ -1168,12 +1183,30 @@
     // فتح قناة اتصال لحظية مع قاعدة البيانات
     onSnapshot(q, (snapshot) => {
         allProducts = [];
-        list.innerHTML = ""; // مسح القائمة الحالية قبل إعادة الرسم
+        list.innerHTML = "";
 
+        const autoResetDaily = [];
         snapshot.forEach(docSnap => {
             const p = docSnap.data();
             p.id = docSnap.id;
+            // Auto-reset isDailyOffer after 24 hours
+            if (p.isDailyOffer && p.dailyOfferSetAt) {
+                const setAt = p.dailyOfferSetAt.toDate ? p.dailyOfferSetAt.toDate() : new Date(p.dailyOfferSetAt);
+                if (new Date() > new Date(setAt.getTime() + 86400000)) {
+                    autoResetDaily.push(updateDoc(doc(db, 'products', docSnap.id), { isDailyOffer: false, dailyOfferSetAt: null }));
+                    p.isDailyOffer = false; // update local copy for rendering
+                }
+            }
             allProducts.push(p);
+        });
+        if (autoResetDaily.length) {
+            Promise.all(autoResetDaily);
+            zahraaToast('⏱️ تم إيقاف '+autoResetDaily.length+' عرض يومي انتهت مدته تلقائياً','info');
+        }
+
+        snapshot.forEach(docSnap => {
+            const p = allProducts.find(x => x.id === docSnap.id);
+            if (!p) return;
 
             const oos = p.outOfStock || p.inStock === false;
             
@@ -1785,10 +1818,30 @@ window.loadOrders = () => {
             const snapshot = await getDocs(query(collection(db, 'coupons'), orderBy('createdAt', 'desc')));
             allCoupons = [];
             list.innerHTML = "";
+
+            // Auto-delete expired coupons
+            const now = new Date();
+            const deleteExpiredPromises = [];
             snapshot.forEach(docSnap => {
                 const c = docSnap.data();
+                if (c.expiryDate) {
+                    const expiry = c.expiryDate.toDate ? c.expiryDate.toDate() : new Date(c.expiryDate);
+                    if (expiry < now) {
+                        deleteExpiredPromises.push(deleteDoc(doc(db, 'coupons', docSnap.id)));
+                        return; // skip rendering deleted
+                    }
+                }
                 c.id = docSnap.id;
                 allCoupons.push(c);
+            });
+            if (deleteExpiredPromises.length) {
+                await Promise.all(deleteExpiredPromises);
+                zahraaToast('🗑️ تم حذف '+deleteExpiredPromises.length+' كوبون منتهي الصلاحية تلقائياً','info');
+            }
+
+            snapshot.forEach(docSnap => {
+                const c = allCoupons.find(x => x.id === docSnap.id);
+                if (!c) return;
                 const statusClass = c.isActive ? 'bg-green-600' : 'bg-zinc-700';
                 list.innerHTML += `
                     <div class="flex items-center justify-between p-4 bg-black rounded-xl border border-zinc-800">
@@ -1918,6 +1971,9 @@ window.loadOrders = () => {
             set('setting-weekly-title', g.weeklyOffersTitle || '⭐ عروض الأسبوع');
             set('setting-welcome-msg', g.welcomeMsg || '');
             set('setting-first-order-coupon', g.firstOrderCoupon || 'FIRST10');
+            set('setting-first-order-discount', g.firstOrderDiscount ?? 10);
+            if (document.getElementById('setting-first-order-type')) document.getElementById('setting-first-order-type').value = g.firstOrderDiscountType || 'percentage';
+            set('setting-first-order-expiry', g.firstOrderExpiry || 30);
             set('setting-first-order-desc', g.firstOrderDesc || 'خصم 10% على أول طلب!');
             set('setting-referral-coupon', g.referralGiftCoupon || 'WELCOME10');
             set('setting-referral-desc', g.referralGiftDesc || 'خصم 10% مع الإحالة');
@@ -1953,7 +2009,9 @@ window.loadOrders = () => {
                 dailyOffersTitle: document.getElementById('setting-daily-title').value.trim(),
                 weeklyOffersTitle: document.getElementById('setting-weekly-title').value.trim(),
                 welcomeMsg: document.getElementById('setting-welcome-msg').value.trim(),
-                firstOrderCoupon: document.getElementById('setting-first-order-coupon').value.trim() || 'FIRST10',
+                firstOrderDiscount: parseFloat(document.getElementById('setting-first-order-discount')?.value) || 10,
+                firstOrderDiscountType: document.getElementById('setting-first-order-type')?.value || 'percentage',
+                firstOrderExpiry: parseInt(document.getElementById('setting-first-order-expiry')?.value) || 30,
                 firstOrderDesc: document.getElementById('setting-first-order-desc').value.trim() || 'خصم 10% على أول طلب!',
                 referralGiftCoupon: document.getElementById('setting-referral-coupon').value.trim() || 'WELCOME10',
                 referralGiftDesc: document.getElementById('setting-referral-desc').value.trim() || 'خصم 10% مع الإحالة',
@@ -4018,6 +4076,141 @@ window.testOccasionPreview=function(){
     +'</div>';
 };
 
+// ==================== AUCTION ADMIN ====================
+let _adminAuctionUnsub = null;
+
+window.loadAdminAuction = async function() {
+    try {
+        if (_adminAuctionUnsub) _adminAuctionUnsub();
+        const auctionRef = doc(db, 'settings', 'auction');
+        _adminAuctionUnsub = onSnapshot(auctionRef, snap => {
+            const panel = document.getElementById('auction-status-panel');
+            if (!snap.exists()) {
+                if (panel) panel.innerHTML = '<p class="text-zinc-500 text-center py-8">لا توجد مزايدة محفوظة بعد</p>';
+                return;
+            }
+            const a = snap.data();
+            // Fill form fields
+            const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
+            const setChk = (id, v) => { const el = document.getElementById(id); if (el) el.checked = !!v; };
+            setChk('auction-enabled', a.enabled);
+            setVal('auction-title-input', a.title);
+            setVal('auction-product-name-input', a.productName);
+            setVal('auction-product-image-input', a.productImage);
+            setVal('auction-product-desc-input', a.productDesc);
+            setVal('auction-start-price', a.startPrice);
+            setVal('auction-drop-amount', a.dropAmount);
+            setVal('auction-min-price', a.minPrice);
+            if (a.endsAt) {
+                const d = a.endsAt.toDate ? a.endsAt.toDate() : new Date(a.endsAt);
+                const local = new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,16);
+                setVal('auction-ends-at', local);
+            }
+            // Status panel
+            if (!panel) return;
+            if (a.isWon) {
+                panel.innerHTML = `<div class="text-center py-4"><div class="text-4xl mb-3">🏆</div><p class="font-bold text-green-400 text-lg mb-1">تم الفوز!</p><p class="text-sm text-zinc-400 mb-1">الفائز: <span class="text-white font-bold">${a.winnerName||'—'}</span></p><p class="text-sm text-zinc-400">السعر النهائي: <span class="text-yellow-400 font-bold text-xl">${a.finalPrice||0} ج</span></p><p class="text-xs text-zinc-600 mt-2">${a.winnerAt?.toDate?.()?.toLocaleString('ar-EG')||''}</p></div>`;
+            } else {
+                const endsAt = a.endsAt?.toDate ? a.endsAt.toDate() : (a.endsAt ? new Date(a.endsAt) : null);
+                const ended = endsAt && new Date() > endsAt;
+                const statusTxt = !a.enabled ? '⛔ معطلة' : ended ? '⏰ انتهت' : '🟢 نشطة';
+                const statusColor = !a.enabled ? 'text-zinc-500' : ended ? 'text-red-400' : 'text-green-400';
+                panel.innerHTML = `
+                <div class="space-y-3 text-sm">
+                    <div class="flex justify-between border-b border-zinc-800 pb-2"><span class="text-zinc-500">الحالة</span><span class="${statusColor} font-bold">${statusTxt}</span></div>
+                    <div class="flex justify-between border-b border-zinc-800 pb-2"><span class="text-zinc-500">السعر الحالي</span><span class="text-yellow-400 font-bold text-xl">${a.currentPrice||a.startPrice||0} ج</span></div>
+                    <div class="flex justify-between border-b border-zinc-800 pb-2"><span class="text-zinc-500">سعر البداية</span><span class="text-white">${a.startPrice||0} ج</span></div>
+                    <div class="flex justify-between border-b border-zinc-800 pb-2"><span class="text-zinc-500">ينزل كل ساعة بـ</span><span class="text-red-400">${a.dropAmount||0} ج ↓</span></div>
+                    <div class="flex justify-between border-b border-zinc-800 pb-2"><span class="text-zinc-500">الحد الأدنى</span><span class="text-white">${a.minPrice||0} ج</span></div>
+                    <div class="flex justify-between"><span class="text-zinc-500">تنتهي في</span><span class="text-zinc-300 text-xs">${endsAt?endsAt.toLocaleString('ar-EG'):'—'}</span></div>
+                </div>`;
+            }
+        });
+    } catch(e) { zahraaToast('خطأ تحميل المزايدة: '+e.message,'error'); }
+};
+
+window.saveAdminAuction = async function() {
+    const enabled = document.getElementById('auction-enabled')?.checked || false;
+    const title = document.getElementById('auction-title-input')?.value.trim() || 'المزايدة العكسية';
+    const productName = document.getElementById('auction-product-name-input')?.value.trim();
+    const productImage = document.getElementById('auction-product-image-input')?.value.trim();
+    const productDesc = document.getElementById('auction-product-desc-input')?.value.trim();
+    const startPrice = parseFloat(document.getElementById('auction-start-price')?.value) || 0;
+    const dropAmount = parseFloat(document.getElementById('auction-drop-amount')?.value) || 5;
+    const minPrice = parseFloat(document.getElementById('auction-min-price')?.value) || 50;
+    const endsAtVal = document.getElementById('auction-ends-at')?.value;
+    if (!productName) { zahraaToast('أدخل اسم المنتج أولاً','warning'); return; }
+    if (!startPrice) { zahraaToast('أدخل سعر البداية','warning'); return; }
+    const data = {
+        enabled, title, productName, productImage: productImage||'', productDesc: productDesc||'',
+        startPrice, currentPrice: startPrice, dropAmount, minPrice,
+        dropIntervalHours: 1, isWon: false, winnerUid: null, winnerName: null, finalPrice: null,
+        startedAt: serverTimestamp(), lastDropAt: serverTimestamp()
+    };
+    if (endsAtVal) data.endsAt = new Date(endsAtVal);
+    try {
+        await setDoc(doc(db, 'settings', 'auction'), data);
+        zahraaToast('✅ تم حفظ المزايدة وتفعيلها','success');
+    } catch(e) { zahraaToast('خطأ: '+e.message,'error'); }
+};
+
+window.resetAdminAuction = async function() {
+    if (!confirm('إيقاف المزايدة ومسح الفائز الحالي؟')) return;
+    try {
+        await updateDoc(doc(db, 'settings', 'auction'), { enabled: false, isWon: false, winnerUid: null, winnerName: null, finalPrice: null });
+        zahraaToast('تم إيقاف المزايدة','success');
+    } catch(e) { zahraaToast('خطأ: '+e.message,'error'); }
+};
+
+window.updateAuctionPrice = async function() {
+    const p = parseFloat(document.getElementById('auction-manual-price')?.value);
+    if (!p || p <= 0) { zahraaToast('أدخل سعراً صحيحاً','warning'); return; }
+    try {
+        await updateDoc(doc(db, 'settings', 'auction'), { currentPrice: p, lastDropAt: serverTimestamp() });
+        zahraaToast(`تم تحديث السعر إلى ${p} ج ✅`,'success');
+        document.getElementById('auction-manual-price').value = '';
+    } catch(e) { zahraaToast('خطأ: '+e.message,'error'); }
+};
+
+// ==================== DELIVERY RATINGS ADMIN ====================
+window.loadDeliveryRatings = async function() {
+    const list = document.getElementById('delivery-ratings-list');
+    if (!list) return;
+    list.innerHTML = '<p class="text-center text-zinc-500 py-10">جاري التحميل...</p>';
+    try {
+        const snap = await getDocs(query(collection(db, 'delivery_ratings'), orderBy('createdAt','desc'), limit(200)));
+        const ratings = [];
+        snap.forEach(d => ratings.push({ id: d.id, ...d.data() }));
+        const total = ratings.length;
+        const totalEl = document.getElementById('dr-total');
+        if (totalEl) totalEl.textContent = `${total} تقييم`;
+        if (!total) { list.innerHTML = '<p class="text-center text-zinc-500 py-10">لا توجد تقييمات بعد</p>'; return; }
+        // Averages
+        const avgField = k => (ratings.reduce((s,r)=>s+(r[k]||0),0)/total).toFixed(1);
+        const setAvg = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+        setAvg('dr-avg-speed', avgField('speed'));
+        setAvg('dr-avg-courtesy', avgField('courtesy'));
+        setAvg('dr-avg-packaging', avgField('packaging'));
+        // Render rows
+        list.innerHTML = ratings.map(r => {
+            const stars = n => '⭐'.repeat(Math.max(0,Math.min(5,n||0))) + '☆'.repeat(Math.max(0, 5-(n||0)));
+            const date = r.createdAt?.toDate?.()?.toLocaleDateString('ar-EG') || '';
+            return `<div class="bg-zinc-950 border border-zinc-800 rounded-xl p-4">
+                <div class="flex justify-between items-start mb-2">
+                    <div><p class="font-bold text-sm">${r.userName||'عميل'}</p><p class="text-xs text-zinc-500">طلب: ${r.orderNum||''} · ${date}</p></div>
+                    <span class="bg-yellow-900/40 text-yellow-400 text-xs px-2 py-1 rounded-full font-bold">متوسط ${r.avg||0} ⭐</span>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-xs mt-2">
+                    <div class="bg-black rounded-lg p-2 text-center"><p class="text-zinc-500 mb-1">السرعة</p><p>${stars(r.speed)}</p></div>
+                    <div class="bg-black rounded-lg p-2 text-center"><p class="text-zinc-500 mb-1">اللباقة</p><p>${stars(r.courtesy)}</p></div>
+                    <div class="bg-black rounded-lg p-2 text-center"><p class="text-zinc-500 mb-1">التغليف</p><p>${stars(r.packaging)}</p></div>
+                </div>
+                ${r.note ? `<p class="text-zinc-500 text-xs mt-2 border-t border-zinc-800 pt-2">💬 ${r.note}</p>` : ''}
+            </div>`;
+        }).join('');
+    } catch(e) { list.innerHTML = `<p class="text-red-400 text-center py-8">${e.message}</p>`; }
+};
+
     </script>
     
         <!-- ===== OCCASIONS & CELEBRATORY THEMES TAB ===== -->
@@ -4106,6 +4299,102 @@ window.testOccasionPreview=function(){
             </div>
     </div>
 </div>
+    <!-- ===== AUCTION TAB ===== -->
+    <div id="auction-tab" class="tab-content">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Setup Form -->
+            <div class="bg-zinc-900 p-6 rounded-xl gold-border h-fit">
+                <h3 class="text-xl font-bold mb-4 border-b border-zinc-800 pb-2">⚡ إعداد المزايدة العكسية</h3>
+                <div class="space-y-4">
+                    <label class="flex items-center gap-3 cursor-pointer p-3 bg-black rounded-xl border border-zinc-800">
+                        <input type="checkbox" id="auction-enabled" class="w-5 h-5 accent-yellow-500">
+                        <div><span class="font-bold text-sm block">تفعيل المزايدة</span><span class="text-xs text-zinc-500">يظهر للزوار في الصفحة الرئيسية</span></div>
+                    </label>
+                    <div>
+                        <label class="text-xs text-zinc-400 block mb-1">عنوان المزايدة:</label>
+                        <input type="text" id="auction-title-input" placeholder="المزايدة العكسية" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-yellow-600">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-xs text-zinc-400 block mb-1">اسم المنتج:</label>
+                            <input type="text" id="auction-product-name-input" placeholder="تابلوه فاخر" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-yellow-600">
+                        </div>
+                        <div>
+                            <label class="text-xs text-zinc-400 block mb-1">صورة المنتج (URL):</label>
+                            <input type="text" id="auction-product-image-input" placeholder="https://..." class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-yellow-600">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-zinc-400 block mb-1">وصف المنتج (اختياري):</label>
+                        <input type="text" id="auction-product-desc-input" placeholder="وصف مختصر للمنتج" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-yellow-600">
+                    </div>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <label class="text-xs text-zinc-400 block mb-1">سعر البداية (ج):</label>
+                            <input type="number" id="auction-start-price" placeholder="500" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-yellow-600">
+                        </div>
+                        <div>
+                            <label class="text-xs text-zinc-400 block mb-1">ينزل كل ساعة بـ (ج):</label>
+                            <input type="number" id="auction-drop-amount" placeholder="5" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-yellow-600">
+                        </div>
+                        <div>
+                            <label class="text-xs text-zinc-400 block mb-1">الحد الأدنى (ج):</label>
+                            <input type="number" id="auction-min-price" placeholder="50" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-yellow-600">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-zinc-400 block mb-1">تنتهي المزايدة في:</label>
+                        <input type="datetime-local" id="auction-ends-at" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-yellow-600">
+                    </div>
+                    <button onclick="saveAdminAuction()" class="w-full p-3 gold-bg text-black font-bold rounded">💾 حفظ وتفعيل</button>
+                    <button onclick="resetAdminAuction()" class="w-full p-3 bg-red-900/40 text-red-400 border border-red-900 font-bold rounded">🔄 إعادة تعيين (إيقاف + مسح الفائز)</button>
+                </div>
+            </div>
+            <!-- Current Status -->
+            <div class="bg-zinc-900 p-6 rounded-xl gold-border">
+                <h3 class="text-xl font-bold mb-4 border-b border-zinc-800 pb-2">📊 الحالة الحالية</h3>
+                <div id="auction-status-panel" class="text-zinc-500 text-center py-12">جاري التحميل...</div>
+                <div class="mt-6">
+                    <h4 class="font-bold text-sm mb-3 text-zinc-400">⚙️ تحديث السعر الحالي يدوياً:</h4>
+                    <div class="flex gap-2">
+                        <input type="number" id="auction-manual-price" placeholder="السعر الجديد" class="flex-1 p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-yellow-600">
+                        <button onclick="updateAuctionPrice()" class="btn-sm btn-primary">تحديث</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== DELIVERY RATINGS TAB ===== -->
+    <div id="delivery-ratings-tab" class="tab-content">
+        <div class="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-zinc-900 p-5 rounded-xl gold-border text-center">
+                <p class="text-zinc-500 text-xs mb-2">متوسط سرعة التوصيل</p>
+                <p id="dr-avg-speed" class="text-3xl font-bold gold-text">—</p>
+                <p class="text-zinc-600 text-xs mt-1">⭐ من 5</p>
+            </div>
+            <div class="bg-zinc-900 p-5 rounded-xl gold-border text-center">
+                <p class="text-zinc-500 text-xs mb-2">متوسط لباقة المندوب</p>
+                <p id="dr-avg-courtesy" class="text-3xl font-bold gold-text">—</p>
+                <p class="text-zinc-600 text-xs mt-1">⭐ من 5</p>
+            </div>
+            <div class="bg-zinc-900 p-5 rounded-xl gold-border text-center">
+                <p class="text-zinc-500 text-xs mb-2">متوسط حالة التغليف</p>
+                <p id="dr-avg-packaging" class="text-3xl font-bold gold-text">—</p>
+                <p class="text-zinc-600 text-xs mt-1">⭐ من 5</p>
+            </div>
+        </div>
+        <div class="bg-zinc-900 p-6 rounded-xl gold-border">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">📋 جميع التقييمات</h3>
+                <span id="dr-total" class="text-xs text-zinc-500"></span>
+            </div>
+            <div id="delivery-ratings-list" class="space-y-3">
+                <p class="text-center text-zinc-500 py-10">جاري التحميل...</p>
+            </div>
+        </div>
+    </div>
+
     <!-- نافذة عرض الصور الكبيرة للأدمن -->
     <div id="prev-image-modal" class="modal" onclick="this.style.display='none'">
         <div class="relative max-w-4xl w-full p-4 flex items-center justify-center">
