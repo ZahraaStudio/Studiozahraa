@@ -9,6 +9,12 @@
   <meta property="og:title" content="استوديو الزهراء - ZAHRAA STUDIO" />
   <meta property="og:description" content="متجر فاخر للمنتجات والخدمات. تصاميم عصرية، طباعة فاخرة، وهدايا تليق بأحبابك. بصبيح ههيا الشرقية." />
   <meta property="og:type" content="website" />
+  <meta property="og:image" content="" id="og-image-meta" />
+  <meta property="og:url" content="" id="og-url-meta" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="استوديو الزهراء" id="tw-title-meta" />
+  <meta name="twitter:description" content="" id="tw-desc-meta" />
+  <meta name="twitter:image" content="" id="tw-image-meta" />
   <title>استوديو الزهراء - ZAHRAA STUDIO</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#D4AF37">
@@ -1856,6 +1862,8 @@ window.loginWithFacebook = async () => {
         const images = p.images || [];
         const cardId = 'card-' + p.id;
         const isLastOne = !oos && p.qty === 1;
+        const isLowStock = !oos && p.qty >= 2 && p.qty <= 5;
+        const isOutNow = !oos && p.qty !== undefined && p.qty <= 0;
         return `
             <div class="product-card cursor-pointer ${oos ? 'opacity-70' : ''}" onclick="openProductModal('${p.id}')">
                 <div class="relative h-64 bg-zinc-900 overflow-hidden" id="${cardId}">
@@ -1867,6 +1875,7 @@ window.loginWithFacebook = async () => {
                         ${p.isDailyOffer ? `<span class="bg-yellow-500 text-black text-[10px] px-2 py-1 rounded-lg font-bold">⚡ يومي</span>` : ''}
                         ${p.isWeeklyOffer ? `<span class="bg-blue-500 text-white text-[10px] px-2 py-1 rounded-lg font-bold">📅 أسبوعي</span>` : ''}
                         ${isLastOne ? `<span class="bg-orange-500 text-white text-[10px] px-2 py-1 rounded-lg font-bold stock-pulse">🔥 آخر قطعة!</span>` : ''}
+                        ${isLowStock ? `<span class="bg-orange-600 text-white text-[10px] px-2 py-1 rounded-lg font-bold stock-pulse">⚠️ بقي ${p.qty} فقط!</span>` : ''}
                     </div>
                     <div class="absolute top-3 right-3 flex flex-col gap-1">
                         ${p.variants && p.variants.length > 0 ? `<span class="bg-gold-bg text-black text-[10px] px-2 py-1 rounded-lg font-bold">خيارات</span>` : ''}
@@ -1928,9 +1937,42 @@ window.loginWithFacebook = async () => {
     }
 
     // Open Product Modal
+    // ===== DYNAMIC SEO META TAG UPDATE =====
+    function updateProductMetaTags(product, productId) {
+        try {
+            const title = (product.name || 'استوديو الزهراء') + ' - استوديو الزهراء';
+            const desc = (product.description || 'منتج فاخر من استوديو الزهراء').substring(0, 160);
+            const img = (product.images || [])[0] || '';
+            const refParam = currentUser ? `&ref=${currentUser.uid}` : '';
+            const url = `${location.origin}${location.pathname}?p=${productId}${refParam}`;
+            // OG Tags
+            document.title = title;
+            const setMeta = (id, val) => { const el = document.getElementById(id); if (el) el.setAttribute('content', val); };
+            setMeta('og-image-meta', img);
+            setMeta('og-url-meta', url);
+            setMeta('tw-title-meta', title);
+            setMeta('tw-desc-meta', desc);
+            setMeta('tw-image-meta', img);
+            // Also update og:title and og:description dynamically
+            let ogTitleEl = document.querySelector('meta[property="og:title"]');
+            let ogDescEl = document.querySelector('meta[property="og:description"]');
+            if (ogTitleEl) ogTitleEl.setAttribute('content', title);
+            if (ogDescEl) ogDescEl.setAttribute('content', desc);
+            // Update canonical URL
+            let canonical = document.querySelector('link[rel="canonical"]');
+            if (!canonical) { canonical = document.createElement('link'); canonical.rel = 'canonical'; document.head.appendChild(canonical); }
+            canonical.href = url;
+        } catch(e) {}
+    }
+
     async function openProductModal(id) {
         const product = allProducts.find(p => p.id === id);
         if (!product) return;
+
+        // Update SEO meta tags dynamically for product sharing
+        updateProductMetaTags(product, id);
+        // Update URL without reload for shareability
+        try { history.replaceState(null, '', '?p=' + id + (currentUser ? '&ref=' + currentUser.uid : '')); } catch(e) {}
 
         const content = document.getElementById('modal-content');
         const images = product.images || [];
@@ -2527,7 +2569,12 @@ window.loginWithFacebook = async () => {
             // Send WhatsApp auto-message to store owner
             sendWhatsAppOrderConfirm({ ...orderData, orderNumber, items: cart });
 
-            for(const item of cart){db.collection('products').doc(item.id).update({salesCount:firebase.firestore.FieldValue.increment(item.qty)}).catch(()=>{});}
+            for(const item of cart){
+                db.collection('products').doc(item.id).update({
+                    salesCount: firebase.firestore.FieldValue.increment(item.qty),
+                    qty: firebase.firestore.FieldValue.increment(-item.qty)
+                }).catch(()=>{});
+            }
             db.collection('abandoned_carts').doc(deviceId).delete().catch(()=>{});
             cart = [];
             persistCart();

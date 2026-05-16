@@ -269,6 +269,13 @@
             <p>معدل الاستبدال: <span id="acc-redeem-rate" class="gold-text font-bold">40</span> نقطة = 1 جنيه</p>
             <p class="mt-0.5">نقاطك تساوي: <span id="acc-pts-value" class="gold-text font-bold">0</span> ج خصم</p>
           </div>
+          <div class="flex gap-2 items-center mb-2">
+            <input type="number" id="acc-points-partial" placeholder="كمية النقاط" min="1"
+              class="flex-1 px-3 py-2 rounded-xl bg-zinc-800 border border-zinc-700 text-white text-sm text-center"
+              oninput="updatePartialPtsValue()">
+            <span class="text-xs text-zinc-400">= <span id="acc-partial-value" class="gold-text font-bold">0</span> ج</span>
+          </div>
+          <p class="text-[10px] text-zinc-600 mb-2">اترك الخانة فارغة لاستبدال كل نقاطك</p>
           <button onclick="accRedeemPoints()" class="btn-gold w-full text-sm">🎟️ استبدل نقاطك بكوبون</button>
           <p id="acc-redeem-msg" class="text-xs text-center mt-2"></p>
         </div>
@@ -471,9 +478,9 @@
       await auth.signInWithPopup(provider);
     } catch (e) {
       if (e.code === 'auth/unauthorized-domain') {
-        alert('خطأ: يجب إضافة هذا النطاق في إعدادات Firebase (Authorized Domains).\n\nافتح Firebase Console → Authentication → Settings → Authorized Domains وأضف النطاق الحالي.');
+        zahraaToast('يجب إضافة هذا النطاق في إعدادات Firebase (Authorized Domains)', 'error');
       } else {
-        alert('خطأ في تسجيل الدخول: ' + e.message);
+        zahraaToast('خطأ في تسجيل الدخول: ' + e.message, 'error');
       }
     }
   }
@@ -857,10 +864,11 @@
   }
 
   function clearWishlist() {
-    if (!confirm('حذف جميع المنتجات من المفضلة؟')) return;
-    localStorage.removeItem('zahraa_wishlist');
-    loadWishlist();
-    showNotif('تم حذف المفضلة', 'success');
+    zahraaConfirm('حذف جميع المفضلة؟', () => {
+      localStorage.removeItem('zahraa_wishlist');
+      loadWishlist();
+      showNotif('تم حذف المفضلة', 'success');
+    }, 'لا يمكن التراجع عن هذه العملية', '🗑️');
   }
 
   // ===== COUPONS =====
@@ -1042,21 +1050,35 @@
   }
 
   // ===== REDEEM POINTS (account page) =====
+  function updatePartialPtsValue() {
+    const input = document.getElementById('acc-points-partial');
+    const valueEl = document.getElementById('acc-partial-value');
+    const rateEl = document.getElementById('acc-redeem-rate');
+    if (!input || !valueEl) return;
+    const pts = parseInt(input.value) || 0;
+    const rate = parseInt(rateEl?.textContent) || 40;
+    valueEl.textContent = Math.floor(pts / rate);
+  }
+
   async function accRedeemPoints() {
     const uid = firebase.auth().currentUser?.uid; if (!uid) return;
-    const btn = document.querySelector('#acc-points-redeem-box button');
+    const btn = document.querySelector('#acc-points-redeem-box button.btn-gold');
     const msg = document.getElementById('acc-redeem-msg');
     if (btn) btn.disabled = true;
     try {
       const [pSnap, sSnap] = await Promise.all([db.collection('points').doc(uid).get(), db.collection('settings').doc('points').get()]);
-      const balance = pSnap.data()?.balance || 0;
+      const fullBalance = pSnap.data()?.balance || 0;
       const ps = sSnap.data() || {};
       const rate = ps.redeemRate || 40;
       const minPts = ps.redeemMin || 200;
+      // Partial or full redemption
+      const partialInput = document.getElementById('acc-points-partial');
+      const partialVal = partialInput ? parseInt(partialInput.value) : 0;
+      const balance = (partialVal > 0 && partialVal <= fullBalance) ? partialVal : fullBalance;
       if (balance < minPts) { msg.textContent = 'تحتاج على الأقل '+minPts+' نقطة'; msg.style.color='#ef4444'; if(btn)btn.disabled=false; return; }
       const discount = Math.floor(balance / rate);
+      if (discount < 1) { msg.textContent = 'النقاط غير كافية لكوبون'; msg.style.color='#ef4444'; if(btn)btn.disabled=false; return; }
       const code = 'PTS-' + Math.random().toString(36).substr(2,6).toUpperCase();
-      // Save with BOTH linkedUser AND assignedTo so it shows in coupons list
       await db.collection('coupons').add({
         code, type:'fixed', discount, enabled:true, isActive:true,
         maxUses:1, limit:1, usedCount:0, perUser:1,
@@ -1064,14 +1086,14 @@
         note:'استبدال '+balance+' نقطة',
         createdAt:firebase.firestore.FieldValue.serverTimestamp()
       });
-      await db.collection('points').doc(uid).update({ balance:0 });
+      const newBalance = fullBalance - balance;
+      await db.collection('points').doc(uid).update({ balance: newBalance });
       await db.collection('points_history').add({ userId:uid, type:'redeem', points:balance, orderNumber:'REDEEM', createdAt:firebase.firestore.FieldValue.serverTimestamp() });
-      document.getElementById('acc-points-balance').textContent = '0';
-      document.getElementById('vip-points').textContent = '0 ⭐';
-      document.getElementById('acc-points-redeem-box')?.classList.add('hidden');
-      // Show scratch card modal to reveal the code
+      document.getElementById('acc-points-balance').textContent = newBalance;
+      if (document.getElementById('vip-points')) document.getElementById('vip-points').textContent = newBalance + ' ⭐';
+      if (partialInput) partialInput.value = '';
+      if (newBalance < minPts) document.getElementById('acc-points-redeem-box')?.classList.add('hidden');
       showRedeemScratch(code, discount);
-      // Reload coupons tab after a moment
       setTimeout(() => loadCoupons(uid), 1000);
     } catch(e) { msg.textContent='خطأ: '+e.message; msg.style.color='#ef4444'; }
     if(btn)btn.disabled=false;
@@ -1168,23 +1190,17 @@
   }
 
   window.deleteMyPost = async (id) => {
-    // إظهار نافذة تأكيد مخصصة
-    if (!confirm('هل أنت متأكد من حذف هذه المشاركة نهائياً؟ لا يمكن التراجع عن هذا الإجراء.')) return;
-    
-    try {
-        // الحذف الفعلي من قاعدة بيانات Firestore
+    zahraaConfirm('حذف هذه المشاركة نهائياً؟', async () => {
+      try {
         await db.collection('community_posts').doc(id).delete();
-        
-        // إظهار إشعار نجاح
         showNotif('تم حذف المشاركة بنجاح ✓', 'success');
-        
-        // إعادة تحميل القائمة لتحديث الواجهة فوراً
         loadMyCommunityPosts();
-    } catch (e) {
+      } catch (e) {
         console.error("Error deleting post:", e);
         showNotif('خطأ في الحذف: ' + e.message, 'error');
-    }
-};
+      }
+    }, 'لا يمكن التراجع عن هذا الإجراء', '🗑️');
+  };
 
   // ===== TABS =====
   function showTab(name) {
@@ -1250,7 +1266,7 @@
     const user = firebase.auth().currentUser;
     if (!user) return;
     if (_drRatings.speed === 0 || _drRatings.courtesy === 0 || _drRatings.packaging === 0) {
-      alert('يرجى تقييم جميع المعايير أولاً'); return;
+      zahraaToast('يرجى تقييم جميع المعايير أولاً', 'warning'); return;
     }
     try {
       await db.collection('delivery_ratings').add({
@@ -1327,5 +1343,48 @@
     <p style="color:#666;font-size:10px;margin:10px 0 0;">الكود محفوظ في قائمة كوبوناتي ويمكنك استخدامه لاحقاً</p>
   </div>
 </div>
+<!-- ===== ZAHRAA TOAST & CONFIRM SYSTEM (account.html) ===== -->
+<div id="zahraa-toast-acc" style="position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-100px);z-index:99999;background:#111;border:1px solid #d4af37;border-radius:14px;padding:12px 20px;display:flex;align-items:center;gap:10px;font-family:'Cairo',sans-serif;direction:rtl;min-width:260px;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,0.6);transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);opacity:0;pointer-events:none;">
+  <span id="zta-icon" style="font-size:20px;">✅</span>
+  <span id="zta-text" style="color:#fff;font-size:13px;font-weight:600;flex:1;line-height:1.4;"></span>
+</div>
+<div id="zahraa-confirm-acc" style="display:none;position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
+  <div style="background:#111;border:1px solid #d4af37;border-radius:20px;padding:28px 24px;width:90%;max-width:340px;text-align:center;font-family:'Cairo',sans-serif;">
+    <div id="zca-icon" style="font-size:36px;margin-bottom:12px;">⚠️</div>
+    <p id="zca-title" style="color:#fff;font-weight:700;font-size:16px;margin:0 0 6px;"></p>
+    <p id="zca-sub" style="color:#777;font-size:12px;margin:0 0 20px;"></p>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button id="zca-yes" style="background:#d4af37;color:#000;border:none;padding:11px 0;border-radius:12px;font-family:'Cairo',sans-serif;font-size:14px;font-weight:700;cursor:pointer;width:120px;">نعم، تأكيد</button>
+      <button onclick="document.getElementById('zahraa-confirm-acc').style.display='none'" style="background:#2a2a2a;color:#ccc;border:1px solid #444;padding:11px 0;border-radius:12px;font-family:'Cairo',sans-serif;font-size:14px;font-weight:600;cursor:pointer;width:120px;">إلغاء</button>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  let _ztaT=null;
+  window.zahraaToast = function(t,type='success'){
+    const icons={success:'✅',error:'❌',warning:'⚠️',info:'ℹ️'};
+    const colors={success:'#22c55e',error:'#ef4444',warning:'#f59e0b',info:'#60a5fa'};
+    const el=document.getElementById('zahraa-toast-acc');
+    if(!el)return;
+    document.getElementById('zta-icon').textContent=icons[type]||'✅';
+    document.getElementById('zta-text').textContent=t;
+    el.style.borderColor=colors[type]||'#d4af37';
+    el.style.opacity='1';el.style.transform='translateX(-50%) translateY(0)';el.style.pointerEvents='auto';
+    if(_ztaT)clearTimeout(_ztaT);
+    _ztaT=setTimeout(()=>{el.style.opacity='0';el.style.transform='translateX(-50%) translateY(-100px)';el.style.pointerEvents='none';},4000);
+  };
+  window.zahraaConfirm = function(title,onYes,sub='',icon='⚠️'){
+    const el=document.getElementById('zahraa-confirm-acc');
+    document.getElementById('zca-title').textContent=title;
+    document.getElementById('zca-sub').textContent=sub;
+    document.getElementById('zca-icon').textContent=icon;
+    el.style.display='flex';
+    document.getElementById('zca-yes').onclick=()=>{el.style.display='none';onYes();};
+  };
+  window.alert=function(m){zahraaToast(String(m),String(m).includes('✅')||String(m).includes('تم')?'success':'warning');};
+  window.confirm=function(m){zahraaToast(m,'warning');return true;};
+})();
+</script>
 </body>
   </html>
