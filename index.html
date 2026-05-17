@@ -535,9 +535,19 @@
         </div>
         <!-- Redeem section -->
         <div id="pts-redeem-box" style="background:#1a1a00;border:1px solid #d4af37;border-radius:12px;padding:14px;margin-bottom:16px;display:none;">
-            <p style="color:#d4af37;font-size:13px;font-weight:700;margin:0 0 8px;">🎁 استبدال النقاط</p>
+            <p style="color:#d4af37;font-size:13px;font-weight:700;margin:0 0 6px;">🎁 استبدال النقاط بكوبون خصم</p>
             <p id="pts-redeem-info" style="color:#aaa;font-size:12px;margin:0 0 10px;"></p>
-            <button onclick="redeemPointsModal()" style="width:100%;padding:10px;background:#d4af37;color:#000;border:none;border-radius:8px;font-family:'Cairo',sans-serif;font-weight:700;font-size:13px;cursor:pointer;">⭐ استبدل نقاطك</button>
+            <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;">
+                <div style="flex:1;">
+                    <label style="color:#888;font-size:10px;display:block;margin-bottom:3px;">عدد النقاط المراد استبدالها</label>
+                    <input id="pts-redeem-amount" type="number" min="1" placeholder="0" style="width:100%;padding:9px 12px;background:#0a0a00;border:1px solid #d4af37;border-radius:8px;color:#d4af37;font-family:'Cairo',sans-serif;font-size:14px;font-weight:700;text-align:center;box-sizing:border-box;outline:none;">
+                </div>
+                <div style="flex:1;background:#0a0a00;border:1px solid #333;border-radius:8px;padding:9px;text-align:center;">
+                    <p style="color:#888;font-size:9px;margin:0 0 2px;">قيمة الكوبون</p>
+                    <p id="pts-coupon-preview" style="color:#4ade80;font-size:16px;font-weight:800;margin:0;">0 ج</p>
+                </div>
+            </div>
+            <button onclick="redeemPointsModal()" style="width:100%;padding:10px;background:#d4af37;color:#000;border:none;border-radius:8px;font-family:'Cairo',sans-serif;font-weight:700;font-size:13px;cursor:pointer;">⭐ استبدل الآن</button>
         </div>
         <!-- History -->
         <div>
@@ -5834,6 +5844,28 @@ window.closePointsModal = function() {
     document.body.style.overflow = '';
 };
 
+// Live coupon preview update when user types amount
+document.addEventListener('DOMContentLoaded', function() {
+    document.body.addEventListener('input', function(e) {
+        if (e.target && e.target.id === 'pts-redeem-amount') {
+            _updatePtsCouponPreview();
+        }
+    });
+});
+
+window._ptsRedeemSettings = { redeemMin: 100, redeemValue: 10 };
+
+window._updatePtsCouponPreview = function() {
+    const amtEl = document.getElementById('pts-redeem-amount');
+    const previewEl = document.getElementById('pts-coupon-preview');
+    if (!amtEl || !previewEl) return;
+    const pts = parseInt(amtEl.value) || 0;
+    const { redeemMin, redeemValue } = window._ptsRedeemSettings;
+    const couponValue = Math.floor(pts / redeemMin) * redeemValue;
+    previewEl.textContent = couponValue + ' ج';
+    previewEl.style.color = couponValue > 0 ? '#4ade80' : '#555';
+};
+
 window.redeemPointsModal = async function() {
     if (!currentUser) return;
     try {
@@ -5843,25 +5875,37 @@ window.redeemPointsModal = async function() {
         const ps = psSnap.exists ? psSnap.data() : { redeemMin: 100, redeemValue: 10 };
         const redeemMin = ps.redeemMin || 100;
         const redeemValue = ps.redeemValue || 10;
-        if (balance < redeemMin) { zahraaToast('نقاطك غير كافية للاستبدال', 'warning'); return; }
-        const couponValue = Math.floor(balance / redeemMin) * redeemValue;
+        window._ptsRedeemSettings = { redeemMin, redeemValue };
+
+        if (balance < redeemMin) { zahraaToast('نقاطك غير كافية للاستبدال (الحد الأدنى: ' + redeemMin + ' نقطة)', 'warning'); return; }
+
+        // Read custom amount from input, fallback to full balance
+        const amtInput = document.getElementById('pts-redeem-amount');
+        let redeemPts = amtInput ? (parseInt(amtInput.value) || balance) : balance;
+        // Clamp to balance and validate multiples
+        redeemPts = Math.min(redeemPts, balance);
+        redeemPts = Math.floor(redeemPts / redeemMin) * redeemMin; // ensure multiple of redeemMin
+        if (redeemPts < redeemMin) { zahraaToast('أدخل نقاطاً كافية (الحد الأدنى: ' + redeemMin + ' نقطة)', 'warning'); return; }
+
+        const couponValue = Math.floor(redeemPts / redeemMin) * redeemValue;
         const couponCode = 'PTS-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+
         // Create coupon
         await db.collection('coupons').add({
             code: couponCode, discount: couponValue, type: 'fixed',
             maxUses: 1, limit: 1, perUser: 1, usedCount: 0,
             isActive: true, enabled: true,
             assignedTo: currentUser.uid, linkedUser: currentUser.uid,
-            note: 'كوبون استبدال نقاط — ' + balance + ' نقطة',
+            note: 'كوبون استبدال نقاط — ' + redeemPts + ' نقطة',
             expiryDate: new Date(Date.now() + 30 * 86400000),
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
-        // Deduct points
+        // Deduct only the used points (not all)
         await db.collection('points').doc(currentUser.uid).update({
-            balance: firebase.firestore.FieldValue.increment(-balance),
+            balance: firebase.firestore.FieldValue.increment(-redeemPts),
         });
         await db.collection('points_history').add({
-            userId: currentUser.uid, points: -balance, note: 'استبدال بكوبون ' + couponCode,
+            userId: currentUser.uid, points: -redeemPts, note: 'استبدال بكوبون ' + couponCode,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         closePointsModal();

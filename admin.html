@@ -9,6 +9,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <style>
         body { font-family: 'Cairo', sans-serif; background-color: #0a0a0a; color: #fff; }
         .gold-border { border: 1px solid #d4af37; }
@@ -105,7 +107,10 @@
                     <div class="space-y-4">
                         <div class="grid grid-cols-2 gap-2">
                             <input type="text" id="p-name" placeholder="اسم المنتج" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
-                            <input type="text" id="p-code" placeholder="كود المنتج (ZA-450)" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                            <div class="flex gap-1">
+                                <input type="text" id="p-code" placeholder="كود المنتج (يتولد تلقائياً)" class="flex-1 p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
+                                <button type="button" onclick="generateProductCode()" class="px-3 py-2 bg-indigo-700 hover:bg-indigo-600 text-white rounded text-xs font-bold flex-shrink-0" title="توليد كود تلقائي">🔄</button>
+                            </div>
                         </div>
                         <div class="grid grid-cols-3 gap-2">
                             <input type="number" id="p-price" placeholder="السعر الأساسي" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
@@ -174,8 +179,8 @@
                 </div>
                 <div class="lg:col-span-2 bg-zinc-900 p-6 rounded-xl gold-border">
                     <!-- Bulk Management Buttons -->
-                    <div class="flex flex-wrap gap-2 mb-4">
-                        <button onclick="exportProductsCSV()" class="text-xs px-3 py-2 bg-green-700 hover:bg-green-600 text-white rounded font-bold flex items-center gap-1">📊 تصدير CSV</button>
+                    <div class="flex flex-wrap gap-2 mb-3">
+                        <button onclick="exportProductsExcel()" class="text-xs px-3 py-2 bg-green-700 hover:bg-green-600 text-white rounded font-bold flex items-center gap-1">📊 تصدير Excel</button>
                         <button onclick="exportProductsXML()" class="text-xs px-3 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded font-bold flex items-center gap-1">📄 تصدير XML</button>
                         <label class="text-xs px-3 py-2 bg-purple-700 hover:bg-purple-600 text-white rounded font-bold flex items-center gap-1 cursor-pointer">
                             📥 استيراد CSV
@@ -185,7 +190,13 @@
                             📥 استيراد XML
                             <input type="file" accept=".xml" class="hidden" onchange="importProductsXML(this)">
                         </label>
-                        <p class="text-[10px] text-zinc-500 self-center">CSV/XML يقبلان: الاسم، السعر، الكود، القسم، الكمية</p>
+                    </div>
+                    <!-- Bulk Select Actions -->
+                    <div class="flex flex-wrap gap-2 mb-3 items-center">
+                        <button onclick="toggleSelectAllProducts()" class="text-xs px-3 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded font-bold">☑️ تحديد الكل</button>
+                        <button onclick="bulkDeleteSelected()" class="text-xs px-3 py-2 bg-red-800 hover:bg-red-700 text-white rounded font-bold hidden" id="bulk-delete-btn">🗑️ حذف المحدد (<span id="selected-count">0</span>)</button>
+                        <button onclick="deleteAllProductsConfirm()" class="text-xs px-3 py-2 bg-red-900 hover:bg-red-800 text-red-300 rounded font-bold border border-red-800">⛔ حذف جميع المنتجات</button>
+                        <p class="text-[10px] text-zinc-500">الاستيراد يُحدّث المنتجات الموجودة إن تطابق الاسم</p>
                     </div>
                     <div id="products-list" class="space-y-3"></div>
                 </div>
@@ -1169,9 +1180,23 @@
 
         window.removeImage = (i) => { productImages.splice(i, 1); renderImagesPreview(); };
 
+        // ===== AUTO-GENERATE PRODUCT CODE =====
+        window.generateProductCode = function() {
+            const prefix = 'ZA';
+            const num = Math.floor(1000 + Math.random() * 9000);
+            const code = `${prefix}-${num}`;
+            document.getElementById('p-code').value = code;
+            zahraaToast('تم توليد الكود: ' + code, 'success');
+        };
+
         window.saveProduct = async () => {
             const name = document.getElementById('p-name').value.trim();
-            const code = document.getElementById('p-code').value.trim();
+            let code = document.getElementById('p-code').value.trim();
+            // Auto-generate code if empty
+            if (!code) {
+                code = 'ZA-' + Math.floor(1000 + Math.random() * 9000);
+                document.getElementById('p-code').value = code;
+            }
             const price = document.getElementById('p-price').value;
             const oldPrice = document.getElementById('p-old-price').value;
             const category = document.getElementById('p-category').value;
@@ -1289,14 +1314,16 @@
                 p.discountValue ? `<span class="bg-yellow-600 text-black text-[9px] px-1.5 py-0.5 rounded">خصم ${p.discountValue}${p.discountType === 'percentage' ? '%' : 'ج'}</span>` : ''
             ].filter(Boolean).join(' ');
 
-            // رسم الكارت بنفس التصميم الأصلي تماماً
+            // رسم الكارت مع خانة تحديد + باركود
+            const bc = p.code || p.barcode || '';
             list.innerHTML += `
-                <div class="flex items-center gap-4 p-4 bg-black rounded-xl border border-zinc-800 hover:border-gold-text transition">
-                    <img src="${p.images?.[0] || ''}" class="w-16 h-16 object-cover rounded-lg">
-                    <div class="flex-1">
-                        <div class="flex items-center gap-2 mb-1">
+                <div class="flex items-center gap-3 p-4 bg-black rounded-xl border border-zinc-800 hover:border-gold-text transition product-card" data-id="${p.id}">
+                    <input type="checkbox" class="product-select-cb w-4 h-4 accent-yellow-500 cursor-pointer flex-shrink-0" data-id="${p.id}" onchange="updateBulkDeleteBtn()">
+                    <img src="${p.images?.[0] || ''}" class="w-14 h-14 object-cover rounded-lg flex-shrink-0">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-1 flex-wrap">
                             <h4 class="font-bold text-sm">${p.name}</h4>
-                            ${p.code ? `<span class="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded">${p.code}</span>` : ''}
+                            ${bc ? `<span class="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded font-mono">${bc}</span>` : ''}
                         </div>
                         <p class="text-xs gold-text">
                             ${p.price} ج 
@@ -1306,9 +1333,10 @@
                         <p class="text-[10px] text-zinc-500">${p.category || 'بدون قسم'}</p>
                         <div class="mt-1 flex gap-1 flex-wrap">${badges}</div>
                     </div>
-                    <div class="flex gap-2">
+                    <div class="flex flex-col gap-2 flex-shrink-0">
                         <button onclick="editProduct('${p.id}')" class="btn-sm btn-warning">تعديل</button>
                         <button onclick="deleteProduct('${p.id}')" class="btn-sm btn-danger">حذف</button>
+                        ${bc ? `<button onclick="printBarcodeLabel('${bc}','${p.name.replace(/'/g,'\\\'')}')" class="btn-sm" style="background:#1a1a2e;color:#818cf8;border:1px solid #818cf8;font-size:10px;">🏷️ باركود</button>` : ''}
                     </div>
                 </div>
             `;
@@ -1366,6 +1394,116 @@
             }, 'لا يمكن التراجع عن هذه العملية', '🗑️');
         };
 
+        // ===== BULK SELECT / DELETE =====
+        window._selectedProductIds = new Set();
+
+        window.updateBulkDeleteBtn = function() {
+            const cbs = document.querySelectorAll('.product-select-cb:checked');
+            window._selectedProductIds = new Set([...cbs].map(c => c.dataset.id));
+            const btn = document.getElementById('bulk-delete-btn');
+            const cnt = document.getElementById('selected-count');
+            if (btn && cnt) {
+                cnt.textContent = window._selectedProductIds.size;
+                btn.classList.toggle('hidden', window._selectedProductIds.size === 0);
+            }
+        };
+
+        window.toggleSelectAllProducts = function() {
+            const cbs = document.querySelectorAll('.product-select-cb');
+            const allChecked = [...cbs].every(c => c.checked);
+            cbs.forEach(c => { c.checked = !allChecked; });
+            updateBulkDeleteBtn();
+        };
+
+        window.bulkDeleteSelected = function() {
+            const ids = [...window._selectedProductIds];
+            if (!ids.length) return;
+            zahraaConfirm(`حذف ${ids.length} منتجات محددة نهائياً؟`, async () => {
+                let done = 0;
+                for (const id of ids) {
+                    try { await deleteDoc(doc(db, 'products', id)); done++; } catch(e) {}
+                }
+                window._selectedProductIds.clear();
+                zahraaToast(`✅ تم حذف ${done} منتج`, 'success');
+                loadProducts();
+            }, 'لا يمكن التراجع عن هذه العملية ⚠️', '🗑️');
+        };
+
+        window.deleteAllProductsConfirm = function() {
+            zahraaConfirm('حذف جميع المنتجات نهائياً؟ لا يمكن التراجع!', async () => {
+                zahraaToast('جاري حذف الكل...', 'info');
+                let products = allProducts.length ? allProducts : [];
+                if (!products.length) {
+                    const snap = await getDocs(collection(db, 'products'));
+                    snap.forEach(d => products.push({ id: d.id }));
+                }
+                let done = 0;
+                for (const p of products) {
+                    try { await deleteDoc(doc(db, 'products', p.id)); done++; } catch(e) {}
+                }
+                zahraaToast(`✅ تم حذف ${done} منتج`, 'success');
+                loadProducts();
+            }, '⛔ سيتم حذف جميع المنتجات بلا استثناء!', '⛔');
+        };
+
+        // ===== PRINT BARCODE LABEL =====
+        window.printBarcodeLabel = function(code, name) {
+            const win = window.open('', '_blank', 'width=320,height=200');
+            if (!win) { zahraaToast('السماح بالنوافذ المنبثقة للطباعة', 'warning'); return; }
+            win.document.write(`<!DOCTYPE html><html dir="rtl"><head>
+                <meta charset="UTF-8">
+                <title>باركود — ${name}</title>
+                <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
+                <style>
+                    body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#fff;font-family:'Cairo',sans-serif;}
+                    .label{text-align:center;padding:12px 16px;border:2px dashed #ccc;border-radius:8px;display:inline-block;}
+                    .product-name{font-size:11px;font-weight:700;color:#111;margin-bottom:6px;max-width:200px;word-wrap:break-word;}
+                    .code-text{font-size:9px;color:#555;margin-top:4px;}
+                    @media print{body{padding:0;}@page{margin:4mm;size:60mm 30mm;}}
+                </style>
+            </head><body>
+                <div class="label">
+                    <div class="product-name">${name}</div>
+                    <svg id="barcode"></svg>
+                    <div class="code-text">${code}</div>
+                </div>
+                <script>
+                    window.onload = function() {
+                        try {
+                            JsBarcode('#barcode', '${code.replace(/'/g,"\\'")}', {
+                                format: 'CODE128', width: 1.6, height: 40,
+                                displayValue: false, margin: 4
+                            });
+                        } catch(e) {
+                            document.getElementById('barcode').style.display='none';
+                        }
+                        setTimeout(function(){ window.print(); window.close(); }, 400);
+                    };
+                <\/script>
+            </body></html>`);
+            win.document.close();
+        };
+
+        // ===== EXPORT POS INVOICES EXCEL =====
+        window.exportPosInvoicesExcel = async function() {
+            const data = _savedInvoicesCache.length ? _savedInvoicesCache : [];
+            if (!data.length) { zahraaToast('لا توجد فواتير لتصديرها', 'warning'); return; }
+            const headers = ['رقم الفاتورة','التاريخ','العميل','الهاتف','المندوب','المجموع الفرعي','الخصم','التوصيل','الإجمالي','المدفوع','المتبقي','نوع الدفع','الحالة','موعد السداد','المنتجات'];
+            const rows = data.map(inv => {
+                const d = inv.createdAt?.toDate ? inv.createdAt.toDate() : new Date();
+                const items = (inv.items||[]).map(i => `${i.name}×${i.qty}`).join(' | ');
+                return [
+                    inv.invoiceNumber||'', d.toLocaleDateString('ar-EG'), inv.userName||'', inv.phone||'',
+                    inv.deliveryAgentName||'',
+                    inv.subtotal||0, inv.discountAmount||0, inv.deliveryFee||0, inv.totalPrice||0,
+                    inv.paidAmount||0, inv.remainingAmount||0,
+                    inv.paymentMethod||'', inv.status||'', inv.dueDate||'', items
+                ];
+            });
+            _exportToExcel(headers, rows, `pos-invoices-${new Date().toISOString().slice(0,10)}.xlsx`, 'فواتير الكاشير');
+            zahraaToast('✅ تم تصدير فواتير الكاشير بصيغة Excel', 'success');
+        };
+
         // ==================== ORDERS ====================
         // دالة جلب الطلبات لحظياً (بمجرد وصول طلب جديد يظهر فوراً)
 window.loadOrders = () => {
@@ -1408,35 +1546,21 @@ window.loadOrders = () => {
             try {
                 zahraaToast('جاري تصدير الطلبات...','info');
                 const snap = await getDocs(query(collection(db, 'orders'), orderBy('createdAt','desc')));
-                const rows = [['رقم الطلب','التاريخ','الاسم','الهاتف','المحافظة','العنوان','الحالة','الدفع','المبلغ الكلي','الشحن','المنتجات']];
+                const headers = ['رقم الطلب','التاريخ','الاسم','الهاتف','المحافظة','العنوان','الحالة','الدفع','المبلغ الكلي','الشحن','المنتجات'];
+                const rows = [];
                 snap.forEach(d => {
                     const o = { id: d.id, ...d.data() };
                     const dateStr = o.createdAt?.toDate ? o.createdAt.toDate().toLocaleDateString('ar-EG') : '';
-                    const items = (o.items||[]).map(i => `${i.name}×${i.qty}`).join(' - ');
+                    const items = (o.items||[]).map(i => `${i.name}×${i.qty}`).join(' | ');
                     rows.push([
-                        o.orderNumber||'',
-                        dateStr,
-                        o.customerName||'',
-                        o.customerPhone||'',
-                        o.customerGovernorate||'',
-                        (o.customerAddress||'').replace(/,/g,';'),
-                        o.status||'',
-                        o.paymentStatus||'',
-                        o.totalPrice||0,
-                        o.shippingCost||0,
-                        items.replace(/,/g,';')
+                        o.orderNumber||'', dateStr, o.customerName||'', o.customerPhone||'',
+                        o.customerGovernorate||'', o.customerAddress||'',
+                        o.status||'', o.paymentStatus||'',
+                        o.totalPrice||0, o.shippingCost||0, items
                     ]);
                 });
-                const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
-                const BOM = '\uFEFF';
-                const blob = new Blob([BOM+csv], {type:'text/csv;charset=utf-8'});
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `zahraa-orders-${new Date().toISOString().slice(0,10)}.csv`;
-                a.click();
-                setTimeout(()=>URL.revokeObjectURL(url),1000);
-                zahraaToast(`تم تصدير ${snap.size} طلب بنجاح ✅`,'success');
+                _exportToExcel(headers, rows, `zahraa-orders-${new Date().toISOString().slice(0,10)}.xlsx`, 'الطلبات');
+                zahraaToast(`تم تصدير ${snap.size} طلب بصيغة Excel ✅`,'success');
             } catch(e) { zahraaToast('خطأ في التصدير: '+e.message,'error'); }
         };
 
@@ -4685,7 +4809,16 @@ window.loadDeliveryRatings = async function() {
                 <button onclick="document.getElementById('pos-invoice-detail-modal').style.display='none'" style="background:none;border:none;color:#555;font-size:20px;cursor:pointer;">✕</button>
             </div>
             <div id="pos-invoice-detail-content"></div>
-            <button onclick="reprintInvoice()" style="width:100%;margin-top:12px;padding:12px;background:#d4af37;color:#000;border:none;border-radius:10px;font-family:'Cairo',sans-serif;font-weight:700;cursor:pointer;">🖨️ إعادة طباعة</button>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
+                <button onclick="reprintInvoice()" style="padding:12px;background:#d4af37;color:#000;border:none;border-radius:10px;font-family:'Cairo',sans-serif;font-weight:700;cursor:pointer;">🖨️ إعادة طباعة</button>
+                <button id="pos-confirm-payment-btn" onclick="confirmInvoicePayment()" style="padding:12px;background:#166534;color:#fff;border:none;border-radius:10px;font-family:'Cairo',sans-serif;font-weight:700;cursor:pointer;display:none;">✅ تأكيد سداد المتبقي</button>
+            </div>
+            <div id="pos-partial-payment-row" style="display:none;margin-top:8px;">
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <input id="pos-partial-pay-amount" type="number" min="0" placeholder="المبلغ المدفوع الآن..." style="flex:1;padding:10px;background:#1a1a1a;border:1px solid #4ade80;border-radius:8px;color:#4ade80;font-family:'Cairo',sans-serif;font-size:14px;font-weight:700;text-align:center;outline:none;">
+                    <button onclick="confirmPartialPayment()" style="padding:10px 16px;background:#15803d;color:#fff;border:none;border-radius:8px;font-family:'Cairo',sans-serif;font-weight:700;cursor:pointer;font-size:12px;">تأكيد</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -4813,9 +4946,15 @@ window.loadDeliveryRatings = async function() {
                     <!-- Customer Info -->
                     <div style="background:#111;border:1px solid #222;border-radius:14px;padding:14px;">
                         <p style="color:#666;font-size:11px;margin:0 0 8px;">👤 بيانات العميل</p>
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
                             <input id="pos-customer-name" type="text" placeholder="اسم العميل (اختياري)" style="padding:9px 12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:12px;width:100%;box-sizing:border-box;outline:none;">
                             <input id="pos-customer-phone" type="tel" placeholder="رقم الهاتف (اختياري)" style="padding:9px 12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:12px;width:100%;box-sizing:border-box;outline:none;">
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                            <select id="pos-delivery-agent" style="padding:9px 12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:12px;width:100%;box-sizing:border-box;outline:none;">
+                                <option value="">🚚 اختر مندوب التوصيل (اختياري)</option>
+                            </select>
+                            <input id="pos-delivery-fee" type="number" min="0" placeholder="رسوم التوصيل (ج)" oninput="posUpdateTotals()" style="padding:9px 12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:12px;width:100%;box-sizing:border-box;outline:none;">
                         </div>
                     </div>
 
@@ -4922,15 +5061,24 @@ window.loadDeliveryRatings = async function() {
 
             <!-- Saved Invoices Panel -->
             <div id="pos-saved-invoices-panel" style="display:none;margin-top:16px;background:#111;border:1px solid #222;border-radius:14px;padding:16px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
                     <h4 style="color:#d4af37;font-weight:700;font-size:14px;margin:0;">📋 الفواتير المحفوظة</h4>
                     <div style="display:flex;gap:8px;align-items:center;">
-                        <input id="pos-invoice-search" type="text" placeholder="ابحث برقم الفاتورة أو اسم العميل..." oninput="searchSavedInvoices(this.value)"
-                            style="padding:7px 12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:12px;outline:none;width:240px;">
+                        <button onclick="exportPosInvoicesExcel()" style="padding:6px 12px;background:#166534;color:#fff;border:none;border-radius:7px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">📊 تصدير Excel</button>
+                        <input id="pos-invoice-search" type="text" placeholder="ابحث برقم الفاتورة أو اسم العميل أو باركود..." oninput="searchSavedInvoices(this.value)"
+                            style="padding:7px 12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:12px;outline:none;width:220px;">
                         <button onclick="document.getElementById('pos-saved-invoices-panel').style.display='none'" style="background:none;border:none;color:#555;font-size:18px;cursor:pointer;">✕</button>
                     </div>
                 </div>
-                <div id="pos-invoices-list" style="max-height:360px;overflow-y:auto;"></div>
+                <!-- Filter tabs + Outstanding badge -->
+                <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center;">
+                    <button onclick="filterPosInvoices('all')" id="pos-filter-all" style="padding:5px 12px;background:#d4af37;color:#000;border:none;border-radius:20px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">الكل</button>
+                    <button onclick="filterPosInvoices('deferred')" id="pos-filter-deferred" style="padding:5px 12px;background:#1a1a1a;color:#f87171;border:1px solid #f8717140;border-radius:20px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">🔴 آجل</button>
+                    <button onclick="filterPosInvoices('partial')" id="pos-filter-partial" style="padding:5px 12px;background:#1a1a1a;color:#fb923c;border:1px solid #fb923c40;border-radius:20px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">🟠 جزئي</button>
+                    <button onclick="filterPosInvoices('paid')" id="pos-filter-paid" style="padding:5px 12px;background:#1a1a1a;color:#4ade80;border:1px solid #4ade8040;border-radius:20px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">🟢 مكتمل</button>
+                    <span id="pos-outstanding-badge" style="display:none;margin-right:auto;padding:5px 12px;background:#7f1d1d;color:#fca5a5;border-radius:20px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;">⚠️ إجمالي المستحق: <b id="pos-outstanding-total">0</b> ج</span>
+                </div>
+                <div id="pos-invoices-list" style="max-height:420px;overflow-y:auto;"></div>
             </div>
         </div>
     </div>
@@ -5033,10 +5181,22 @@ function _renderCashierReceipt(o) {
 // =====================================================================
 // ===== PRODUCTS BULK EXPORT / IMPORT =====
 // =====================================================================
-window.exportProductsCSV = async function() {
+// ===== Helper: export any data as Excel =====
+function _exportToExcel(headers, rows, filename, sheetName) {
+    if (typeof XLSX === 'undefined') { zahraaToast('مكتبة Excel غير محملة، انتظر وأعد المحاولة', 'error'); return; }
+    const wsData = [headers, ...rows];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    // Auto column widths
+    const colWidths = headers.map((h, i) => ({ wch: Math.max(h.length + 2, ...rows.map(r => String(r[i] || '').length + 2)) }));
+    ws['!cols'] = colWidths;
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, sheetName || 'البيانات');
+    XLSX.writeFile(wb, filename);
+}
+
+window.exportProductsExcel = async function() {
     let products = typeof allProducts !== 'undefined' ? allProducts : [];
     if (!products.length) {
-        // Try loading from Firestore if in-memory cache is empty
         try {
             zahraaToast('جاري تحميل المنتجات...', 'loading');
             const { getDocs, collection, query, orderBy } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
@@ -5046,26 +5206,17 @@ window.exportProductsCSV = async function() {
         } catch(e) {}
     }
     if (!products.length) { zahraaToast('لا توجد منتجات لتصديرها', 'warning'); return; }
-    const headers = ['ID', 'الاسم', 'السعر', 'السعر القديم', 'الكود', 'القسم', 'الكمية', 'نفذ من المخزون', 'الوصف', 'عدد المبيعات'];
+    const headers = ['ID', 'الاسم', 'السعر', 'السعر القديم', 'الكود / الباركود', 'القسم', 'الكمية', 'نفذ من المخزون', 'الوصف', 'عدد المبيعات'];
     const rows = products.map(p => [
-        p.id,
-        (p.name || '').replace(/,/g, '،'),
-        p.price || 0,
-        p.oldPrice || '',
-        p.code || '',
-        (p.category || '').replace(/,/g, '،'),
+        p.id, p.name || '', p.price || 0, p.oldPrice || '',
+        p.code || p.barcode || '', p.category || '',
         p.qty !== undefined ? p.qty : '',
         p.outOfStock ? 'نعم' : 'لا',
-        (p.description || '').replace(/,/g, '،').replace(/\n/g, ' '),
+        (p.description || '').replace(/\n/g, ' '),
         p.salesCount || 0
     ]);
-    const csvContent = '\uFEFF' + [headers, ...rows].map(r => r.join(',')).join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'zahraa_products_' + new Date().toISOString().slice(0,10) + '.csv';
-    a.click();
-    zahraaToast('تم تصدير ' + products.length + ' منتج بصيغة CSV ✓', 'success');
+    _exportToExcel(headers, rows, 'zahraa_products_' + new Date().toISOString().slice(0,10) + '.xlsx', 'المنتجات');
+    zahraaToast('تم تصدير ' + products.length + ' منتج بصيغة Excel ✓', 'success');
 };
 
 window.exportProductsXML = async function() {
@@ -5108,42 +5259,53 @@ window.importProductsCSV = async function(input) {
     const text = await file.text();
     const lines = text.replace(/^\uFEFF/, '').split('\n').filter(l => l.trim());
     if (lines.length < 2) { zahraaToast('الملف فارغ أو غير صالح', 'error'); return; }
-    // Parse header to find column indices dynamically
-    const header = lines[0].split(',').map(h => h.trim());
+    const header = lines[0].split(',').map(h => h.trim().replace(/"/g,''));
     const idx = (name) => header.findIndex(h => h === name || h.toLowerCase() === name.toLowerCase());
     const nameIdx = idx('الاسم') !== -1 ? idx('الاسم') : 1;
     const priceIdx = idx('السعر') !== -1 ? idx('السعر') : 2;
-    const codeIdx = idx('الكود') !== -1 ? idx('الكود') : 4;
+    const codeIdx = idx('الكود') !== -1 ? idx('الكود') : (idx('الكود / الباركود') !== -1 ? idx('الكود / الباركود') : 4);
     const catIdx = idx('القسم') !== -1 ? idx('القسم') : 5;
     const qtyIdx = idx('الكمية') !== -1 ? idx('الكمية') : 6;
     const descIdx = idx('الوصف') !== -1 ? idx('الوصف') : 8;
 
-    let imported = 0, failed = 0;
-    zahraaToast('جاري الاستيراد...', 'loading');
-    const { addDoc, collection, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+    let added = 0, updated = 0, failed = 0;
+    zahraaToast('جاري الاستيراد...', 'info');
+    const { addDoc, collection, getDocs, query, where, updateDoc, doc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+
+    // Pre-load existing products by name for update-by-name
+    const existingSnap = await getDocs(collection(db, 'products'));
+    const existingByName = {};
+    existingSnap.forEach(d => { existingByName[(d.data().name||'').trim().toLowerCase()] = d.id; });
+
     for (let i = 1; i < lines.length; i++) {
-        const cols = lines[i].split(',');
+        // Handle quoted CSV fields
+        const cols = lines[i].match(/("(?:[^"]|"")*"|[^,]*)/g)?.map(c => c.replace(/^"|"$/g,'').replace(/""/g,'"').trim()) || lines[i].split(',');
         const name = cols[nameIdx]?.trim();
         if (!name) { failed++; continue; }
         const price = parseFloat(cols[priceIdx]) || 0;
+        const productData = {
+            name,
+            price,
+            code: cols[codeIdx]?.trim() || ('ZA-' + Math.floor(1000+Math.random()*9000)),
+            category: cols[catIdx]?.trim() || '',
+            qty: parseInt(cols[qtyIdx]) || 0,
+            description: cols[descIdx]?.trim() || '',
+            outOfStock: false,
+            updatedAt: serverTimestamp()
+        };
         try {
-            await addDoc(collection(db, 'products'), {
-                name,
-                price,
-                code: cols[codeIdx]?.trim() || '',
-                category: cols[catIdx]?.trim() || '',
-                qty: parseInt(cols[qtyIdx]) || 0,
-                description: cols[descIdx]?.trim() || '',
-                outOfStock: false,
-                salesCount: 0,
-                images: [],
-                createdAt: serverTimestamp()
-            });
-            imported++;
+            const existId = existingByName[name.toLowerCase()];
+            if (existId) {
+                await updateDoc(doc(db, 'products', existId), productData);
+                updated++;
+            } else {
+                await addDoc(collection(db, 'products'), { ...productData, salesCount: 0, images: [], createdAt: serverTimestamp() });
+                added++;
+            }
         } catch(e) { failed++; }
     }
     input.value = '';
-    zahraaToast(`تم استيراد ${imported} منتج${failed > 0 ? ' (فشل ' + failed + ')' : ''} ✓`, imported > 0 ? 'success' : 'error');
+    zahraaToast(`✅ إضافة: ${added} | تحديث: ${updated}${failed > 0 ? ' | فشل: '+failed : ''}`, 'success');
     if (typeof loadProducts === 'function') loadProducts();
 };
 
@@ -5177,14 +5339,41 @@ window.openPOS = function() {
     document.getElementById('pos-customer-phone').value = '';
     document.getElementById('pos-discount').value = '0';
     document.getElementById('pos-paid').value = '0';
+    const dfEl = document.getElementById('pos-delivery-fee');
+    if (dfEl) dfEl.value = '';
     const dueDateRow = document.getElementById('pos-due-date-row');
     if (dueDateRow) dueDateRow.style.display = 'block';
     const savedPanel = document.getElementById('pos-saved-invoices-panel');
     if (savedPanel) savedPanel.style.display = 'none';
     setPosPayType('cash');
     posRenderCart();
+    // Populate delivery agent dropdown
+    _populatePosAgentDropdown();
     document.getElementById('pos-modal').style.display = 'block';
 };
+
+function _populatePosAgentDropdown() {
+    const sel = document.getElementById('pos-delivery-agent');
+    if (!sel) return;
+    // Use cached agents if available
+    const agents = (typeof _allAgents !== 'undefined' ? _allAgents : []).filter(a => a.active !== false);
+    sel.innerHTML = '<option value="">🚚 اختر مندوب التوصيل (اختياري)</option>';
+    agents.forEach(a => {
+        const opt = document.createElement('option');
+        opt.value = a.id;
+        opt.textContent = `${a.name}${a.area ? ' — ' + a.area : ''}${a.fee ? ' (' + a.fee + ' ج)' : ''}`;
+        opt.dataset.fee = a.fee || 0;
+        sel.appendChild(opt);
+    });
+    sel.onchange = function() {
+        const selected = sel.options[sel.selectedIndex];
+        const fee = selected?.dataset?.fee;
+        if (fee && !document.getElementById('pos-delivery-fee').value) {
+            document.getElementById('pos-delivery-fee').value = fee;
+            posUpdateTotals();
+        }
+    };
+}
 
 window.setPosPayType = function(type) {
     _posPayType = type;
@@ -5303,7 +5492,8 @@ window.posRenderCart = function() {
 window.posUpdateTotals = function() {
     const subtotal = _posCart.reduce((a,b) => a + (b.price * b.qty), 0);
     const discount = parseFloat(document.getElementById('pos-discount')?.value) || 0;
-    const total = Math.max(0, subtotal - discount);
+    const deliveryFee = parseFloat(document.getElementById('pos-delivery-fee')?.value) || 0;
+    const total = Math.max(0, subtotal - discount + deliveryFee);
     const paid = _posPayType === 'deferred' ? 0 : (parseFloat(document.getElementById('pos-paid')?.value) || 0);
     const change = paid - total;
 
@@ -5487,6 +5677,10 @@ window.posCompleteSale = async function() {
     const invoiceNum = window._currentInvNum || _generateInvoiceNumber();
     const dueDate = document.getElementById('pos-due-date')?.value || null;
     const notes = document.getElementById('pos-notes')?.value.trim() || '';
+    const deliveryFee = parseFloat(document.getElementById('pos-delivery-fee')?.value) || 0;
+    const agentSel = document.getElementById('pos-delivery-agent');
+    const agentId = agentSel?.value || '';
+    const agentName = agentId ? (agentSel.options[agentSel.selectedIndex]?.text || '') : '';
     const payLabel = _posPayType === 'cash' ? 'نقداً' : _posPayType === 'immediate' ? 'فوري' : _posPayType === 'deferred' ? 'آجل' : 'جزئي';
 
     const invoiceData = {
@@ -5494,6 +5688,9 @@ window.posCompleteSale = async function() {
         items: _posCart.map(i => ({...i})),
         subtotal,
         discountAmount: discount,
+        deliveryFee: deliveryFee || 0,
+        deliveryAgentId: agentId || null,
+        deliveryAgentName: agentName || null,
         totalPrice: total,
         paidAmount: paid,
         remainingAmount: remaining,
@@ -5672,15 +5869,31 @@ window.loadSavedInvoices = async function(filter = '') {
     }
 };
 
+let _posInvoiceFilter = 'all';
 function renderInvoicesList(filter) {
     const listEl = document.getElementById('pos-invoices-list');
     if (!listEl) return;
-    const fl = filter.toLowerCase();
-    const filtered = fl ? _savedInvoicesCache.filter(inv =>
+    const fl = (filter || '').toLowerCase();
+    let filtered = fl ? _savedInvoicesCache.filter(inv =>
         inv.invoiceNumber?.toLowerCase().includes(fl) ||
         inv.userName?.toLowerCase().includes(fl) ||
         inv.phone?.includes(fl)
     ) : _savedInvoicesCache;
+
+    // Apply status filter tab
+    if (_posInvoiceFilter === 'deferred') filtered = filtered.filter(i => i.paymentType === 'deferred' && i.remainingAmount > 0);
+    else if (_posInvoiceFilter === 'partial') filtered = filtered.filter(i => i.paymentType === 'partial' && i.remainingAmount > 0);
+    else if (_posInvoiceFilter === 'paid') filtered = filtered.filter(i => !i.remainingAmount || i.remainingAmount <= 0);
+
+    // Compute outstanding
+    const outstanding = _savedInvoicesCache.reduce((s, i) => s + (i.remainingAmount > 0 ? i.remainingAmount : 0), 0);
+    const badge = document.getElementById('pos-outstanding-badge');
+    const outTotal = document.getElementById('pos-outstanding-total');
+    if (badge && outTotal) {
+        if (outstanding > 0) { badge.style.display = 'inline-flex'; outTotal.textContent = outstanding.toFixed(2); }
+        else badge.style.display = 'none';
+    }
+
     if (!filtered.length) {
         listEl.innerHTML = '<p style="color:#555;font-family:\'Cairo\',sans-serif;font-size:12px;text-align:center;padding:12px;">لا توجد فواتير</p>';
         return;
@@ -5688,35 +5901,69 @@ function renderInvoicesList(filter) {
     listEl.innerHTML = filtered.map(inv => {
         const d = inv.createdAt?.toDate ? inv.createdAt.toDate() : new Date();
         const dateStr = d.toLocaleString('ar-EG');
-        const statusColor = inv.remainingAmount > 0 ? '#f87171' : '#4ade80';
+        const rem = inv.remainingAmount || 0;
+        const pt = inv.paymentType;
+        // Color coding
+        let rowBorder, statusColor, statusLabel;
+        if (rem > 0 && pt === 'deferred') {
+            rowBorder = '#f8717130'; statusColor = '#f87171';
+            statusLabel = '🔴 آجل — متبقي ' + rem.toFixed(2) + ' ج';
+        } else if (rem > 0 && pt === 'partial') {
+            rowBorder = '#fb923c30'; statusColor = '#fb923c';
+            statusLabel = '🟠 جزئي — متبقي ' + rem.toFixed(2) + ' ج';
+        } else {
+            rowBorder = '#4ade8030'; statusColor = '#4ade80';
+            statusLabel = '🟢 مكتمل';
+        }
         return `
-        <div onclick="showInvoiceDetail('${inv.id}')" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid #1a1a1a;cursor:pointer;font-family:'Cairo',sans-serif;direction:rtl;border-radius:8px;transition:background 0.15s;" onmouseover="this.style.background='#1a1a1a'" onmouseout="this.style.background='transparent'">
+        <div onclick="showInvoiceDetail('${inv.id}')" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;margin-bottom:4px;border:1px solid ${rowBorder};cursor:pointer;font-family:'Cairo',sans-serif;direction:rtl;border-radius:10px;transition:background 0.15s;" onmouseover="this.style.background='#1a1a1a'" onmouseout="this.style.background='transparent'">
             <div>
                 <p style="color:#fff;font-size:12px;font-weight:700;margin:0;">${inv.invoiceNumber}</p>
                 <p style="color:#888;font-size:10px;margin:2px 0 0;">${inv.userName} ${inv.phone ? '· '+inv.phone : ''}</p>
                 <p style="color:#555;font-size:10px;margin:1px 0 0;">${dateStr}</p>
+                ${inv.deliveryAgentName ? `<p style="color:#818cf8;font-size:10px;margin:1px 0 0;">🚚 ${inv.deliveryAgentName}</p>` : ''}
             </div>
             <div style="text-align:left;">
-                <p style="color:#d4af37;font-weight:700;font-size:13px;margin:0;">${inv.totalPrice?.toFixed(2)} ج</p>
-                <p style="color:${statusColor};font-size:10px;margin:2px 0 0;">${inv.remainingAmount > 0 ? 'متبقي '+inv.remainingAmount.toFixed(2)+' ج' : '✅ مكتمل'}</p>
+                <p style="color:#d4af37;font-weight:700;font-size:13px;margin:0;">${(inv.totalPrice||0).toFixed(2)} ج</p>
+                <p style="color:${statusColor};font-size:10px;margin:2px 0 0;">${statusLabel}</p>
                 <p style="color:#555;font-size:10px;margin:1px 0 0;">${inv.paymentMethod}</p>
             </div>
         </div>`;
     }).join('');
 }
 
+window.filterPosInvoices = function(type) {
+    _posInvoiceFilter = type;
+    // Update active tab style
+    ['all','deferred','partial','paid'].forEach(t => {
+        const btn = document.getElementById('pos-filter-' + t);
+        if (!btn) return;
+        if (t === type) {
+            btn.style.background = '#d4af37'; btn.style.color = '#000'; btn.style.border = 'none';
+        } else {
+            const colors = { deferred:'#f87171', partial:'#fb923c', paid:'#4ade80' };
+            btn.style.background = '#1a1a1a'; btn.style.color = colors[t] || '#fff';
+            btn.style.border = `1px solid ${colors[t] || '#333'}40`;
+        }
+    });
+    renderInvoicesList(document.getElementById('pos-invoice-search')?.value || '');
+};
+
 window.searchSavedInvoices = function(q) {
     renderInvoicesList(q);
 };
 
+window._currentDetailInvId = null;
 window.showInvoiceDetail = function(invId) {
     const inv = _savedInvoicesCache.find(i => i.id === invId);
     if (!inv) return;
     _lastInvoiceData = inv;
+    window._currentDetailInvId = invId;
     const d = inv.createdAt?.toDate ? inv.createdAt.toDate() : new Date();
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(inv.invoiceNumber)}`;
     const contentEl = document.getElementById('pos-invoice-detail-content');
     if (!contentEl) return;
+    const rem = inv.remainingAmount || 0;
     contentEl.innerHTML = `
         <div style="font-family:'Cairo',sans-serif;direction:rtl;font-size:13px;">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
@@ -5730,20 +5977,82 @@ window.showInvoiceDetail = function(invId) {
                 <p style="margin:3px 0;color:#ccc;"><span style="color:#888;">العميل: </span>${inv.userName}</p>
                 ${inv.phone ? `<p style="margin:3px 0;color:#ccc;"><span style="color:#888;">الهاتف: </span>${inv.phone}</p>` : ''}
                 <p style="margin:3px 0;color:#ccc;"><span style="color:#888;">الدفع: </span>${inv.paymentMethod}</p>
+                ${inv.deliveryAgentName ? `<p style="margin:3px 0;color:#818cf8;"><span style="color:#888;">المندوب: </span>${inv.deliveryAgentName}</p>` : ''}
                 ${inv.dueDate ? `<p style="margin:3px 0;color:#ccc;"><span style="color:#888;">موعد السداد: </span>${inv.dueDate}</p>` : ''}
             </div>
             <div style="border-top:1px solid #222;padding-top:10px;margin-bottom:10px;">
-                ${(inv.items||[]).map(i => `<div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span style="color:#ccc;">${i.name} × ${i.qty}</span><span style="color:#d4af37;">${(i.price*i.qty).toFixed(2)} ج</span></div>`).join('')}
+                ${(inv.items||[]).map(i => `<div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span style="color:#ccc;">${i.name} × ${i.qty}</span><span style="color:#d4af37;">${(i.price*(i.qty||1)).toFixed(2)} ج</span></div>`).join('')}
             </div>
             <div style="border-top:1px solid #333;padding-top:10px;">
-                ${inv.discountAmount ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:#888;">خصم</span><span style="color:#f87171;">- ${inv.discountAmount.toFixed(2)} ج</span></div>` : ''}
-                <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:#d4af37;font-weight:700;">الإجمالي</span><span style="color:#d4af37;font-weight:800;font-size:16px;">${inv.totalPrice?.toFixed(2)} ج</span></div>
-                ${inv.paidAmount ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:#888;">المدفوع</span><span style="color:#4ade80;">${inv.paidAmount.toFixed(2)} ج</span></div>` : ''}
-                ${inv.remainingAmount > 0 ? `<div style="display:flex;justify-content:space-between;"><span style="color:#888;">المتبقي</span><span style="color:#f87171;font-weight:700;">${inv.remainingAmount.toFixed(2)} ج</span></div>` : ''}
+                ${inv.discountAmount ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:#888;">خصم</span><span style="color:#f87171;">- ${(inv.discountAmount||0).toFixed(2)} ج</span></div>` : ''}
+                ${(inv.deliveryFee||0) > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:#888;">التوصيل</span><span style="color:#818cf8;">+ ${inv.deliveryFee.toFixed(2)} ج</span></div>` : ''}
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:#d4af37;font-weight:700;">الإجمالي</span><span style="color:#d4af37;font-weight:800;font-size:16px;">${(inv.totalPrice||0).toFixed(2)} ج</span></div>
+                ${(inv.paidAmount||0) > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:#888;">المدفوع</span><span style="color:#4ade80;">${(inv.paidAmount||0).toFixed(2)} ج</span></div>` : ''}
+                ${rem > 0 ? `<div style="display:flex;justify-content:space-between;padding:8px;background:#1a0000;border-radius:8px;border:1px solid #f8717140;"><span style="color:#f87171;font-weight:700;">المتبقي</span><span style="color:#f87171;font-weight:800;font-size:15px;">${rem.toFixed(2)} ج</span></div>` : '<div style="padding:8px;background:#001a00;border-radius:8px;text-align:center;color:#4ade80;font-weight:700;border:1px solid #4ade8040;">✅ تم السداد الكامل</div>'}
             </div>
         </div>`;
+
+    // Show/hide payment confirm buttons
+    const confirmBtn = document.getElementById('pos-confirm-payment-btn');
+    const partialRow = document.getElementById('pos-partial-payment-row');
+    const partialInput = document.getElementById('pos-partial-pay-amount');
+    if (confirmBtn) {
+        if (rem > 0) {
+            confirmBtn.style.display = 'block';
+            confirmBtn.textContent = `✅ تأكيد سداد المتبقي (${rem.toFixed(2)} ج)`;
+            if (partialRow) partialRow.style.display = 'block';
+            if (partialInput) partialInput.value = rem.toFixed(2);
+        } else {
+            confirmBtn.style.display = 'none';
+            if (partialRow) partialRow.style.display = 'none';
+        }
+    }
     const modal = document.getElementById('pos-invoice-detail-modal');
     if (modal) { modal.style.display = 'flex'; }
+};
+
+window.confirmInvoicePayment = async function() {
+    const invId = window._currentDetailInvId;
+    if (!invId) return;
+    const inv = _savedInvoicesCache.find(i => i.id === invId);
+    if (!inv) return;
+    zahraaConfirm(`تأكيد سداد المبلغ المتبقي كاملاً (${(inv.remainingAmount||0).toFixed(2)} ج)؟`, async () => {
+        try {
+            const { doc, updateDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+            await updateDoc(doc(db, 'pos_invoices', invId), {
+                paidAmount: (inv.totalPrice || 0),
+                remainingAmount: 0,
+                status: 'مكتمل',
+                fullyPaidAt: serverTimestamp()
+            });
+            document.getElementById('pos-invoice-detail-modal').style.display = 'none';
+            zahraaToast('✅ تم تسجيل السداد الكامل', 'success');
+            await loadSavedInvoices();
+        } catch(e) { zahraaToast('خطأ: ' + e.message, 'error'); }
+    });
+};
+
+window.confirmPartialPayment = async function() {
+    const invId = window._currentDetailInvId;
+    if (!invId) return;
+    const inv = _savedInvoicesCache.find(i => i.id === invId);
+    if (!inv) return;
+    const amount = parseFloat(document.getElementById('pos-partial-pay-amount')?.value) || 0;
+    if (!amount || amount <= 0) { zahraaToast('أدخل مبلغاً صحيحاً', 'warning'); return; }
+    const newRemaining = Math.max(0, (inv.remainingAmount || 0) - amount);
+    const newPaid = (inv.paidAmount || 0) + amount;
+    try {
+        const { doc, updateDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+        await updateDoc(doc(db, 'pos_invoices', invId), {
+            paidAmount: newPaid,
+            remainingAmount: newRemaining,
+            status: newRemaining <= 0 ? 'مكتمل' : 'جزئي',
+            lastPaymentAt: serverTimestamp()
+        });
+        document.getElementById('pos-invoice-detail-modal').style.display = 'none';
+        zahraaToast(`✅ تم تسجيل دفعة ${amount} ج — المتبقي: ${newRemaining.toFixed(2)} ج`, 'success');
+        await loadSavedInvoices();
+    } catch(e) { zahraaToast('خطأ: ' + e.message, 'error'); }
 };
 
 // ===== CAMERA BARCODE SCANNER =====
@@ -5839,28 +6148,38 @@ window.importProductsXML = async function(input) {
     if (!rows.length) {
         zahraaToast('لا توجد منتجات صالحة في الملف', 'warning'); return;
     }
-    zahraaConfirm(`استيراد ${rows.length} منتج من XML؟`, async () => {
+    zahraaConfirm(`استيراد / تحديث ${rows.length} منتج من XML؟`, async () => {
         try {
-            const { addDoc, collection, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
-            let done = 0;
+            const { addDoc, collection, getDocs, updateDoc, doc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+            // Pre-load existing products by name
+            const existingSnap = await getDocs(collection(db, 'products'));
+            const existingByName = {};
+            existingSnap.forEach(d => { existingByName[(d.data().name||'').trim().toLowerCase()] = d.id; });
+            let added = 0, updated = 0;
             for (const row of rows) {
-                await addDoc(collection(db, 'products'), {
+                const productData = {
                     name: row.name,
                     price: row.price,
-                    code: row.code,
+                    code: row.code || ('ZA-' + Math.floor(1000+Math.random()*9000)),
                     category: row.category,
                     qty: row.qty,
                     description: row.description,
-                    images: [],
                     outOfStock: row.qty === 0,
                     inStock: row.qty > 0,
                     enabled: true,
-                    createdAt: serverTimestamp(),
                     updatedAt: serverTimestamp()
-                });
-                done++;
+                };
+                const existId = existingByName[row.name.toLowerCase()];
+                if (existId) {
+                    await updateDoc(doc(db, 'products', existId), productData);
+                    updated++;
+                } else {
+                    await addDoc(collection(db, 'products'), { ...productData, images: [], salesCount: 0, createdAt: serverTimestamp() });
+                    added++;
+                }
             }
-            zahraaToast(`✅ تم استيراد ${done} منتج بنجاح من XML`, 'success');
+            zahraaToast(`✅ إضافة: ${added} | تحديث: ${updated}`, 'success');
+            if (typeof loadProducts === 'function') loadProducts();
         } catch(e) {
             zahraaToast('خطأ في الاستيراد: ' + e.message, 'error');
         }
