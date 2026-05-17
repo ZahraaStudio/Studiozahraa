@@ -5573,7 +5573,7 @@ window.showInvoiceDetail = function(invId) {
                 <p style="margin:3px 0;color:#ccc;"><span style="color:#888;">العميل: </span>${inv.userName}</p>
                 ${inv.phone ? `<p style="margin:3px 0;color:#ccc;"><span style="color:#888;">الهاتف: </span>${inv.phone}</p>` : ''}
                 <p style="margin:3px 0;color:#ccc;"><span style="color:#888;">الدفع: </span>${inv.paymentMethod}</p>
-                ${inv.dueDate ? `<p style="margin:3px 0;color:#ccc;"><span style="color:#888;">موعد السداد: </span>${inv.dueDate}</p>` : ''}
+                ${inv.dueDate ? `<p style="margin:3px 0;color:#ccc;"><span style="color:#888;">موعد الاستلام: </span>${inv.dueDate}</p>` : ''}
             </div>
             <div style="border-top:1px solid #222;padding-top:10px;margin-bottom:10px;">
                 ${(inv.items||[]).map(i => `<div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span style="color:#ccc;">${i.name} × ${i.qty}</span><span style="color:#d4af37;">${(i.price*i.qty).toFixed(2)} ج</span></div>`).join('')}
