@@ -2513,8 +2513,9 @@ window.loginWithFacebook = async () => {
                             // إنشاء كوبون شخصي للمُحيل فقط
                             await db.collection('coupons').add({
                                 code: couponCode, discount: rs.amount, type: rs.type || 'fixed',
-                                limit: 1, usedCount: 0, isActive: true,
-                                linkedUser: referralBy, // الكوبون مرتبط بالمُحيل فقط
+                                maxUses: 1, limit: 1, perUser: 1, usedCount: 0, isActive: true, enabled: true,
+                                linkedUser: referralBy,
+                                assignedTo: referralBy,
                                 expiryDate: new Date(Date.now() + ((rs.expiry || 30) * 86400000)),
                                 note: 'كوبون إحالة من طلب ' + orderNumber + ' - صالح للمُحيل فقط',
                                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -3935,7 +3936,14 @@ window.loginWithFacebook = async () => {
         const code='WHEEL-'+rand;
         try{
             const sData=(await db.collection('settings').doc('general').get()).data()||{};
-            let cd={code,enabled:true,maxUses:1,note:'عجلة الحظ - '+prize.label,createdAt:firebase.firestore.FieldValue.serverTimestamp()};
+            let cd={
+                code, enabled:true,
+                maxUses:1, limit:1, usedCount:0, perUser:1,
+                linkedUser: currentUser ? currentUser.uid : null,
+                assignedTo: currentUser ? currentUser.uid : null,
+                note:'عجلة الحظ - '+prize.label,
+                createdAt:firebase.firestore.FieldValue.serverTimestamp()
+            };
             if(prize.type==='percentage'){cd.type='percentage';cd.discount=prize.value;}
             else if(prize.type==='giftWrap'){cd.type='fixed';cd.discount=sData.giftWrapPrice||50;cd.extraNote='تغليف كهدية مجاني';}
             else{cd.type='fixed';cd.discount=0;cd.extraNote='قطعة إضافية مجانية مع الطلب';}
