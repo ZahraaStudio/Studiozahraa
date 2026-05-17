@@ -505,6 +505,50 @@
 </head>
 <body class="overflow-x-hidden">
   <!-- شاشة التحميل الدعائية (تظهر عند الدخول) -->
+<!-- ===== BAN SCREEN (shown before app loads if device is banned) ===== -->
+<div id="ban-screen" style="display:none;position:fixed;inset:0;z-index:99999;background:#0a0a0a;flex-direction:column;align-items:center;justify-content:center;direction:rtl;font-family:'Cairo',sans-serif;">
+    <div style="text-align:center;max-width:360px;padding:40px 24px;">
+        <div style="font-size:80px;margin-bottom:24px;">🚫</div>
+        <h1 style="color:#e74c3c;font-size:26px;font-weight:900;margin-bottom:12px;">تم حظر هذا الجهاز</h1>
+        <p style="color:#aaa;font-size:14px;line-height:1.8;margin-bottom:24px;">لقد تم حظر وصولك إلى هذا المتجر. إذا كنت تعتقد أن هذا خطأ، يرجى التواصل مع إدارة المتجر.</p>
+        <div id="ban-store-contact" style="color:#d4af37;font-size:13px;display:none;"></div>
+    </div>
+</div>
+
+<!-- ===== POINTS DETAIL MODAL ===== -->
+<div id="points-modal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.85);backdrop-filter:blur(6px);align-items:center;justify-content:center;direction:rtl;font-family:'Cairo',sans-serif;" onclick="if(event.target===this)closePointsModal()">
+    <div style="background:#111;border:1px solid #d4af37;border-radius:20px;max-width:480px;width:92%;max-height:88vh;overflow-y:auto;padding:24px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:1px solid #222;padding-bottom:14px;">
+            <h2 style="color:#d4af37;font-size:18px;font-weight:800;margin:0;">⭐ نقاطي ومكافآتي</h2>
+            <button onclick="closePointsModal()" style="background:none;border:none;color:#888;font-size:22px;cursor:pointer;line-height:1;">✕</button>
+        </div>
+        <!-- Balance cards -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+            <div style="background:#1a1200;border:1px solid #d4af37;border-radius:12px;padding:16px;text-align:center;">
+                <p id="pts-modal-balance" style="color:#d4af37;font-size:28px;font-weight:900;margin:0;">0</p>
+                <p style="color:#888;font-size:11px;margin:4px 0 0;">رصيد النقاط</p>
+            </div>
+            <div style="background:#0d1a0d;border:1px solid #22c55e;border-radius:12px;padding:16px;text-align:center;">
+                <p id="pts-modal-earned" style="color:#22c55e;font-size:28px;font-weight:900;margin:0;">0</p>
+                <p style="color:#888;font-size:11px;margin:4px 0 0;">إجمالي المكتسبة</p>
+            </div>
+        </div>
+        <!-- Redeem section -->
+        <div id="pts-redeem-box" style="background:#1a1a00;border:1px solid #d4af37;border-radius:12px;padding:14px;margin-bottom:16px;display:none;">
+            <p style="color:#d4af37;font-size:13px;font-weight:700;margin:0 0 8px;">🎁 استبدال النقاط</p>
+            <p id="pts-redeem-info" style="color:#aaa;font-size:12px;margin:0 0 10px;"></p>
+            <button onclick="redeemPointsModal()" style="width:100%;padding:10px;background:#d4af37;color:#000;border:none;border-radius:8px;font-family:'Cairo',sans-serif;font-weight:700;font-size:13px;cursor:pointer;">⭐ استبدل نقاطك</button>
+        </div>
+        <!-- History -->
+        <div>
+            <p style="color:#888;font-size:12px;font-weight:700;margin-bottom:10px;border-bottom:1px solid #222;padding-bottom:6px;">📜 سجل النقاط</p>
+            <div id="pts-modal-history" style="max-height:260px;overflow-y:auto;space-y:8px;">
+                <p style="color:#555;font-size:12px;text-align:center;padding:20px;">جاري التحميل...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div id="luxury-loader" style="display:none; position:fixed; inset:0; z-index:20000; background:#0a0a0a; flex-direction:column; align-items:center; justify-content:center; direction:rtl;">
     <div class="logo-frame" style="width: 180px; height: 180px;">
         <img src="icon-512.png" alt="ZAHRAA STUDIO" style="width:100%; height:100%; object-fit:contain; filter: drop-shadow(0 0 20px #d4af37);">
@@ -634,7 +678,7 @@
             <img id="user-avatar" src="" class="w-8 h-8 rounded-full border border-gold-text hover:opacity-80 transition-opacity cursor-pointer">
           </a>
           <a href="account.html" class="text-zinc-400 max-w-[80px] truncate hover:text-yellow-400 transition-colors hidden md:block" id="user-name"></a>
-          <span id="nav-points" class="hidden text-xs bg-yellow-900/40 text-yellow-400 px-2 py-0.5 rounded-full font-bold border border-yellow-700/30">0 ⭐</span>
+          <span id="nav-points" onclick="openPointsModal()" class="hidden text-xs bg-yellow-900/40 text-yellow-400 px-2 py-0.5 rounded-full font-bold border border-yellow-700/30 cursor-pointer hover:bg-yellow-900/60 transition-colors" title="اضغط لعرض نقاطك">0 ⭐</span>
           <button onclick="logout()" class="text-xs text-red-500 hover:text-red-400 hidden md:block">خروج</button>
         </div>
         <button id="login-btn" onclick="showLoginModal()" class="text-xs px-3 py-2 border border-gold-text rounded-lg gold-text hover:bg-gold-text/10 transition-colors">دخول</button>
@@ -1287,11 +1331,45 @@
     };
 
     // ============ Initialization ============
+    // ===== Device Ban Check — runs before any content loads =====
+    async function _checkDeviceBan() {
+        try {
+            const devId = localStorage.getItem('deviceId');
+            if (!devId) return false;
+            const snap = await db.collection('banned_users').where('deviceId', '==', devId).limit(1).get();
+            if (!snap.empty) return true;
+            return false;
+        } catch(e) { return false; }
+    }
+
+    async function _showBanScreen() {
+        document.getElementById('ban-screen').style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        try {
+            const ws = (await db.collection('settings').doc('general').get()).data()?.whatsapp;
+            if (ws) {
+                const c = document.getElementById('ban-store-contact');
+                if (c) { c.style.display='block'; c.innerHTML=`للتواصل: <a href="https://wa.me/${ws.replace(/\D/g,'')}" style="color:#d4af37;text-decoration:underline;">WhatsApp</a>`; }
+            }
+        } catch(e) {}
+        // Log ban access attempt
+        try {
+            await db.collection('ban_access_log').add({
+                type: 'page_load', banType: 'deviceId',
+                value: localStorage.getItem('deviceId') || '—',
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        } catch(e) {}
+    }
+
     async function init() {
         // Device ID for Referral Protection
         deviceId = localStorage.getItem('deviceId') || 'dev-' + Math.random().toString(36).substring(2, 15);
         localStorage.setItem('deviceId', deviceId);
         window.deviceId = deviceId;
+
+        // Check device ban BEFORE loading anything
+        if (await _checkDeviceBan()) { await _showBanScreen(); return; }
 
         visitorId = localStorage.getItem('visitorId') || 'visitor-' + Date.now();
         localStorage.setItem('visitorId', visitorId);
@@ -1655,12 +1733,65 @@ function triggerBrandingLoader(callback) {
     }, 3000);
 }
 
+// ====== Referral reward on registration (triggered once, immediately on signup) ======
+async function _processReferralOnRegistration(uid) {
+    try {
+        let referralBy = localStorage.getItem('referral_by');
+        if (!referralBy || referralBy === uid) return;
+        // Check if this new user already triggered referral reward
+        const userSnap = await db.collection('users').doc(uid).get();
+        if (userSnap.exists && userSnap.data()?.referralProcessed) return;
+        // Check referrer exists and hasn't completed referral
+        const referrerSnap = await db.collection('users').doc(referralBy).get();
+        if (!referrerSnap.exists) { localStorage.removeItem('referral_by'); return; }
+        if (referrerSnap.data()?.hasCompletedReferral) { localStorage.removeItem('referral_by'); return; }
+        // Check not already recorded
+        const existing = await db.collection('referral_records')
+            .where('referrerId', '==', referralBy)
+            .where('referredUserId', '==', uid)
+            .limit(1).get();
+        if (!existing.empty) { localStorage.removeItem('referral_by'); return; }
+        // Get reward settings
+        const rs = ((await db.collection('settings').doc('rewards').get()).data()) || { amount: 50, type: 'fixed', enabled: true };
+        if (rs.enabled === false) return;
+        const couponCode = 'REF-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+        const rewardDesc = rs.type === 'percentage' ? `خصم ${rs.amount}% على أي طلب 🎁` : `خصم ${rs.amount} ج على أي طلب 🎁`;
+        // Atomic: record referral first
+        await db.collection('referral_records').add({
+            referrerId: referralBy, referredUserId: uid,
+            couponCode, registrationReward: true,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        // Create coupon for referrer
+        await db.collection('coupons').add({
+            code: couponCode, discount: rs.amount, type: rs.type || 'fixed',
+            maxUses: 1, limit: 1, perUser: 1, usedCount: 0, isActive: true, enabled: true,
+            linkedUser: referralBy, assignedTo: referralBy,
+            expiryDate: new Date(Date.now() + ((rs.expiry || 30) * 86400000)),
+            note: 'كوبون إحالة عند التسجيل',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        // Notify referrer
+        await db.collection('users').doc(referralBy).set({
+            earnedReferralCoupon: couponCode,
+            hasCompletedReferral: true,
+            pendingReferralReward: { coupon: couponCode, code: couponCode, desc: rewardDesc, claimed: false, createdAt: new Date().toISOString() }
+        }, { merge: true });
+        // Mark new user so we don't process again
+        await db.collection('users').doc(uid).set({ referralProcessed: true, referredBy: referralBy }, { merge: true });
+        localStorage.removeItem('referral_by');
+    } catch(e) { /* non-blocking */ }
+}
+
 window.loginWithGoogle = async () => {
     try {
         const provider = new firebase.auth.GoogleAuthProvider();
         const result = await auth.signInWithPopup(provider);
+        const isNewUser = result.additionalUserInfo?.isNewUser;
         closeLoginModal();
-        // تشغيل الدعاية بعد نجاح الدخول
+        if (isNewUser) {
+            await _processReferralOnRegistration(result.user.uid);
+        }
         triggerBrandingLoader(() => {
             zahraaToast('مرحباً بك في عالم الفخامة ✅');
         });
@@ -1670,8 +1801,12 @@ window.loginWithGoogle = async () => {
 window.loginWithFacebook = async () => {
     try {
         const provider = new firebase.auth.FacebookAuthProvider();
-        await auth.signInWithPopup(provider);
+        const result = await auth.signInWithPopup(provider);
+        const isNewUser = result.additionalUserInfo?.isNewUser;
         closeLoginModal();
+        if (isNewUser) {
+            await _processReferralOnRegistration(result.user.uid);
+        }
         triggerBrandingLoader(() => {
             zahraaToast('تم تسجيل الدخول بنجاح ✅');
         });
@@ -4238,10 +4373,11 @@ window.loginWithFacebook = async () => {
             _auctionEndsTimer = setInterval(tickEnds, 1000);
         }
 
-        // Next drop countdown: align to next top-of-hour from lastDropAt or startedAt
+        // Next drop countdown: auto-drop price when timer hits 0
         if (_auctionDropTimer) clearInterval(_auctionDropTimer);
         const refTime = (a.lastDropAt?.toDate ? a.lastDropAt.toDate() : null) || (a.startedAt?.toDate ? a.startedAt.toDate() : null);
         const dropIntervalMs = (a.dropIntervalHours || 1) * 3600000;
+        let _dropPending = false;
         function tickDrop() {
             const now2 = new Date();
             let nextDrop;
@@ -4256,9 +4392,47 @@ window.loginWithFacebook = async () => {
             const h2 = Math.floor(diff2/3600000), m2 = Math.floor((diff2%3600000)/60000), s2 = Math.floor((diff2%60000)/1000);
             const el = document.getElementById('auction-next-drop');
             if (el) el.textContent = `${String(h2).padStart(2,'0')}:${String(m2).padStart(2,'0')}:${String(s2).padStart(2,'0')}`;
+            // Auto-trigger price drop when countdown hits 0
+            if (diff2 === 0 && !_dropPending) {
+                _dropPending = true;
+                _triggerAuctionPriceDrop();
+                setTimeout(() => { _dropPending = false; }, dropIntervalMs * 0.9);
+            }
         }
         tickDrop();
         _auctionDropTimer = setInterval(tickDrop, 1000);
+    }
+
+    // Auto price drop — uses Firestore transaction to prevent race conditions
+    async function _triggerAuctionPriceDrop() {
+        if (!_auctionData) return;
+        try {
+            const auctionRef = db.collection('settings').doc('auction');
+            await db.runTransaction(async (tx) => {
+                const snap = await tx.get(auctionRef);
+                if (!snap.exists) return;
+                const data = snap.data();
+                if (!data.enabled || data.isWon) return;
+                const now = new Date();
+                const endsAt = data.endsAt?.toDate ? data.endsAt.toDate() : (data.endsAt ? new Date(data.endsAt) : null);
+                if (endsAt && now > endsAt) {
+                    tx.update(auctionRef, { enabled: false });
+                    return;
+                }
+                const lastDropAt = data.lastDropAt?.toDate ? data.lastDropAt.toDate() : null;
+                const intervalMs = (data.dropIntervalHours || 1) * 3600000;
+                if (lastDropAt && (now - lastDropAt) < intervalMs * 0.9) return; // Already dropped recently
+                const currentPrice = data.currentPrice || data.startPrice || 0;
+                const dropAmount = data.dropAmount || 5;
+                const minPrice = data.minPrice || 0;
+                const newPrice = Math.max(minPrice, currentPrice - dropAmount);
+                if (newPrice <= minPrice) {
+                    tx.update(auctionRef, { currentPrice: minPrice, lastDropAt: firebase.firestore.FieldValue.serverTimestamp(), reachedMin: true });
+                } else {
+                    tx.update(auctionRef, { currentPrice: newPrice, lastDropAt: firebase.firestore.FieldValue.serverTimestamp() });
+                }
+            });
+        } catch(e) { /* silent — may fail if offline or if another client beat us */ }
     }
 
     window.buyAuction = async () => {
@@ -5595,6 +5769,108 @@ function launchCelebrationParticles(theme, intensity) {
         if(elapsed > 30) clearInterval(interval);
     }, 2000);
 }
+
+// ===== POINTS POPUP MODAL =====
+window.openPointsModal = async function() {
+    if (!currentUser) { showNotification('سجّل دخولك أولاً', 'error'); return; }
+    const modal = document.getElementById('points-modal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    // Load balance
+    try {
+        const ptsSnap = await db.collection('points').doc(currentUser.uid).get();
+        const ptsData = ptsSnap.exists ? ptsSnap.data() : {};
+        const balance = ptsData.balance || 0;
+        const totalEarned = ptsData.totalEarned || balance;
+        const el1 = document.getElementById('pts-modal-balance');
+        const el2 = document.getElementById('pts-modal-earned');
+        if (el1) el1.textContent = balance;
+        if (el2) el2.textContent = totalEarned;
+        // Redeem section — show if enough points
+        const psSnap = await db.collection('settings').doc('points').get();
+        const ps = psSnap.exists ? psSnap.data() : { enabled: true, redeemMin: 100, redeemValue: 10 };
+        const redeemBox = document.getElementById('pts-redeem-box');
+        if (redeemBox && ps.enabled !== false && balance >= (ps.redeemMin || 100)) {
+            redeemBox.style.display = 'block';
+            const riEl = document.getElementById('pts-redeem-info');
+            if (riEl) riEl.textContent = `لديك ${balance} نقطة = خصم ${Math.floor(balance / (ps.redeemMin||100)) * (ps.redeemValue||10)} ج تقريباً`;
+        } else if (redeemBox) { redeemBox.style.display = 'none'; }
+    } catch(e) {}
+    // Load history
+    const histEl = document.getElementById('pts-modal-history');
+    if (histEl) {
+        try {
+            const histSnap = await db.collection('points_history')
+                .where('userId','==',currentUser.uid)
+                .orderBy('createdAt','desc')
+                .limit(30)
+                .get();
+            if (histSnap.empty) {
+                histEl.innerHTML = '<p style="color:#555;font-size:12px;text-align:center;padding:20px;">لا توجد سجلات بعد</p>';
+            } else {
+                histEl.innerHTML = histSnap.docs.map(d => {
+                    const h = d.data();
+                    const date = h.createdAt?.toDate?.()?.toLocaleDateString('ar-EG') || '—';
+                    const positive = (h.points||0) > 0;
+                    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;margin-bottom:6px;background:${positive?'#0d1a0d':'#1a0d0d'};border:1px solid ${positive?'#22c55e30':'#e74c3c30'};border-radius:10px;">
+                        <div>
+                            <p style="color:#ddd;font-size:12px;font-weight:600;margin:0;">${h.orderNumber||h.note||'معاملة نقاط'}</p>
+                            <p style="color:#666;font-size:10px;margin:2px 0 0;">${date}</p>
+                        </div>
+                        <span style="color:${positive?'#22c55e':'#e74c3c'};font-size:14px;font-weight:800;">${positive?'+':''}${h.points||0} ⭐</span>
+                    </div>`;
+                }).join('');
+            }
+        } catch(e) {
+            if (histEl) histEl.innerHTML = '<p style="color:#555;font-size:12px;text-align:center;padding:12px;">خطأ في التحميل</p>';
+        }
+    }
+};
+
+window.closePointsModal = function() {
+    const modal = document.getElementById('points-modal');
+    if (modal) modal.style.display = 'none';
+    document.body.style.overflow = '';
+};
+
+window.redeemPointsModal = async function() {
+    if (!currentUser) return;
+    try {
+        const ptsSnap = await db.collection('points').doc(currentUser.uid).get();
+        const balance = ptsSnap.exists ? (ptsSnap.data().balance || 0) : 0;
+        const psSnap = await db.collection('settings').doc('points').get();
+        const ps = psSnap.exists ? psSnap.data() : { redeemMin: 100, redeemValue: 10 };
+        const redeemMin = ps.redeemMin || 100;
+        const redeemValue = ps.redeemValue || 10;
+        if (balance < redeemMin) { zahraaToast('نقاطك غير كافية للاستبدال', 'warning'); return; }
+        const couponValue = Math.floor(balance / redeemMin) * redeemValue;
+        const couponCode = 'PTS-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+        // Create coupon
+        await db.collection('coupons').add({
+            code: couponCode, discount: couponValue, type: 'fixed',
+            maxUses: 1, limit: 1, perUser: 1, usedCount: 0,
+            isActive: true, enabled: true,
+            assignedTo: currentUser.uid, linkedUser: currentUser.uid,
+            note: 'كوبون استبدال نقاط — ' + balance + ' نقطة',
+            expiryDate: new Date(Date.now() + 30 * 86400000),
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        // Deduct points
+        await db.collection('points').doc(currentUser.uid).update({
+            balance: firebase.firestore.FieldValue.increment(-balance),
+        });
+        await db.collection('points_history').add({
+            userId: currentUser.uid, points: -balance, note: 'استبدال بكوبون ' + couponCode,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        closePointsModal();
+        zahraaToast('✅ تم إنشاء كوبون: ' + couponCode + ' — خصم ' + couponValue + ' ج', 'success');
+        // Auto-fill coupon
+        const ci = document.getElementById('coupon-input');
+        if (ci) { ci.value = couponCode; openCheckout(); }
+    } catch(e) { zahraaToast('خطأ: ' + e.message, 'error'); }
+};
 </script>
 
 </body>

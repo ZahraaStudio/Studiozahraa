@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>لوحة تحكم استوديو الزهراء - ZAHRAA STUDIO</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Tajawal:wght@400;500;700&family=Almarai:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@400;500;700&family=Changa:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -92,6 +92,8 @@
             <button onclick="showTab('occasions-tab');loadOccasions();" id="btn-occasions-tab" class="px-4 py-2 font-bold text-zinc-500 whitespace-nowrap">🎊 المناسبات</button>
             <button onclick="showTab('auction-tab');loadAdminAuction();" id="btn-auction-tab" class="px-4 py-2 font-bold text-zinc-500 whitespace-nowrap">⚡ المزايدة</button>
             <button onclick="showTab('delivery-ratings-tab');loadDeliveryRatings();" id="btn-delivery-ratings-tab" class="px-4 py-2 font-bold text-zinc-500 whitespace-nowrap">⭐ تقييمات التوصيل</button>
+            <button onclick="showTab('delivery-agents-tab');loadDeliveryAgents();" id="btn-delivery-agents-tab" class="px-4 py-2 font-bold text-zinc-500 whitespace-nowrap">🚚 المندوبين</button>
+            <button onclick="showTab('ban-system-tab');loadBannedList();" id="btn-ban-system-tab" class="px-4 py-2 font-bold text-zinc-500 whitespace-nowrap">🚫 الحظر</button>
         </div>
 
         <!-- Products Tab -->
@@ -754,6 +756,46 @@
                     </div>
                     <button onclick="saveGeneralSettings()" class="w-full p-4 gold-bg text-black font-bold rounded-xl hover:opacity-90 transition-all">💾 حفظ كافة الإعدادات</button>
                 </div>
+            </div>
+
+            <!-- Invoice Settings Card -->
+            <div class="bg-zinc-900 p-6 rounded-xl gold-border">
+                <h3 class="text-xl font-bold mb-5 border-b border-zinc-800 pb-3">🧾 إعدادات الفاتورة</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-sm text-zinc-400 mb-1 block">خط الفاتورة</label>
+                        <select id="inv-font-select" class="w-full p-3 bg-black border border-zinc-700 rounded-lg text-sm outline-none focus:border-yellow-500">
+                            <option value="Cairo">Cairo</option>
+                            <option value="Tajawal">Tajawal</option>
+                            <option value="Almarai">Almarai</option>
+                            <option value="IBM Plex Sans Arabic">IBM Plex Sans Arabic</option>
+                            <option value="Changa">Changa</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-sm text-zinc-400 mb-1 block">شعار يمين الفاتورة (URL)</label>
+                        <input type="text" id="inv-logo-right" placeholder="https://..." class="w-full p-3 bg-black border border-zinc-700 rounded-lg text-sm outline-none focus:border-yellow-500">
+                        <p class="text-xs text-zinc-600 mt-1">شعار المتجر الرئيسي — يظهر على يمين الفاتورة</p>
+                    </div>
+                    <div>
+                        <label class="text-sm text-zinc-400 mb-1 block">صورة/بانر يسار الفاتورة (URL)</label>
+                        <input type="text" id="inv-logo-left" placeholder="https://..." class="w-full p-3 bg-black border border-zinc-700 rounded-lg text-sm outline-none focus:border-yellow-500">
+                        <p class="text-xs text-zinc-600 mt-1">شعار ثانوي أو بانر — يظهر على يسار الفاتورة</p>
+                    </div>
+                    <button onclick="saveInvoiceSettings()" class="w-full p-3 bg-yellow-600 hover:bg-yellow-500 text-black font-bold rounded-xl transition-colors text-sm">💾 حفظ إعدادات الفاتورة</button>
+                </div>
+                <script>
+                    // Load saved invoice settings
+                    (function() {
+                        const s = JSON.parse(localStorage.getItem('zahraa_invoice_settings') || '{}');
+                        const sel = document.getElementById('inv-font-select');
+                        const lr = document.getElementById('inv-logo-right');
+                        const ll = document.getElementById('inv-logo-left');
+                        if (sel && s.font) sel.value = s.font;
+                        if (lr && s.logoRight) lr.value = s.logoRight;
+                        if (ll && s.logoLeft) ll.value = s.logoLeft;
+                    })();
+                </script>
             </div>
         </div>
     <!-- End settings-tab -->
@@ -4460,6 +4502,116 @@ window.loadDeliveryRatings = async function() {
         </div>
     </div>
 
+    <!-- ===== DELIVERY AGENTS TAB ===== -->
+    <div id="delivery-agents-tab" class="tab-content">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Add/Edit Agent Form -->
+            <div class="lg:col-span-1 bg-zinc-900 p-6 rounded-xl gold-border h-fit sticky top-4">
+                <h3 id="agent-form-title" class="text-xl font-bold mb-4 border-b border-zinc-800 pb-2">➕ إضافة مندوب</h3>
+                <input type="hidden" id="agent-id">
+                <div class="space-y-3">
+                    <input type="text" id="agent-name" placeholder="اسم المندوب *" class="w-full p-3 bg-black border border-zinc-700 rounded-lg text-sm outline-none focus:border-yellow-500">
+                    <input type="text" id="agent-phone" placeholder="رقم الهاتف *" class="w-full p-3 bg-black border border-zinc-700 rounded-lg text-sm outline-none focus:border-yellow-500">
+                    <input type="text" id="agent-area" placeholder="المنطقة / المحافظة" class="w-full p-3 bg-black border border-zinc-700 rounded-lg text-sm outline-none focus:border-yellow-500">
+                    <input type="number" id="agent-fee" placeholder="رسوم التوصيل الافتراضية (ج)" min="0" class="w-full p-3 bg-black border border-zinc-700 rounded-lg text-sm outline-none focus:border-yellow-500">
+                    <textarea id="agent-notes" placeholder="ملاحظات" rows="2" class="w-full p-3 bg-black border border-zinc-700 rounded-lg text-sm outline-none focus:border-yellow-500 resize-none"></textarea>
+                    <label class="flex items-center gap-2 text-sm text-zinc-400 cursor-pointer">
+                        <input type="checkbox" id="agent-active" checked class="accent-yellow-500"> مندوب نشط
+                    </label>
+                    <div class="flex gap-2">
+                        <button onclick="saveDeliveryAgent()" class="flex-1 py-2.5 bg-yellow-600 hover:bg-yellow-500 text-black font-bold rounded-lg text-sm transition-colors">💾 حفظ</button>
+                        <button onclick="clearAgentForm()" class="px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold rounded-lg text-sm transition-colors">✕</button>
+                    </div>
+                </div>
+            </div>
+            <!-- Agents List + Stats -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Stats -->
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="bg-zinc-900 p-4 rounded-xl gold-border text-center">
+                        <p id="agents-total-count" class="text-2xl font-bold gold-text">0</p>
+                        <p class="text-zinc-500 text-xs mt-1">إجمالي المندوبين</p>
+                    </div>
+                    <div class="bg-zinc-900 p-4 rounded-xl gold-border text-center">
+                        <p id="agents-active-count" class="text-2xl font-bold text-green-400">0</p>
+                        <p class="text-zinc-500 text-xs mt-1">نشطين</p>
+                    </div>
+                    <div class="bg-zinc-900 p-4 rounded-xl gold-border text-center">
+                        <p id="agents-orders-today" class="text-2xl font-bold text-blue-400">0</p>
+                        <p class="text-zinc-500 text-xs mt-1">طلبات اليوم</p>
+                    </div>
+                </div>
+                <!-- List -->
+                <div class="bg-zinc-900 p-6 rounded-xl gold-border">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold">📋 قائمة المندوبين</h3>
+                        <button onclick="exportAgentsReport()" class="text-xs px-3 py-1.5 bg-green-700 hover:bg-green-600 text-white rounded font-bold">📊 تقرير</button>
+                    </div>
+                    <div id="agents-list" class="space-y-3">
+                        <p class="text-center text-zinc-500 py-10">جاري التحميل...</p>
+                    </div>
+                </div>
+                <!-- Per-Agent Report -->
+                <div id="agent-report-panel" class="hidden bg-zinc-900 p-6 rounded-xl gold-border">
+                    <h3 class="text-lg font-bold mb-4">📈 تقرير المندوب</h3>
+                    <div id="agent-report-content"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== BAN SYSTEM TAB ===== -->
+    <div id="ban-system-tab" class="tab-content">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Ban Form -->
+            <div class="lg:col-span-1 bg-zinc-900 p-6 rounded-xl gold-border h-fit sticky top-4">
+                <h3 class="text-xl font-bold mb-4 border-b border-zinc-800 pb-2 text-red-400">🚫 حظر مستخدم / جهاز</h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-xs text-zinc-500 mb-1 block">نوع الحظر</label>
+                        <select id="ban-type" class="w-full p-3 bg-black border border-zinc-700 rounded-lg text-sm outline-none focus:border-red-500">
+                            <option value="uid">UID المستخدم</option>
+                            <option value="deviceId">معرف الجهاز</option>
+                            <option value="email">البريد الإلكتروني</option>
+                        </select>
+                    </div>
+                    <input type="text" id="ban-value" placeholder="القيمة (UID / Device ID / Email)" class="w-full p-3 bg-black border border-zinc-700 rounded-lg text-sm outline-none focus:border-red-500">
+                    <input type="text" id="ban-reason" placeholder="سبب الحظر" class="w-full p-3 bg-black border border-zinc-700 rounded-lg text-sm outline-none focus:border-red-500">
+                    <button onclick="executeBan()" class="w-full py-2.5 bg-red-700 hover:bg-red-600 text-white font-bold rounded-lg text-sm transition-colors">🚫 تنفيذ الحظر</button>
+                </div>
+                <div class="mt-6 space-y-3">
+                    <h4 class="text-sm font-bold text-zinc-400 border-b border-zinc-800 pb-2">🔍 بحث في السجلات</h4>
+                    <input type="text" id="ban-search" placeholder="بحث..." oninput="filterBanList(this.value)" class="w-full p-2.5 bg-black border border-zinc-700 rounded-lg text-sm outline-none focus:border-yellow-500">
+                </div>
+            </div>
+            <!-- Banned List -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-zinc-900 p-4 rounded-xl border border-red-900/50 text-center">
+                        <p id="ban-total-count" class="text-2xl font-bold text-red-400">0</p>
+                        <p class="text-zinc-500 text-xs mt-1">إجمالي المحظورين</p>
+                    </div>
+                    <div class="bg-zinc-900 p-4 rounded-xl border border-yellow-900/50 text-center">
+                        <p id="ban-attempts-count" class="text-2xl font-bold text-yellow-400">0</p>
+                        <p class="text-zinc-500 text-xs mt-1">محاولات الوصول المحظورة</p>
+                    </div>
+                </div>
+                <div class="bg-zinc-900 p-6 rounded-xl gold-border">
+                    <h3 class="text-lg font-bold mb-4">📋 القائمة السوداء</h3>
+                    <div id="ban-list" class="space-y-3">
+                        <p class="text-center text-zinc-500 py-10">جاري التحميل...</p>
+                    </div>
+                </div>
+                <div class="bg-zinc-900 p-6 rounded-xl gold-border">
+                    <h3 class="text-lg font-bold mb-3">📜 سجل محاولات الوصول المحظورة</h3>
+                    <div id="ban-access-log" class="space-y-2 max-h-64 overflow-y-auto">
+                        <p class="text-center text-zinc-500 py-6 text-sm">لا توجد محاولات مسجلة</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ===== DELIVERY RATINGS TAB ===== -->
     <div id="delivery-ratings-tab" class="tab-content">
         <div class="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -4677,7 +4829,7 @@ window.loadDeliveryRatings = async function() {
                             <button id="pos-pay-partial-btn" onclick="setPosPayType('partial')" style="padding:9px;background:#1a1a1a;color:#aaa;border:1px solid #333;border-radius:10px;font-family:'Cairo',sans-serif;font-weight:700;font-size:12px;cursor:pointer;">💳 جزئي</button>
                         </div>
                         <div id="pos-due-date-row" style="display:block;">
-                            <label style="color:#888;font-size:10px;display:block;margin-bottom:4px;">📅 تاريخ الاستحقاق / موعد الاستلام:</label>
+                            <label style="color:#888;font-size:10px;display:block;margin-bottom:4px;">📅 تاريخ الاستلام / موعد الاستلام:</label>
                             <div style="display:flex;gap:5px;margin-bottom:6px;flex-wrap:wrap;">
                                 <button onclick="setPosQuickDate(0)" style="padding:5px 10px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#d4af37;font-family:'Cairo',sans-serif;font-size:10px;cursor:pointer;font-weight:700;">اليوم</button>
                                 <button onclick="setPosQuickDate(1)" style="padding:5px 10px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#d4af37;font-family:'Cairo',sans-serif;font-size:10px;cursor:pointer;font-weight:700;">غداً</button>
@@ -4881,8 +5033,18 @@ function _renderCashierReceipt(o) {
 // =====================================================================
 // ===== PRODUCTS BULK EXPORT / IMPORT =====
 // =====================================================================
-window.exportProductsCSV = function() {
-    const products = typeof allProducts !== 'undefined' ? allProducts : [];
+window.exportProductsCSV = async function() {
+    let products = typeof allProducts !== 'undefined' ? allProducts : [];
+    if (!products.length) {
+        // Try loading from Firestore if in-memory cache is empty
+        try {
+            zahraaToast('جاري تحميل المنتجات...', 'loading');
+            const { getDocs, collection, query, orderBy } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+            const snap = await getDocs(query(collection(db, 'products'), orderBy('name')));
+            products = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            if (typeof allProducts !== 'undefined') allProducts = products;
+        } catch(e) {}
+    }
     if (!products.length) { zahraaToast('لا توجد منتجات لتصديرها', 'warning'); return; }
     const headers = ['ID', 'الاسم', 'السعر', 'السعر القديم', 'الكود', 'القسم', 'الكمية', 'نفذ من المخزون', 'الوصف', 'عدد المبيعات'];
     const rows = products.map(p => [
@@ -4906,8 +5068,16 @@ window.exportProductsCSV = function() {
     zahraaToast('تم تصدير ' + products.length + ' منتج بصيغة CSV ✓', 'success');
 };
 
-window.exportProductsXML = function() {
-    const products = typeof allProducts !== 'undefined' ? allProducts : [];
+window.exportProductsXML = async function() {
+    let products = typeof allProducts !== 'undefined' ? allProducts : [];
+    if (!products.length) {
+        try {
+            zahraaToast('جاري تحميل المنتجات...', 'loading');
+            const { getDocs, collection, query, orderBy } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+            const snap = await getDocs(query(collection(db, 'products'), orderBy('name')));
+            products = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        } catch(e) {}
+    }
     if (!products.length) { zahraaToast('لا توجد منتجات لتصديرها', 'warning'); return; }
     const escape = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     const xmlRows = products.map(p => `  <product>
@@ -5036,7 +5206,7 @@ window.setPosPayType = function(type) {
             btns[k].style.border = '1px solid #333';
         }
     });
-    // تاريخ الاستحقاق يظهر دائماً في جميع أنواع الدفع
+    // تاريخ الاستلام يظهر دائماً في جميع أنواع الدفع
     const dueDateRow = document.getElementById('pos-due-date-row');
     if (dueDateRow) dueDateRow.style.display = 'block';
     const paidInput = document.getElementById('pos-paid');
@@ -5341,22 +5511,9 @@ window.posCompleteSale = async function() {
 
     try {
         const { addDoc, collection, serverTimestamp, increment, doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
-        // Save to pos_invoices collection
+        // Save ONLY to pos_invoices — POS sales are separate from online orders
         await addDoc(collection(db, 'pos_invoices'), {
             ...invoiceData,
-            createdAt: serverTimestamp()
-        });
-        // Also save to orders
-        await addDoc(collection(db, 'orders'), {
-            items: _posCart,
-            totalPrice: total,
-            discountAmount: discount,
-            orderNumber: invoiceNum,
-            userName: customerName,
-            phone: customerPhone,
-            status: remaining > 0 ? 'آجل' : 'تم التسليم',
-            paymentMethod: payLabel,
-            isPOS: true,
             createdAt: serverTimestamp()
         });
         // Deduct inventory
@@ -5460,7 +5617,7 @@ function _renderPOSReceipt(inv) {
             <div class="r-row" style="color:${t.bodyColor};"><span>العميل</span><span>${inv.userName}</span></div>
             ${inv.phone ? `<div class="r-row" style="color:${t.bodyColor};"><span>الهاتف</span><span>${inv.phone}</span></div>` : ''}
             <div class="r-row" style="color:${t.bodyColor};"><span>الدفع</span><span style="color:${t.accentColor};font-weight:700;">${inv.paymentMethod}</span></div>
-            ${inv.dueDate ? `<div class="r-row" style="color:#e67e22;font-weight:700;"><span>📅 تاريخ الاستحقاق</span><span>${inv.dueDate}</span></div>` : ''}
+            ${inv.dueDate ? `<div class="r-row" style="color:#e67e22;font-weight:700;"><span>📅 تاريخ الاستلام</span><span>${inv.dueDate}</span></div>` : ''}
             <div style="border-top:1px dashed ${t.accentColor}50;margin:8px 0;"></div>
             <div style="font-weight:700;font-size:11px;margin-bottom:6px;color:${t.accentColor};">المنتجات:</div>
             ${itemsHTML}
@@ -5573,7 +5730,7 @@ window.showInvoiceDetail = function(invId) {
                 <p style="margin:3px 0;color:#ccc;"><span style="color:#888;">العميل: </span>${inv.userName}</p>
                 ${inv.phone ? `<p style="margin:3px 0;color:#ccc;"><span style="color:#888;">الهاتف: </span>${inv.phone}</p>` : ''}
                 <p style="margin:3px 0;color:#ccc;"><span style="color:#888;">الدفع: </span>${inv.paymentMethod}</p>
-                ${inv.dueDate ? `<p style="margin:3px 0;color:#ccc;"><span style="color:#888;">موعد الاستلام: </span>${inv.dueDate}</p>` : ''}
+                ${inv.dueDate ? `<p style="margin:3px 0;color:#ccc;"><span style="color:#888;">موعد السداد: </span>${inv.dueDate}</p>` : ''}
             </div>
             <div style="border-top:1px solid #222;padding-top:10px;margin-bottom:10px;">
                 ${(inv.items||[]).map(i => `<div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span style="color:#ccc;">${i.name} × ${i.qty}</span><span style="color:#d4af37;">${(i.price*i.qty).toFixed(2)} ج</span></div>`).join('')}
@@ -5788,6 +5945,289 @@ window.uploadAuctionVideo = async function(input) {
         zahraaToast('خطأ في رفع الفيديو: ' + e.message, 'error');
     }
 };
+
+// =====================================================================
+// ===== DELIVERY AGENTS SYSTEM =====
+// =====================================================================
+let _allAgents = [];
+
+window.loadDeliveryAgents = async function() {
+    const listEl = document.getElementById('agents-list');
+    if (!listEl) return;
+    listEl.innerHTML = '<p class="text-center text-zinc-500 py-10 text-sm">جاري التحميل...</p>';
+    try {
+        const { getDocs, collection, query, orderBy, where, Timestamp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+        const snap = await getDocs(query(collection(db, 'delivery_agents'), orderBy('name')));
+        _allAgents = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        _renderAgentsList(_allAgents);
+        document.getElementById('agents-total-count').textContent = _allAgents.length;
+        document.getElementById('agents-active-count').textContent = _allAgents.filter(a => a.isActive !== false).length;
+        const today = new Date(); today.setHours(0,0,0,0);
+        const oSnap = await getDocs(query(collection(db, 'orders'), where('createdAt', '>=', Timestamp.fromDate(today))));
+        const todayWithAgent = oSnap.docs.filter(d => d.data().deliveryAgentId).length;
+        document.getElementById('agents-orders-today').textContent = todayWithAgent;
+    } catch(e) {
+        if (listEl) listEl.innerHTML = '<p class="text-center text-red-400 py-6 text-sm">خطأ: ' + e.message + '</p>';
+    }
+};
+
+function _renderAgentsList(agents) {
+    const listEl = document.getElementById('agents-list');
+    if (!listEl) return;
+    if (!agents.length) { listEl.innerHTML = '<p class="text-center text-zinc-500 py-10 text-sm">لا يوجد مندوبين بعد</p>'; return; }
+    listEl.innerHTML = agents.map(a => `
+        <div class="flex items-center justify-between bg-black/40 border border-zinc-800 rounded-xl p-4 hover:border-zinc-600 transition-colors">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${a.isActive !== false ? 'bg-yellow-900/30 text-yellow-400 border border-yellow-700/40' : 'bg-zinc-800 text-zinc-500'}">
+                    ${(a.name||'?').charAt(0)}
+                </div>
+                <div>
+                    <p class="font-bold text-sm text-white">${a.name||'—'} ${a.isActive===false?'<span class="text-xs text-zinc-500">(غير نشط)</span>':''}</p>
+                    <p class="text-xs text-zinc-500">📞 ${a.phone||'—'}${a.area?' | 📍 '+a.area:''}</p>
+                    ${a.notes?`<p class="text-xs text-zinc-600">${a.notes}</p>`:''}
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="viewAgentReport('${a.id}')" class="text-xs px-3 py-1.5 bg-blue-900/50 hover:bg-blue-800 text-blue-400 rounded-lg font-bold transition-colors">📈 تقرير</button>
+                <button onclick="editAgent('${a.id}')" class="text-xs px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg font-bold transition-colors">✏️</button>
+                <button onclick="deleteAgent('${a.id}')" class="text-xs px-2 py-1.5 bg-red-900/40 hover:bg-red-900/70 text-red-400 rounded-lg font-bold transition-colors">🗑️</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+window.saveDeliveryAgent = async function() {
+    const id = document.getElementById('agent-id').value.trim();
+    const name = document.getElementById('agent-name').value.trim();
+    const phone = document.getElementById('agent-phone').value.trim();
+    const area = document.getElementById('agent-area').value.trim();
+    const fee = parseFloat(document.getElementById('agent-fee').value) || 0;
+    const notes = document.getElementById('agent-notes').value.trim();
+    const isActive = document.getElementById('agent-active').checked;
+    if (!name) { zahraaToast('أدخل اسم المندوب', 'warning'); return; }
+    try {
+        const { addDoc, updateDoc, doc, collection, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+        const data = { name, phone, area, fee, notes, isActive, updatedAt: serverTimestamp() };
+        if (id) {
+            await updateDoc(doc(db, 'delivery_agents', id), data);
+            zahraaToast('✅ تم تحديث بيانات المندوب', 'success');
+        } else {
+            data.createdAt = serverTimestamp();
+            await addDoc(collection(db, 'delivery_agents'), data);
+            zahraaToast('✅ تم إضافة المندوب', 'success');
+        }
+        clearAgentForm();
+        loadDeliveryAgents();
+    } catch(e) { zahraaToast('خطأ: ' + e.message, 'error'); }
+};
+
+window.editAgent = function(id) {
+    const a = _allAgents.find(x => x.id === id);
+    if (!a) return;
+    document.getElementById('agent-id').value = a.id;
+    document.getElementById('agent-name').value = a.name || '';
+    document.getElementById('agent-phone').value = a.phone || '';
+    document.getElementById('agent-area').value = a.area || '';
+    document.getElementById('agent-fee').value = a.fee || '';
+    document.getElementById('agent-notes').value = a.notes || '';
+    document.getElementById('agent-active').checked = a.isActive !== false;
+    document.getElementById('agent-form-title').textContent = '✏️ تعديل مندوب';
+};
+
+window.clearAgentForm = function() {
+    ['agent-id','agent-name','agent-phone','agent-area','agent-fee','agent-notes'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+    const chk=document.getElementById('agent-active'); if(chk) chk.checked=true;
+    document.getElementById('agent-form-title').textContent = '➕ إضافة مندوب';
+};
+
+window.deleteAgent = async function(id) {
+    if (!confirm('هل تريد حذف هذا المندوب؟')) return;
+    try {
+        const { deleteDoc, doc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+        await deleteDoc(doc(db, 'delivery_agents', id));
+        zahraaToast('تم الحذف', 'success');
+        loadDeliveryAgents();
+    } catch(e) { zahraaToast('خطأ: ' + e.message, 'error'); }
+};
+
+window.viewAgentReport = async function(id) {
+    const agent = _allAgents.find(x => x.id === id);
+    if (!agent) return;
+    const panel = document.getElementById('agent-report-panel');
+    const content = document.getElementById('agent-report-content');
+    if (!panel || !content) return;
+    panel.classList.remove('hidden');
+    content.innerHTML = '<p class="text-zinc-500 text-sm">جاري التحميل...</p>';
+    try {
+        const { getDocs, collection, query, where } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+        const snap = await getDocs(query(collection(db, 'orders'), where('deliveryAgentId', '==', id)));
+        const orders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const totalRevenue = orders.reduce((s,o) => s + (o.totalPrice||0), 0);
+        const totalFees = orders.reduce((s,o) => s + (o.deliveryFee||0), 0);
+        const today = new Date(); today.setHours(0,0,0,0);
+        const todayOrders = orders.filter(o => { const d=o.createdAt?.toDate?.()|| new Date(0); return d>=today; });
+        content.innerHTML = `
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 rounded-full bg-yellow-900/30 border border-yellow-700/40 flex items-center justify-center text-xl font-bold text-yellow-400">${(agent.name||'?').charAt(0)}</div>
+                <div><p class="font-bold text-white">${agent.name}</p><p class="text-xs text-zinc-500">📞 ${agent.phone||'—'}${agent.area?' | 📍 '+agent.area:''}</p></div>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <div class="bg-black/40 p-3 rounded-lg text-center"><p class="text-lg font-bold text-white">${orders.length}</p><p class="text-xs text-zinc-500">إجمالي الطلبات</p></div>
+                <div class="bg-black/40 p-3 rounded-lg text-center"><p class="text-lg font-bold text-green-400">${todayOrders.length}</p><p class="text-xs text-zinc-500">اليوم</p></div>
+                <div class="bg-black/40 p-3 rounded-lg text-center"><p class="text-lg font-bold text-yellow-400">${totalRevenue.toFixed(0)} ج</p><p class="text-xs text-zinc-500">إجمالي المبيعات</p></div>
+                <div class="bg-black/40 p-3 rounded-lg text-center"><p class="text-lg font-bold text-blue-400">${totalFees.toFixed(0)} ج</p><p class="text-xs text-zinc-500">رسوم التوصيل</p></div>
+            </div>
+            <div class="space-y-2 max-h-52 overflow-y-auto">
+                ${orders.slice(0,20).map(o=>`<div class="flex justify-between text-xs p-2 bg-black/30 rounded"><span class="text-zinc-300">${o.orderNumber||o.id.substring(0,8)} — ${o.customerName||'—'}</span><span class="text-yellow-400 font-bold">${o.totalPrice||0} ج</span></div>`).join('')}
+                ${orders.length>20?`<p class="text-center text-zinc-500 text-xs">و ${orders.length-20} طلب آخر...</p>`:''}
+            </div>
+        `;
+        panel.scrollIntoView({ behavior: 'smooth' });
+    } catch(e) {
+        content.innerHTML = '<p class="text-red-400 text-sm">خطأ: ' + e.message + '</p>';
+    }
+};
+
+window.exportAgentsReport = async function() {
+    const agents = _allAgents;
+    if (!agents.length) { zahraaToast('لا يوجد مندوبين', 'warning'); return; }
+    const rows = [['الاسم','الهاتف','المنطقة','رسوم التوصيل','النشاط','الملاحظات'],
+        ...agents.map(a=>[a.name||'',a.phone||'',a.area||'',a.fee||0,a.isActive!==false?'نشط':'غير نشط',a.notes||''])];
+    const csv = '\uFEFF' + rows.map(r=>r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const anchor = document.createElement('a');
+    anchor.href = URL.createObjectURL(blob);
+    anchor.download = 'delivery_agents_' + new Date().toISOString().slice(0,10) + '.csv';
+    anchor.click();
+    zahraaToast('تم تصدير التقرير ✓', 'success');
+};
+
+// =====================================================================
+// ===== BAN SYSTEM =====
+// =====================================================================
+let _allBanned = [];
+
+window.loadBannedList = async function() {
+    const listEl = document.getElementById('ban-list');
+    if (!listEl) return;
+    listEl.innerHTML = '<p class="text-center text-zinc-500 py-6 text-sm">جاري التحميل...</p>';
+    try {
+        const { getDocs, collection, query, orderBy, limit } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+        const snap = await getDocs(query(collection(db, 'banned_users'), orderBy('createdAt', 'desc')));
+        _allBanned = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        _renderBanList(_allBanned);
+        document.getElementById('ban-total-count').textContent = _allBanned.length;
+        const logEl = document.getElementById('ban-access-log');
+        if (logEl) {
+            const logSnap = await getDocs(query(collection(db, 'ban_access_log'), orderBy('timestamp', 'desc'), limit(50)));
+            document.getElementById('ban-attempts-count').textContent = logSnap.size;
+            const logs = logSnap.docs.map(d => d.data());
+            logEl.innerHTML = logs.length ? logs.map(l=>`
+                <div class="text-xs flex justify-between p-2 bg-red-900/10 border border-red-900/30 rounded">
+                    <span class="text-zinc-400">${l.banType||l.type||'—'}: <span class="text-red-300 font-mono">${(l.value||'—').substring(0,30)}</span></span>
+                    <span class="text-zinc-600">${l.timestamp?.toDate?.()?.toLocaleString('ar-EG')||'—'}</span>
+                </div>
+            `).join('') : '<p class="text-center text-zinc-500 py-4 text-xs">لا توجد محاولات مسجلة</p>';
+        }
+    } catch(e) {
+        if (listEl) listEl.innerHTML = '<p class="text-red-400 text-sm text-center py-6">خطأ: ' + e.message + '</p>';
+    }
+};
+
+function _renderBanList(list) {
+    const listEl = document.getElementById('ban-list');
+    if (!listEl) return;
+    if (!list.length) { listEl.innerHTML = '<p class="text-center text-zinc-500 py-10 text-sm">القائمة السوداء فارغة ✅</p>'; return; }
+    listEl.innerHTML = list.map(b=>`
+        <div class="flex items-center justify-between bg-red-950/20 border border-red-900/30 rounded-xl p-3">
+            <div>
+                <p class="text-sm font-bold text-red-300">${b.banType==='deviceId'?'🖥️ جهاز':b.banType==='email'?'📧 بريد':'👤 UID'}: <span class="font-mono text-xs text-red-200">${(b.value||b.uid||b.deviceId||'—').substring(0,36)}</span></p>
+                <p class="text-xs text-zinc-500">السبب: ${b.reason||'—'} | ${b.createdAt?.toDate?.()?.toLocaleDateString('ar-EG')||'—'}</p>
+            </div>
+            <button onclick="unbanUser('${b.id}')" class="text-xs px-3 py-1.5 bg-green-900/50 hover:bg-green-900 text-green-400 rounded-lg font-bold transition-colors">✅ رفع</button>
+        </div>
+    `).join('');
+}
+
+window.filterBanList = function(q) {
+    _renderBanList(_allBanned.filter(b => JSON.stringify(b).toLowerCase().includes(q.toLowerCase())));
+};
+
+window.executeBan = async function() {
+    const banType = document.getElementById('ban-type').value;
+    const value = document.getElementById('ban-value').value.trim();
+    const reason = document.getElementById('ban-reason').value.trim();
+    if (!value) { zahraaToast('أدخل القيمة المراد حظرها', 'warning'); return; }
+    try {
+        const { addDoc, collection, serverTimestamp, updateDoc, doc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+        await addDoc(collection(db, 'banned_users'), {
+            banType, value, reason, createdAt: serverTimestamp(),
+            uid: banType==='uid'?value:null,
+            deviceId: banType==='deviceId'?value:null,
+            email: banType==='email'?value:null,
+        });
+        if (banType==='uid') {
+            try { await updateDoc(doc(db,'users',value), { isBlocked:true, blockReason:reason }); } catch(e){}
+        }
+        zahraaToast('✅ تم الحظر بنجاح', 'success');
+        document.getElementById('ban-value').value='';
+        document.getElementById('ban-reason').value='';
+        loadBannedList();
+    } catch(e) { zahraaToast('خطأ: ' + e.message, 'error'); }
+};
+
+window.unbanUser = async function(id) {
+    if (!confirm('هل تريد رفع الحظر؟')) return;
+    try {
+        const { deleteDoc, doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+        const banned = _allBanned.find(b=>b.id===id);
+        await deleteDoc(doc(db,'banned_users',id));
+        if (banned?.uid) { try { await updateDoc(doc(db,'users',banned.uid),{isBlocked:false}); } catch(e){} }
+        zahraaToast('✅ تم رفع الحظر', 'success');
+        loadBannedList();
+    } catch(e) { zahraaToast('خطأ: ' + e.message, 'error'); }
+};
+
+// =====================================================================
+// ===== INVOICE SETTINGS — Font + Logo + Print Quality =====
+// =====================================================================
+(function _patchInvoiceWithSettings() {
+    const _inv = window.showInvoice;
+    window.showInvoice = function(id) {
+        if (typeof _inv === 'function') _inv(id);
+        setTimeout(() => {
+            const inv = document.getElementById('printable-invoice');
+            if (!inv) return;
+            const s = JSON.parse(localStorage.getItem('zahraa_invoice_settings') || '{}');
+            const font = s.font || 'Cairo';
+            inv.style.fontFamily = `'${font}', sans-serif`;
+            // Logo bar
+            if ((s.logoRight || s.logoLeft) && !inv.querySelector('.inv-logo-bar')) {
+                const bar = document.createElement('div');
+                bar.className = 'inv-logo-bar';
+                bar.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;';
+                bar.innerHTML = (s.logoRight?`<img src="${s.logoRight}" style="max-height:90px;max-width:180px;object-fit:contain;" onerror="this.style.display='none'">`:'<div></div>') +
+                                (s.logoLeft?`<img src="${s.logoLeft}" style="max-height:90px;max-width:180px;object-fit:contain;" onerror="this.style.display='none'">`:'<div></div>');
+                inv.insertBefore(bar, inv.firstChild);
+            }
+            // Better table styling
+            inv.querySelectorAll('th,td').forEach(c => { c.style.border='2px solid #333'; c.style.padding='10px 14px'; });
+            inv.querySelectorAll('thead tr').forEach(r => { r.style.background='#f5f5f5'; r.style.color='#000'; r.style.fontWeight='800'; });
+            inv.querySelectorAll('table').forEach(t => { t.style.borderCollapse='collapse'; });
+        }, 120);
+    };
+})();
+
+window.saveInvoiceSettings = function() {
+    const s = {
+        font: document.getElementById('inv-font-select')?.value || 'Cairo',
+        logoRight: document.getElementById('inv-logo-right')?.value || '',
+        logoLeft: document.getElementById('inv-logo-left')?.value || '',
+    };
+    localStorage.setItem('zahraa_invoice_settings', JSON.stringify(s));
+    zahraaToast('✅ تم حفظ إعدادات الفاتورة', 'success');
+};
+
 </script>
 </body>
 </html>
