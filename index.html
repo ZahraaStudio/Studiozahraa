@@ -1812,9 +1812,11 @@ window.loginWithFacebook = async () => {
             allProducts.push({ id: doc.id, ...doc.data() });
         });
 
+        // Filter out POS-only products from the main store
+        const storeProducts = allProducts.filter(p => !p.isPosOnly);
         // بمجرد وصول أي تغيير، نقوم بتحديث كل الواجهات فوراً باستخدام الدوال الموجودة لديك
-        renderProducts(allProducts);
-        renderFeatured(allProducts.filter(p => !isOutOfStock(p)).slice(0, 6));
+        renderProducts(storeProducts);
+        renderFeatured(storeProducts.filter(p => !isOutOfStock(p)).slice(0, 6));
         
         // تحديث إضافي للأقسام والعروض لضمان تزامن كل شيء
         loadCategories();
@@ -2788,20 +2790,23 @@ window.loginWithFacebook = async () => {
     });
 
     window.filterCategory = (cat) => {
+        // Always exclude POS-only products from the store
+        const storeAll = allProducts.filter(p => !p.isPosOnly);
         let filtered;
-        if (cat === 'all') filtered = allProducts;
-        else if (cat === '__discount__') filtered = allProducts.filter(p => productDiscount(p) > 0);
-        else if(cat==='__daily__'){const _fn=new Date();filtered=allProducts.filter(p=>{if(!p.isDailyOffer)return false;if(p.dailyOfferSetAt){const _s=p.dailyOfferSetAt.toDate?p.dailyOfferSetAt.toDate():new Date(p.dailyOfferSetAt);return _fn<new Date(_s.getTime()+86400000);}return true;});}
-        else if (cat === '__weekly__') filtered = allProducts.filter(p => p.isWeeklyOffer);
-        else filtered = allProducts.filter(p => p.category === cat);
+        if (cat === 'all') filtered = storeAll;
+        else if (cat === '__discount__') filtered = storeAll.filter(p => productDiscount(p) > 0);
+        else if(cat==='__daily__'){const _fn=new Date();filtered=storeAll.filter(p=>{if(!p.isDailyOffer)return false;if(p.dailyOfferSetAt){const _s=p.dailyOfferSetAt.toDate?p.dailyOfferSetAt.toDate():new Date(p.dailyOfferSetAt);return _fn<new Date(_s.getTime()+86400000);}return true;});}
+        else if (cat === '__weekly__') filtered = storeAll.filter(p => p.isWeeklyOffer);
+        else filtered = storeAll.filter(p => p.category === cat);
         renderProducts(filtered);
         closeSidebar();
     };
 
     window.handleSearch = () => {
         const query = document.getElementById('search-input').value.toLowerCase().trim();
-        if (!query) { renderProducts(allProducts); return; }
-        const filtered = allProducts.filter(p =>
+        const storeAll = allProducts.filter(p => !p.isPosOnly);
+        if (!query) { renderProducts(storeAll); return; }
+        const filtered = storeAll.filter(p =>
             (p.name || '').toLowerCase().includes(query) ||
             (p.description || '').toLowerCase().includes(query) ||
             (p.code || '').toLowerCase().includes(query) ||

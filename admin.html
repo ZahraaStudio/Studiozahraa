@@ -142,6 +142,13 @@
                                 <input type="checkbox" id="p-weekly" class="accent-yellow-500"> عرض أسبوعي
                             </label>
                         </div>
+                        <label class="flex items-center gap-2 bg-orange-950/40 border border-orange-800/60 p-2 rounded cursor-pointer text-xs">
+                            <input type="checkbox" id="p-pos-only" class="accent-orange-500 w-4 h-4">
+                            <div>
+                                <span class="font-bold text-orange-400 block">🏪 منتج POS داخلي فقط</span>
+                                <span class="text-zinc-500 text-[10px]">لا يظهر في المتجر — يُباع عبر الكاشير فقط</span>
+                            </div>
+                        </label>
 
                         <!-- Variants Section -->
                         <div class="border border-zinc-800 p-3 rounded-lg">
@@ -1012,9 +1019,13 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        // Expose to global scope so external <script> tags can use them
+        window.db = db;
+        window.CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload';
+        window.CLOUDINARY_UPLOAD_PRESET = 'zahraa_upload';
 
-        const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload';
-        const CLOUDINARY_UPLOAD_PRESET = 'zahraa_upload';
+        const CLOUDINARY_URL = window.CLOUDINARY_URL;
+        const CLOUDINARY_UPLOAD_PRESET = window.CLOUDINARY_UPLOAD_PRESET;
 
         let allProducts = [];
         let allOrders = [];
@@ -1129,6 +1140,7 @@
             const inStock = document.getElementById('p-instock').checked;
             const isDailyOffer = document.getElementById('p-daily').checked;
             const isWeeklyOffer = document.getElementById('p-weekly').checked;
+            const isPosOnly = document.getElementById('p-pos-only')?.checked || false;
 
             const variants = [];
             document.querySelectorAll('#variants-container > div').forEach(div => {
@@ -1156,6 +1168,7 @@
                 videoUrl: videoUrl || null,
                 isDailyOffer,
                 isWeeklyOffer,
+                isPosOnly,
                 dailyOfferSetAt: isDailyOffer ? serverTimestamp() : null,
                 weeklyOfferEnd: isWeeklyOffer ? new Date(Date.now() + 7*24*60*60*1000) : null,
                 qty: document.getElementById('p-qty').value !== '' ? parseInt(document.getElementById('p-qty').value) : null,
@@ -1290,6 +1303,8 @@
             document.getElementById('p-instock').checked = p.outOfStock !== true && p.inStock !== false;
             document.getElementById('p-daily').checked = !!p.isDailyOffer;
             document.getElementById('p-weekly').checked = !!p.isWeeklyOffer;
+            const posOnlyEl = document.getElementById('p-pos-only');
+            if (posOnlyEl) posOnlyEl.checked = !!p.isPosOnly;
             productImages = [...(p.images || [])];
             renderImagesPreview();
 
@@ -4121,7 +4136,28 @@ window.loadAdminAuction = async function() {
             setVal('auction-title-input', a.title);
             setVal('auction-product-name-input', a.productName);
             setVal('auction-product-image-input', a.productImage);
+            setVal('auction-product-image-url', a.productImage);
             setVal('auction-product-desc-input', a.productDesc);
+            // Restore images gallery
+            if (a.productImages?.length) {
+                window._auctionUploadedImages = a.productImages;
+                const gallery = document.getElementById('auction-imgs-gallery');
+                if (gallery) {
+                    gallery.classList.remove('hidden');
+                    gallery.innerHTML = a.productImages.map((url, idx) => `
+                        <div style="position:relative;">
+                            <img src="${url}" class="w-full h-20 object-cover rounded border border-zinc-700">
+                            ${idx===0?'<div style="position:absolute;top:2px;right:2px;background:#d4af37;color:#000;font-size:8px;padding:1px 4px;border-radius:4px;font-weight:700;">رئيسية</div>':''}
+                        </div>`).join('');
+                }
+            }
+            // Restore video
+            if (a.productVideo) {
+                setVal('auction-product-video-input', a.productVideo);
+                const videoEl = document.getElementById('auction-video-preview');
+                const wrapEl = document.getElementById('auction-video-preview-wrap');
+                if (videoEl && wrapEl) { videoEl.src = a.productVideo; wrapEl.classList.remove('hidden'); }
+            }
             setVal('auction-start-price', a.startPrice);
             setVal('auction-drop-amount', a.dropAmount);
             setVal('auction-min-price', a.minPrice);
@@ -4157,7 +4193,12 @@ window.saveAdminAuction = async function() {
     const enabled = document.getElementById('auction-enabled')?.checked || false;
     const title = document.getElementById('auction-title-input')?.value.trim() || 'المزايدة العكسية';
     const productName = document.getElementById('auction-product-name-input')?.value.trim();
-    const productImage = document.getElementById('auction-product-image-input')?.value.trim();
+    // Primary image: hidden input (from uploads) OR url text field
+    const productImageHidden = document.getElementById('auction-product-image-input')?.value.trim();
+    const productImageUrl = document.getElementById('auction-product-image-url')?.value.trim();
+    const productImage = productImageHidden || productImageUrl || '';
+    const productImages = window._auctionUploadedImages || (productImage ? [productImage] : []);
+    const productVideo = document.getElementById('auction-product-video-input')?.value.trim() || '';
     const productDesc = document.getElementById('auction-product-desc-input')?.value.trim();
     const startPrice = parseFloat(document.getElementById('auction-start-price')?.value) || 0;
     const dropAmount = parseFloat(document.getElementById('auction-drop-amount')?.value) || 5;
@@ -4166,7 +4207,11 @@ window.saveAdminAuction = async function() {
     if (!productName) { zahraaToast('أدخل اسم المنتج أولاً','warning'); return; }
     if (!startPrice) { zahraaToast('أدخل سعر البداية','warning'); return; }
     const data = {
-        enabled, title, productName, productImage: productImage||'', productDesc: productDesc||'',
+        enabled, title, productName,
+        productImage: productImage || (productImages[0] || ''),
+        productImages,
+        productVideo: productVideo || null,
+        productDesc: productDesc||'',
         startPrice, currentPrice: startPrice, dropAmount, minPrice,
         dropIntervalHours: 1, isWon: false, winnerUid: null, winnerName: null, finalPrice: null,
         startedAt: serverTimestamp(), lastDropAt: serverTimestamp()
@@ -4339,23 +4384,39 @@ window.loadDeliveryRatings = async function() {
                         <label class="text-xs text-zinc-400 block mb-1">عنوان المزايدة:</label>
                         <input type="text" id="auction-title-input" placeholder="المزايدة العكسية" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-yellow-600">
                     </div>
-                    <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs text-zinc-400 block mb-1">اسم المنتج:</label>
+                        <input type="text" id="auction-product-name-input" placeholder="تابلوه فاخر" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-yellow-600">
+                    </div>
+                    <!-- Multi-media section -->
+                    <div class="border border-zinc-700 rounded-lg p-3 space-y-3">
+                        <p class="text-xs font-bold text-yellow-500">📸 صور وفيديو المنتج</p>
+
+                        <!-- Multiple image upload -->
                         <div>
-                            <label class="text-xs text-zinc-400 block mb-1">اسم المنتج:</label>
-                            <input type="text" id="auction-product-name-input" placeholder="تابلوه فاخر" class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-yellow-600">
+                            <label class="text-xs text-zinc-400 block mb-1">الصور (حتى 6 صور):</label>
+                            <label class="w-full p-2 bg-yellow-900/30 border border-yellow-700 rounded text-sm text-yellow-400 font-bold text-center cursor-pointer hover:bg-yellow-900/50 block">
+                                📷 رفع صور من الجهاز
+                                <input type="file" accept="image/*" multiple class="hidden" onchange="uploadAuctionImages(this)">
+                            </label>
+                            <div id="auction-imgs-gallery" class="grid grid-cols-3 gap-2 mt-2 hidden"></div>
+                            <input type="hidden" id="auction-product-image-input">
+                            <input type="text" id="auction-product-image-url" placeholder="أو أدخل رابط الصورة الرئيسية مباشرةً..." class="w-full p-2 mt-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-yellow-600">
+                            <div id="auction-upload-status" class="text-xs text-zinc-500 mt-1"></div>
                         </div>
+
+                        <!-- Video upload -->
                         <div>
-                            <label class="text-xs text-zinc-400 block mb-1">صورة المنتج:</label>
-                            <div class="flex flex-col gap-2">
-                                <label class="w-full p-2 bg-yellow-900/30 border border-yellow-700 rounded text-sm text-yellow-400 font-bold text-center cursor-pointer hover:bg-yellow-900/50">
-                                    📷 رفع صورة من الجهاز
-                                    <input type="file" accept="image/*" class="hidden" onchange="uploadAuctionImage(this)">
-                                </label>
-                                <div id="auction-img-preview-wrap" class="hidden">
-                                    <img id="auction-img-preview" src="" class="w-full h-28 object-cover rounded border border-zinc-700">
-                                </div>
-                                <input type="text" id="auction-product-image-input" placeholder="أو أدخل رابط URL مباشرةً..." class="w-full p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-yellow-600">
+                            <label class="text-xs text-zinc-400 block mb-1">فيديو المنتج (اختياري):</label>
+                            <label class="w-full p-2 bg-purple-900/30 border border-purple-700 rounded text-sm text-purple-400 font-bold text-center cursor-pointer hover:bg-purple-900/50 block">
+                                🎬 رفع فيديو من الجهاز
+                                <input type="file" accept="video/*" class="hidden" onchange="uploadAuctionVideo(this)">
+                            </label>
+                            <div id="auction-video-preview-wrap" class="hidden mt-2">
+                                <video id="auction-video-preview" controls class="w-full h-28 rounded border border-zinc-700 bg-black"></video>
                             </div>
+                            <input type="hidden" id="auction-product-video-input">
+                            <div id="auction-video-status" class="text-xs text-zinc-500 mt-1"></div>
                         </div>
                     </div>
                     <div>
@@ -4519,8 +4580,16 @@ window.loadDeliveryRatings = async function() {
                             <button id="pos-pay-partial-btn" onclick="setPosPayType('partial')" style="flex:1;padding:9px;background:#1a1a1a;color:#aaa;border:1px solid #333;border-radius:10px;font-family:'Cairo',sans-serif;font-weight:700;font-size:12px;cursor:pointer;">💳 جزئي</button>
                         </div>
                         <div id="pos-due-date-row" style="display:none;">
-                            <label style="color:#888;font-size:10px;">📅 تاريخ السداد (للآجل):</label>
-                            <input id="pos-due-date" type="date" style="width:100%;margin-top:4px;padding:8px;background:#1a1a1a;border:1px solid #d4af37;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:12px;box-sizing:border-box;outline:none;">
+                            <label style="color:#888;font-size:10px;display:block;margin-bottom:4px;">📅 تاريخ الاستحقاق:</label>
+                            <div style="display:flex;gap:5px;margin-bottom:6px;flex-wrap:wrap;">
+                                <button onclick="setPosQuickDate(0)" style="padding:5px 10px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#d4af37;font-family:'Cairo',sans-serif;font-size:10px;cursor:pointer;font-weight:700;">اليوم</button>
+                                <button onclick="setPosQuickDate(1)" style="padding:5px 10px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#d4af37;font-family:'Cairo',sans-serif;font-size:10px;cursor:pointer;font-weight:700;">غداً</button>
+                                <button onclick="setPosQuickDate(3)" style="padding:5px 10px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#d4af37;font-family:'Cairo',sans-serif;font-size:10px;cursor:pointer;font-weight:700;">3 أيام</button>
+                                <button onclick="setPosQuickDate(7)" style="padding:5px 10px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#d4af37;font-family:'Cairo',sans-serif;font-size:10px;cursor:pointer;font-weight:700;">أسبوع</button>
+                                <button onclick="setPosQuickDate(14)" style="padding:5px 10px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#d4af37;font-family:'Cairo',sans-serif;font-size:10px;cursor:pointer;font-weight:700;">أسبوعان</button>
+                                <button onclick="setPosQuickDate(30)" style="padding:5px 10px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#d4af37;font-family:'Cairo',sans-serif;font-size:10px;cursor:pointer;font-weight:700;">شهر</button>
+                            </div>
+                            <input id="pos-due-date" type="date" style="width:100%;padding:8px;background:#1a1a1a;border:1px solid #d4af37;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:12px;box-sizing:border-box;outline:none;">
                         </div>
                     </div>
 
@@ -4576,6 +4645,22 @@ window.loadDeliveryRatings = async function() {
                         <div id="pos-remaining-info" style="display:none;margin-top:8px;padding:8px;background:#1a1a1a;border-radius:8px;border:1px solid #d4af3750;">
                             <p style="color:#888;font-size:10px;margin:0 0 2px;">المتبقي من الآجل:</p>
                             <p id="pos-deferred-remaining" style="color:#f87171;font-size:14px;font-weight:700;margin:0;"></p>
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div style="background:#111;border:1px solid #222;border-radius:14px;padding:14px;">
+                        <label style="color:#888;font-size:11px;">📝 ملاحظات على الفاتورة (اختياري):</label>
+                        <textarea id="pos-notes" rows="2" placeholder="مثال: التسليم عند المدخل — مع تغليف كهدية..." style="width:100%;margin-top:6px;padding:9px 12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:12px;box-sizing:border-box;outline:none;resize:none;line-height:1.5;"></textarea>
+                    </div>
+
+                    <!-- Theme Selector -->
+                    <div style="background:#111;border:1px solid #222;border-radius:14px;padding:12px;">
+                        <label style="color:#888;font-size:11px;display:block;margin-bottom:6px;">🎨 ثيم الفاتورة:</label>
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+                            <button id="theme-btn-luxury" onclick="setPosTheme('luxury')" style="padding:8px 4px;background:#d4af37;color:#000;border:none;border-radius:8px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">✨ فاخر</button>
+                            <button id="theme-btn-minimal" onclick="setPosTheme('minimal')" style="padding:8px 4px;background:#1a1a1a;color:#aaa;border:1px solid #333;border-radius:8px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">⬜ بسيط</button>
+                            <button id="theme-btn-dark" onclick="setPosTheme('dark')" style="padding:8px 4px;background:#1a1a1a;color:#aaa;border:1px solid #333;border-radius:8px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">⬛ داكن</button>
                         </div>
                     </div>
 
@@ -4990,9 +5075,53 @@ window.posClearCart = function() {
     posRenderCart();
     const discEl = document.getElementById('pos-discount');
     const paidEl = document.getElementById('pos-paid');
+    const notesEl = document.getElementById('pos-notes');
     if (discEl) discEl.value = '0';
     if (paidEl) { paidEl.value = '0'; paidEl.disabled = false; paidEl.style.opacity = '1'; }
+    if (notesEl) notesEl.value = '';
+    const nameEl = document.getElementById('pos-customer-name');
+    const phoneEl = document.getElementById('pos-customer-phone');
+    if (nameEl) nameEl.value = '';
+    if (phoneEl) phoneEl.value = '';
     setPosPayType('cash');
+};
+
+window.setPosQuickDate = function(daysFromNow) {
+    const d = new Date();
+    d.setDate(d.getDate() + daysFromNow);
+    const iso = d.toISOString().split('T')[0];
+    const input = document.getElementById('pos-due-date');
+    if (input) {
+        input.value = iso;
+        // Brief flash highlight
+        input.style.borderColor = '#4ade80';
+        setTimeout(() => { input.style.borderColor = '#d4af37'; }, 700);
+    }
+};
+
+let _posTheme = 'luxury';
+window._posTheme = 'luxury';
+
+window.setPosTheme = function(theme) {
+    _posTheme = theme;
+    window._posTheme = theme;
+    const themes = ['luxury','minimal','dark'];
+    themes.forEach(t => {
+        const btn = document.getElementById('theme-btn-' + t);
+        if (!btn) return;
+        if (t === theme) {
+            if (t === 'luxury') {
+                btn.style.background = '#d4af37'; btn.style.color = '#000'; btn.style.border = 'none';
+            } else if (t === 'minimal') {
+                btn.style.background = '#e0e0e0'; btn.style.color = '#111'; btn.style.border = '1px solid #bbb';
+            } else {
+                btn.style.background = '#333'; btn.style.color = '#fff'; btn.style.border = '1px solid #555';
+            }
+        } else {
+            btn.style.background = '#1a1a1a'; btn.style.color = '#888'; btn.style.border = '1px solid #333';
+        }
+    });
+    zahraaToast('ثيم الفاتورة: ' + {luxury:'✨ فاخر',minimal:'⬜ بسيط',dark:'⬛ داكن'}[theme], 'success');
 };
 
 window.posCompleteSale = async function() {
@@ -5006,6 +5135,7 @@ window.posCompleteSale = async function() {
     const customerPhone = document.getElementById('pos-customer-phone').value.trim() || '';
     const invoiceNum = window._currentInvNum || _generateInvoiceNumber();
     const dueDate = document.getElementById('pos-due-date')?.value || null;
+    const notes = document.getElementById('pos-notes')?.value.trim() || '';
     const payLabel = _posPayType === 'cash' ? 'نقداً' : _posPayType === 'deferred' ? 'آجل' : 'جزئي';
 
     const invoiceData = {
@@ -5020,9 +5150,11 @@ window.posCompleteSale = async function() {
         paymentMethod: payLabel,
         userName: customerName,
         phone: customerPhone,
+        notes: notes || null,
         isPOS: true,
         status: remaining > 0 ? 'آجل' : 'مكتمل',
         dueDate: dueDate || null,
+        theme: window._posTheme || 'luxury',
         createdAt: new Date()
     };
 
@@ -5065,39 +5197,109 @@ window.posCompleteSale = async function() {
 };
 
 function _renderPOSReceipt(inv) {
+    const theme = inv.theme || window._posTheme || 'luxury';
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(inv.invoiceNumber)}`;
     const dateStr = (inv.createdAt instanceof Date ? inv.createdAt : new Date()).toLocaleString('ar-EG');
     const itemsHTML = inv.items.map(i =>
         `<div class="r-row"><span>${i.name} × ${i.qty}</span><span>${(i.price*i.qty).toFixed(2)} ج</span></div>`
     ).join('');
+
+    // Theme styles
+    const themeStyles = {
+        luxury: {
+            headerBg: 'linear-gradient(135deg,#1a1200,#2d2000)',
+            headerColor: '#d4af37',
+            accentColor: '#d4af37',
+            bodyBg: '#fff',
+            bodyColor: '#111',
+            border: '2px solid #d4af37',
+            footerBg: '#1a1200',
+            footerColor: '#d4af37',
+            totalColor: '#b8962e',
+            ornament: '✦ ——— ✦',
+            logo: '👑 استوديو الزهراء 👑',
+            tagline: '✨ الأناقة والفخامة معاً ✨',
+        },
+        minimal: {
+            headerBg: '#fff',
+            headerColor: '#000',
+            accentColor: '#333',
+            bodyBg: '#fff',
+            bodyColor: '#222',
+            border: '1px solid #ddd',
+            footerBg: '#f5f5f5',
+            footerColor: '#555',
+            totalColor: '#000',
+            ornament: '────────────',
+            logo: 'استوديو الزهراء',
+            tagline: 'فاتورة مبيعات',
+        },
+        dark: {
+            headerBg: '#111',
+            headerColor: '#e0e0e0',
+            accentColor: '#aaa',
+            bodyBg: '#1a1a1a',
+            bodyColor: '#e0e0e0',
+            border: '1px solid #333',
+            footerBg: '#0a0a0a',
+            footerColor: '#888',
+            totalColor: '#fff',
+            ornament: '— ◆ —',
+            logo: '⬛ استوديو الزهراء',
+            tagline: 'فاتورة مبيعات',
+        }
+    };
+    const t = themeStyles[theme] || themeStyles.luxury;
+
     const receiptEl = document.getElementById('cashier-receipt-content');
     if (!receiptEl) return;
+
+    // Override receipt print wrapper bg for dark/minimal
+    const wrapper = document.getElementById('cashier-receipt-print');
+    if (wrapper) wrapper.style.background = theme === 'dark' ? '#1a1a1a' : '#fff';
+
+    receiptEl.style.background = t.bodyBg;
+    receiptEl.style.color = t.bodyColor;
+    receiptEl.style.border = t.border;
+    receiptEl.style.borderRadius = '12px';
+    receiptEl.style.overflow = 'hidden';
+    receiptEl.style.padding = '0';
+
     receiptEl.innerHTML = `
-        <div class="r-center r-bold r-lg" style="margin-bottom:4px;">استوديو الزهراء</div>
-        <div class="r-center r-sm">فاتورة مبيعات</div>
-        <div class="r-center r-sm">${dateStr}</div>
-        <div class="r-line"></div>
-        <div class="r-row r-bold"><span>رقم الفاتورة</span><span style="font-size:9px;letter-spacing:1px;">${inv.invoiceNumber}</span></div>
-        <div class="r-row"><span>العميل</span><span>${inv.userName}</span></div>
-        ${inv.phone ? `<div class="r-row"><span>الهاتف</span><span>${inv.phone}</span></div>` : ''}
-        <div class="r-row"><span>الدفع</span><span>${inv.paymentMethod}</span></div>
-        ${inv.dueDate ? `<div class="r-row"><span>تاريخ السداد</span><span>${inv.dueDate}</span></div>` : ''}
-        <div class="r-line"></div>
-        ${itemsHTML}
-        <div class="r-line"></div>
-        <div class="r-row"><span>المجموع</span><span>${inv.subtotal.toFixed(2)} ج</span></div>
-        ${inv.discountAmount ? `<div class="r-row"><span>خصم</span><span>- ${inv.discountAmount.toFixed(2)} ج</span></div>` : ''}
-        <div class="r-row r-bold r-lg"><span>الإجمالي</span><span>${inv.totalPrice.toFixed(2)} ج</span></div>
-        ${inv.paidAmount ? `<div class="r-row"><span>المدفوع</span><span>${inv.paidAmount.toFixed(2)} ج</span></div>` : ''}
-        ${inv.remainingAmount > 0 ? `<div class="r-row r-bold" style="color:#000;"><span>المتبقي</span><span>${inv.remainingAmount.toFixed(2)} ج</span></div>` : ''}
-        <div class="r-line"></div>
-        <div class="r-center" style="margin-top:6px;">
-            <img src="${qrUrl}" style="width:80px;height:80px;" alt="QR">
-            <p class="r-sm r-center" style="margin-top:2px;">${inv.invoiceNumber}</p>
+        <!-- Header -->
+        <div style="background:${t.headerBg};color:${t.headerColor};text-align:center;padding:14px 12px 10px;border-bottom:1px solid ${t.accentColor}30;">
+            <div style="font-size:15px;font-weight:800;letter-spacing:1px;margin-bottom:2px;">${t.logo}</div>
+            <div style="font-size:10px;opacity:0.8;">${t.tagline}</div>
+            <div style="font-size:10px;opacity:0.7;margin-top:2px;">${dateStr}</div>
         </div>
-        <div class="r-line"></div>
-        <div class="r-center r-sm" style="margin-top:4px;">شكراً لتعاملكم معنا 💛</div>
-        <div class="r-center r-sm">استوديو الزهراء</div>
+        <!-- Body -->
+        <div style="padding:12px;background:${t.bodyBg};color:${t.bodyColor};">
+            <div style="text-align:center;color:${t.accentColor};font-size:11px;margin-bottom:8px;">${t.ornament}</div>
+            <div class="r-row r-bold" style="color:${t.bodyColor};"><span>رقم الفاتورة</span><span style="font-size:9px;letter-spacing:1px;color:${t.accentColor};">${inv.invoiceNumber}</span></div>
+            <div class="r-row" style="color:${t.bodyColor};"><span>العميل</span><span>${inv.userName}</span></div>
+            ${inv.phone ? `<div class="r-row" style="color:${t.bodyColor};"><span>الهاتف</span><span>${inv.phone}</span></div>` : ''}
+            <div class="r-row" style="color:${t.bodyColor};"><span>الدفع</span><span style="color:${t.accentColor};font-weight:700;">${inv.paymentMethod}</span></div>
+            ${inv.dueDate ? `<div class="r-row" style="color:#e67e22;font-weight:700;"><span>📅 تاريخ الاستحقاق</span><span>${inv.dueDate}</span></div>` : ''}
+            <div style="border-top:1px dashed ${t.accentColor}50;margin:8px 0;"></div>
+            <div style="font-weight:700;font-size:11px;margin-bottom:6px;color:${t.accentColor};">المنتجات:</div>
+            ${itemsHTML}
+            <div style="border-top:1px dashed ${t.accentColor}50;margin:8px 0;"></div>
+            <div class="r-row" style="color:${t.bodyColor};"><span>المجموع الفرعي</span><span>${inv.subtotal.toFixed(2)} ج</span></div>
+            ${inv.discountAmount ? `<div class="r-row" style="color:#e74c3c;"><span>خصم</span><span>- ${inv.discountAmount.toFixed(2)} ج</span></div>` : ''}
+            <div class="r-row r-bold r-lg" style="color:${t.totalColor};margin-top:4px;padding-top:6px;border-top:2px solid ${t.accentColor}50;"><span>الإجمالي</span><span>${inv.totalPrice.toFixed(2)} ج</span></div>
+            ${inv.paidAmount ? `<div class="r-row" style="color:#27ae60;"><span>✅ المدفوع</span><span>${inv.paidAmount.toFixed(2)} ج</span></div>` : ''}
+            ${inv.remainingAmount > 0 ? `<div class="r-row r-bold" style="color:#e74c3c;background:#ffeaea;padding:4px 6px;border-radius:6px;margin-top:4px;"><span>⚠️ المتبقي</span><span>${inv.remainingAmount.toFixed(2)} ج</span></div>` : ''}
+            ${inv.notes ? `<div style="margin-top:10px;padding:8px;background:${t.accentColor}15;border-radius:6px;border-right:3px solid ${t.accentColor};"><div style="font-size:10px;font-weight:700;color:${t.accentColor};margin-bottom:3px;">📝 ملاحظات:</div><div style="font-size:11px;color:${t.bodyColor};line-height:1.5;">${inv.notes}</div></div>` : ''}
+            <div style="text-align:center;margin:12px 0 8px;">
+                <img src="${qrUrl}" style="width:80px;height:80px;border-radius:8px;${theme==='luxury'?'border:1px solid #d4af37;':''}" alt="QR">
+                <div style="font-size:8px;color:${t.accentColor};margin-top:3px;letter-spacing:1px;">${inv.invoiceNumber}</div>
+            </div>
+        </div>
+        <!-- Footer -->
+        <div style="background:${t.footerBg};color:${t.footerColor};text-align:center;padding:10px;border-top:1px solid ${t.accentColor}30;">
+            <div style="font-size:11px;margin-bottom:2px;">شكراً لتعاملكم معنا 🌹</div>
+            <div style="font-size:10px;opacity:0.7;">استوديو الزهراء — نتشرف بخدمتكم</div>
+        </div>
     `;
     setTimeout(() => window.print(), 400);
 }
@@ -5327,28 +5529,81 @@ window.importProductsXML = async function(input) {
 };
 
 // ===== AUCTION IMAGE UPLOAD =====
-window.uploadAuctionImage = async function(input) {
+// Initialize auction images array
+window._auctionUploadedImages = [];
+
+window.uploadAuctionImages = async function(input) {
+    if (!input.files?.length) return;
+    const files = Array.from(input.files).slice(0, 6);
+    input.value = '';
+    const statusEl = document.getElementById('auction-upload-status');
+    const gallery = document.getElementById('auction-imgs-gallery');
+    if (statusEl) statusEl.textContent = `جاري رفع ${files.length} صورة...`;
+    const CLD_URL = window.CLOUDINARY_URL || 'https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload';
+    const CLD_PRESET = window.CLOUDINARY_UPLOAD_PRESET || 'zahraa_upload';
+    try {
+        const uploadedUrls = [];
+        for (let i = 0; i < files.length; i++) {
+            if (statusEl) statusEl.textContent = `رفع صورة ${i+1} من ${files.length}...`;
+            const formData = new FormData();
+            formData.append('file', files[i]);
+            formData.append('upload_preset', CLD_PRESET);
+            const res = await fetch(CLD_URL, { method: 'POST', body: formData });
+            const data = await res.json();
+            if (!data.secure_url) throw new Error(data.error?.message || 'فشل رفع الصورة ' + (i+1));
+            uploadedUrls.push(data.secure_url);
+        }
+        window._auctionUploadedImages = uploadedUrls;
+        // Set primary image in hidden input
+        document.getElementById('auction-product-image-input').value = uploadedUrls[0] || '';
+        // Render gallery
+        if (gallery) {
+            gallery.classList.remove('hidden');
+            gallery.innerHTML = uploadedUrls.map((url, idx) => `
+                <div style="position:relative;">
+                    <img src="${url}" class="w-full h-20 object-cover rounded border border-zinc-700" alt="صورة ${idx+1}">
+                    ${idx===0 ? '<div style="position:absolute;top:2px;right:2px;background:#d4af37;color:#000;font-size:8px;font-weight:700;padding:1px 4px;border-radius:4px;">رئيسية</div>' : ''}
+                    <button onclick="window._auctionUploadedImages.splice(${idx},1);document.getElementById('auction-product-image-input').value=window._auctionUploadedImages[0]||'';uploadAuctionImages._rerender && uploadAuctionImages._rerender()" style="position:absolute;top:2px;left:2px;background:#f87171;border:none;border-radius:50%;width:18px;height:18px;color:#fff;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;padding:0;">✕</button>
+                </div>
+            `).join('');
+        }
+        if (statusEl) statusEl.textContent = `✅ تم رفع ${uploadedUrls.length} صورة بنجاح`;
+        zahraaToast(`✅ تم رفع ${uploadedUrls.length} صورة`, 'success');
+    } catch(e) {
+        if (statusEl) statusEl.textContent = '';
+        zahraaToast('خطأ في رفع الصور: ' + e.message, 'error');
+    }
+};
+
+window.uploadAuctionVideo = async function(input) {
     if (!input.files?.length) return;
     const file = input.files[0];
     input.value = '';
-    zahraaToast('جاري رفع الصورة...', 'info');
+    const statusEl = document.getElementById('auction-video-status');
+    if (statusEl) statusEl.textContent = 'جاري رفع الفيديو...';
+    const CLD_URL = (window.CLOUDINARY_URL || 'https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload')
+        .replace('/image/upload', '/video/upload');
+    const CLD_PRESET = window.CLOUDINARY_UPLOAD_PRESET || 'zahraa_upload';
     try {
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-        const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
+        formData.append('upload_preset', CLD_PRESET);
+        zahraaToast('جاري رفع الفيديو... (قد يستغرق دقيقة)', 'info');
+        const res = await fetch(CLD_URL, { method: 'POST', body: formData });
         const data = await res.json();
         if (!data.secure_url) throw new Error(data.error?.message || 'فشل الرفع');
-        document.getElementById('auction-product-image-input').value = data.secure_url;
-        const preview = document.getElementById('auction-img-preview');
-        const previewWrap = document.getElementById('auction-img-preview-wrap');
-        if (preview && previewWrap) {
-            preview.src = data.secure_url;
-            previewWrap.classList.remove('hidden');
+        document.getElementById('auction-product-video-input').value = data.secure_url;
+        const videoEl = document.getElementById('auction-video-preview');
+        const wrapEl = document.getElementById('auction-video-preview-wrap');
+        if (videoEl && wrapEl) {
+            videoEl.src = data.secure_url;
+            wrapEl.classList.remove('hidden');
         }
-        zahraaToast('✅ تم رفع الصورة بنجاح', 'success');
+        if (statusEl) statusEl.textContent = '✅ تم رفع الفيديو بنجاح';
+        zahraaToast('✅ تم رفع الفيديو بنجاح', 'success');
     } catch(e) {
-        zahraaToast('خطأ في رفع الصورة: ' + e.message, 'error');
+        if (statusEl) statusEl.textContent = '';
+        zahraaToast('خطأ في رفع الفيديو: ' + e.message, 'error');
     }
 };
 </script>
