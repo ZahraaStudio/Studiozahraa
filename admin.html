@@ -4537,6 +4537,101 @@ window.loadDeliveryRatings = async function() {
         </div>
     </div>
 
+    <!-- POS Settings Modal -->
+    <div id="pos-settings-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:10100;align-items:center;justify-content:center;backdrop-filter:blur(8px);">
+        <div style="background:#111;border:1px solid #d4af37;border-radius:20px;padding:24px;max-width:480px;width:90%;max-height:85vh;overflow-y:auto;font-family:'Cairo',sans-serif;direction:rtl;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+                <h3 style="color:#d4af37;font-weight:800;font-size:16px;margin:0;">⚙️ إعدادات نقطة البيع</h3>
+                <button onclick="closePosSettings()" style="background:none;border:none;color:#555;font-size:22px;cursor:pointer;line-height:1;">✕</button>
+            </div>
+
+            <!-- Receipt Header Section -->
+            <div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:14px;margin-bottom:12px;">
+                <p style="color:#d4af37;font-size:12px;font-weight:700;margin:0 0 10px;">🏪 ترويسة الفاتورة</p>
+                <div style="margin-bottom:8px;">
+                    <label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">اسم المتجر / الشركة</label>
+                    <input id="pos-set-store-name" type="text" placeholder="مثال: استوديو الزهراء" style="width:100%;padding:8px 12px;background:#0a0a0a;border:1px solid #333;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:13px;box-sizing:border-box;outline:none;">
+                </div>
+                <div style="margin-bottom:8px;">
+                    <label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">العنوان (يظهر في الفاتورة)</label>
+                    <input id="pos-set-address" type="text" placeholder="مثال: القاهرة — شارع مصطفى النحاس" style="width:100%;padding:8px 12px;background:#0a0a0a;border:1px solid #333;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:13px;box-sizing:border-box;outline:none;">
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                    <div>
+                        <label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">رقم هاتف 1</label>
+                        <input id="pos-set-phone1" type="tel" placeholder="01xxxxxxxxx" style="width:100%;padding:8px 12px;background:#0a0a0a;border:1px solid #333;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:13px;box-sizing:border-box;outline:none;">
+                    </div>
+                    <div>
+                        <label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">رقم هاتف 2 (اختياري)</label>
+                        <input id="pos-set-phone2" type="tel" placeholder="01xxxxxxxxx" style="width:100%;padding:8px 12px;background:#0a0a0a;border:1px solid #333;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:13px;box-sizing:border-box;outline:none;">
+                    </div>
+                </div>
+                <div style="margin-top:8px;">
+                    <label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">تذييل / ختام الفاتورة</label>
+                    <input id="pos-set-footer" type="text" placeholder="مثال: شكراً لثقتكم — لا يُقبل الاسترداد بعد 7 أيام" style="width:100%;padding:8px 12px;background:#0a0a0a;border:1px solid #333;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:13px;box-sizing:border-box;outline:none;">
+                </div>
+            </div>
+
+            <!-- Receipt Features -->
+            <div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:14px;margin-bottom:12px;">
+                <p style="color:#d4af37;font-size:12px;font-weight:700;margin:0 0 10px;">🧾 مكونات الفاتورة</p>
+                <div style="display:grid;gap:8px;">
+                    <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+                        <span style="color:#ccc;font-size:12px;">📊 إظهار الباركود على الفاتورة</span>
+                        <input type="checkbox" id="pos-set-show-barcode" style="width:16px;height:16px;cursor:pointer;">
+                    </label>
+                    <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+                        <span style="color:#ccc;font-size:12px;">🏪 إظهار ترويسة المتجر</span>
+                        <input type="checkbox" id="pos-set-show-header" checked style="width:16px;height:16px;cursor:pointer;">
+                    </label>
+                    <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+                        <span style="color:#ccc;font-size:12px;">📍 إظهار العنوان في الفاتورة</span>
+                        <input type="checkbox" id="pos-set-show-address" checked style="width:16px;height:16px;cursor:pointer;">
+                    </label>
+                    <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+                        <span style="color:#ccc;font-size:12px;">📞 إظهار أرقام الهاتف</span>
+                        <input type="checkbox" id="pos-set-show-phone" checked style="width:16px;height:16px;cursor:pointer;">
+                    </label>
+                    <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+                        <span style="color:#ccc;font-size:12px;">📅 إظهار تاريخ الفاتورة</span>
+                        <input type="checkbox" id="pos-set-show-date" checked style="width:16px;height:16px;cursor:pointer;">
+                    </label>
+                    <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+                        <span style="color:#ccc;font-size:12px;">💳 إظهار نوع الدفع</span>
+                        <input type="checkbox" id="pos-set-show-paytype" checked style="width:16px;height:16px;cursor:pointer;">
+                    </label>
+                    <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+                        <span style="color:#ccc;font-size:12px;">👤 إظهار اسم العميل</span>
+                        <input type="checkbox" id="pos-set-show-customer" checked style="width:16px;height:16px;cursor:pointer;">
+                    </label>
+                    <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+                        <span style="color:#ccc;font-size:12px;">📝 إظهار الملاحظات</span>
+                        <input type="checkbox" id="pos-set-show-notes" checked style="width:16px;height:16px;cursor:pointer;">
+                    </label>
+                    <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+                        <span style="color:#ccc;font-size:12px;">🔢 طباعة كود المنتج (SKU)</span>
+                        <input type="checkbox" id="pos-set-show-sku" style="width:16px;height:16px;cursor:pointer;">
+                    </label>
+                </div>
+            </div>
+
+            <!-- Barcode Scanner Settings -->
+            <div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:14px;margin-bottom:16px;">
+                <p style="color:#d4af37;font-size:12px;font-weight:700;margin:0 0 10px;">📷 إعدادات الباركود</p>
+                <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:8px;">
+                    <span style="color:#ccc;font-size:12px;">تفعيل مسح الباركود عند البحث</span>
+                    <input type="checkbox" id="pos-set-barcode-enabled" checked style="width:16px;height:16px;cursor:pointer;">
+                </label>
+                <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+                    <span style="color:#ccc;font-size:12px;">صوت تأكيد عند مسح الباركود</span>
+                    <input type="checkbox" id="pos-set-barcode-sound" checked style="width:16px;height:16px;cursor:pointer;">
+                </label>
+            </div>
+
+            <button onclick="savePosSettings()" style="width:100%;padding:13px;background:linear-gradient(135deg,#d4af37,#b8962e);color:#000;border:none;border-radius:12px;font-family:'Cairo',sans-serif;font-weight:800;font-size:14px;cursor:pointer;">💾 حفظ الإعدادات</button>
+        </div>
+    </div>
+
     <!-- Main POS Modal -->
     <div id="pos-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:9990;backdrop-filter:blur(6px);overflow-y:auto;">
         <div style="max-width:960px;margin:0 auto;min-height:100vh;padding:12px 16px;box-sizing:border-box;font-family:'Cairo',sans-serif;direction:rtl;">
@@ -4552,6 +4647,7 @@ window.loadDeliveryRatings = async function() {
                 <div style="display:flex;gap:8px;align-items:center;">
                     <button onclick="openSavedInvoices()" style="padding:8px 13px;background:#1a1a1a;border:1px solid #333;border-radius:10px;color:#aaa;font-family:'Cairo',sans-serif;font-size:12px;cursor:pointer;">📋 فواتير محفوظة</button>
                     <button onclick="posScanInvoiceBarcode()" style="padding:8px 13px;background:#1a1a1a;border:1px solid #d4af37;border-radius:10px;color:#d4af37;font-family:'Cairo',sans-serif;font-size:12px;cursor:pointer;">📷 مسح QR</button>
+                    <button onclick="openPosSettings()" style="padding:8px 13px;background:#1a1a1a;border:1px solid #555;border-radius:10px;color:#ccc;font-family:'Cairo',sans-serif;font-size:12px;cursor:pointer;">⚙️ الإعدادات</button>
                     <button onclick="document.getElementById('pos-modal').style.display='none'" style="background:#1a1a1a;border:1px solid #333;border-radius:10px;color:#aaa;font-size:16px;cursor:pointer;width:36px;height:36px;">✕</button>
                 </div>
             </div>
@@ -4574,16 +4670,18 @@ window.loadDeliveryRatings = async function() {
                     <!-- Payment Type -->
                     <div style="background:#111;border:1px solid #222;border-radius:14px;padding:14px;">
                         <p style="color:#666;font-size:11px;margin:0 0 8px;">💳 نوع الدفع</p>
-                        <div style="display:flex;gap:8px;margin-bottom:10px;">
-                            <button id="pos-pay-cash-btn" onclick="setPosPayType('cash')" style="flex:1;padding:9px;background:#d4af37;color:#000;border:none;border-radius:10px;font-family:'Cairo',sans-serif;font-weight:700;font-size:12px;cursor:pointer;">💵 نقداً</button>
-                            <button id="pos-pay-deferred-btn" onclick="setPosPayType('deferred')" style="flex:1;padding:9px;background:#1a1a1a;color:#aaa;border:1px solid #333;border-radius:10px;font-family:'Cairo',sans-serif;font-weight:700;font-size:12px;cursor:pointer;">📅 آجل</button>
-                            <button id="pos-pay-partial-btn" onclick="setPosPayType('partial')" style="flex:1;padding:9px;background:#1a1a1a;color:#aaa;border:1px solid #333;border-radius:10px;font-family:'Cairo',sans-serif;font-weight:700;font-size:12px;cursor:pointer;">💳 جزئي</button>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">
+                            <button id="pos-pay-cash-btn" onclick="setPosPayType('cash')" style="padding:9px;background:#d4af37;color:#000;border:none;border-radius:10px;font-family:'Cairo',sans-serif;font-weight:700;font-size:12px;cursor:pointer;">💵 نقداً</button>
+                            <button id="pos-pay-immediate-btn" onclick="setPosPayType('immediate')" style="padding:9px;background:#1a1a1a;color:#aaa;border:1px solid #333;border-radius:10px;font-family:'Cairo',sans-serif;font-weight:700;font-size:12px;cursor:pointer;">⚡ فوري</button>
+                            <button id="pos-pay-deferred-btn" onclick="setPosPayType('deferred')" style="padding:9px;background:#1a1a1a;color:#aaa;border:1px solid #333;border-radius:10px;font-family:'Cairo',sans-serif;font-weight:700;font-size:12px;cursor:pointer;">📅 آجل</button>
+                            <button id="pos-pay-partial-btn" onclick="setPosPayType('partial')" style="padding:9px;background:#1a1a1a;color:#aaa;border:1px solid #333;border-radius:10px;font-family:'Cairo',sans-serif;font-weight:700;font-size:12px;cursor:pointer;">💳 جزئي</button>
                         </div>
-                        <div id="pos-due-date-row" style="display:none;">
-                            <label style="color:#888;font-size:10px;display:block;margin-bottom:4px;">📅 تاريخ الاستحقاق:</label>
+                        <div id="pos-due-date-row" style="display:block;">
+                            <label style="color:#888;font-size:10px;display:block;margin-bottom:4px;">📅 تاريخ الاستحقاق / موعد الاستلام:</label>
                             <div style="display:flex;gap:5px;margin-bottom:6px;flex-wrap:wrap;">
                                 <button onclick="setPosQuickDate(0)" style="padding:5px 10px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#d4af37;font-family:'Cairo',sans-serif;font-size:10px;cursor:pointer;font-weight:700;">اليوم</button>
                                 <button onclick="setPosQuickDate(1)" style="padding:5px 10px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#d4af37;font-family:'Cairo',sans-serif;font-size:10px;cursor:pointer;font-weight:700;">غداً</button>
+                                <button onclick="setPosQuickDate(2)" style="padding:5px 10px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#d4af37;font-family:'Cairo',sans-serif;font-size:10px;cursor:pointer;font-weight:700;">يومان</button>
                                 <button onclick="setPosQuickDate(3)" style="padding:5px 10px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#d4af37;font-family:'Cairo',sans-serif;font-size:10px;cursor:pointer;font-weight:700;">3 أيام</button>
                                 <button onclick="setPosQuickDate(7)" style="padding:5px 10px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#d4af37;font-family:'Cairo',sans-serif;font-size:10px;cursor:pointer;font-weight:700;">أسبوع</button>
                                 <button onclick="setPosQuickDate(14)" style="padding:5px 10px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#d4af37;font-family:'Cairo',sans-serif;font-size:10px;cursor:pointer;font-weight:700;">أسبوعان</button>
@@ -4699,7 +4797,7 @@ window.loadDeliveryRatings = async function() {
 // =====================================================================
 window.printCashierReceipt = async function(orderId) {
     try {
-        const { getDoc, doc } = await import("https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js");
+        const { getDoc, doc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
         let orderData = null;
         // Try from allOrders first (already loaded)
         if (typeof allOrders !== 'undefined') {
@@ -4719,8 +4817,13 @@ window.printCashierReceipt = async function(orderId) {
 
 function _renderCashierReceipt(o) {
     const items = o.items || o.cart || [];
-    const storeName = 'استوديو الزهراء';
-    const storePhone = document.querySelector('[data-store-phone]')?.textContent || '';
+    _loadPosSettings();
+    const s = _posSettings;
+    const storeName = s.storeName || 'استوديو الزهراء';
+    const storePhone = s.phone1 || document.querySelector('[data-store-phone]')?.textContent || '';
+    const storePhone2 = s.phone2 || '';
+    const storeAddress = s.address || '';
+    const storeFooter = s.footer || 'شكراً لتعاملكم معنا 🌹';
     const date = o.createdAt?.toDate?.()?.toLocaleString('ar-EG') || new Date().toLocaleString('ar-EG');
     const orderNum = o.orderNumber || o.id?.substring(0,8) || '—';
     const total = o.totalPrice || items.reduce((a,b) => a + (b.price * b.qty), 0);
@@ -4730,19 +4833,20 @@ function _renderCashierReceipt(o) {
 
     const itemsHtml = items.map(item => `
         <div class="r-row">
-            <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.name}</span>
+            <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.name}${s.showSku && item.code ? ` [${item.code}]` : ''}</span>
             <span style="min-width:30px;text-align:center;">x${item.qty||1}</span>
             <span style="min-width:55px;text-align:left;">${(item.price * (item.qty||1))} ج</span>
         </div>
     `).join('');
 
     const receiptHtml = `
-        <div class="r-center r-bold r-lg" style="margin-bottom:4px;">✨ ${storeName} ✨</div>
-        ${storePhone ? `<div class="r-center r-sm">📞 ${storePhone}</div>` : ''}
+        ${s.showHeader !== false ? `<div class="r-center r-bold r-lg" style="margin-bottom:4px;">${storeName}</div>` : ''}
+        ${s.showAddress !== false && storeAddress ? `<div class="r-center r-sm">📍 ${storeAddress}</div>` : ''}
+        ${s.showPhone !== false && storePhone ? `<div class="r-center r-sm">📞 ${storePhone}${storePhone2 ? ' | ' + storePhone2 : ''}</div>` : ''}
         <div class="r-line"></div>
         <div class="r-row r-sm"><span>رقم الطلب:</span><span class="r-bold">${orderNum}</span></div>
-        <div class="r-row r-sm"><span>التاريخ:</span><span>${date}</span></div>
-        <div class="r-row r-sm"><span>العميل:</span><span>${o.userName || o.customerName || '—'}</span></div>
+        ${s.showDate !== false ? `<div class="r-row r-sm"><span>التاريخ:</span><span>${date}</span></div>` : ''}
+        ${s.showCustomer !== false ? `<div class="r-row r-sm"><span>العميل:</span><span>${o.userName || o.customerName || '—'}</span></div>` : ''}
         ${o.phone ? `<div class="r-row r-sm"><span>الهاتف:</span><span>${o.phone}</span></div>` : ''}
         <div class="r-line"></div>
         <div class="r-bold r-sm" style="margin-bottom:4px;">المنتجات:</div>
@@ -4754,11 +4858,12 @@ function _renderCashierReceipt(o) {
         <div class="r-line"></div>
         <div class="r-row r-bold r-lg"><span>الإجمالي</span><span>${total} ج</span></div>
         <div class="r-line"></div>
-        <div class="r-center r-sm" style="margin-top:8px;">طريقة الدفع: ${o.paymentMethod || 'نقداً'}</div>
-        ${o.notes ? `<div class="r-center r-sm" style="margin-top:4px;">ملاحظات: ${o.notes}</div>` : ''}
+        ${s.showPayType !== false ? `<div class="r-center r-sm" style="margin-top:8px;">طريقة الدفع: ${o.paymentMethod || 'نقداً'}</div>` : ''}
+        ${o.dueDate ? `<div class="r-center r-sm" style="color:#555;">📅 موعد الاستلام: ${o.dueDate}</div>` : ''}
+        ${s.showNotes !== false && o.notes ? `<div class="r-center r-sm" style="margin-top:4px;">ملاحظات: ${o.notes}</div>` : ''}
         <div class="r-line"></div>
-        <div class="r-center" style="margin:8px 0 4px;font-size:13px;">شكراً لتعاملكم معنا 🌹</div>
-        <div class="r-center r-sm">استوديو الزهراء - نتشرف بخدمتكم</div>
+        <div class="r-center" style="margin:8px 0 4px;font-size:13px;">${storeFooter}</div>
+        ${s.showBarcode ? `<div style="text-align:center;margin:6px 0;"><img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(orderNum)}" style="width:70px;height:70px;"></div>` : ''}
         <div style="height:20px;"></div>
     `;
 
@@ -4845,7 +4950,7 @@ window.importProductsCSV = async function(input) {
 
     let imported = 0, failed = 0;
     zahraaToast('جاري الاستيراد...', 'loading');
-    const { addDoc, collection, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js");
+    const { addDoc, collection, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
     for (let i = 1; i < lines.length; i++) {
         const cols = lines[i].split(',');
         const name = cols[nameIdx]?.trim();
@@ -4903,7 +5008,7 @@ window.openPOS = function() {
     document.getElementById('pos-discount').value = '0';
     document.getElementById('pos-paid').value = '0';
     const dueDateRow = document.getElementById('pos-due-date-row');
-    if (dueDateRow) dueDateRow.style.display = 'none';
+    if (dueDateRow) dueDateRow.style.display = 'block';
     const savedPanel = document.getElementById('pos-saved-invoices-panel');
     if (savedPanel) savedPanel.style.display = 'none';
     setPosPayType('cash');
@@ -4915,6 +5020,7 @@ window.setPosPayType = function(type) {
     _posPayType = type;
     const btns = {
         cash: document.getElementById('pos-pay-cash-btn'),
+        immediate: document.getElementById('pos-pay-immediate-btn'),
         deferred: document.getElementById('pos-pay-deferred-btn'),
         partial: document.getElementById('pos-pay-partial-btn')
     };
@@ -4930,8 +5036,9 @@ window.setPosPayType = function(type) {
             btns[k].style.border = '1px solid #333';
         }
     });
+    // تاريخ الاستحقاق يظهر دائماً في جميع أنواع الدفع
     const dueDateRow = document.getElementById('pos-due-date-row');
-    if (dueDateRow) dueDateRow.style.display = type === 'deferred' ? 'block' : 'none';
+    if (dueDateRow) dueDateRow.style.display = 'block';
     const paidInput = document.getElementById('pos-paid');
     if (paidInput) {
         if (type === 'deferred') {
@@ -5099,6 +5206,80 @@ window.setPosQuickDate = function(daysFromNow) {
     }
 };
 
+// =====================================================================
+// ===== POS SETTINGS =====
+// =====================================================================
+let _posSettings = {};
+
+function _loadPosSettings() {
+    try {
+        _posSettings = JSON.parse(localStorage.getItem('zahraa_pos_settings') || '{}');
+    } catch(e) { _posSettings = {}; }
+    return _posSettings;
+}
+
+window.openPosSettings = function() {
+    _loadPosSettings();
+    const s = _posSettings;
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+    const setChk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = (val !== false && val !== 0); };
+
+    set('pos-set-store-name', s.storeName || 'استوديو الزهراء');
+    set('pos-set-address', s.address || '');
+    set('pos-set-phone1', s.phone1 || '');
+    set('pos-set-phone2', s.phone2 || '');
+    set('pos-set-footer', s.footer || 'شكراً لثقتكم 💛');
+    setChk('pos-set-show-barcode', s.showBarcode !== undefined ? s.showBarcode : false);
+    setChk('pos-set-show-header', s.showHeader !== undefined ? s.showHeader : true);
+    setChk('pos-set-show-address', s.showAddress !== undefined ? s.showAddress : true);
+    setChk('pos-set-show-phone', s.showPhone !== undefined ? s.showPhone : true);
+    setChk('pos-set-show-date', s.showDate !== undefined ? s.showDate : true);
+    setChk('pos-set-show-paytype', s.showPayType !== undefined ? s.showPayType : true);
+    setChk('pos-set-show-customer', s.showCustomer !== undefined ? s.showCustomer : true);
+    setChk('pos-set-show-notes', s.showNotes !== undefined ? s.showNotes : true);
+    setChk('pos-set-show-sku', s.showSku !== undefined ? s.showSku : false);
+    setChk('pos-set-barcode-enabled', s.barcodeEnabled !== undefined ? s.barcodeEnabled : true);
+    setChk('pos-set-barcode-sound', s.barcodeSound !== undefined ? s.barcodeSound : true);
+
+    const modal = document.getElementById('pos-settings-modal');
+    if (modal) { modal.style.display = 'flex'; }
+};
+
+window.closePosSettings = function() {
+    const modal = document.getElementById('pos-settings-modal');
+    if (modal) modal.style.display = 'none';
+};
+
+window.savePosSettings = function() {
+    const get = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    const getChk = (id) => { const el = document.getElementById(id); return el ? el.checked : false; };
+
+    _posSettings = {
+        storeName: get('pos-set-store-name') || 'استوديو الزهراء',
+        address: get('pos-set-address'),
+        phone1: get('pos-set-phone1'),
+        phone2: get('pos-set-phone2'),
+        footer: get('pos-set-footer') || 'شكراً لثقتكم 💛',
+        showBarcode: getChk('pos-set-show-barcode'),
+        showHeader: getChk('pos-set-show-header'),
+        showAddress: getChk('pos-set-show-address'),
+        showPhone: getChk('pos-set-show-phone'),
+        showDate: getChk('pos-set-show-date'),
+        showPayType: getChk('pos-set-show-paytype'),
+        showCustomer: getChk('pos-set-show-customer'),
+        showNotes: getChk('pos-set-show-notes'),
+        showSku: getChk('pos-set-show-sku'),
+        barcodeEnabled: getChk('pos-set-barcode-enabled'),
+        barcodeSound: getChk('pos-set-barcode-sound'),
+    };
+    localStorage.setItem('zahraa_pos_settings', JSON.stringify(_posSettings));
+    zahraaToast('✅ تم حفظ إعدادات الكاشير', 'success');
+    closePosSettings();
+};
+
+// Load settings on init
+_loadPosSettings();
+
 let _posTheme = 'luxury';
 window._posTheme = 'luxury';
 
@@ -5136,7 +5317,7 @@ window.posCompleteSale = async function() {
     const invoiceNum = window._currentInvNum || _generateInvoiceNumber();
     const dueDate = document.getElementById('pos-due-date')?.value || null;
     const notes = document.getElementById('pos-notes')?.value.trim() || '';
-    const payLabel = _posPayType === 'cash' ? 'نقداً' : _posPayType === 'deferred' ? 'آجل' : 'جزئي';
+    const payLabel = _posPayType === 'cash' ? 'نقداً' : _posPayType === 'immediate' ? 'فوري' : _posPayType === 'deferred' ? 'آجل' : 'جزئي';
 
     const invoiceData = {
         invoiceNumber: invoiceNum,
@@ -5159,7 +5340,7 @@ window.posCompleteSale = async function() {
     };
 
     try {
-        const { addDoc, collection, serverTimestamp, increment, doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js");
+        const { addDoc, collection, serverTimestamp, increment, doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
         // Save to pos_invoices collection
         await addDoc(collection(db, 'pos_invoices'), {
             ...invoiceData,
@@ -5297,8 +5478,9 @@ function _renderPOSReceipt(inv) {
         </div>
         <!-- Footer -->
         <div style="background:${t.footerBg};color:${t.footerColor};text-align:center;padding:10px;border-top:1px solid ${t.accentColor}30;">
-            <div style="font-size:11px;margin-bottom:2px;">شكراً لتعاملكم معنا 🌹</div>
-            <div style="font-size:10px;opacity:0.7;">استوديو الزهراء — نتشرف بخدمتكم</div>
+            <div style="font-size:11px;margin-bottom:2px;">${_posSettings.footer || 'شكراً لتعاملكم معنا 🌹'}</div>
+            ${(_posSettings.phone1||_posSettings.phone2)&&(_posSettings.showPhone!==false)?`<div style="font-size:10px;opacity:0.8;">📞 ${_posSettings.phone1||''}${_posSettings.phone2?' | '+_posSettings.phone2:''}</div>`:''}
+            ${_posSettings.address&&(_posSettings.showAddress!==false)?`<div style="font-size:9px;opacity:0.6;">📍 ${_posSettings.address}</div>`:''}
         </div>
     `;
     setTimeout(() => window.print(), 400);
@@ -5322,7 +5504,7 @@ window.loadSavedInvoices = async function(filter = '') {
     if (!listEl) return;
     listEl.innerHTML = '<p style="color:#555;font-family:\'Cairo\',sans-serif;font-size:12px;text-align:center;padding:12px;">جاري التحميل...</p>';
     try {
-        const { getDocs, collection, query, orderBy, limit } = await import("https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js");
+        const { getDocs, collection, query, orderBy, limit } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
         const q = query(collection(db, 'pos_invoices'), orderBy('createdAt', 'desc'), limit(50));
         const snap = await getDocs(q);
         _savedInvoicesCache = [];
@@ -5502,7 +5684,7 @@ window.importProductsXML = async function(input) {
     }
     zahraaConfirm(`استيراد ${rows.length} منتج من XML؟`, async () => {
         try {
-            const { addDoc, collection, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js");
+            const { addDoc, collection, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
             let done = 0;
             for (const row of rows) {
                 await addDoc(collection(db, 'products'), {

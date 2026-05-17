@@ -2225,8 +2225,9 @@ window.loginWithFacebook = async () => {
         if (cart[i].qty <= 0) cart.splice(i, 1);
         persistCart();
         updateCartUI();
+        renderSpendSaveBar();
     };
-    window.removeFromCart = (i) => { cart.splice(i, 1); persistCart(); updateCartUI(); };
+    window.removeFromCart = (i) => { cart.splice(i, 1); persistCart(); updateCartUI(); renderSpendSaveBar(); };
     window.toggleCart = () => document.getElementById('cart-modal').classList.toggle('active');
 
     // Open Checkout
@@ -2580,8 +2581,13 @@ window.loginWithFacebook = async () => {
             }
             db.collection('abandoned_carts').doc(deviceId).delete().catch(()=>{});
             cart = [];
+            appliedCoupon = null;
+            window._currentSpendSaveDiscount = 0;
+            const _ci = document.getElementById('coupon-input'); if (_ci) _ci.value = '';
+            const _cm = document.getElementById('coupon-msg'); if (_cm) { _cm.innerText = ''; _cm.className = 'text-[10px]'; }
             persistCart();
             updateCartUI();
+            renderSpendSaveBar();
             closeCheckout();
             document.getElementById('success-modal').classList.add('active');
         } catch (e) {
