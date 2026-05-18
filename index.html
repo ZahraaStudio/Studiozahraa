@@ -3384,6 +3384,12 @@ window.loginWithFacebook = async () => {
         } catch (e) {}
     }
 
+    // Centralized helper: convert points to EGP discount value
+    function pointsToEGP(points, ps) {
+        const rate = (ps || pointsSettings).redeemRate || 40; // 40 pts = 1 EGP default
+        return Math.floor(points / rate);
+    }
+
 
     // ===== OPEN CHECKOUT WITH PROFILE PRE-FILL =====
     window.openCheckout = function() {
@@ -4812,8 +4818,7 @@ function renderStickyAd(ad) {
         if (currentUser) {
             db.collection('points').doc(currentUser.uid).get().then(snap => {
                 const bal = snap.exists ? (snap.data().balance||0) : 0;
-                const redeemRate = pointsSettings.redeemRate || 40;
-                const val = Math.floor(bal / redeemRate);
+                const val = pointsToEGP(bal);
                 const box = document.getElementById('points-exchange-box');
                 const balEl = document.getElementById('checkout-pts-balance');
                 const valEl = document.getElementById('checkout-pts-value');

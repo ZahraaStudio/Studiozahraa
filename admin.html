@@ -39,6 +39,24 @@
         /* Custom Notification Styles */
         #custom-notif { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; display: none; }
         .notif-content { background: #1a1a1a; border: 1px solid #d4af37; padding: 12px 24px; border-radius: 50px; box-shadow: 0 4px 20px rgba(212, 175, 55, 0.3); display: flex; align-items: center; gap: 10px; }
+
+        /* ===== MOBILE IMPROVEMENTS ===== */
+        @media (max-width: 768px) {
+            /* POS modal full screen on mobile */
+            #pos-modal > div { flex-direction: column !important; }
+            #pos-modal .pos-left-col { width: 100% !important; min-width: unset !important; max-height: 45vh; overflow-y: auto; }
+            #pos-modal .pos-right-col { width: 100% !important; min-width: unset !important; }
+            /* Admin tabs scroll */
+            .tabs-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap; }
+            /* Barcode section */
+            #barcode-section { padding: 8px !important; }
+            /* Order card buttons wrap */
+            .btn-sm { padding: 5px 8px !important; font-size: 10px !important; }
+        }
+        @media (max-width: 480px) {
+            body { padding: 4px !important; }
+            .pos-right-col { padding: 8px !important; }
+        }
     </style>
 </head>
 <body class="p-2 md:p-6">
@@ -1336,7 +1354,7 @@
                     <div class="flex flex-col gap-2 flex-shrink-0">
                         <button onclick="editProduct('${p.id}')" class="btn-sm btn-warning">تعديل</button>
                         <button onclick="deleteProduct('${p.id}')" class="btn-sm btn-danger">حذف</button>
-                        ${bc ? `<button onclick="printBarcodeLabel('${bc}','${p.name.replace(/'/g,'\\\'')}')" class="btn-sm" style="background:#1a1a2e;color:#818cf8;border:1px solid #818cf8;font-size:10px;">🏷️ باركود</button>` : ''}
+                        ${bc ? `<button onclick="printBarcodeLabel('${bc}','${p.name.replace(/'/g,'\\\'').replace(/"/g,'&quot;')}',${p.price||0})" class="btn-sm" style="background:#1a1a2e;color:#818cf8;border:1px solid #818cf8;font-size:10px;">🏷️ باركود</button>` : ''}
                     </div>
                 </div>
             `;
@@ -1447,23 +1465,31 @@
         };
 
         // ===== PRINT BARCODE LABEL =====
-        window.printBarcodeLabel = function(code, name) {
-            const win = window.open('', '_blank', 'width=320,height=200');
+        window.printBarcodeLabel = function(code, name, price) {
+            const win = window.open('', '_blank', 'width=320,height=220');
             if (!win) { zahraaToast('السماح بالنوافذ المنبثقة للطباعة', 'warning'); return; }
             win.document.write(`<!DOCTYPE html><html dir="rtl"><head>
                 <meta charset="UTF-8">
                 <title>باركود — ${name}</title>
                 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
                 <style>
-                    body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#fff;font-family:'Cairo',sans-serif;}
-                    .label{text-align:center;padding:12px 16px;border:2px dashed #ccc;border-radius:8px;display:inline-block;}
-                    .product-name{font-size:11px;font-weight:700;color:#111;margin-bottom:6px;max-width:200px;word-wrap:break-word;}
-                    .code-text{font-size:9px;color:#555;margin-top:4px;}
-                    @media print{body{padding:0;}@page{margin:4mm;size:60mm 30mm;}}
+                    *{box-sizing:border-box;margin:0;padding:0;}
+                    html,body{width:62mm;height:auto;background:#fff;font-family:'Cairo',sans-serif;}
+                    .label{text-align:center;padding:4mm 3mm;display:block;width:62mm;}
+                    .product-name{font-size:10pt;font-weight:700;color:#111;margin-bottom:2mm;word-wrap:break-word;line-height:1.3;}
+                    .price-text{font-size:11pt;font-weight:800;color:#000;margin-bottom:2mm;}
+                    .code-text{font-size:8pt;color:#333;margin-top:2mm;letter-spacing:1px;}
+                    svg{display:block;margin:0 auto;}
+                    @media print{
+                        html,body{width:62mm;height:auto;}
+                        @page{margin:0;size:62mm auto;}
+                        .label{padding:3mm 2mm;}
+                    }
                 </style>
             </head><body>
                 <div class="label">
                     <div class="product-name">${name}</div>
+                    ${price ? `<div class="price-text">${price} ج</div>` : ''}
                     <svg id="barcode"></svg>
                     <div class="code-text">${code}</div>
                 </div>
@@ -1471,13 +1497,55 @@
                     window.onload = function() {
                         try {
                             JsBarcode('#barcode', '${code.replace(/'/g,"\\'")}', {
-                                format: 'CODE128', width: 1.6, height: 40,
-                                displayValue: false, margin: 4
+                                format: 'CODE128', width: 1.5, height: 38,
+                                displayValue: false, margin: 2
                             });
-                        } catch(e) {
-                            document.getElementById('barcode').style.display='none';
-                        }
-                        setTimeout(function(){ window.print(); window.close(); }, 400);
+                        } catch(e) {}
+                        setTimeout(function(){ window.print(); window.close(); }, 500);
+                    };
+                <\/script>
+            </body></html>`);
+            win.document.close();
+        };
+
+        window.downloadAllBarcodesPDF = async function() {
+            const prods = (window._adminAllProducts || allProducts || []).filter(p => p.code || p.barcode);
+            if (!prods.length) { zahraaToast('لا توجد منتجات بباركود', 'warning'); return; }
+            zahraaToast('جاري إنشاء ملف PDF...', 'info');
+            const win = window.open('', '_blank');
+            if (!win) { zahraaToast('السماح بالنوافذ المنبثقة', 'warning'); return; }
+            const labelsHtml = prods.map(p => {
+                const bc = (p.barcode || p.code || '').replace(/'/g,"\\'");
+                const nm = (p.name || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                const pr = p.price ? p.price + ' ج' : '';
+                return `<div class="label">
+                    <div class="product-name">${nm}</div>
+                    ${pr ? `<div class="price-text">${pr}</div>` : ''}
+                    <svg class="bc" data-code="${bc}"></svg>
+                    <div class="code-text">${(p.barcode||p.code||'')}</div>
+                </div>`;
+            }).join('');
+            win.document.write(`<!DOCTYPE html><html dir="rtl"><head>
+                <meta charset="UTF-8"><title>باركودات المنتجات</title>
+                <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
+                <style>
+                    *{box-sizing:border-box;margin:0;padding:0;}
+                    body{background:#fff;font-family:'Cairo',sans-serif;direction:rtl;}
+                    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4mm;padding:6mm;}
+                    .label{text-align:center;padding:3mm 2mm;border:1px solid #ccc;border-radius:3mm;break-inside:avoid;page-break-inside:avoid;}
+                    .product-name{font-size:8pt;font-weight:700;color:#111;margin-bottom:1mm;line-height:1.3;word-wrap:break-word;max-height:2.4em;overflow:hidden;}
+                    .price-text{font-size:9pt;font-weight:800;color:#000;margin-bottom:1mm;}
+                    .code-text{font-size:7pt;color:#444;margin-top:1mm;letter-spacing:0.5px;}
+                    @media print{@page{margin:6mm;size:A4;}body{background:#fff;}}
+                </style>
+            </head><body>
+                <div class="grid">${labelsHtml}</div>
+                <script>
+                    window.onload = function() {
+                        document.querySelectorAll('.bc').forEach(function(svg) {
+                            try { JsBarcode(svg, svg.dataset.code, {format:'CODE128',width:1.2,height:28,displayValue:false,margin:1}); } catch(e){}
+                        });
+                        setTimeout(function(){ window.print(); }, 700);
                     };
                 <\/script>
             </body></html>`);
@@ -1626,6 +1694,7 @@ window.loadOrders = () => {
                             <button onclick="togglePaid('${o.id}', ${paid})" class="btn-sm ${paid ? 'bg-zinc-700' : 'bg-green-600'} text-white">${paid ? 'إلغاء الدفع' : 'تعليم كمدفوع'}</button>
                             ${hasCustomerImages ? `<button onclick="downloadOrderZip('${o.id}','customer')" class="btn-sm bg-blue-600 text-white">📦 صور العميل</button>` : ''}
                             ${hasProductImages ? `<button onclick="downloadOrderZip('${o.id}','products')" class="btn-sm bg-purple-600 text-white">🖼️ صور المنتجات</button>` : ''}
+                            ${!paid ? `<button onclick="cancelOrderSmart('${o.id}', '${(o.orderNumber||o.id.substring(0,8)).replace(/'/g,'')}')" class="btn-sm bg-red-900 hover:bg-red-700 text-white">❌ إلغاء</button>` : `<button onclick="zahraaToast('لا يمكن إلغاء طلب مدفوع — يرجى مراجعة العميل أولاً','warning')" class="btn-sm bg-zinc-700 text-zinc-400 cursor-not-allowed" title="الطلب مدفوع">🔒 إلغاء</button>`}
                             ‏<button onclick="deleteOrder('${o.id}')" class="btn-sm btn-danger">🗑️ حذف</button>
 <a href="https://wa.me/${(() => {
     let p = (o.customerPhone || '').replace(/\D/g, ''); // تنظيف الرقم من أي مسافات أو رموز
@@ -4016,19 +4085,31 @@ window.closeAdminChat = () => {
 window.deleteOrder = async (id) => {
     zahraaConfirm('حذف الطلب نهائياً؟', async () => {
         try {
-            // الطريقة الصحيحة للإصدار الحديث (Modular)
             await deleteDoc(doc(db, 'orders', id)); 
-            
             zahraaToast('تم حذف الطلب بنجاح ✅', 'success');
-            
-            // تحديث القائمة فوراً
             loadOrders(); 
         } catch (e) {
             console.error("Firebase Error:", e);
-            // إذا استمر الخطأ، سيطبع السبب الحقيقي في الـ Console (اضغط F12 لرؤيته)
             zahraaToast('خطأ: ' + e.message, 'error');
         }
     }, 'هذا الإجراء سيقوم بمسح بيانات الطلب تماماً من قاعدة البيانات ولا يمكن التراجع عنه.', '🗑️');
+};
+
+window.cancelOrderSmart = async (id, orderNum) => {
+    zahraaConfirm(
+        `إلغاء الطلب #${orderNum}؟`,
+        async () => {
+            try {
+                await updateDoc(doc(db, 'orders', id), { status: 'ملغي', cancelledAt: new Date().toISOString() });
+                zahraaToast('✅ تم إلغاء الطلب', 'success');
+                loadOrders();
+            } catch(e) {
+                zahraaToast('خطأ في الإلغاء: ' + e.message, 'error');
+            }
+        },
+        'سيتم تغيير حالة الطلب إلى "ملغي". لا يمكن إلغاء طلب مدفوع.',
+        '❌'
+    );
 };
 
 
@@ -4813,6 +4894,11 @@ window.loadDeliveryRatings = async function() {
                 <button onclick="reprintInvoice()" style="padding:12px;background:#d4af37;color:#000;border:none;border-radius:10px;font-family:'Cairo',sans-serif;font-weight:700;cursor:pointer;">🖨️ إعادة طباعة</button>
                 <button id="pos-confirm-payment-btn" onclick="confirmInvoicePayment()" style="padding:12px;background:#166534;color:#fff;border:none;border-radius:10px;font-family:'Cairo',sans-serif;font-weight:700;cursor:pointer;display:none;">✅ تأكيد سداد المتبقي</button>
             </div>
+            <div style="margin-top:8px;">
+                <a id="pos-whatsapp-btn" href="#" target="_blank" style="display:none;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;background:#25D366;color:#fff;border:none;border-radius:10px;font-family:'Cairo',sans-serif;font-weight:700;cursor:pointer;text-decoration:none;text-align:center;">
+                    💬 إرسال الفاتورة عبر واتساب
+                </a>
+            </div>
             <div id="pos-partial-payment-row" style="display:none;margin-top:8px;">
                 <div style="display:flex;gap:8px;align-items:center;">
                     <input id="pos-partial-pay-amount" type="number" min="0" placeholder="المبلغ المدفوع الآن..." style="flex:1;padding:10px;background:#1a1a1a;border:1px solid #4ade80;border-radius:8px;color:#4ade80;font-family:'Cairo',sans-serif;font-size:14px;font-weight:700;text-align:center;outline:none;">
@@ -4833,6 +4919,21 @@ window.loadDeliveryRatings = async function() {
             <!-- Receipt Header Section -->
             <div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:14px;margin-bottom:12px;">
                 <p style="color:#d4af37;font-size:12px;font-weight:700;margin:0 0 10px;">🏪 ترويسة الفاتورة</p>
+                <!-- Logo Upload -->
+                <div style="margin-bottom:10px;">
+                    <label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">🖼️ شعار المتجر (يظهر على الفاتورة)</label>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <input id="pos-set-logo-url" type="text" placeholder="رابط الشعار أو ارفع من الجهاز ←" style="flex:1;padding:7px 10px;background:#0a0a0a;border:1px solid #333;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:11px;box-sizing:border-box;outline:none;">
+                        <label style="padding:7px 10px;background:#1e3a2a;border:1px solid #22c55e;border-radius:8px;color:#4ade80;font-size:11px;cursor:pointer;white-space:nowrap;font-family:'Cairo',sans-serif;">
+                            📤 رفع
+                            <input type="file" accept="image/*" style="display:none;" onchange="uploadPosLogo(this)">
+                        </label>
+                    </div>
+                    <div id="pos-logo-preview" style="margin-top:6px;display:none;">
+                        <img id="pos-logo-preview-img" src="" style="height:50px;border-radius:6px;border:1px solid #333;object-fit:contain;">
+                        <button onclick="document.getElementById('pos-set-logo-url').value='';document.getElementById('pos-logo-preview').style.display='none';" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:12px;margin-right:6px;">✕ حذف</button>
+                    </div>
+                </div>
                 <div style="margin-bottom:8px;">
                     <label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">اسم المتجر / الشركة</label>
                     <input id="pos-set-store-name" type="text" placeholder="مثال: استوديو الزهراء" style="width:100%;padding:8px 12px;background:#0a0a0a;border:1px solid #333;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:13px;box-sizing:border-box;outline:none;">
@@ -4901,7 +5002,7 @@ window.loadDeliveryRatings = async function() {
             </div>
 
             <!-- Barcode Scanner Settings -->
-            <div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:14px;margin-bottom:16px;">
+            <div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:14px;margin-bottom:12px;">
                 <p style="color:#d4af37;font-size:12px;font-weight:700;margin:0 0 10px;">📷 إعدادات الباركود</p>
                 <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:8px;">
                     <span style="color:#ccc;font-size:12px;">تفعيل مسح الباركود عند البحث</span>
@@ -4910,6 +5011,19 @@ window.loadDeliveryRatings = async function() {
                 <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
                     <span style="color:#ccc;font-size:12px;">صوت تأكيد عند مسح الباركود</span>
                     <input type="checkbox" id="pos-set-barcode-sound" checked style="width:16px;height:16px;cursor:pointer;">
+                </label>
+            </div>
+
+            <!-- Delivery Settings -->
+            <div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:14px;margin-bottom:16px;">
+                <p style="color:#d4af37;font-size:12px;font-weight:700;margin:0 0 10px;">🚚 إعدادات التوصيل في الفاتورة</p>
+                <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:8px;">
+                    <span style="color:#ccc;font-size:12px;">🚚 إظهار بيانات المندوب على الفاتورة</span>
+                    <input type="checkbox" id="pos-set-show-agent" checked style="width:16px;height:16px;cursor:pointer;">
+                </label>
+                <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+                    <span style="color:#ccc;font-size:12px;">📍 إظهار عنوان التوصيل على الفاتورة</span>
+                    <input type="checkbox" id="pos-set-show-delivery-addr" checked style="width:16px;height:16px;cursor:pointer;">
                 </label>
             </div>
 
@@ -4955,6 +5069,12 @@ window.loadDeliveryRatings = async function() {
                                 <option value="">🚚 اختر مندوب التوصيل (اختياري)</option>
                             </select>
                             <input id="pos-delivery-fee" type="number" min="0" placeholder="رسوم التوصيل (ج)" oninput="posUpdateTotals()" style="padding:9px 12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:12px;width:100%;box-sizing:border-box;outline:none;">
+                        </div>
+                        <div style="margin-top:8px;">
+                            <input id="pos-delivery-address" type="text" placeholder="📍 عنوان التوصيل (اختياري)" style="padding:9px 12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:12px;width:100%;box-sizing:border-box;outline:none;">
+                        </div>
+                        <div style="margin-top:6px;">
+                            <textarea id="pos-delivery-notes" rows="2" placeholder="📝 ملاحظات التوصيل (مثال: الدور الثالث — اطرق الباب...)" style="padding:9px 12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:11px;width:100%;box-sizing:border-box;outline:none;resize:none;line-height:1.5;"></textarea>
                         </div>
                     </div>
 
@@ -5046,10 +5166,11 @@ window.loadDeliveryRatings = async function() {
                     <!-- Theme Selector -->
                     <div style="background:#111;border:1px solid #222;border-radius:14px;padding:12px;">
                         <label style="color:#888;font-size:11px;display:block;margin-bottom:6px;">🎨 ثيم الفاتورة:</label>
-                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;">
                             <button id="theme-btn-luxury" onclick="setPosTheme('luxury')" style="padding:8px 4px;background:#d4af37;color:#000;border:none;border-radius:8px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">✨ فاخر</button>
                             <button id="theme-btn-minimal" onclick="setPosTheme('minimal')" style="padding:8px 4px;background:#1a1a1a;color:#aaa;border:1px solid #333;border-radius:8px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">⬜ بسيط</button>
                             <button id="theme-btn-dark" onclick="setPosTheme('dark')" style="padding:8px 4px;background:#1a1a1a;color:#aaa;border:1px solid #333;border-radius:8px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">⬛ داكن</button>
+                            <button id="theme-btn-thermal" onclick="setPosTheme('thermal')" style="padding:8px 4px;background:#1a1a1a;color:#aaa;border:1px solid #333;border-radius:8px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">🖨️ حرارى</button>
                         </div>
                     </div>
 
@@ -5548,8 +5669,16 @@ window.posClearCart = function() {
     if (notesEl) notesEl.value = '';
     const nameEl = document.getElementById('pos-customer-name');
     const phoneEl = document.getElementById('pos-customer-phone');
+    const addrEl = document.getElementById('pos-delivery-address');
+    const delNotesEl = document.getElementById('pos-delivery-notes');
+    const dfEl2 = document.getElementById('pos-delivery-fee');
     if (nameEl) nameEl.value = '';
     if (phoneEl) phoneEl.value = '';
+    if (addrEl) addrEl.value = '';
+    if (delNotesEl) delNotesEl.value = '';
+    if (dfEl2) dfEl2.value = '';
+    const agentSel2 = document.getElementById('pos-delivery-agent');
+    if (agentSel2) agentSel2.value = '';
     setPosPayType('cash');
 };
 
@@ -5589,6 +5718,16 @@ window.openPosSettings = function() {
     set('pos-set-phone1', s.phone1 || '');
     set('pos-set-phone2', s.phone2 || '');
     set('pos-set-footer', s.footer || 'شكراً لثقتكم 💛');
+    set('pos-set-logo-url', s.logoUrl || '');
+    // Show logo preview if exists
+    const logoPreview = document.getElementById('pos-logo-preview');
+    const logoPreviewImg = document.getElementById('pos-logo-preview-img');
+    if (logoPreview && logoPreviewImg && s.logoUrl) {
+        logoPreviewImg.src = s.logoUrl;
+        logoPreview.style.display = 'block';
+    } else if (logoPreview) {
+        logoPreview.style.display = 'none';
+    }
     setChk('pos-set-show-barcode', s.showBarcode !== undefined ? s.showBarcode : false);
     setChk('pos-set-show-header', s.showHeader !== undefined ? s.showHeader : true);
     setChk('pos-set-show-address', s.showAddress !== undefined ? s.showAddress : true);
@@ -5600,6 +5739,8 @@ window.openPosSettings = function() {
     setChk('pos-set-show-sku', s.showSku !== undefined ? s.showSku : false);
     setChk('pos-set-barcode-enabled', s.barcodeEnabled !== undefined ? s.barcodeEnabled : true);
     setChk('pos-set-barcode-sound', s.barcodeSound !== undefined ? s.barcodeSound : true);
+    setChk('pos-set-show-agent', s.showAgent !== false);
+    setChk('pos-set-show-delivery-addr', s.showDeliveryAddr !== false);
 
     const modal = document.getElementById('pos-settings-modal');
     if (modal) { modal.style.display = 'flex'; }
@@ -5614,12 +5755,17 @@ window.savePosSettings = function() {
     const get = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
     const getChk = (id) => { const el = document.getElementById(id); return el ? el.checked : false; };
 
+    // Preserve existing logoUrl unless changed in settings
+    const existingLogo = _posSettings.logoUrl || '';
+    const newLogoUrl = get('pos-set-logo-url') || existingLogo;
+
     _posSettings = {
         storeName: get('pos-set-store-name') || 'استوديو الزهراء',
         address: get('pos-set-address'),
         phone1: get('pos-set-phone1'),
         phone2: get('pos-set-phone2'),
         footer: get('pos-set-footer') || 'شكراً لثقتكم 💛',
+        logoUrl: newLogoUrl,
         showBarcode: getChk('pos-set-show-barcode'),
         showHeader: getChk('pos-set-show-header'),
         showAddress: getChk('pos-set-show-address'),
@@ -5631,10 +5777,39 @@ window.savePosSettings = function() {
         showSku: getChk('pos-set-show-sku'),
         barcodeEnabled: getChk('pos-set-barcode-enabled'),
         barcodeSound: getChk('pos-set-barcode-sound'),
+        showAgent: getChk('pos-set-show-agent'),
+        showDeliveryAddr: getChk('pos-set-show-delivery-addr'),
     };
     localStorage.setItem('zahraa_pos_settings', JSON.stringify(_posSettings));
     zahraaToast('✅ تم حفظ إعدادات الكاشير', 'success');
     closePosSettings();
+};
+
+// Cloudinary logo upload for POS settings
+window.uploadPosLogo = async function(input) {
+    if (!input.files?.length) return;
+    const file = input.files[0];
+    input.value = '';
+    zahraaToast('جاري رفع الشعار...', 'info');
+    const CLD_URL = 'https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload';
+    const CLD_PRESET = 'zahraa_upload';
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CLD_PRESET);
+        const res = await fetch(CLD_URL, { method: 'POST', body: formData });
+        const data = await res.json();
+        if (!data.secure_url) throw new Error('فشل رفع الشعار');
+        const logoInput = document.getElementById('pos-set-logo-url');
+        const logoPreview = document.getElementById('pos-logo-preview');
+        const logoPreviewImg = document.getElementById('pos-logo-preview-img');
+        if (logoInput) logoInput.value = data.secure_url;
+        if (logoPreviewImg) logoPreviewImg.src = data.secure_url;
+        if (logoPreview) logoPreview.style.display = 'block';
+        zahraaToast('✅ تم رفع الشعار بنجاح', 'success');
+    } catch(e) {
+        zahraaToast('خطأ في رفع الشعار: ' + e.message, 'error');
+    }
 };
 
 // Load settings on init
@@ -5646,30 +5821,33 @@ window._posTheme = 'luxury';
 window.setPosTheme = function(theme) {
     _posTheme = theme;
     window._posTheme = theme;
-    const themes = ['luxury','minimal','dark'];
+    const themes = ['luxury','minimal','dark','thermal'];
+    const activeStyles = {
+        luxury:  { background:'#d4af37', color:'#000', border:'none' },
+        minimal: { background:'#e0e0e0', color:'#111', border:'1px solid #bbb' },
+        dark:    { background:'#333',    color:'#fff', border:'1px solid #555' },
+        thermal: { background:'#111',    color:'#fff', border:'1px solid #888' }
+    };
     themes.forEach(t => {
         const btn = document.getElementById('theme-btn-' + t);
         if (!btn) return;
         if (t === theme) {
-            if (t === 'luxury') {
-                btn.style.background = '#d4af37'; btn.style.color = '#000'; btn.style.border = 'none';
-            } else if (t === 'minimal') {
-                btn.style.background = '#e0e0e0'; btn.style.color = '#111'; btn.style.border = '1px solid #bbb';
-            } else {
-                btn.style.background = '#333'; btn.style.color = '#fff'; btn.style.border = '1px solid #555';
-            }
+            const s = activeStyles[t] || activeStyles.luxury;
+            btn.style.background = s.background; btn.style.color = s.color; btn.style.border = s.border;
         } else {
             btn.style.background = '#1a1a1a'; btn.style.color = '#888'; btn.style.border = '1px solid #333';
         }
     });
-    zahraaToast('ثيم الفاتورة: ' + {luxury:'✨ فاخر',minimal:'⬜ بسيط',dark:'⬛ داكن'}[theme], 'success');
+    const labels = {luxury:'✨ فاخر',minimal:'⬜ بسيط',dark:'⬛ داكن',thermal:'🖨️ حرارى'};
+    zahraaToast('ثيم الفاتورة: ' + (labels[theme]||theme), 'success');
 };
 
 window.posCompleteSale = async function() {
     if (!_posCart.length) { zahraaToast('السلة فارغة — أضف منتجات أولاً', 'warning'); return; }
     const subtotal = _posCart.reduce((a,b) => a + (b.price * b.qty), 0);
     const discount = parseFloat(document.getElementById('pos-discount').value) || 0;
-    const total = Math.max(0, subtotal - discount);
+    const deliveryFee = parseFloat(document.getElementById('pos-delivery-fee')?.value) || 0;
+    const total = Math.max(0, subtotal - discount + deliveryFee);
     const paid = _posPayType === 'deferred' ? 0 : (parseFloat(document.getElementById('pos-paid').value) || 0);
     const remaining = _posPayType === 'deferred' ? total : Math.max(0, total - paid);
     const customerName = document.getElementById('pos-customer-name').value.trim() || 'عميل نقدي';
@@ -5677,7 +5855,8 @@ window.posCompleteSale = async function() {
     const invoiceNum = window._currentInvNum || _generateInvoiceNumber();
     const dueDate = document.getElementById('pos-due-date')?.value || null;
     const notes = document.getElementById('pos-notes')?.value.trim() || '';
-    const deliveryFee = parseFloat(document.getElementById('pos-delivery-fee')?.value) || 0;
+    const deliveryAddress = document.getElementById('pos-delivery-address')?.value.trim() || '';
+    const deliveryNotes = document.getElementById('pos-delivery-notes')?.value.trim() || '';
     const agentSel = document.getElementById('pos-delivery-agent');
     const agentId = agentSel?.value || '';
     const agentName = agentId ? (agentSel.options[agentSel.selectedIndex]?.text || '') : '';
@@ -5691,6 +5870,8 @@ window.posCompleteSale = async function() {
         deliveryFee: deliveryFee || 0,
         deliveryAgentId: agentId || null,
         deliveryAgentName: agentName || null,
+        deliveryAddress: deliveryAddress || null,
+        deliveryNotes: deliveryNotes || null,
         totalPrice: total,
         paidAmount: paid,
         remainingAmount: remaining,
@@ -5707,12 +5888,24 @@ window.posCompleteSale = async function() {
     };
 
     try {
-        const { addDoc, collection, serverTimestamp, increment, doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+        const { addDoc, collection, serverTimestamp, increment, doc, updateDoc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
         // Save ONLY to pos_invoices — POS sales are separate from online orders
         await addDoc(collection(db, 'pos_invoices'), {
             ...invoiceData,
             createdAt: serverTimestamp()
         });
+        // Auto-save customer profile if phone provided
+        if (customerPhone) {
+            try {
+                await setDoc(doc(db, 'pos_customers', customerPhone), {
+                    name: customerName,
+                    phone: customerPhone,
+                    lastVisit: serverTimestamp(),
+                    totalSpent: increment(total),
+                    invoiceCount: increment(1)
+                }, { merge: true });
+            } catch(e) {}
+        }
         // Deduct inventory
         for (const item of _posCart) {
             try {
@@ -5738,6 +5931,8 @@ function _renderPOSReceipt(inv) {
     const itemsHTML = inv.items.map(i =>
         `<div class="r-row"><span>${i.name} × ${i.qty}</span><span>${(i.price*i.qty).toFixed(2)} ج</span></div>`
     ).join('');
+    const storeLogo = _posSettings.logoUrl || '';
+    const storeName = _posSettings.storeName || 'استوديو الزهراء';
 
     // Theme styles
     const themeStyles = {
@@ -5752,7 +5947,7 @@ function _renderPOSReceipt(inv) {
             footerColor: '#d4af37',
             totalColor: '#b8962e',
             ornament: '✦ ——— ✦',
-            logo: '👑 استوديو الزهراء 👑',
+            logo: storeLogo ? `<img src="${storeLogo}" style="height:50px;object-fit:contain;margin-bottom:4px;display:block;margin-left:auto;margin-right:auto;">` : `👑 ${storeName} 👑`,
             tagline: '✨ الأناقة والفخامة معاً ✨',
         },
         minimal: {
@@ -5766,7 +5961,7 @@ function _renderPOSReceipt(inv) {
             footerColor: '#555',
             totalColor: '#000',
             ornament: '────────────',
-            logo: 'استوديو الزهراء',
+            logo: storeLogo ? `<img src="${storeLogo}" style="height:44px;object-fit:contain;margin-bottom:4px;display:block;margin-left:auto;margin-right:auto;">` : storeName,
             tagline: 'فاتورة مبيعات',
         },
         dark: {
@@ -5780,8 +5975,22 @@ function _renderPOSReceipt(inv) {
             footerColor: '#888',
             totalColor: '#fff',
             ornament: '— ◆ —',
-            logo: '⬛ استوديو الزهراء',
+            logo: storeLogo ? `<img src="${storeLogo}" style="height:44px;object-fit:contain;margin-bottom:4px;display:block;margin-left:auto;margin-right:auto;">` : `⬛ ${storeName}`,
             tagline: 'فاتورة مبيعات',
+        },
+        thermal: {
+            headerBg: '#fff',
+            headerColor: '#000',
+            accentColor: '#000',
+            bodyBg: '#fff',
+            bodyColor: '#000',
+            border: '1px solid #000',
+            footerBg: '#fff',
+            footerColor: '#000',
+            totalColor: '#000',
+            ornament: '================================',
+            logo: storeLogo ? `<img src="${storeLogo}" style="height:44px;object-fit:contain;margin-bottom:4px;display:block;margin-left:auto;margin-right:auto;">` : `** ${storeName} **`,
+            tagline: 'فاتورة مبيعات — نقطة البيع',
         }
     };
     const t = themeStyles[theme] || themeStyles.luxury;
@@ -5815,12 +6024,16 @@ function _renderPOSReceipt(inv) {
             ${inv.phone ? `<div class="r-row" style="color:${t.bodyColor};"><span>الهاتف</span><span>${inv.phone}</span></div>` : ''}
             <div class="r-row" style="color:${t.bodyColor};"><span>الدفع</span><span style="color:${t.accentColor};font-weight:700;">${inv.paymentMethod}</span></div>
             ${inv.dueDate ? `<div class="r-row" style="color:#e67e22;font-weight:700;"><span>📅 تاريخ الاستلام</span><span>${inv.dueDate}</span></div>` : ''}
+            ${inv.deliveryAgentName && _posSettings.showAgent !== false ? `<div class="r-row" style="color:${t.bodyColor};"><span>🚚 المندوب</span><span>${inv.deliveryAgentName}</span></div>` : ''}
+            ${inv.deliveryAddress && _posSettings.showDeliveryAddr !== false ? `<div class="r-row" style="color:${t.bodyColor};"><span>📍 عنوان التوصيل</span><span style="font-size:10px;">${inv.deliveryAddress}</span></div>` : ''}
+            ${inv.deliveryNotes ? `<div class="r-row" style="color:${t.bodyColor};"><span>📝 ملاحظات التوصيل</span><span style="font-size:10px;">${inv.deliveryNotes}</span></div>` : ''}
             <div style="border-top:1px dashed ${t.accentColor}50;margin:8px 0;"></div>
             <div style="font-weight:700;font-size:11px;margin-bottom:6px;color:${t.accentColor};">المنتجات:</div>
             ${itemsHTML}
             <div style="border-top:1px dashed ${t.accentColor}50;margin:8px 0;"></div>
             <div class="r-row" style="color:${t.bodyColor};"><span>المجموع الفرعي</span><span>${inv.subtotal.toFixed(2)} ج</span></div>
             ${inv.discountAmount ? `<div class="r-row" style="color:#e74c3c;"><span>خصم</span><span>- ${inv.discountAmount.toFixed(2)} ج</span></div>` : ''}
+            ${(inv.deliveryFee||0) > 0 ? `<div class="r-row" style="color:#3b82f6;"><span>🚚 التوصيل</span><span>+ ${(inv.deliveryFee).toFixed(2)} ج</span></div>` : ''}
             <div class="r-row r-bold r-lg" style="color:${t.totalColor};margin-top:4px;padding-top:6px;border-top:2px solid ${t.accentColor}50;"><span>الإجمالي</span><span>${inv.totalPrice.toFixed(2)} ج</span></div>
             ${inv.paidAmount ? `<div class="r-row" style="color:#27ae60;"><span>✅ المدفوع</span><span>${inv.paidAmount.toFixed(2)} ج</span></div>` : ''}
             ${inv.remainingAmount > 0 ? `<div class="r-row r-bold" style="color:#e74c3c;background:#ffeaea;padding:4px 6px;border-radius:6px;margin-top:4px;"><span>⚠️ المتبقي</span><span>${inv.remainingAmount.toFixed(2)} ج</span></div>` : ''}
@@ -5837,6 +6050,17 @@ function _renderPOSReceipt(inv) {
             ${_posSettings.address&&(_posSettings.showAddress!==false)?`<div style="font-size:9px;opacity:0.6;">📍 ${_posSettings.address}</div>`:''}
         </div>
     `;
+    // Show WhatsApp button if customer has phone
+    const waBtn = document.getElementById('pos-whatsapp-btn');
+    if (waBtn && inv.phone) {
+        const phone = inv.phone.replace(/\D/g,'');
+        const waPhone = phone.startsWith('01') ? '2'+phone : phone.startsWith('1') ? '20'+phone : phone;
+        const msg = encodeURIComponent(`مرحباً ${inv.userName}،\nشكراً لتسوقك معنا 🌹\nرقم فاتورتك: ${inv.invoiceNumber}\nالإجمالي: ${inv.totalPrice.toFixed(2)} ج\n${inv.remainingAmount > 0 ? 'المتبقي: '+inv.remainingAmount.toFixed(2)+' ج' : '✅ تم السداد الكامل'}`);
+        waBtn.href = `https://wa.me/${waPhone}?text=${msg}`;
+        waBtn.style.display = 'inline-flex';
+    } else if (waBtn) {
+        waBtn.style.display = 'none';
+    }
     setTimeout(() => window.print(), 400);
 }
 
