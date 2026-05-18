@@ -2165,30 +2165,66 @@ window.loadOrders = () => {
         // ==================== REFERRALS ====================
         window.loadReferrals = async () => {
             const list = document.getElementById('referrals-list');
-            const snapshot = await getDocs(query(collection(db, 'referrals'), orderBy('timestamp', 'desc')));
-            list.innerHTML = "";
-            if (snapshot.empty) {
-                list.innerHTML = '<p class="text-center text-zinc-500 py-10">لا توجد إحالات ناجحة حتى الآن</p>';
-                return;
+            list.innerHTML = '<p class="text-center text-zinc-500 py-6 text-sm">جاري التحميل...</p>';
+            try {
+                // Try ordering by createdAt first, fallback to timestamp
+                let snapshot;
+                try {
+                    snapshot = await getDocs(query(collection(db, 'referrals'), orderBy('createdAt', 'desc'), limit(100)));
+                } catch(e1) {
+                    try {
+                        snapshot = await getDocs(query(collection(db, 'referrals'), orderBy('timestamp', 'desc'), limit(100)));
+                    } catch(e2) {
+                        snapshot = await getDocs(collection(db, 'referrals'));
+                    }
+                }
+                list.innerHTML = '';
+                if (snapshot.empty) {
+                    list.innerHTML = '<p class="text-center text-zinc-500 py-10">لا توجد إحالات حتى الآن</p>';
+                    return;
+                }
+                // Also load users map for names
+                let usersMap = {};
+                try {
+                    const uSnap = await getDocs(collection(db, 'users'));
+                    uSnap.forEach(d => { usersMap[d.id] = d.data(); });
+                } catch(e) {}
+                let total = 0;
+                snapshot.forEach(docSnap => {
+                    const r = docSnap.data();
+                    const date = (r.createdAt||r.timestamp)?.toDate ? (r.createdAt||r.timestamp).toDate().toLocaleString('ar-EG') : 'غير محدد';
+                    const referrerInfo = usersMap[r.referrerUid] || {};
+                    const referrerName = referrerInfo.name || referrerInfo.displayName || r.referrerUid?.substring(0,12) + '...' || '—';
+                    const referredInfo = usersMap[r.referredUid] || {};
+                    const referredName = referredInfo.name || referredInfo.displayName || r.referredUid?.substring(0,10) + '...' || '—';
+                    const amt = r.amount || r.rewardAmount || 0;
+                    total += amt;
+                    list.innerHTML += `
+                        <div class="p-4 bg-black rounded-xl border border-zinc-800">
+                            <div class="flex justify-between items-start gap-4">
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-xs text-zinc-500 mb-1">📅 ${date}</p>
+                                    <p class="text-sm">المُحيل: <span class="gold-text font-bold">${referrerName}</span></p>
+                                    <p class="text-xs text-zinc-400">المُحال إليه: <span class="text-blue-400">${referredName}</span></p>
+                                    <p class="text-[10px] text-zinc-500 mt-1">كود المكافأة: <span class="text-yellow-500">${r.couponCode || '—'}</span></p>
+                                    <p class="text-[10px] text-zinc-600">طلب: ${r.orderId ? r.orderId.substring(0,12) : '—'}</p>
+                                </div>
+                                <div class="flex flex-col items-end gap-2">
+                                    <p class="font-bold text-green-400 text-lg">+${amt} ج</p>
+                                    <span class="text-[10px] px-2 py-0.5 rounded ${r.status==='completed'?'bg-green-900 text-green-400':'bg-zinc-800 text-zinc-400'}">${r.status||'مكتمل'}</span>
+                                    <button onclick="deleteReferral('${docSnap.id}')" class="btn-sm btn-danger text-[10px]">حذف</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                // Summary header
+                list.insertAdjacentHTML('afterbegin', `<div class="mb-4 p-3 bg-green-900/20 border border-green-800/40 rounded-xl text-center">
+                    <p class="text-sm text-zinc-400">إجمالي الإحالات: <span class="gold-text font-bold">${snapshot.size}</span> | إجمالي المكافآت: <span class="text-green-400 font-bold">${total} ج</span></p>
+                </div>`);
+            } catch(e) {
+                list.innerHTML = `<p class="text-center text-red-400 py-10">خطأ في تحميل الإحالات: ${e.message}</p>`;
             }
-            snapshot.forEach(docSnap => {
-                const r = docSnap.data();
-                const date = r.timestamp?.toDate ? r.timestamp.toDate().toLocaleString('ar-EG') : 'N/A';
-                list.innerHTML += `
-                    <div class="p-4 bg-black rounded-xl border border-zinc-800 flex justify-between items-center">
-                        <div class="flex-1 min-w-0">
-                            <p class="text-xs text-zinc-500 mb-1">${date}</p>
-                            <p class="text-sm">المُحيل: <span class="gold-text font-bold">${r.referrerUid.substring(0,10)}...</span></p>
-                            <p class="text-[10px] text-zinc-400">كود المكافأة: ${r.couponCode || '—'}</p>
-                            <p class="text-[10px] text-zinc-500">طلب: ${r.orderId ? r.orderId.substring(0,8) : '—'}</p>
-                        </div>
-                        <div class="text-left flex flex-col items-end gap-2">
-                            <p class="font-bold text-green-500">+${r.amount || 0} ج</p>
-                            <button onclick="deleteReferral('${docSnap.id}')" class="btn-sm btn-danger text-[10px]">حذف</button>
-                        </div>
-                    </div>
-                `;
-            });
         };
 
         window.saveRewardSettings = async () => {
@@ -5015,7 +5051,7 @@ window.loadDeliveryRatings = async function() {
             </div>
 
             <!-- Delivery Settings -->
-            <div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:14px;margin-bottom:16px;">
+            <div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:14px;margin-bottom:12px;">
                 <p style="color:#d4af37;font-size:12px;font-weight:700;margin:0 0 10px;">🚚 إعدادات التوصيل في الفاتورة</p>
                 <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:8px;">
                     <span style="color:#ccc;font-size:12px;">🚚 إظهار بيانات المندوب على الفاتورة</span>
@@ -5025,6 +5061,27 @@ window.loadDeliveryRatings = async function() {
                     <span style="color:#ccc;font-size:12px;">📍 إظهار عنوان التوصيل على الفاتورة</span>
                     <input type="checkbox" id="pos-set-show-delivery-addr" checked style="width:16px;height:16px;cursor:pointer;">
                 </label>
+            </div>
+
+            <!-- Printer Settings -->
+            <div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:14px;margin-bottom:16px;">
+                <p style="color:#d4af37;font-size:12px;font-weight:700;margin:0 0 10px;">🖨️ إعدادات الطباعة</p>
+                <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:8px;">
+                    <span style="color:#ccc;font-size:12px;">طباعة تلقائية بعد إتمام البيع</span>
+                    <input type="checkbox" id="pos-set-auto-print" checked style="width:16px;height:16px;cursor:pointer;">
+                </label>
+                <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:8px;">
+                    <span style="color:#ccc;font-size:12px;">معاينة الفاتورة قبل الطباعة</span>
+                    <input type="checkbox" id="pos-set-preview-first" style="width:16px;height:16px;cursor:pointer;">
+                </label>
+                <div style="margin-top:8px;">
+                    <label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">عرض الفاتورة الحرارية (mm)</label>
+                    <select id="pos-set-receipt-width" style="width:100%;padding:8px;background:#0a0a0a;border:1px solid #333;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:12px;outline:none;">
+                        <option value="58">58mm (صغير)</option>
+                        <option value="80" selected>80mm (متوسط - قياسي)</option>
+                        <option value="A4">A4 (ورقة عادية)</option>
+                    </select>
+                </div>
             </div>
 
             <button onclick="savePosSettings()" style="width:100%;padding:13px;background:linear-gradient(135deg,#d4af37,#b8962e);color:#000;border:none;border-radius:12px;font-family:'Cairo',sans-serif;font-weight:800;font-size:14px;cursor:pointer;">💾 حفظ الإعدادات</button>
@@ -5102,11 +5159,24 @@ window.loadDeliveryRatings = async function() {
                         </div>
                     </div>
 
-                    <!-- Product Search -->
+                    <!-- Product Search + Camera Scanner -->
                     <div style="position:relative;">
-                        <input id="pos-search" type="text" placeholder="🔍 ابحث باسم المنتج أو الكود أو الباركود..." oninput="posSearch(this.value)"
-                            style="width:100%;padding:12px 16px;background:#111;border:2px solid #d4af37;border-radius:12px;color:#fff;font-family:'Cairo',sans-serif;font-size:13px;box-sizing:border-box;outline:none;">
+                        <div style="display:flex;gap:6px;align-items:center;">
+                            <input id="pos-search" type="text" placeholder="🔍 ابحث باسم المنتج أو الكود أو الباركود..." oninput="posSearch(this.value)"
+                                style="flex:1;padding:12px 16px;background:#111;border:2px solid #d4af37;border-radius:12px;color:#fff;font-family:'Cairo',sans-serif;font-size:13px;box-sizing:border-box;outline:none;">
+                            <button onclick="openPosCameraScanner()" title="مسح باركود بكاميرا الموبايل" style="padding:10px 12px;background:#1a1a1a;border:1.5px solid #d4af37;border-radius:10px;color:#d4af37;font-size:18px;cursor:pointer;flex-shrink:0;">📷</button>
+                        </div>
                         <div id="pos-search-results" style="position:absolute;top:100%;right:0;left:0;background:#1a1a1a;border:1px solid #333;border-top:none;border-radius:0 0 12px 12px;max-height:260px;overflow-y:auto;z-index:20;display:none;"></div>
+                    </div>
+                    <!-- Camera Scanner Panel (hidden by default) -->
+                    <div id="pos-camera-panel" style="display:none;background:#0a0a0a;border:1.5px solid #d4af37;border-radius:12px;padding:12px;text-align:center;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                            <span style="color:#d4af37;font-size:12px;font-weight:700;">📷 مسح الباركود بالكاميرا</span>
+                            <button onclick="closePosCameraScanner()" style="background:none;border:none;color:#888;cursor:pointer;font-size:16px;">✕</button>
+                        </div>
+                        <video id="pos-camera-video" style="width:100%;max-width:300px;border-radius:8px;border:1px solid #333;" autoplay playsinline muted></video>
+                        <canvas id="pos-camera-canvas" style="display:none;"></canvas>
+                        <p id="pos-camera-status" style="color:#888;font-size:11px;margin-top:6px;">اقترب من الباركود...</p>
                     </div>
 
                     <!-- Cart Table -->
@@ -5176,7 +5246,10 @@ window.loadDeliveryRatings = async function() {
 
                     <!-- Action Buttons -->
                     <button onclick="posCompleteSale()" style="width:100%;padding:16px;background:linear-gradient(135deg,#d4af37,#b8962e);color:#000;border:none;border-radius:14px;font-weight:800;font-size:15px;cursor:pointer;font-family:'Cairo',sans-serif;box-shadow:0 4px 20px #d4af3730;">✅ إتمام البيع وطباعة</button>
-                    <button onclick="posClearCart()" style="width:100%;padding:11px;background:#1a1a1a;color:#888;border:1px solid #333;border-radius:12px;font-weight:600;font-size:13px;cursor:pointer;font-family:'Cairo',sans-serif;">🗑️ إفراغ الكاشير</button>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                        <button onclick="posPreviewInvoice()" style="padding:11px;background:#1a1a1a;color:#d4af37;border:1px solid #d4af3760;border-radius:12px;font-weight:700;font-size:12px;cursor:pointer;font-family:'Cairo',sans-serif;">👁️ معاينة الفاتورة</button>
+                        <button onclick="posClearCart()" style="padding:11px;background:#1a1a1a;color:#888;border:1px solid #333;border-radius:12px;font-weight:600;font-size:12px;cursor:pointer;font-family:'Cairo',sans-serif;">🗑️ إفراغ</button>
+                    </div>
                 </div>
             </div>
 
@@ -5448,7 +5521,7 @@ function _generateInvoiceNumber() {
     return 'INV-' + d + '-' + rand;
 }
 
-window.openPOS = function() {
+window.openPOS = async function() {
     _posCart = [];
     _posPayType = 'cash';
     const invNum = _generateInvoiceNumber();
@@ -5462,15 +5535,80 @@ window.openPOS = function() {
     document.getElementById('pos-paid').value = '0';
     const dfEl = document.getElementById('pos-delivery-fee');
     if (dfEl) dfEl.value = '';
+    const addrEl2 = document.getElementById('pos-delivery-address');
+    if (addrEl2) addrEl2.value = '';
+    const notesEl2 = document.getElementById('pos-delivery-notes');
+    if (notesEl2) notesEl2.value = '';
     const dueDateRow = document.getElementById('pos-due-date-row');
     if (dueDateRow) dueDateRow.style.display = 'block';
     const savedPanel = document.getElementById('pos-saved-invoices-panel');
     if (savedPanel) savedPanel.style.display = 'none';
     setPosPayType('cash');
     posRenderCart();
-    // Populate delivery agent dropdown
+    // Load agents from Firestore if cache is empty
+    if (!_allAgents || _allAgents.length === 0) {
+        try {
+            const snap = await getDocs(collection(db, 'delivery_agents'));
+            _allAgents = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        } catch(e) { console.warn('Could not load agents', e); }
+    }
     _populatePosAgentDropdown();
     document.getElementById('pos-modal').style.display = 'block';
+    // Focus search
+    setTimeout(() => { document.getElementById('pos-search')?.focus(); }, 200);
+};
+
+// ===== BARCODE CAMERA SCANNER =====
+let _cameraStream = null;
+let _cameraInterval = null;
+
+window.openPosCameraScanner = async function() {
+    const panel = document.getElementById('pos-camera-panel');
+    const video = document.getElementById('pos-camera-video');
+    const status = document.getElementById('pos-camera-status');
+    if (!panel || !video) return;
+    panel.style.display = 'block';
+    try {
+        _cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+        video.srcObject = _cameraStream;
+        await video.play();
+        status.textContent = 'اقترب من الباركود...';
+        // Use BarcodeDetector if available (Chrome/Samsung)
+        if ('BarcodeDetector' in window) {
+            const detector = new BarcodeDetector({ formats: ['code_128','code_39','ean_13','ean_8','qr_code','upc_a','upc_e'] });
+            _cameraInterval = setInterval(async () => {
+                try {
+                    const codes = await detector.detect(video);
+                    if (codes.length > 0) {
+                        const code = codes[0].rawValue;
+                        closePosCameraScanner();
+                        status.textContent = '✅ تم المسح: ' + code;
+                        document.getElementById('pos-search').value = code;
+                        posSearch(code);
+                        if (_posSettings.barcodeSound !== false) {
+                            try { const ctx = new AudioContext(); const o = ctx.createOscillator(); o.connect(ctx.destination); o.frequency.value = 880; o.start(); o.stop(ctx.currentTime + 0.1); } catch(e) {}
+                        }
+                    }
+                } catch(e) {}
+            }, 300);
+        } else {
+            // Fallback: use canvas-based scanning (very basic, just as fallback)
+            status.textContent = 'جاري البحث... (تأكد من أن الباركود في منتصف الشاشة)';
+            // For production use ZXing or Quagga — here we just show the camera
+        }
+    } catch(err) {
+        status.textContent = 'تعذر الوصول للكاميرا: ' + err.message;
+        zahraaToast('لا يمكن الوصول للكاميرا — تأكد من الصلاحيات', 'error');
+    }
+};
+
+window.closePosCameraScanner = function() {
+    const panel = document.getElementById('pos-camera-panel');
+    if (_cameraInterval) { clearInterval(_cameraInterval); _cameraInterval = null; }
+    if (_cameraStream) { _cameraStream.getTracks().forEach(t => t.stop()); _cameraStream = null; }
+    const video = document.getElementById('pos-camera-video');
+    if (video) video.srcObject = null;
+    if (panel) panel.style.display = 'none';
 };
 
 function _populatePosAgentDropdown() {
@@ -5741,6 +5879,10 @@ window.openPosSettings = function() {
     setChk('pos-set-barcode-sound', s.barcodeSound !== undefined ? s.barcodeSound : true);
     setChk('pos-set-show-agent', s.showAgent !== false);
     setChk('pos-set-show-delivery-addr', s.showDeliveryAddr !== false);
+    setChk('pos-set-auto-print', s.autoPrint !== false);
+    setChk('pos-set-preview-first', s.previewFirst === true);
+    const rwEl = document.getElementById('pos-set-receipt-width');
+    if (rwEl) rwEl.value = s.receiptWidth || '80';
 
     const modal = document.getElementById('pos-settings-modal');
     if (modal) { modal.style.display = 'flex'; }
@@ -5779,6 +5921,9 @@ window.savePosSettings = function() {
         barcodeSound: getChk('pos-set-barcode-sound'),
         showAgent: getChk('pos-set-show-agent'),
         showDeliveryAddr: getChk('pos-set-show-delivery-addr'),
+        autoPrint: getChk('pos-set-auto-print'),
+        previewFirst: getChk('pos-set-preview-first'),
+        receiptWidth: (document.getElementById('pos-set-receipt-width')?.value) || '80',
     };
     localStorage.setItem('zahraa_pos_settings', JSON.stringify(_posSettings));
     zahraaToast('✅ تم حفظ إعدادات الكاشير', 'success');
@@ -6061,11 +6206,67 @@ function _renderPOSReceipt(inv) {
     } else if (waBtn) {
         waBtn.style.display = 'none';
     }
-    setTimeout(() => window.print(), 400);
+    // Auto-print based on settings
+    const s = _posSettings;
+    if (s.previewFirst) {
+        // Don't print — user can manually click print
+        zahraaToast('معاينة الفاتورة جاهزة — اضغط طباعة عند الاستعداد', 'info');
+    } else if (s.autoPrint !== false) {
+        setTimeout(() => window.print(), 400);
+    }
 }
 
 window.reprintInvoice = function() {
     if (_lastInvoiceData) _renderPOSReceipt(_lastInvoiceData);
+};
+
+// Invoice preview without printing
+window.posPreviewInvoice = function() {
+    if (_posCart.length === 0) { zahraaToast('أضف منتجات للكاشير أولاً', 'warning'); return; }
+    const subtotal = _posCart.reduce((s, i) => s + i.price * i.qty, 0);
+    const discountRaw = parseFloat(document.getElementById('pos-discount')?.value) || 0;
+    const discountPct = document.getElementById('pos-discount-type')?.value === 'percent';
+    const discountAmount = discountPct ? Math.round(subtotal * discountRaw / 100) : discountRaw;
+    const deliveryFee = parseFloat(document.getElementById('pos-delivery-fee')?.value) || 0;
+    const totalPrice = Math.max(0, subtotal - discountAmount + deliveryFee);
+    const paidAmount = parseFloat(document.getElementById('pos-paid')?.value) || 0;
+    const remaining = Math.max(0, totalPrice - paidAmount);
+
+    const previewHtml = `
+        <div style="background:#fff;padding:16px;border-radius:8px;max-width:320px;margin:auto;font-family:'Cairo',sans-serif;direction:rtl;color:#111;">
+            <div style="text-align:center;font-size:16px;font-weight:800;border-bottom:2px dashed #000;padding-bottom:8px;margin-bottom:10px;">
+                ${_posSettings.storeName || 'استوديو الزهراء'}
+            </div>
+            <div style="font-size:11px;margin-bottom:6px;"><b>العميل:</b> ${document.getElementById('pos-customer-name')?.value || '—'}</div>
+            <div style="font-size:11px;margin-bottom:6px;"><b>الهاتف:</b> ${document.getElementById('pos-customer-phone')?.value || '—'}</div>
+            <div style="border-top:1px dashed #ccc;margin:8px 0;"></div>
+            ${_posCart.map(i => `<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;"><span>${i.name} × ${i.qty}</span><span>${i.price * i.qty} ج</span></div>`).join('')}
+            <div style="border-top:1px dashed #ccc;margin:8px 0;"></div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;"><span>المجموع الفرعي</span><span>${subtotal} ج</span></div>
+            ${discountAmount > 0 ? `<div style="display:flex;justify-content:space-between;font-size:11px;color:#e74c3c;"><span>خصم</span><span>-${discountAmount} ج</span></div>` : ''}
+            ${deliveryFee > 0 ? `<div style="display:flex;justify-content:space-between;font-size:11px;color:#3b82f6;"><span>توصيل</span><span>+${deliveryFee} ج</span></div>` : ''}
+            <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:800;border-top:2px solid #000;margin-top:6px;padding-top:6px;"><span>الإجمالي</span><span>${totalPrice} ج</span></div>
+            ${paidAmount > 0 ? `<div style="display:flex;justify-content:space-between;font-size:11px;color:#27ae60;"><span>المدفوع</span><span>${paidAmount} ج</span></div>` : ''}
+            ${remaining > 0 ? `<div style="display:flex;justify-content:space-between;font-size:11px;color:#e74c3c;font-weight:700;"><span>المتبقي</span><span>${remaining} ج</span></div>` : ''}
+        </div>
+    `;
+    const old = document.getElementById('pos-preview-modal');
+    if (old) old.remove();
+    const m = document.createElement('div');
+    m.id = 'pos-preview-modal';
+    m.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;padding:20px;';
+    m.innerHTML = `<div style="background:#1a1a1a;border:1px solid #d4af37;border-radius:16px;padding:20px;max-width:400px;width:100%;max-height:90vh;overflow-y:auto;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <span style="color:#d4af37;font-weight:700;font-size:14px;font-family:'Cairo',sans-serif;">👁️ معاينة الفاتورة</span>
+            <button onclick="document.getElementById('pos-preview-modal').remove()" style="background:none;border:none;color:#888;cursor:pointer;font-size:18px;">✕</button>
+        </div>
+        ${previewHtml}
+        <div style="display:flex;gap:8px;margin-top:14px;">
+            <button onclick="posCompleteSale();document.getElementById('pos-preview-modal').remove();" style="flex:1;padding:12px;background:linear-gradient(135deg,#d4af37,#b8962e);color:#000;border:none;border-radius:10px;font-family:'Cairo',sans-serif;font-weight:800;cursor:pointer;font-size:13px;">✅ إتمام ومطبع</button>
+            <button onclick="document.getElementById('pos-preview-modal').remove()" style="padding:12px 16px;background:#1a1a1a;color:#888;border:1px solid #333;border-radius:10px;font-family:'Cairo',sans-serif;cursor:pointer;font-size:12px;">رجوع</button>
+        </div>
+    </div>`;
+    document.body.appendChild(m);
 };
 
 // ===== SAVED INVOICES =====

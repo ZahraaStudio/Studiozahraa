@@ -3060,10 +3060,13 @@ window.loginWithFacebook = async () => {
                         <span class="text-zinc-500">حالة الدفع:</span>
                         <span class="${o.paymentStatus === 'مدفوع' ? 'text-green-400' : 'text-yellow-400'}">${o.paymentStatus || 'غير مدفوع'}</span>
                     </div>
-                    <button onclick='event.stopPropagation();downloadInvoice(${JSON.stringify(o)})' class="w-full mt-4 bg-zinc-800 text-white py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-zinc-700 transition-colors">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                        تحميل الفاتورة
-                    </button>
+                    <div class="flex gap-2 mt-4">
+                        <button onclick='event.stopPropagation();downloadInvoice(${JSON.stringify(o)})' class="flex-1 bg-zinc-800 text-white py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 hover:bg-zinc-700 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            فاتورة
+                        </button>
+                        ${(o.status === 'قيد التنفيذ' || o.status === 'pending') ? `<button onclick='event.stopPropagation();cancelMyOrder("${o.id}","${o.orderNumber}")' class="flex-1 bg-red-900/40 text-red-400 border border-red-800/40 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 hover:bg-red-900/60 transition-colors">❌ إلغاء</button>` : ''}
+                    </div>
                 </div>`;
             }).join('');
         }, err => {
@@ -3142,11 +3145,40 @@ window.loginWithFacebook = async () => {
                             <div class="flex justify-between text-base font-bold gold-text border-t border-zinc-800 pt-2 mt-1"><span>الإجمالي</span><span>${o.totalPrice} ج</span></div>
                         </div>
                     </div>
-                    <button onclick='downloadInvoice(${JSON.stringify(o)})' class="w-full gold-bg text-black py-3 rounded-xl font-bold flex items-center justify-center gap-2">📥 تحميل الفاتورة</button>
+                    <div class="flex gap-2">
+                        <button onclick='downloadInvoice(${JSON.stringify(o)})' class="flex-1 gold-bg text-black py-3 rounded-xl font-bold flex items-center justify-center gap-2">📥 فاتورة</button>
+                        ${(o.status === 'قيد التنفيذ' || o.status === 'pending') ? `<button onclick='cancelMyOrder("${o.id}","${o.orderNumber}",true)' class="flex-1 bg-red-900/40 text-red-400 border border-red-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2">❌ إلغاء الطلب</button>` : ''}
+                    </div>
                 </div>
             </div>`;
         document.body.appendChild(modal);
         setTimeout(() => modal.classList.add('active'), 10);
+    };
+
+    window.cancelMyOrder = function(orderId, orderNumber, fromModal) {
+        if (!currentUser) return;
+        const doCancel = async () => {
+            try {
+                await db.collection('orders').doc(orderId).update({
+                    status: 'ملغي',
+                    cancelledAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    cancelledBy: 'customer',
+                    cancellationNote: 'تم الإلغاء بواسطة العميل'
+                });
+                zahraaToast('تم إلغاء الطلب #' + orderNumber + ' بنجاح', 'success');
+                if (fromModal) {
+                    const m = document.getElementById('order-detail-modal');
+                    if (m) m.classList.remove('active');
+                }
+            } catch(e) {
+                zahraaToast('تعذر إلغاء الطلب: ' + e.message, 'error');
+            }
+        };
+        if (typeof zahraaConfirm === 'function') {
+            zahraaConfirm('إلغاء الطلب #' + orderNumber + '؟', doCancel, 'لا يمكن التراجع عن هذا القرار', '❌');
+        } else if (window.confirm('إلغاء الطلب #' + orderNumber + '؟')) {
+            doCancel();
+        }
     };
 
     // ============ Reviews (testimonials page) ============
@@ -5804,12 +5836,15 @@ window.openPointsModal = async function() {
         if (el2) el2.textContent = totalEarned;
         // Redeem section — show if enough points
         const psSnap = await db.collection('settings').doc('points').get();
-        const ps = psSnap.exists ? psSnap.data() : { enabled: true, redeemMin: 100, redeemValue: 10 };
+        const ps = psSnap.exists ? psSnap.data() : { enabled: true, redeemRate: 40, redeemMin: 200 };
+        const redeemRate = ps.redeemRate || 40; // 40 pts = 1 EGP
+        const redeemMin  = ps.redeemMin  || 200;
+        window._ptsRedeemSettings = { redeemRate, redeemMin };
         const redeemBox = document.getElementById('pts-redeem-box');
-        if (redeemBox && ps.enabled !== false && balance >= (ps.redeemMin || 100)) {
+        if (redeemBox && ps.enabled !== false && balance >= redeemMin) {
             redeemBox.style.display = 'block';
             const riEl = document.getElementById('pts-redeem-info');
-            if (riEl) riEl.textContent = `لديك ${balance} نقطة = خصم ${Math.floor(balance / (ps.redeemMin||100)) * (ps.redeemValue||10)} ج تقريباً`;
+            if (riEl) riEl.textContent = `لديك ${balance} نقطة = خصم ${Math.floor(balance / redeemRate)} ج (كل ${redeemRate} نقطة = 1 ج)`;
         } else if (redeemBox) { redeemBox.style.display = 'none'; }
     } catch(e) {}
     // Load history
@@ -5858,15 +5893,15 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-window._ptsRedeemSettings = { redeemMin: 100, redeemValue: 10 };
+window._ptsRedeemSettings = { redeemRate: 40, redeemMin: 200 };
 
 window._updatePtsCouponPreview = function() {
     const amtEl = document.getElementById('pts-redeem-amount');
     const previewEl = document.getElementById('pts-coupon-preview');
     if (!amtEl || !previewEl) return;
     const pts = parseInt(amtEl.value) || 0;
-    const { redeemMin, redeemValue } = window._ptsRedeemSettings;
-    const couponValue = Math.floor(pts / redeemMin) * redeemValue;
+    const { redeemRate } = window._ptsRedeemSettings;
+    const couponValue = Math.floor(pts / (redeemRate || 40));
     previewEl.textContent = couponValue + ' ج';
     previewEl.style.color = couponValue > 0 ? '#4ade80' : '#555';
 };
@@ -5877,22 +5912,20 @@ window.redeemPointsModal = async function() {
         const ptsSnap = await db.collection('points').doc(currentUser.uid).get();
         const balance = ptsSnap.exists ? (ptsSnap.data().balance || 0) : 0;
         const psSnap = await db.collection('settings').doc('points').get();
-        const ps = psSnap.exists ? psSnap.data() : { redeemMin: 100, redeemValue: 10 };
-        const redeemMin = ps.redeemMin || 100;
-        const redeemValue = ps.redeemValue || 10;
-        window._ptsRedeemSettings = { redeemMin, redeemValue };
+        const ps = psSnap.exists ? psSnap.data() : { redeemRate: 40, redeemMin: 200 };
+        const redeemRate = ps.redeemRate || 40; // pts per EGP
+        const redeemMin  = ps.redeemMin  || 200;
+        window._ptsRedeemSettings = { redeemRate, redeemMin };
 
         if (balance < redeemMin) { zahraaToast('نقاطك غير كافية للاستبدال (الحد الأدنى: ' + redeemMin + ' نقطة)', 'warning'); return; }
 
         // Read custom amount from input, fallback to full balance
         const amtInput = document.getElementById('pts-redeem-amount');
         let redeemPts = amtInput ? (parseInt(amtInput.value) || balance) : balance;
-        // Clamp to balance and validate multiples
         redeemPts = Math.min(redeemPts, balance);
-        redeemPts = Math.floor(redeemPts / redeemMin) * redeemMin; // ensure multiple of redeemMin
         if (redeemPts < redeemMin) { zahraaToast('أدخل نقاطاً كافية (الحد الأدنى: ' + redeemMin + ' نقطة)', 'warning'); return; }
 
-        const couponValue = Math.floor(redeemPts / redeemMin) * redeemValue;
+        const couponValue = Math.floor(redeemPts / redeemRate);
         const couponCode = 'PTS-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 
         // Create coupon
