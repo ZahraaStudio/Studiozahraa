@@ -574,6 +574,19 @@
                                 </select>
                             </div>
                         </div>
+                        <div class="border-t border-zinc-800 pt-4">
+                            <h4 class="gold-text font-bold mb-3">إعدادات استبدال النقاط</h4>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-xs text-zinc-400 mb-1 block">قيمة النقطة (جنيه):</label>
+                                    <input id="pts-redeem-rate" type="number" placeholder="مثلاً 40" value="40" class="w-full bg-zinc-800 text-white p-2 rounded border border-zinc-700">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-zinc-400 mb-1 block">أقل نقاط للاستبدال:</label>
+                                    <input id="pts-redeem-min" type="number" placeholder="مثلاً 200" value="200" class="w-full bg-zinc-800 text-white p-2 rounded border border-zinc-700">
+                                </div>
+                            </div>
+                        </div>
                         <button onclick="savePointsSettings()" class="w-full gold-bg text-black py-3 rounded-xl font-bold">💾 حفظ الإعدادات</button>
                     </div>
                 </div>
@@ -3451,8 +3464,12 @@ window.deleteActiveAlbum = async () => {
                     document.getElementById('pts-threshold').value = d.threshold || 1000;
                     document.getElementById('pts-coupon-value').value = d.couponValue || 50;
                     document.getElementById('pts-coupon-type').value = d.couponType || 'fixed';
+                    document.getElementById('pts-redeem-rate').value = d.redeemRate || 40;
+                    document.getElementById('pts-redeem-min').value = d.redeemMin || 200;
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.error('Error loading points settings:', e);
+            }
         });
         document.getElementById('btn-banners-tab').addEventListener('click', loadAdminBanners);
         document.getElementById('btn-posts-tab').addEventListener('click', loadAdminPosts);
