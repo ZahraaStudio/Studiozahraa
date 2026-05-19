@@ -6583,13 +6583,42 @@ window.posScanInvoiceBarcode = async function() {
                 await loadSavedInvoices();
                 renderInvoicesList(decodedText);
                 const match = _savedInvoicesCache.find(i => i.invoiceNumber === decodedText);
-                if (match) showInvoiceDetail(match.id);
+                if (match) {
+                    showInvoiceDetail(match.id);
+                    // Open customer images folder if available
+                    if (match.customerId) {
+                        openCustomerImagesFolder(match.customerId);
+                    }
+                }
             },
             () => {}
         );
     } catch(e) {
         scannerModal.style.display = 'none';
         zahraaToast('لا يمكن فتح الكاميرا: ' + e.message, 'error');
+    }
+};
+
+window.openCustomerImagesFolder = function(customerId) {
+    // Construct the folder path based on customer ID
+    // This is a placeholder - actual implementation depends on your file system structure
+    const folderPath = `C:\\CustomerImages\\${customerId}`;
+    // Try to open the folder using the File System Access API or fallback to a message
+    if (window.showDirectoryPicker) {
+        window.showDirectoryPicker().then(dirHandle => {
+            zahraaToast('تم فتح مجلد صور العميل', 'success');
+        }).catch(e => {
+            zahraaToast('مسار المجلد: ' + folderPath + ' - افتحه يدوياً', 'info');
+        });
+    } else {
+        // Fallback: show the path to the user
+        zahraaToast('مسار مجلد الصور: ' + folderPath, 'info');
+        // Try to open using window.open (may not work in all browsers)
+        try {
+            window.open('file:///' + folderPath.replace(/\\/g, '/'));
+        } catch(e) {
+            // If direct opening fails, just show the path
+        }
     }
 };
 
