@@ -200,9 +200,10 @@
                     <div class="flex flex-wrap gap-2 mb-3">
                         <button onclick="exportProductsExcel()" class="text-xs px-3 py-2 bg-green-700 hover:bg-green-600 text-white rounded font-bold flex items-center gap-1">📊 تصدير Excel</button>
                         <button onclick="exportProductsXML()" class="text-xs px-3 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded font-bold flex items-center gap-1">📄 تصدير XML</button>
+                        <button onclick="downloadAllBarcodesPDF()" class="text-xs px-3 py-2 bg-indigo-700 hover:bg-indigo-600 text-white rounded font-bold flex items-center gap-1">🏷️ تحميل جميع الباركودات</button>
                         <label class="text-xs px-3 py-2 bg-purple-700 hover:bg-purple-600 text-white rounded font-bold flex items-center gap-1 cursor-pointer">
-                            📥 استيراد CSV
-                            <input type="file" accept=".csv" class="hidden" onchange="importProductsCSV(this)">
+                            📥 استيراد Excel
+                            <input type="file" accept=".xlsx,.xls" class="hidden" onchange="importProductsExcel(this)">
                         </label>
                         <label class="text-xs px-3 py-2 bg-orange-700 hover:bg-orange-600 text-white rounded font-bold flex items-center gap-1 cursor-pointer">
                             📥 استيراد XML
@@ -812,6 +813,19 @@
                             <option value="Almarai">Almarai</option>
                             <option value="IBM Plex Sans Arabic">IBM Plex Sans Arabic</option>
                             <option value="Changa">Changa</option>
+                            <option value="Arial">Arial</option>
+                            <option value="Times New Roman">Times New Roman</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Verdana">Verdana</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-sm text-zinc-400 mb-1 block">موقع الشعار</label>
+                        <select id="inv-logo-position" class="w-full p-3 bg-black border border-zinc-700 rounded-lg text-sm outline-none focus:border-yellow-500">
+                            <option value="right">يمين</option>
+                            <option value="left">يسار</option>
+                            <option value="center">وسط</option>
+                            <option value="both">كلا الجانبين</option>
                         </select>
                     </div>
                     <div>
@@ -824,6 +838,13 @@
                         <input type="text" id="inv-logo-left" placeholder="https://..." class="w-full p-3 bg-black border border-zinc-700 rounded-lg text-sm outline-none focus:border-yellow-500">
                         <p class="text-xs text-zinc-600 mt-1">شعار ثانوي أو بانر — يظهر على يسار الفاتورة</p>
                     </div>
+                    <div>
+                        <label class="text-sm text-zinc-400 mb-1 block">نمط الطباعة</label>
+                        <select id="inv-print-mode" class="w-full p-3 bg-black border border-zinc-700 rounded-lg text-sm outline-none focus:border-yellow-500">
+                            <option value="bw">أبيض وأسود (للطابعات الحرارية)</option>
+                            <option value="color">ملون (للواتساب والعرض)</option>
+                        </select>
+                    </div>
                     <button onclick="saveInvoiceSettings()" class="w-full p-3 bg-yellow-600 hover:bg-yellow-500 text-black font-bold rounded-xl transition-colors text-sm">💾 حفظ إعدادات الفاتورة</button>
                 </div>
                 <script>
@@ -831,11 +852,15 @@
                     (function() {
                         const s = JSON.parse(localStorage.getItem('zahraa_invoice_settings') || '{}');
                         const sel = document.getElementById('inv-font-select');
+                        const pos = document.getElementById('inv-logo-position');
                         const lr = document.getElementById('inv-logo-right');
                         const ll = document.getElementById('inv-logo-left');
+                        const pm = document.getElementById('inv-print-mode');
                         if (sel && s.font) sel.value = s.font;
+                        if (pos && s.logoPosition) pos.value = s.logoPosition;
                         if (lr && s.logoRight) lr.value = s.logoRight;
                         if (ll && s.logoLeft) ll.value = s.logoLeft;
+                        if (pm && s.printMode) pm.value = s.printMode;
                     })();
                 </script>
             </div>
@@ -1071,6 +1096,7 @@
             <div class="mt-8 flex gap-4">
                 <button onclick="downloadInvoice()" class="flex-1 p-3 gold-bg text-black font-bold rounded">تحميل PDF</button>
                 <button onclick="printInvoice()" class="flex-1 p-3 bg-zinc-800 text-white font-bold rounded">طباعة</button>
+                <button onclick="sendInvoiceWhatsApp()" class="flex-1 p-3 bg-green-600 text-white font-bold rounded">📱 إرسال واتساب</button>
             </div>
         </div>
     </div>
@@ -2035,6 +2061,25 @@ window.loadOrders = () => {
         window.downloadInvoice = () => {
             const element = document.getElementById('printable-invoice');
             html2pdf().from(element).save('Zahraa-Studio-Invoice.pdf');
+        };
+        window.sendInvoiceWhatsApp = () => {
+            const o = window._currentInvoiceOrder;
+            if (!o || !o.phone) { zahraaToast('لا يوجد رقم هاتف للعميل', 'warning'); return; }
+            const element = document.getElementById('printable-invoice');
+            html2pdf().from(element).toPdf().get('pdf').then(function(pdf) {
+                const pdfBlob = pdf.output('blob');
+                const reader = new FileReader();
+                reader.readAsDataURL(pdfBlob);
+                reader.onloadend = function() {
+                    const base64data = reader.result;
+                    const message = `مرحباً ${o.customerName || 'عميل'}، فاتورة طلبك رقم ${o.orderNumber || o.id.substring(0,8)} مرفقة. شكراً لتسوقك معنا!`;
+                    const whatsappUrl = `https://wa.me/${o.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`;
+                    window.open(whatsappUrl, '_blank');
+                    // Note: Direct file attachment requires WhatsApp Business API
+                    // For now, user can manually attach the downloaded PDF
+                    zahraaToast('تم فتح واتساب - يمكنك إرفاق الفاتورة بعد تحميلها', 'info');
+                };
+            });
         };
         window.printInvoice = () => {
             const content = document.getElementById('printable-invoice').innerHTML;
@@ -5464,14 +5509,18 @@ window.exportProductsXML = async function() {
     zahraaToast('تم تصدير ' + products.length + ' منتج بصيغة XML ✓', 'success');
 };
 
-window.importProductsCSV = async function(input) {
+window.importProductsExcel = async function(input) {
     const file = input.files[0];
     if (!file) return;
-    const text = await file.text();
-    const lines = text.replace(/^\uFEFF/, '').split('\n').filter(l => l.trim());
-    if (lines.length < 2) { zahraaToast('الملف فارغ أو غير صالح', 'error'); return; }
-    const header = lines[0].split(',').map(h => h.trim().replace(/"/g,''));
-    const idx = (name) => header.findIndex(h => h === name || h.toLowerCase() === name.toLowerCase());
+    const data = await file.arrayBuffer();
+    const workbook = XLSX.read(data, { type: 'array' });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+    
+    if (jsonData.length < 2) { zahraaToast('الملف فارغ أو غير صالح', 'error'); return; }
+    const header = jsonData[0].map(h => String(h).trim());
+    const idx = (name) => header.findIndex(h => h === name || String(h).toLowerCase() === String(name).toLowerCase());
     const nameIdx = idx('الاسم') !== -1 ? idx('الاسم') : 1;
     const priceIdx = idx('السعر') !== -1 ? idx('السعر') : 2;
     const codeIdx = idx('الكود') !== -1 ? idx('الكود') : (idx('الكود / الباركود') !== -1 ? idx('الكود / الباركود') : 4);
@@ -5488,9 +5537,8 @@ window.importProductsCSV = async function(input) {
     const existingByName = {};
     existingSnap.forEach(d => { existingByName[(d.data().name||'').trim().toLowerCase()] = d.id; });
 
-    for (let i = 1; i < lines.length; i++) {
-        // Handle quoted CSV fields
-        const cols = lines[i].match(/("(?:[^"]|"")*"|[^,]*)/g)?.map(c => c.replace(/^"|"$/g,'').replace(/""/g,'"').trim()) || lines[i].split(',');
+    for (let i = 1; i < jsonData.length; i++) {
+        const cols = jsonData[i];
         const name = cols[nameIdx]?.trim();
         if (!name) { failed++; continue; }
         const price = parseFloat(cols[priceIdx]) || 0;
@@ -5519,6 +5567,9 @@ window.importProductsCSV = async function(input) {
     zahraaToast(`✅ إضافة: ${added} | تحديث: ${updated}${failed > 0 ? ' | فشل: '+failed : ''}`, 'success');
     if (typeof loadProducts === 'function') loadProducts();
 };
+
+// Keep CSV import as fallback
+window.importProductsCSV = window.importProductsExcel;
 
 // =====================================================================
 // ===== FULL POS CASHIER SYSTEM =====
@@ -5562,13 +5613,12 @@ window.openPOS = async function() {
     if (savedPanel) savedPanel.style.display = 'none';
     setPosPayType('cash');
     posRenderCart();
-    // Load agents from Firestore if cache is empty
-    if (!_allAgents || _allAgents.length === 0) {
-        try {
-            const snap = await getDocs(collection(db, 'delivery_agents'));
-            _allAgents = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        } catch(e) { console.warn('Could not load agents', e); }
-    }
+    // Always load agents from Firestore to ensure fresh data
+    try {
+        const { getDocs, collection } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+        const snap = await getDocs(collection(db, 'delivery_agents'));
+        _allAgents = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch(e) { console.warn('Could not load agents', e); }
     _populatePosAgentDropdown();
     document.getElementById('pos-modal').style.display = 'block';
     // Focus search
@@ -6982,8 +7032,10 @@ window.unbanUser = async function(id) {
 window.saveInvoiceSettings = function() {
     const s = {
         font: document.getElementById('inv-font-select')?.value || 'Cairo',
+        logoPosition: document.getElementById('inv-logo-position')?.value || 'right',
         logoRight: document.getElementById('inv-logo-right')?.value || '',
         logoLeft: document.getElementById('inv-logo-left')?.value || '',
+        printMode: document.getElementById('inv-print-mode')?.value || 'bw',
     };
     localStorage.setItem('zahraa_invoice_settings', JSON.stringify(s));
     zahraaToast('✅ تم حفظ إعدادات الفاتورة', 'success');
