@@ -5549,7 +5549,7 @@ function _renderCashierReceipt(o) {
         ${s.showNotes !== false && o.notes ? `<div class="r-center r-sm" style="margin-top:4px;">ملاحظات: ${o.notes}</div>` : ''}
         <div class="r-line"></div>
         <div class="r-center" style="margin:8px 0 4px;font-size:13px;">${storeFooter}</div>
-        ${s.showBarcode ? `<div style="text-align:center;margin:6px 0;"><img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(orderNum)}" style="width:70px;height:70px;"></div>` : ''}
+        ${s.showBarcode ? `<div style="text-align:center;margin:6px 0;"><svg id="inv-barcode-${orderNum}" style="width:120px;height:40px;"></svg><div style="font-size:9px;color:#333;margin-top:2px;letter-spacing:1px;">${orderNum}</div></div>` : ''}
         <div style="height:20px;"></div>
     `;
 
@@ -5558,6 +5558,25 @@ function _renderCashierReceipt(o) {
     if (!container || !wrapper) return;
     container.innerHTML = receiptHtml;
     wrapper.style.display = 'block';
+    
+    // Generate rectangular barcode if JsBarcode is available
+    if (s.showBarcode && typeof JsBarcode !== 'undefined') {
+        setTimeout(() => {
+            const barcodeEl = document.getElementById(`inv-barcode-${orderNum}`);
+            if (barcodeEl) {
+                try {
+                    JsBarcode(barcodeEl, orderNum, {
+                        format: 'CODE128',
+                        width: 2,
+                        height: 40,
+                        displayValue: false,
+                        margin: 0
+                    });
+                } catch(e) { console.warn('Barcode generation error:', e); }
+            }
+        }, 100);
+    }
+    
     setTimeout(() => {
         window.print();
         setTimeout(() => { wrapper.style.display = 'none'; }, 1000);
