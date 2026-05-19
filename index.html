@@ -2462,16 +2462,19 @@ window.loginWithFacebook = async () => {
         document.getElementById('checkout-subtotal').innerText = subtotal + ' ج';
 
         if (appliedCoupon) {
-            discount = appliedCoupon.type === 'percentage' ? subtotal * (appliedCoupon.discount / 100) : appliedCoupon.discount;
+            const discountValue = parseFloat(appliedCoupon.discount) || 0;
+            discount = appliedCoupon.type === 'percentage' ? subtotal * (discountValue / 100) : discountValue;
         }
 
         // Spend & Save: apply discount directly at checkout if eligible
         const ss = storeSettings.spendSave || {};
         let spendSaveDiscount = 0;
-        if (ss.enabled && subtotal >= parseFloat(ss.threshold || 0) && !appliedCoupon) {
+        const threshold = parseFloat(ss.threshold) || 0;
+        const ssAmount = parseFloat(ss.amount) || 0;
+        if (ss.enabled && subtotal >= threshold && !appliedCoupon && ssAmount > 0) {
             spendSaveDiscount = ss.type === 'percentage'
-                ? subtotal * (parseFloat(ss.amount || 0) / 100)
-                : parseFloat(ss.amount || 0);
+                ? subtotal * (ssAmount / 100)
+                : ssAmount;
             discount += spendSaveDiscount;
             // show a note in the coupon message area
             const msg = document.getElementById('coupon-msg');
