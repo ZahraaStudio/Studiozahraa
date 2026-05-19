@@ -6317,7 +6317,6 @@ window.posCompleteSale = async function() {
 
 function _renderPOSReceipt(inv) {
     const theme = inv.theme || window._posTheme || 'luxury';
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(inv.invoiceNumber)}`;
     const dateStr = (inv.createdAt instanceof Date ? inv.createdAt : new Date()).toLocaleString('ar-EG');
     const itemsHTML = inv.items.map(i =>
         `<div class="r-row"><span>${i.name} × ${i.qty}</span><span>${(i.price*i.qty).toFixed(2)} ج</span></div>`
