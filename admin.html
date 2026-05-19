@@ -196,6 +196,10 @@
                     </div>
                 </div>
                 <div class="lg:col-span-2 bg-zinc-900 p-6 rounded-xl gold-border">
+                    <!-- Search -->
+                    <div class="mb-4">
+                        <input id="product-search" oninput="filterProducts()" placeholder="🔍 بحث بالاسم أو الكود أو الباركود..." class="w-full p-3 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-yellow-500">
+                    </div>
                     <!-- Bulk Management Buttons -->
                     <div class="flex flex-wrap gap-2 mb-3">
                         <button onclick="exportProductsExcel()" class="text-xs px-3 py-2 bg-green-700 hover:bg-green-600 text-white rounded font-bold flex items-center gap-1">📊 تصدير Excel</button>
@@ -1408,6 +1412,25 @@
         console.error("خطأ في التحديث اللحظي للمنتجات:", error);
     });
 };
+
+window.filterProducts = function() {
+    const searchInput = document.getElementById('product-search');
+    const searchTerm = (searchInput?.value || '').toLowerCase();
+    const productCards = document.querySelectorAll('.product-card');
+    
+    productCards.forEach(card => {
+        const id = card.dataset.id;
+        const product = allProducts.find(p => p.id === id);
+        if (!product) return;
+        
+        const matches = 
+            (product.name || '').toLowerCase().includes(searchTerm) ||
+            (product.code || '').toLowerCase().includes(searchTerm) ||
+            (product.barcode || '').toLowerCase().includes(searchTerm);
+        
+        card.style.display = matches ? 'flex' : 'none';
+    });
+};
         window.editProduct = (id) => {
             const p = allProducts.find(x => x.id === id);
             if (!p) return;
@@ -1557,7 +1580,7 @@
                 const bc = (p.barcode || p.code || '').replace(/'/g,"\\'");
                 const nm = (p.name || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
                 const pr = p.price ? p.price + ' ج' : '';
-                return `<div class="label">
+                return `<div class="label" style="page-break-after:always;">
                     <div class="product-name">${nm}</div>
                     ${pr ? `<div class="price-text">${pr}</div>` : ''}
                     <svg class="bc" data-code="${bc}"></svg>
@@ -1570,19 +1593,19 @@
                 <style>
                     *{box-sizing:border-box;margin:0;padding:0;}
                     body{background:#fff;font-family:'Cairo',sans-serif;direction:rtl;}
-                    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4mm;padding:6mm;}
-                    .label{text-align:center;padding:3mm 2mm;border:1px solid #ccc;border-radius:3mm;break-inside:avoid;page-break-inside:avoid;}
-                    .product-name{font-size:8pt;font-weight:700;color:#111;margin-bottom:1mm;line-height:1.3;word-wrap:break-word;max-height:2.4em;overflow:hidden;}
-                    .price-text{font-size:9pt;font-weight:800;color:#000;margin-bottom:1mm;}
-                    .code-text{font-size:7pt;color:#444;margin-top:1mm;letter-spacing:0.5px;}
-                    @media print{@page{margin:6mm;size:A4;}body{background:#fff;}}
+                    .label{text-align:center;padding:10mm 5mm;border:2px solid #000;border-radius:5mm;min-height:80mm;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3mm;}
+                    .product-name{font-size:12pt;font-weight:900;color:#000;line-height:1.4;word-wrap:break-word;max-width:100%;}
+                    .price-text{font-size:14pt;font-weight:900;color:#000;}
+                    .code-text{font-size:10pt;color:#000;font-weight:700;letter-spacing:1px;}
+                    .bc{width:100%;max-width:200px;}
+                    @media print{@page{margin:5mm;size:80mm auto;orientation:portrait;}body{background:#fff;}}
                 </style>
             </head><body>
-                <div class="grid">${labelsHtml}</div>
+                ${labelsHtml}
                 <script>
                     window.onload = function() {
                         document.querySelectorAll('.bc').forEach(function(svg) {
-                            try { JsBarcode(svg, svg.dataset.code, {format:'CODE128',width:1.2,height:28,displayValue:false,margin:1}); } catch(e){}
+                            try { JsBarcode(svg, svg.dataset.code, {format:'CODE128',width:2,height:50,displayValue:false,margin:5}); } catch(e){}
                         });
                         setTimeout(function(){ window.print(); }, 700);
                     };
@@ -2072,19 +2095,86 @@ window.loadOrders = () => {
                 reader.readAsDataURL(pdfBlob);
                 reader.onloadend = function() {
                     const base64data = reader.result;
+                    // Create a download link for the PDF
+                    const link = document.createElement('a');
+                    link.href = base64data;
+                    link.download = `Invoice_${o.orderNumber || o.id.substring(0,8)}.pdf`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
                     const message = `مرحباً ${o.customerName || 'عميل'}، فاتورة طلبك رقم ${o.orderNumber || o.id.substring(0,8)} مرفقة. شكراً لتسوقك معنا!`;
                     const whatsappUrl = `https://wa.me/${o.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`;
                     window.open(whatsappUrl, '_blank');
-                    // Note: Direct file attachment requires WhatsApp Business API
-                    // For now, user can manually attach the downloaded PDF
-                    zahraaToast('تم فتح واتساب - يمكنك إرفاق الفاتورة بعد تحميلها', 'info');
+                    zahraaToast('تم تحميل الفاتورة وفتح واتساب - أرفق الملف المحفوظ', 'info');
                 };
             });
         };
         window.printInvoice = () => {
             const content = document.getElementById('printable-invoice').innerHTML;
+            const posSettings = JSON.parse(localStorage.getItem('zahraa_pos_settings') || '{}');
+            const printMode = posSettings.printMode || 'bw';
+            const font = posSettings.font || 'Cairo';
+            
             const win = window.open('', '', 'height=700,width=900');
-            win.document.write('<html><head><title>Print Invoice</title></head><body>' + content + '</body></html>');
+            
+            if (printMode === 'bw') {
+                // Black and white for thermal printers with bold fonts
+                win.document.write(`
+                    <html>
+                    <head>
+                        <title>Print Invoice</title>
+                        <style>
+                            @import url('https://fonts.googleapis.com/css2?family=${font}:wght@400;700;900&display=swap');
+                            body {
+                                font-family: '${font}', sans-serif;
+                                color: #000;
+                                background: #fff;
+                            }
+                            * {
+                                color: #000 !important;
+                                background: #fff !important;
+                                border-color: #000 !important;
+                            }
+                            table, th, td {
+                                border: 2px solid #000 !important;
+                            }
+                            th {
+                                background: #000 !important;
+                                color: #fff !important;
+                                font-weight: 900;
+                            }
+                            .gold-text, .gold-bg, [style*="d4af37"], [style*="#d4af37"] {
+                                color: #000 !important;
+                                background: #fff !important;
+                                font-weight: 900;
+                            }
+                            img {
+                                filter: grayscale(100%);
+                            }
+                        </style>
+                    </head>
+                    <body>${content}</body>
+                    </html>
+                `);
+            } else {
+                // Colored for WhatsApp and display
+                win.document.write(`
+                    <html>
+                    <head>
+                        <title>Print Invoice</title>
+                        <style>
+                            @import url('https://fonts.googleapis.com/css2?family=${font}:wght@400;700;900&display=swap');
+                            body {
+                                font-family: '${font}', sans-serif;
+                            }
+                        </style>
+                    </head>
+                    <body>${content}</body>
+                    </html>
+                `);
+            }
+            
             win.document.close();
             win.print();
         };
@@ -5126,7 +5216,7 @@ window.loadDeliveryRatings = async function() {
             </div>
 
             <!-- Printer Settings -->
-            <div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:14px;margin-bottom:16px;">
+            <div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:14px;margin-bottom:12px;">
                 <p style="color:#d4af37;font-size:12px;font-weight:700;margin:0 0 10px;">🖨️ إعدادات الطباعة</p>
                 <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:8px;">
                     <span style="color:#ccc;font-size:12px;">طباعة تلقائية بعد إتمام البيع</span>
@@ -5143,6 +5233,45 @@ window.loadDeliveryRatings = async function() {
                         <option value="80" selected>80mm (متوسط - قياسي)</option>
                         <option value="A4">A4 (ورقة عادية)</option>
                     </select>
+                </div>
+                <div style="margin-top:8px;">
+                    <label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">نمط الطباعة</label>
+                    <select id="pos-set-print-mode" style="width:100%;padding:8px;background:#0a0a0a;border:1px solid #333;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:12px;outline:none;">
+                        <option value="bw">أبيض وأسود (للطابعات الحرارية)</option>
+                        <option value="color">ملون (للواتساب والعرض)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Invoice Style Settings -->
+            <div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:14px;margin-bottom:16px;">
+                <p style="color:#d4af37;font-size:12px;font-weight:700;margin:0 0 10px;">🎨 إعدادات شكل الفاتورة</p>
+                <div style="margin-bottom:8px;">
+                    <label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">خط الفاتورة</label>
+                    <select id="pos-set-font" style="width:100%;padding:8px;background:#0a0a0a;border:1px solid #333;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:12px;outline:none;">
+                        <option value="Cairo">Cairo</option>
+                        <option value="Tajawal">Tajawal</option>
+                        <option value="Almarai">Almarai</option>
+                        <option value="IBM Plex Sans Arabic">IBM Plex Sans Arabic</option>
+                        <option value="Changa">Changa</option>
+                        <option value="Arial">Arial</option>
+                        <option value="Times New Roman">Times New Roman</option>
+                        <option value="Georgia">Georgia</option>
+                        <option value="Verdana">Verdana</option>
+                    </select>
+                </div>
+                <div style="margin-bottom:8px;">
+                    <label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">موقع الشعار</label>
+                    <select id="pos-set-logo-position" style="width:100%;padding:8px;background:#0a0a0a;border:1px solid #333;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:12px;outline:none;">
+                        <option value="right">يمين</option>
+                        <option value="left">يسار</option>
+                        <option value="center">وسط</option>
+                        <option value="both">كلا الجانبين</option>
+                    </select>
+                </div>
+                <div style="margin-bottom:8px;">
+                    <label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">شعار إضافي (URL)</label>
+                    <input id="pos-set-logo-secondary" type="text" placeholder="رابط الشعار الإضافي" style="width:100%;padding:8px;background:#0a0a0a;border:1px solid #333;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:12px;outline:none;">
                 </div>
             </div>
 
@@ -5209,6 +5338,7 @@ window.loadDeliveryRatings = async function() {
                         <div id="pos-due-date-row" style="display:block;">
                             <label style="color:#888;font-size:10px;display:block;margin-bottom:4px;">📅 تاريخ الاستلام / موعد الاستلام:</label>
                             <div style="display:flex;gap:5px;margin-bottom:6px;flex-wrap:wrap;">
+                                <button onclick="setPosQuickDate('immediate')" style="padding:5px 10px;background:#d4af37;border:1px solid #d4af37;border-radius:8px;color:#000;font-family:'Cairo',sans-serif;font-size:10px;cursor:pointer;font-weight:700;">⚡ فوري</button>
                                 <button onclick="setPosQuickDate(0)" style="padding:5px 10px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#d4af37;font-family:'Cairo',sans-serif;font-size:10px;cursor:pointer;font-weight:700;">اليوم</button>
                                 <button onclick="setPosQuickDate(1)" style="padding:5px 10px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#d4af37;font-family:'Cairo',sans-serif;font-size:10px;cursor:pointer;font-weight:700;">غداً</button>
                                 <button onclick="setPosQuickDate(2)" style="padding:5px 10px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#d4af37;font-family:'Cairo',sans-serif;font-size:10px;cursor:pointer;font-weight:700;">يومان</button>
@@ -5419,7 +5549,7 @@ function _renderCashierReceipt(o) {
         ${s.showNotes !== false && o.notes ? `<div class="r-center r-sm" style="margin-top:4px;">ملاحظات: ${o.notes}</div>` : ''}
         <div class="r-line"></div>
         <div class="r-center" style="margin:8px 0 4px;font-size:13px;">${storeFooter}</div>
-        ${s.showBarcode ? `<div style="text-align:center;margin:6px 0;"><img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(orderNum)}" style="width:70px;height:70px;"></div>` : ''}
+        ${s.showBarcode ? `<div style="text-align:center;margin:6px 0;"><svg id="inv-barcode-${orderNum}" style="width:120px;height:40px;"></svg><div style="font-size:9px;color:#333;margin-top:2px;letter-spacing:1px;">${orderNum}</div></div>` : ''}
         <div style="height:20px;"></div>
     `;
 
@@ -5428,6 +5558,25 @@ function _renderCashierReceipt(o) {
     if (!container || !wrapper) return;
     container.innerHTML = receiptHtml;
     wrapper.style.display = 'block';
+    
+    // Generate rectangular barcode if JsBarcode is available
+    if (s.showBarcode && typeof JsBarcode !== 'undefined') {
+        setTimeout(() => {
+            const barcodeEl = document.getElementById(`inv-barcode-${orderNum}`);
+            if (barcodeEl) {
+                try {
+                    JsBarcode(barcodeEl, orderNum, {
+                        format: 'CODE128',
+                        width: 2,
+                        height: 40,
+                        displayValue: false,
+                        margin: 0
+                    });
+                } catch(e) { console.warn('Barcode generation error:', e); }
+            }
+        }, 100);
+    }
+    
     setTimeout(() => {
         window.print();
         setTimeout(() => { wrapper.style.display = 'none'; }, 1000);
@@ -5597,8 +5746,14 @@ window.openPOS = async function() {
     const invEl = document.getElementById('pos-invoice-num');
     if (invEl) invEl.textContent = invNum;
     document.getElementById('pos-search').value = '';
-    document.getElementById('pos-customer-name').value = '';
-    document.getElementById('pos-customer-phone').value = '';
+    
+    // Load last customer info if available
+    try {
+        const lastCustomer = JSON.parse(localStorage.getItem('zahraa_last_customer') || '{}');
+        document.getElementById('pos-customer-name').value = lastCustomer.name || '';
+        document.getElementById('pos-customer-phone').value = lastCustomer.phone || '';
+    } catch(e) {}
+    
     document.getElementById('pos-discount').value = '0';
     document.getElementById('pos-paid').value = '0';
     const dfEl = document.getElementById('pos-delivery-fee');
@@ -5888,16 +6043,24 @@ window.posClearCart = function() {
 };
 
 window.setPosQuickDate = function(daysFromNow) {
-    const d = new Date();
-    d.setDate(d.getDate() + daysFromNow);
-    const iso = d.toISOString().split('T')[0];
     const input = document.getElementById('pos-due-date');
-    if (input) {
+    if (!input) return;
+    
+    if (daysFromNow === 'immediate') {
+        // For immediate delivery, set to today's date
+        const d = new Date();
+        const iso = d.toISOString().split('T')[0];
         input.value = iso;
-        // Brief flash highlight
-        input.style.borderColor = '#4ade80';
-        setTimeout(() => { input.style.borderColor = '#d4af37'; }, 700);
+    } else {
+        const d = new Date();
+        d.setDate(d.getDate() + daysFromNow);
+        const iso = d.toISOString().split('T')[0];
+        input.value = iso;
     }
+    
+    // Brief flash highlight
+    input.style.borderColor = '#4ade80';
+    setTimeout(() => { input.style.borderColor = '#d4af37'; }, 700);
 };
 
 // =====================================================================
@@ -5950,6 +6113,10 @@ window.openPosSettings = function() {
     setChk('pos-set-preview-first', s.previewFirst === true);
     const rwEl = document.getElementById('pos-set-receipt-width');
     if (rwEl) rwEl.value = s.receiptWidth || '80';
+    set('pos-set-print-mode', s.printMode || 'bw');
+    set('pos-set-font', s.font || 'Cairo');
+    set('pos-set-logo-position', s.logoPosition || 'right');
+    set('pos-set-logo-secondary', s.logoSecondary || '');
 
     const modal = document.getElementById('pos-settings-modal');
     if (modal) { modal.style.display = 'flex'; }
@@ -5991,6 +6158,10 @@ window.savePosSettings = function() {
         autoPrint: getChk('pos-set-auto-print'),
         previewFirst: getChk('pos-set-preview-first'),
         receiptWidth: (document.getElementById('pos-set-receipt-width')?.value) || '80',
+        printMode: (document.getElementById('pos-set-print-mode')?.value) || 'bw',
+        font: (document.getElementById('pos-set-font')?.value) || 'Cairo',
+        logoPosition: (document.getElementById('pos-set-logo-position')?.value) || 'right',
+        logoSecondary: get('pos-set-logo-secondary'),
     };
     localStorage.setItem('zahraa_pos_settings', JSON.stringify(_posSettings));
     zahraaToast('✅ تم حفظ إعدادات الكاشير', 'success');
@@ -6074,6 +6245,14 @@ window.posCompleteSale = async function() {
     const agentName = agentId ? (agentSel.options[agentSel.selectedIndex]?.text || '') : '';
     const payLabel = _posPayType === 'cash' ? 'نقداً' : _posPayType === 'immediate' ? 'فوري' : _posPayType === 'deferred' ? 'آجل' : 'جزئي';
 
+    // Save customer info for next invoice
+    if (customerName || customerPhone) {
+        localStorage.setItem('zahraa_last_customer', JSON.stringify({
+            name: customerName,
+            phone: customerPhone
+        }));
+    }
+
     const invoiceData = {
         invoiceNumber: invoiceNum,
         items: _posCart.map(i => ({...i})),
@@ -6138,7 +6317,6 @@ window.posCompleteSale = async function() {
 
 function _renderPOSReceipt(inv) {
     const theme = inv.theme || window._posTheme || 'luxury';
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(inv.invoiceNumber)}`;
     const dateStr = (inv.createdAt instanceof Date ? inv.createdAt : new Date()).toLocaleString('ar-EG');
     const itemsHTML = inv.items.map(i =>
         `<div class="r-row"><span>${i.name} × ${i.qty}</span><span>${(i.price*i.qty).toFixed(2)} ج</span></div>`
@@ -6251,8 +6429,8 @@ function _renderPOSReceipt(inv) {
             ${inv.remainingAmount > 0 ? `<div class="r-row r-bold" style="color:#e74c3c;background:#ffeaea;padding:4px 6px;border-radius:6px;margin-top:4px;"><span>⚠️ المتبقي</span><span>${inv.remainingAmount.toFixed(2)} ج</span></div>` : ''}
             ${inv.notes ? `<div style="margin-top:10px;padding:8px;background:${t.accentColor}15;border-radius:6px;border-right:3px solid ${t.accentColor};"><div style="font-size:10px;font-weight:700;color:${t.accentColor};margin-bottom:3px;">📝 ملاحظات:</div><div style="font-size:11px;color:${t.bodyColor};line-height:1.5;">${inv.notes}</div></div>` : ''}
             <div style="text-align:center;margin:12px 0 8px;">
-                <img src="${qrUrl}" style="width:80px;height:80px;border-radius:8px;${theme==='luxury'?'border:1px solid #d4af37;':''}" alt="QR">
-                <div style="font-size:8px;color:${t.accentColor};margin-top:3px;letter-spacing:1px;">${inv.invoiceNumber}</div>
+                <svg id="pos-receipt-barcode-${inv.invoiceNumber}" style="width:120px;height:40px;"></svg>
+                <div style="font-size:8px;color:${t.accentColor};margin-top:2px;letter-spacing:1px;">${inv.invoiceNumber}</div>
             </div>
         </div>
         <!-- Footer -->
@@ -6262,6 +6440,23 @@ function _renderPOSReceipt(inv) {
             ${_posSettings.address&&(_posSettings.showAddress!==false)?`<div style="font-size:9px;opacity:0.6;">📍 ${_posSettings.address}</div>`:''}
         </div>
     `;
+    // Generate barcode if JsBarcode is available
+    if (typeof JsBarcode !== 'undefined') {
+        setTimeout(() => {
+            const barcodeEl = document.getElementById(`pos-receipt-barcode-${inv.invoiceNumber}`);
+            if (barcodeEl) {
+                try {
+                    JsBarcode(barcodeEl, inv.invoiceNumber, {
+                        format: 'CODE128',
+                        width: 2,
+                        height: 40,
+                        displayValue: false,
+                        margin: 0
+                    });
+                } catch(e) {}
+            }
+        }, 100);
+    }
     // Show WhatsApp button if customer has phone
     const waBtn = document.getElementById('pos-whatsapp-btn');
     if (waBtn && inv.phone) {
@@ -6373,9 +6568,9 @@ function renderInvoicesList(filter) {
     ) : _savedInvoicesCache;
 
     // Apply status filter tab
-    if (_posInvoiceFilter === 'deferred') filtered = filtered.filter(i => i.paymentType === 'deferred' && i.remainingAmount > 0);
-    else if (_posInvoiceFilter === 'partial') filtered = filtered.filter(i => i.paymentType === 'partial' && i.remainingAmount > 0);
-    else if (_posInvoiceFilter === 'paid') filtered = filtered.filter(i => !i.remainingAmount || i.remainingAmount <= 0);
+    if (_posInvoiceFilter === 'deferred') filtered = filtered.filter(i => i.paymentType === 'deferred' && (i.remainingAmount || 0) > 0);
+    else if (_posInvoiceFilter === 'partial') filtered = filtered.filter(i => i.paymentType === 'partial' && (i.remainingAmount || 0) > 0);
+    else if (_posInvoiceFilter === 'paid') filtered = filtered.filter(i => (i.remainingAmount || 0) <= 0.01);
 
     // Compute outstanding
     const outstanding = _savedInvoicesCache.reduce((s, i) => s + (i.remainingAmount > 0 ? i.remainingAmount : 0), 0);
@@ -6452,7 +6647,6 @@ window.showInvoiceDetail = function(invId) {
     _lastInvoiceData = inv;
     window._currentDetailInvId = invId;
     const d = inv.createdAt?.toDate ? inv.createdAt.toDate() : new Date();
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(inv.invoiceNumber)}`;
     const contentEl = document.getElementById('pos-invoice-detail-content');
     if (!contentEl) return;
     const rem = inv.remainingAmount || 0;
@@ -6463,7 +6657,7 @@ window.showInvoiceDetail = function(invId) {
                     <p style="color:#d4af37;font-weight:800;font-size:15px;margin:0;">${inv.invoiceNumber}</p>
                     <p style="color:#888;font-size:11px;margin:3px 0 0;">${d.toLocaleString('ar-EG')}</p>
                 </div>
-                <img src="${qrUrl}" style="width:60px;height:60px;border-radius:8px;">
+                <svg id="detail-barcode-${inv.invoiceNumber}" style="width:100px;height:35px;"></svg>
             </div>
             <div style="border-top:1px solid #222;padding-top:10px;margin-bottom:10px;">
                 <p style="margin:3px 0;color:#ccc;"><span style="color:#888;">العميل: </span>${inv.userName}</p>
@@ -6483,6 +6677,24 @@ window.showInvoiceDetail = function(invId) {
                 ${rem > 0 ? `<div style="display:flex;justify-content:space-between;padding:8px;background:#1a0000;border-radius:8px;border:1px solid #f8717140;"><span style="color:#f87171;font-weight:700;">المتبقي</span><span style="color:#f87171;font-weight:800;font-size:15px;">${rem.toFixed(2)} ج</span></div>` : '<div style="padding:8px;background:#001a00;border-radius:8px;text-align:center;color:#4ade80;font-weight:700;border:1px solid #4ade8040;">✅ تم السداد الكامل</div>'}
             </div>
         </div>`;
+
+    // Generate barcode if JsBarcode is available
+    if (typeof JsBarcode !== 'undefined') {
+        setTimeout(() => {
+            const barcodeEl = document.getElementById(`detail-barcode-${inv.invoiceNumber}`);
+            if (barcodeEl) {
+                try {
+                    JsBarcode(barcodeEl, inv.invoiceNumber, {
+                        format: 'CODE128',
+                        width: 2,
+                        height: 35,
+                        displayValue: false,
+                        margin: 0
+                    });
+                } catch(e) {}
+            }
+        }, 100);
+    }
 
     // Show/hide payment confirm buttons
     const confirmBtn = document.getElementById('pos-confirm-payment-btn');
