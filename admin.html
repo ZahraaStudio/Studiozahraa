@@ -5354,6 +5354,10 @@ window.loadDeliveryRatings = async function() {
                     </select>
                 </div>
                 <div style="margin-bottom:8px;">
+                    <label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">حجم الشعار (بكسل)</label>
+                    <input id="pos-set-logo-size" type="number" min="30" max="200" value="90" style="width:100%;padding:8px;background:#0a0a0a;border:1px solid #333;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:12px;outline:none;">
+                </div>
+                <div style="margin-bottom:8px;">
                     <label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">شعار إضافي (URL)</label>
                     <input id="pos-set-logo-secondary" type="text" placeholder="رابط الشعار الإضافي" style="width:100%;padding:8px;background:#0a0a0a;border:1px solid #333;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:12px;outline:none;">
                 </div>
@@ -6201,6 +6205,7 @@ window.openPosSettings = function() {
     set('pos-set-font', s.font || 'Cairo');
     set('pos-set-barcode-type', s.barcodeType || 'rectangular');
     set('pos-set-logo-position', s.logoPosition || 'right');
+    set('pos-set-logo-size', s.logoSize || '90');
     set('pos-set-logo-secondary', s.logoSecondary || '');
 
     const modal = document.getElementById('pos-settings-modal');
@@ -6247,6 +6252,7 @@ window.savePosSettings = function() {
         font: (document.getElementById('pos-set-font')?.value) || 'Cairo',
         barcodeType: (document.getElementById('pos-set-barcode-type')?.value) || 'rectangular',
         logoPosition: (document.getElementById('pos-set-logo-position')?.value) || 'right',
+        logoSize: (document.getElementById('pos-set-logo-size')?.value) || '90',
         logoSecondary: get('pos-set-logo-secondary'),
     };
     localStorage.setItem('zahraa_pos_settings', JSON.stringify(_posSettings));
@@ -7339,13 +7345,37 @@ window.unbanUser = async function(id) {
             const s = JSON.parse(localStorage.getItem('zahraa_invoice_settings') || '{}');
             const font = s.font || 'Cairo';
             inv.style.fontFamily = `'${font}', sans-serif`;
-            // Logo bar
+            // Logo bar with position and size support
             if ((s.logoRight || s.logoLeft) && !inv.querySelector('.inv-logo-bar')) {
                 const bar = document.createElement('div');
                 bar.className = 'inv-logo-bar';
-                bar.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;';
-                bar.innerHTML = (s.logoRight?`<img src="${s.logoRight}" style="max-height:90px;max-width:180px;object-fit:contain;" onerror="this.style.display='none'">`:'<div></div>') +
-                                (s.logoLeft?`<img src="${s.logoLeft}" style="max-height:90px;max-width:180px;object-fit:contain;" onerror="this.style.display='none'">`:'<div></div>');
+                const logoSize = s.logoSize || '90';
+                const position = s.logoPosition || 'right';
+                
+                let justifyContent = 'space-between';
+                if (position === 'center') justifyContent = 'center';
+                else if (position === 'left') justifyContent = 'flex-start';
+                else if (position === 'right') justifyContent = 'flex-end';
+                
+                bar.style.cssText = `display:flex;justify-content:${justifyContent};align-items:center;margin-bottom:18px;gap:16px;`;
+                
+                let logoHtml = '';
+                if (position === 'center' && (s.logoRight || s.logoLeft)) {
+                    const logoUrl = s.logoRight || s.logoLeft;
+                    logoHtml = `<img src="${logoUrl}" style="max-height:${logoSize}px;max-width:180px;object-fit:contain;" onerror="this.style.display='none'">`;
+                } else if (position === 'left' && s.logoLeft) {
+                    logoHtml = `<img src="${s.logoLeft}" style="max-height:${logoSize}px;max-width:180px;object-fit:contain;" onerror="this.style.display='none'">`;
+                } else if (position === 'right' && s.logoRight) {
+                    logoHtml = `<img src="${s.logoRight}" style="max-height:${logoSize}px;max-width:180px;object-fit:contain;" onerror="this.style.display='none'">`;
+                } else if (position === 'both' || position === 'right') {
+                    logoHtml = (s.logoRight?`<img src="${s.logoRight}" style="max-height:${logoSize}px;max-width:180px;object-fit:contain;" onerror="this.style.display='none'">`:'<div></div>') +
+                              (s.logoLeft?`<img src="${s.logoLeft}" style="max-height:${logoSize}px;max-width:180px;object-fit:contain;" onerror="this.style.display='none'">`:'<div></div>');
+                } else {
+                    logoHtml = (s.logoRight?`<img src="${s.logoRight}" style="max-height:${logoSize}px;max-width:180px;object-fit:contain;" onerror="this.style.display='none'">`:'<div></div>') +
+                              (s.logoLeft?`<img src="${s.logoLeft}" style="max-height:${logoSize}px;max-width:180px;object-fit:contain;" onerror="this.style.display='none'">`:'<div></div>');
+                }
+                
+                bar.innerHTML = logoHtml;
                 inv.insertBefore(bar, inv.firstChild);
             }
             // Better table styling
