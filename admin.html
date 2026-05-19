@@ -118,8 +118,36 @@
 
         <!-- Products Tab -->
         <div id="products-tab" class="tab-content active">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div class="lg:col-span-1 bg-zinc-900 p-6 rounded-xl gold-border h-fit sticky top-4">
+            <div class="flex flex-col lg:grid lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2 bg-zinc-900 p-6 rounded-xl gold-border order-2 lg:order-1">
+                    <!-- Search -->
+                    <div class="mb-4">
+                        <input id="product-search" oninput="filterProducts()" placeholder="🔍 بحث بالاسم أو الكود أو الباركود..." class="w-full p-3 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-yellow-500">
+                    </div>
+                    <!-- Bulk Management Buttons -->
+                    <div class="flex flex-wrap gap-2 mb-3">
+                        <button onclick="exportProductsExcel()" class="text-xs px-3 py-2 bg-green-700 hover:bg-green-600 text-white rounded font-bold flex items-center gap-1">📊 تصدير Excel</button>
+                        <button onclick="exportProductsXML()" class="text-xs px-3 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded font-bold flex items-center gap-1">📄 تصدير XML</button>
+                        <button onclick="downloadAllBarcodesPDF()" class="text-xs px-3 py-2 bg-indigo-700 hover:bg-indigo-600 text-white rounded font-bold flex items-center gap-1">🏷️ تحميل جميع الباركودات</button>
+                        <label class="text-xs px-3 py-2 bg-purple-700 hover:bg-purple-600 text-white rounded font-bold flex items-center gap-1 cursor-pointer">
+                            📥 استيراد Excel
+                            <input type="file" accept=".xlsx,.xls" class="hidden" onchange="importProductsExcel(this)">
+                        </label>
+                        <label class="text-xs px-3 py-2 bg-orange-700 hover:bg-orange-600 text-white rounded font-bold flex items-center gap-1 cursor-pointer">
+                            📥 استيراد XML
+                            <input type="file" accept=".xml" class="hidden" onchange="importProductsXML(this)">
+                        </label>
+                    </div>
+                    <!-- Bulk Select Actions -->
+                    <div class="flex flex-wrap gap-2 mb-3 items-center">
+                        <button onclick="toggleSelectAllProducts()" class="text-xs px-3 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded font-bold">☑️ تحديد الكل</button>
+                        <button onclick="bulkDeleteSelected()" class="text-xs px-3 py-2 bg-red-800 hover:bg-red-700 text-white rounded font-bold hidden" id="bulk-delete-btn">🗑️ حذف المحدد (<span id="selected-count">0</span>)</button>
+                        <button onclick="deleteAllProductsConfirm()" class="text-xs px-3 py-2 bg-red-900 hover:bg-red-800 text-red-300 rounded font-bold border border-red-800">⛔ حذف جميع المنتجات</button>
+                        <p class="text-[10px] text-zinc-500">الاستيراد يُحدّث المنتجات الموجودة إن تطابق الاسم</p>
+                    </div>
+                    <div id="products-list" class="space-y-3"></div>
+                </div>
+                <div class="lg:col-span-1 bg-zinc-900 p-6 rounded-xl gold-border h-fit sticky top-4 order-1 lg:order-2">
                     <h3 id="form-title" class="text-xl font-bold mb-4 border-b border-zinc-800 pb-2">إضافة/تعديل منتج</h3>
                     <input type="hidden" id="product-id">
                     <div class="space-y-4">
@@ -128,6 +156,7 @@
                             <div class="flex gap-1">
                                 <input type="text" id="p-code" placeholder="كود المنتج (يتولد تلقائياً)" class="flex-1 p-2 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-gold-text">
                                 <button type="button" onclick="generateProductCode()" class="px-3 py-2 bg-indigo-700 hover:bg-indigo-600 text-white rounded text-xs font-bold flex-shrink-0" title="توليد كود تلقائي">🔄</button>
+                                <button type="button" onclick="scanBarcode()" class="px-3 py-2 bg-green-700 hover:bg-green-600 text-white rounded text-xs font-bold flex-shrink-0" title="مسح الباركود">📷</button>
                             </div>
                         </div>
                         <div class="grid grid-cols-3 gap-2">
@@ -194,34 +223,6 @@
                         <button id="save-btn" onclick="saveProduct()" class="w-full p-3 gold-bg text-black font-bold rounded">حفظ المنتج</button>
                         <button id="cancel-btn" onclick="resetProductForm()" class="w-full p-3 bg-zinc-800 text-white font-bold rounded hidden">إلغاء</button>
                     </div>
-                </div>
-                <div class="lg:col-span-2 bg-zinc-900 p-6 rounded-xl gold-border">
-                    <!-- Search -->
-                    <div class="mb-4">
-                        <input id="product-search" oninput="filterProducts()" placeholder="🔍 بحث بالاسم أو الكود أو الباركود..." class="w-full p-3 bg-black border border-zinc-700 rounded text-sm outline-none focus:border-yellow-500">
-                    </div>
-                    <!-- Bulk Management Buttons -->
-                    <div class="flex flex-wrap gap-2 mb-3">
-                        <button onclick="exportProductsExcel()" class="text-xs px-3 py-2 bg-green-700 hover:bg-green-600 text-white rounded font-bold flex items-center gap-1">📊 تصدير Excel</button>
-                        <button onclick="exportProductsXML()" class="text-xs px-3 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded font-bold flex items-center gap-1">📄 تصدير XML</button>
-                        <button onclick="downloadAllBarcodesPDF()" class="text-xs px-3 py-2 bg-indigo-700 hover:bg-indigo-600 text-white rounded font-bold flex items-center gap-1">🏷️ تحميل جميع الباركودات</button>
-                        <label class="text-xs px-3 py-2 bg-purple-700 hover:bg-purple-600 text-white rounded font-bold flex items-center gap-1 cursor-pointer">
-                            📥 استيراد Excel
-                            <input type="file" accept=".xlsx,.xls" class="hidden" onchange="importProductsExcel(this)">
-                        </label>
-                        <label class="text-xs px-3 py-2 bg-orange-700 hover:bg-orange-600 text-white rounded font-bold flex items-center gap-1 cursor-pointer">
-                            📥 استيراد XML
-                            <input type="file" accept=".xml" class="hidden" onchange="importProductsXML(this)">
-                        </label>
-                    </div>
-                    <!-- Bulk Select Actions -->
-                    <div class="flex flex-wrap gap-2 mb-3 items-center">
-                        <button onclick="toggleSelectAllProducts()" class="text-xs px-3 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded font-bold">☑️ تحديد الكل</button>
-                        <button onclick="bulkDeleteSelected()" class="text-xs px-3 py-2 bg-red-800 hover:bg-red-700 text-white rounded font-bold hidden" id="bulk-delete-btn">🗑️ حذف المحدد (<span id="selected-count">0</span>)</button>
-                        <button onclick="deleteAllProductsConfirm()" class="text-xs px-3 py-2 bg-red-900 hover:bg-red-800 text-red-300 rounded font-bold border border-red-800">⛔ حذف جميع المنتجات</button>
-                        <p class="text-[10px] text-zinc-500">الاستيراد يُحدّث المنتجات الموجودة إن تطابق الاسم</p>
-                    </div>
-                    <div id="products-list" class="space-y-3"></div>
                 </div>
             </div>
         </div>
@@ -1100,7 +1101,8 @@
             <div class="mt-8 flex gap-4">
                 <button onclick="downloadInvoice()" class="flex-1 p-3 gold-bg text-black font-bold rounded">تحميل PDF</button>
                 <button onclick="printInvoice()" class="flex-1 p-3 bg-zinc-800 text-white font-bold rounded">طباعة</button>
-                <button onclick="sendInvoiceWhatsApp()" class="flex-1 p-3 bg-green-600 text-white font-bold rounded">📱 إرسال واتساب</button>
+                <button onclick="sendInvoiceWhatsApp()" class="flex-1 p-3 bg-green-600 text-white font-bold rounded">📱 واتساب</button>
+                <button onclick="sendInvoiceEmail()" class="flex-1 p-3 bg-blue-600 text-white font-bold rounded">📧 إيميل</button>
             </div>
         </div>
     </div>
@@ -2109,6 +2111,81 @@ window.loadOrders = () => {
                     zahraaToast('تم تحميل الفاتورة وفتح واتساب - أرفق الملف المحفوظ', 'info');
                 };
             });
+        };
+        window.sendInvoiceEmail = () => {
+            const o = window._currentInvoiceOrder;
+            if (!o) { zahraaToast('لا يوجد طلب', 'warning'); return; }
+            const element = document.getElementById('printable-invoice');
+            html2pdf().from(element).toPdf().get('pdf').then(function(pdf) {
+                const pdfBlob = pdf.output('blob');
+                const reader = new FileReader();
+                reader.readAsDataURL(pdfBlob);
+                reader.onloadend = function() {
+                    const base64data = reader.result;
+                    const subject = `فاتورة طلبك رقم ${o.orderNumber || o.id.substring(0,8)} - استوديو الزهراء`;
+                    const body = `مرحباً ${o.customerName || 'عميل'}،%0D%0A%0D%0Aشكراً لتسوقك معنا!%0D%0A%0D%0Aفاتورة طلبك رقم ${o.orderNumber || o.id.substring(0,8)} مرفقة.%0D%0Aالإجمالي: ${o.totalPrice || 0} ج%0D%0A%0D%0Aتحياتنا،%0D%0Aاستوديو الزهراء`;
+                    const email = o.email || '';
+                    const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${body}`;
+
+                    // Create a download link for the PDF
+                    const link = document.createElement('a');
+                    link.href = base64data;
+                    link.download = `Invoice_${o.orderNumber || o.id.substring(0,8)}.pdf`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+
+                    window.open(mailtoLink, '_blank');
+                    zahraaToast('تم تحميل الفاتورة وفتح البريد الإلكتروني - أرفق الملف المحفوظ', 'info');
+                };
+            });
+        };
+
+        // Barcode scanning function
+        window.scanBarcode = () => {
+            // Create modal for barcode scanning
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:99999;display:flex;align-items:center;justify-content:center;';
+            modal.innerHTML = `
+                <div style="background:#1a1a1a;border:1px solid #333;border-radius:16px;padding:24px;max-width:400px;width:90%;text-align:center;">
+                    <h3 style="color:#d4af37;font-size:18px;font-weight:700;margin-bottom:16px;">مسح الباركود</h3>
+                    <p style="color:#888;font-size:12px;margin-bottom:16px;">استخدم ماسح الباركود USB أو الكاميرا لمسح الباركود</p>
+                    <input type="text" id="barcode-input" placeholder="امسح الباركود هنا..." style="width:100%;padding:12px;background:#0a0a0a;border:1px solid #333;border-radius:8px;color:#fff;font-size:14px;outline:none;margin-bottom:16px;" autofocus>
+                    <div style="display:flex;gap:8px;">
+                        <button onclick="confirmBarcode()" style="flex:1;padding:12px;background:#d4af37;color:#000;border:none;border-radius:8px;font-weight:700;cursor:pointer;">تأكيد</button>
+                        <button onclick="cancelBarcode()" style="flex:1;padding:12px;background:#333;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">إلغاء</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            // Focus on input for USB scanner
+            setTimeout(() => {
+                const input = document.getElementById('barcode-input');
+                if (input) input.focus();
+                // Listen for Enter key (USB scanner usually sends Enter after scan)
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') confirmBarcode();
+                });
+            }, 100);
+
+            window._barcodeModal = modal;
+        };
+
+        window.confirmBarcode = () => {
+            const barcode = document.getElementById('barcode-input').value.trim();
+            if (barcode) {
+                document.getElementById('p-code').value = barcode;
+                zahraaToast('تم مسح الباركود: ' + barcode, 'success');
+            }
+            cancelBarcode();
+        };
+
+        window.cancelBarcode = () => {
+            if (window._barcodeModal) {
+                document.body.removeChild(window._barcodeModal);
+                window._barcodeModal = null;
+            }
         };
         window.printInvoice = () => {
             const content = document.getElementById('printable-invoice').innerHTML;
@@ -5556,7 +5633,7 @@ function _renderCashierReceipt(o) {
         ${s.showNotes !== false && o.notes ? `<div class="r-center r-sm" style="margin-top:4px;">ملاحظات: ${o.notes}</div>` : ''}
         <div class="r-line"></div>
         <div class="r-center" style="margin:8px 0 4px;font-size:13px;">${storeFooter}</div>
-        ${s.showBarcode ? `<div style="text-align:center;margin:6px 0;"><svg id="inv-barcode-${orderNum}" style="width:120px;height:40px;"></svg><div style="font-size:9px;color:#333;margin-top:2px;letter-spacing:1px;">${orderNum}</div></div>` : ''}
+        ${s.showBarcode ? (s.barcodeType === 'qr' ? `<div style="text-align:center;margin:6px 0;"><img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(orderNum)}" style="width:70px;height:70px;"></div>` : `<div style="text-align:center;margin:6px 0;"><svg id="inv-barcode-${orderNum}" style="width:120px;height:40px;"></svg><div style="font-size:9px;color:#333;margin-top:2px;letter-spacing:1px;">${orderNum}</div></div>`) : ''}
         <div style="height:20px;"></div>
     `;
 
@@ -5566,8 +5643,8 @@ function _renderCashierReceipt(o) {
     container.innerHTML = receiptHtml;
     wrapper.style.display = 'block';
     
-    // Generate rectangular barcode if JsBarcode is available
-    if (s.showBarcode && typeof JsBarcode !== 'undefined') {
+    // Generate rectangular barcode if JsBarcode is available and barcodeType is rectangular
+    if (s.showBarcode && s.barcodeType === 'rectangular' && typeof JsBarcode !== 'undefined') {
         setTimeout(() => {
             const barcodeEl = document.getElementById(`inv-barcode-${orderNum}`);
             if (barcodeEl) {
@@ -6438,7 +6515,7 @@ function _renderPOSReceipt(inv) {
             ${inv.remainingAmount > 0 ? `<div class="r-row r-bold" style="color:#e74c3c;background:#ffeaea;padding:4px 6px;border-radius:6px;margin-top:4px;"><span>⚠️ المتبقي</span><span>${inv.remainingAmount.toFixed(2)} ج</span></div>` : ''}
             ${inv.notes ? `<div style="margin-top:10px;padding:8px;background:${t.accentColor}15;border-radius:6px;border-right:3px solid ${t.accentColor};"><div style="font-size:10px;font-weight:700;color:${t.accentColor};margin-bottom:3px;">📝 ملاحظات:</div><div style="font-size:11px;color:${t.bodyColor};line-height:1.5;">${inv.notes}</div></div>` : ''}
             <div style="text-align:center;margin:12px 0 8px;">
-                <svg id="pos-receipt-barcode-${inv.invoiceNumber}" style="width:120px;height:40px;"></svg>
+                ${(_posSettings.barcodeType === 'qr' ? `<img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(inv.invoiceNumber)}" style="width:70px;height:70px;border-radius:8px;${theme==='luxury'?'border:1px solid #d4af37;':''}" alt="QR">` : `<svg id="pos-receipt-barcode-${inv.invoiceNumber}" style="width:120px;height:40px;"></svg>`)}
                 <div style="font-size:8px;color:${t.accentColor};margin-top:2px;letter-spacing:1px;">${inv.invoiceNumber}</div>
             </div>
         </div>
@@ -6449,8 +6526,8 @@ function _renderPOSReceipt(inv) {
             ${_posSettings.address&&(_posSettings.showAddress!==false)?`<div style="font-size:9px;opacity:0.6;">📍 ${_posSettings.address}</div>`:''}
         </div>
     `;
-    // Generate barcode if JsBarcode is available
-    if (typeof JsBarcode !== 'undefined') {
+    // Generate barcode if JsBarcode is available and barcodeType is rectangular
+    if (_posSettings.barcodeType === 'rectangular' && typeof JsBarcode !== 'undefined') {
         setTimeout(() => {
             const barcodeEl = document.getElementById(`pos-receipt-barcode-${inv.invoiceNumber}`);
             if (barcodeEl) {
@@ -6666,7 +6743,7 @@ window.showInvoiceDetail = function(invId) {
                     <p style="color:#d4af37;font-weight:800;font-size:15px;margin:0;">${inv.invoiceNumber}</p>
                     <p style="color:#888;font-size:11px;margin:3px 0 0;">${d.toLocaleString('ar-EG')}</p>
                 </div>
-                <svg id="detail-barcode-${inv.invoiceNumber}" style="width:100px;height:35px;"></svg>
+                ${(_posSettings.barcodeType === 'qr' ? `<img src="https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${encodeURIComponent(inv.invoiceNumber)}" style="width:60px;height:60px;border-radius:8px;">` : `<svg id="detail-barcode-${inv.invoiceNumber}" style="width:100px;height:35px;"></svg>`)}
             </div>
             <div style="border-top:1px solid #222;padding-top:10px;margin-bottom:10px;">
                 <p style="margin:3px 0;color:#ccc;"><span style="color:#888;">العميل: </span>${inv.userName}</p>
@@ -6687,8 +6764,8 @@ window.showInvoiceDetail = function(invId) {
             </div>
         </div>`;
 
-    // Generate barcode if JsBarcode is available
-    if (typeof JsBarcode !== 'undefined') {
+    // Generate barcode if JsBarcode is available and barcodeType is rectangular
+    if (_posSettings.barcodeType === 'rectangular' && typeof JsBarcode !== 'undefined') {
         setTimeout(() => {
             const barcodeEl = document.getElementById(`detail-barcode-${inv.invoiceNumber}`);
             if (barcodeEl) {
