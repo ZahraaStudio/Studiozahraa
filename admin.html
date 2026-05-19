@@ -834,6 +834,11 @@
                         </select>
                     </div>
                     <div>
+                        <label class="text-sm text-zinc-400 mb-1 block">حجم الشعار (بكسل)</label>
+                        <input type="number" id="inv-logo-size" min="30" max="200" value="90" class="w-full p-3 bg-black border border-zinc-700 rounded-lg text-sm outline-none focus:border-yellow-500">
+                        <p class="text-xs text-zinc-600 mt-1">حجم الشعار في الفاتورة (30-200 بكسل)</p>
+                    </div>
+                    <div>
                         <label class="text-sm text-zinc-400 mb-1 block">شعار يمين الفاتورة (URL)</label>
                         <input type="text" id="inv-logo-right" placeholder="https://..." class="w-full p-3 bg-black border border-zinc-700 rounded-lg text-sm outline-none focus:border-yellow-500">
                         <p class="text-xs text-zinc-600 mt-1">شعار المتجر الرئيسي — يظهر على يمين الفاتورة</p>
@@ -7390,6 +7395,7 @@ window.saveInvoiceSettings = function() {
     const s = {
         font: document.getElementById('inv-font-select')?.value || 'Cairo',
         logoPosition: document.getElementById('inv-logo-position')?.value || 'right',
+        logoSize: document.getElementById('inv-logo-size')?.value || '90',
         logoRight: document.getElementById('inv-logo-right')?.value || '',
         logoLeft: document.getElementById('inv-logo-left')?.value || '',
         printMode: document.getElementById('inv-print-mode')?.value || 'bw',
