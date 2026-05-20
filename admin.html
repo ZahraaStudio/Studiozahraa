@@ -2113,10 +2113,15 @@ window.loadOrders = () => {
                         html5QrcodeScanner = new Html5Qrcode(readerElement);
                         const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
                         
-                        // Get available cameras first
-                        const cameras = await Html5Qrcode.getCameras();
+                        // Try to get available cameras
+                        let cameras = [];
+                        try {
+                            cameras = await Html5Qrcode.getCameras();
+                        } catch (e) {
+                            console.warn('Could not get camera list:', e);
+                        }
                         
-                        if (cameras && cameras.length) {
+                        if (cameras && cameras.length > 0) {
                             // Use the first camera or the environment camera
                             const cameraId = cameras.find(c => c.label && c.label.toLowerCase().includes('back'))?.id || cameras[0].id;
                             
@@ -2134,18 +2139,24 @@ window.loadOrders = () => {
                             if (loadingElement) loadingElement.style.display = 'none';
                         } else {
                             // Fallback to environment mode
-                            await html5QrcodeScanner.start({ facingMode: "environment" }, config, (decodedText) => {
-                                document.getElementById('barcode-input').value = decodedText;
-                                zahraaToast('تم مسح الباركود: ' + decodedText, 'success');
-                                if (html5QrcodeScanner) {
-                                    html5QrcodeScanner.stop();
-                                }
-                                confirmBarcode();
-                            }, (errorMessage) => {
-                                // Ignore errors during scanning
-                            });
-                            
-                            if (loadingElement) loadingElement.style.display = 'none';
+                            try {
+                                await html5QrcodeScanner.start({ facingMode: "environment" }, config, (decodedText) => {
+                                    document.getElementById('barcode-input').value = decodedText;
+                                    zahraaToast('تم مسح الباركود: ' + decodedText, 'success');
+                                    if (html5QrcodeScanner) {
+                                        html5QrcodeScanner.stop();
+                                    }
+                                    confirmBarcode();
+                                }, (errorMessage) => {
+                                    // Ignore errors during scanning
+                                });
+                                
+                                if (loadingElement) loadingElement.style.display = 'none';
+                            } catch (envErr) {
+                                console.error('Environment camera error:', envErr);
+                                if (loadingElement) loadingElement.textContent = 'خطأ في الوصول للكاميرا، استخدم الإدخال اليدوي';
+                                zahraaToast('خطأ في الوصول للكاميرا، استخدم الإدخال اليدوي', 'warning');
+                            }
                         }
                     } catch (err) {
                         console.error('Camera error:', err);
@@ -2219,10 +2230,15 @@ window.loadOrders = () => {
                         html5QrcodeScanner = new Html5Qrcode(readerElement);
                         const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
                         
-                        // Get available cameras first
-                        const cameras = await Html5Qrcode.getCameras();
+                        // Try to get available cameras
+                        let cameras = [];
+                        try {
+                            cameras = await Html5Qrcode.getCameras();
+                        } catch (e) {
+                            console.warn('Could not get camera list:', e);
+                        }
                         
-                        if (cameras && cameras.length) {
+                        if (cameras && cameras.length > 0) {
                             // Use the first camera or the environment camera
                             const cameraId = cameras.find(c => c.label && c.label.toLowerCase().includes('back'))?.id || cameras[0].id;
                             
@@ -2240,18 +2256,24 @@ window.loadOrders = () => {
                             if (loadingElement) loadingElement.style.display = 'none';
                         } else {
                             // Fallback to environment mode
-                            await html5QrcodeScanner.start({ facingMode: "environment" }, config, (decodedText) => {
-                                document.getElementById('order-barcode-input').value = decodedText;
-                                zahraaToast('تم مسح الباركود: ' + decodedText, 'success');
-                                if (html5QrcodeScanner) {
-                                    html5QrcodeScanner.stop();
-                                }
-                                confirmOrderBarcode();
-                            }, (errorMessage) => {
-                                // Ignore errors during scanning
-                            });
-                            
-                            if (loadingElement) loadingElement.style.display = 'none';
+                            try {
+                                await html5QrcodeScanner.start({ facingMode: "environment" }, config, (decodedText) => {
+                                    document.getElementById('order-barcode-input').value = decodedText;
+                                    zahraaToast('تم مسح الباركود: ' + decodedText, 'success');
+                                    if (html5QrcodeScanner) {
+                                        html5QrcodeScanner.stop();
+                                    }
+                                    confirmOrderBarcode();
+                                }, (errorMessage) => {
+                                    // Ignore errors during scanning
+                                });
+                                
+                                if (loadingElement) loadingElement.style.display = 'none';
+                            } catch (envErr) {
+                                console.error('Environment camera error:', envErr);
+                                if (loadingElement) loadingElement.textContent = 'خطأ في الوصول للكاميرا، استخدم الإدخال اليدوي';
+                                zahraaToast('خطأ في الوصول للكاميرا، استخدم الإدخال اليدوي', 'warning');
+                            }
                         }
                     } catch (err) {
                         console.error('Camera error:', err);
