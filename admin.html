@@ -5843,7 +5843,7 @@ function _renderCashierReceipt(o) {
                 try {
                     JsBarcode(barcodeEl, orderNum, {
                         format: 'CODE128',
-                        width: 2,
+                        width: 1,
                         height: 40,
                         displayValue: false,
                         margin: 0
@@ -6737,7 +6737,7 @@ function _renderPOSReceipt(inv) {
                 try {
                     JsBarcode(barcodeEl, inv.invoiceNumber, {
                         format: 'CODE128',
-                        width: 2,
+                        width: 1,
                         height: 40,
                         displayValue: false,
                         margin: 0
@@ -6775,7 +6775,15 @@ window.reprintInvoice = function() {
 };
 
 window.downloadInvoiceAsImage = function() {
-    const invoiceElement = document.getElementById('printable-invoice');
+    // Try to find the invoice element in different locations
+    let invoiceElement = document.getElementById('printable-invoice');
+    if (!invoiceElement) {
+        invoiceElement = document.getElementById('cashier-receipt-print');
+    }
+    if (!invoiceElement) {
+        invoiceElement = document.getElementById('pos-invoice-detail-content');
+    }
+    
     if (!invoiceElement) {
         zahraaToast('لم يتم العثور على الفاتورة', 'error');
         return;
@@ -7004,7 +7012,7 @@ window.showInvoiceDetail = function(invId) {
                 try {
                     JsBarcode(barcodeEl, inv.invoiceNumber, {
                         format: 'CODE128',
-                        width: 2,
+                        width: 1,
                         height: 35,
                         displayValue: false,
                         margin: 0
