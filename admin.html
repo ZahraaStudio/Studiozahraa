@@ -6777,8 +6777,14 @@ window.reprintInvoice = function() {
 window.downloadInvoiceAsImage = function() {
     // Try to find the invoice element in different locations
     let invoiceElement = document.getElementById('printable-invoice');
+    let wasHidden = false;
+    
     if (!invoiceElement) {
         invoiceElement = document.getElementById('cashier-receipt-print');
+        if (invoiceElement) {
+            wasHidden = invoiceElement.style.display === 'none';
+            invoiceElement.style.display = 'block';
+        }
     }
     if (!invoiceElement) {
         invoiceElement = document.getElementById('pos-invoice-detail-content');
@@ -6802,9 +6808,19 @@ window.downloadInvoiceAsImage = function() {
         link.href = canvas.toDataURL('image/png');
         link.click();
         zahraaToast('تم تحميل الفاتورة بنجاح', 'success');
+        
+        // Restore original display state
+        if (wasHidden && invoiceElement.id === 'cashier-receipt-print') {
+            invoiceElement.style.display = 'none';
+        }
     }).catch(err => {
         console.error('Error converting invoice to image:', err);
         zahraaToast('خطأ في تحويل الفاتورة إلى صورة', 'error');
+        
+        // Restore original display state on error
+        if (wasHidden && invoiceElement.id === 'cashier-receipt-print') {
+            invoiceElement.style.display = 'none';
+        }
     });
 };
 
