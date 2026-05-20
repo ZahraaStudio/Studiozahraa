@@ -2090,7 +2090,9 @@ window.loadOrders = () => {
                 <div style="background:#1a1a1a;border:1px solid #333;border-radius:16px;padding:24px;max-width:500px;width:90%;text-align:center;">
                     <h3 style="color:#d4af37;font-size:18px;font-weight:700;margin-bottom:16px;">مسح الباركود</h3>
                     <p style="color:#888;font-size:12px;margin-bottom:16px;">استخدم الكاميرا أو ماسح الباركود USB لمسح الباركود</p>
-                    <div id="barcode-reader" style="width:100%;min-height:250px;background:#0a0a0a;border:1px solid #333;border-radius:8px;margin-bottom:16px;"></div>
+                    <div id="barcode-reader" style="width:100%;min-height:250px;background:#0a0a0a;border:1px solid #333;border-radius:8px;margin-bottom:16px;position:relative;">
+                        <div id="barcode-reader-loading" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#888;font-size:12px;">جاري تشغيل الكاميرا...</div>
+                    </div>
                     <input type="text" id="barcode-input" placeholder="أو أدخل الباركود يدوياً..." style="width:100%;padding:12px;background:#0a0a0a;border:1px solid #333;border-radius:8px;color:#fff;font-size:14px;outline:none;margin-bottom:16px;">
                     <div style="display:flex;gap:8px;">
                         <button onclick="confirmBarcode()" style="flex:1;padding:12px;background:#d4af37;color:#000;border:none;border-radius:8px;font-weight:700;cursor:pointer;">تأكيد</button>
@@ -2102,24 +2104,56 @@ window.loadOrders = () => {
 
             // Initialize HTML5-QRCode
             let html5QrcodeScanner = null;
-            setTimeout(() => {
+            setTimeout(async () => {
                 const readerElement = document.getElementById('barcode-reader');
+                const loadingElement = document.getElementById('barcode-reader-loading');
+                
                 if (readerElement && typeof Html5Qrcode !== 'undefined') {
-                    html5QrcodeScanner = new Html5Qrcode(readerElement);
-                    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-                    html5QrcodeScanner.start({ facingMode: "environment" }, config, (decodedText) => {
-                        document.getElementById('barcode-input').value = decodedText;
-                        zahraaToast('تم مسح الباركود: ' + decodedText, 'success');
-                        if (html5QrcodeScanner) {
-                            html5QrcodeScanner.stop();
+                    try {
+                        html5QrcodeScanner = new Html5Qrcode(readerElement);
+                        const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
+                        
+                        // Get available cameras first
+                        const cameras = await Html5Qrcode.getCameras();
+                        
+                        if (cameras && cameras.length) {
+                            // Use the first camera or the environment camera
+                            const cameraId = cameras.find(c => c.label && c.label.toLowerCase().includes('back'))?.id || cameras[0].id;
+                            
+                            await html5QrcodeScanner.start(cameraId, config, (decodedText) => {
+                                document.getElementById('barcode-input').value = decodedText;
+                                zahraaToast('تم مسح الباركود: ' + decodedText, 'success');
+                                if (html5QrcodeScanner) {
+                                    html5QrcodeScanner.stop();
+                                }
+                                confirmBarcode();
+                            }, (errorMessage) => {
+                                // Ignore errors during scanning
+                            });
+                            
+                            if (loadingElement) loadingElement.style.display = 'none';
+                        } else {
+                            // Fallback to environment mode
+                            await html5QrcodeScanner.start({ facingMode: "environment" }, config, (decodedText) => {
+                                document.getElementById('barcode-input').value = decodedText;
+                                zahraaToast('تم مسح الباركود: ' + decodedText, 'success');
+                                if (html5QrcodeScanner) {
+                                    html5QrcodeScanner.stop();
+                                }
+                                confirmBarcode();
+                            }, (errorMessage) => {
+                                // Ignore errors during scanning
+                            });
+                            
+                            if (loadingElement) loadingElement.style.display = 'none';
                         }
-                        confirmBarcode();
-                    }, (errorMessage) => {
-                        // Ignore errors during scanning
-                    }).catch((err) => {
+                    } catch (err) {
                         console.error('Camera error:', err);
+                        if (loadingElement) loadingElement.textContent = 'خطأ في الوصول للكاميرا، استخدم الإدخال اليدوي';
                         zahraaToast('خطأ في الوصول للكاميرا، استخدم الإدخال اليدوي', 'warning');
-                    });
+                    }
+                } else {
+                    if (loadingElement) loadingElement.textContent = 'مكتبة الكاميرا غير متوفرة، استخدم الإدخال اليدوي';
                 }
 
                 // Focus on input for USB scanner
@@ -2162,7 +2196,9 @@ window.loadOrders = () => {
                 <div style="background:#1a1a1a;border:1px solid #333;border-radius:16px;padding:24px;max-width:500px;width:90%;text-align:center;">
                     <h3 style="color:#d4af37;font-size:18px;font-weight:700;margin-bottom:16px;">مسح الباركود للطلب</h3>
                     <p style="color:#888;font-size:12px;margin-bottom:16px;">استخدم الكاميرا أو ماسح الباركود USB لمسح الباركود</p>
-                    <div id="order-barcode-reader" style="width:100%;min-height:250px;background:#0a0a0a;border:1px solid #333;border-radius:8px;margin-bottom:16px;"></div>
+                    <div id="order-barcode-reader" style="width:100%;min-height:250px;background:#0a0a0a;border:1px solid #333;border-radius:8px;margin-bottom:16px;position:relative;">
+                        <div id="order-barcode-reader-loading" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#888;font-size:12px;">جاري تشغيل الكاميرا...</div>
+                    </div>
                     <input type="text" id="order-barcode-input" placeholder="أو أدخل الباركود يدوياً..." style="width:100%;padding:12px;background:#0a0a0a;border:1px solid #333;border-radius:8px;color:#fff;font-size:14px;outline:none;margin-bottom:16px;">
                     <div style="display:flex;gap:8px;">
                         <button onclick="confirmOrderBarcode()" style="flex:1;padding:12px;background:#d4af37;color:#000;border:none;border-radius:8px;font-weight:700;cursor:pointer;">تأكيد</button>
@@ -2174,24 +2210,56 @@ window.loadOrders = () => {
 
             // Initialize HTML5-QRCode
             let html5QrcodeScanner = null;
-            setTimeout(() => {
+            setTimeout(async () => {
                 const readerElement = document.getElementById('order-barcode-reader');
+                const loadingElement = document.getElementById('order-barcode-reader-loading');
+                
                 if (readerElement && typeof Html5Qrcode !== 'undefined') {
-                    html5QrcodeScanner = new Html5Qrcode(readerElement);
-                    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-                    html5QrcodeScanner.start({ facingMode: "environment" }, config, (decodedText) => {
-                        document.getElementById('order-barcode-input').value = decodedText;
-                        zahraaToast('تم مسح الباركود: ' + decodedText, 'success');
-                        if (html5QrcodeScanner) {
-                            html5QrcodeScanner.stop();
+                    try {
+                        html5QrcodeScanner = new Html5Qrcode(readerElement);
+                        const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
+                        
+                        // Get available cameras first
+                        const cameras = await Html5Qrcode.getCameras();
+                        
+                        if (cameras && cameras.length) {
+                            // Use the first camera or the environment camera
+                            const cameraId = cameras.find(c => c.label && c.label.toLowerCase().includes('back'))?.id || cameras[0].id;
+                            
+                            await html5QrcodeScanner.start(cameraId, config, (decodedText) => {
+                                document.getElementById('order-barcode-input').value = decodedText;
+                                zahraaToast('تم مسح الباركود: ' + decodedText, 'success');
+                                if (html5QrcodeScanner) {
+                                    html5QrcodeScanner.stop();
+                                }
+                                confirmOrderBarcode();
+                            }, (errorMessage) => {
+                                // Ignore errors during scanning
+                            });
+                            
+                            if (loadingElement) loadingElement.style.display = 'none';
+                        } else {
+                            // Fallback to environment mode
+                            await html5QrcodeScanner.start({ facingMode: "environment" }, config, (decodedText) => {
+                                document.getElementById('order-barcode-input').value = decodedText;
+                                zahraaToast('تم مسح الباركود: ' + decodedText, 'success');
+                                if (html5QrcodeScanner) {
+                                    html5QrcodeScanner.stop();
+                                }
+                                confirmOrderBarcode();
+                            }, (errorMessage) => {
+                                // Ignore errors during scanning
+                            });
+                            
+                            if (loadingElement) loadingElement.style.display = 'none';
                         }
-                        confirmOrderBarcode();
-                    }, (errorMessage) => {
-                        // Ignore errors during scanning
-                    }).catch((err) => {
+                    } catch (err) {
                         console.error('Camera error:', err);
+                        if (loadingElement) loadingElement.textContent = 'خطأ في الوصول للكاميرا، استخدم الإدخال اليدوي';
                         zahraaToast('خطأ في الوصول للكاميرا، استخدم الإدخال اليدوي', 'warning');
-                    });
+                    }
+                } else {
+                    if (loadingElement) loadingElement.textContent = 'مكتبة الكاميرا غير متوفرة، استخدم الإدخال اليدوي';
                 }
 
                 const input = document.getElementById('order-barcode-input');
@@ -2231,11 +2299,30 @@ window.loadOrders = () => {
             const invoiceSettings = JSON.parse(localStorage.getItem('zahraa_invoice_settings') || '{}');
             const printMode = posSettings.printMode || 'bw';
             const font = posSettings.font || 'Cairo';
-            const fontSize = invoiceSettings.fontSize || '14';
-            const logoSize = invoiceSettings.logoSize || '90';
-            const logoPosition = invoiceSettings.logoPosition || 'right';
+            const fontSize = posSettings.fontSize || '14';
+            const logoSize = posSettings.logoSize || '90';
+            const logoPosition = posSettings.logoPosition || 'right';
+            const layout = posSettings.layout || 'normal';
             
             const win = window.open('', '', 'height=700,width=900');
+            
+            // Layout-specific styles
+            let layoutStyles = '';
+            if (layout === 'compact') {
+                layoutStyles = `
+                    body { padding: 10px !important; }
+                    table { margin: 5px 0 !important; }
+                    th, td { padding: 6px 8px !important; font-size: ${Math.max(fontSize - 2, 10)}px !important; }
+                    .inv-logo-bar { margin-bottom: 10px !important; }
+                `;
+            } else if (layout === 'detailed') {
+                layoutStyles = `
+                    body { padding: 20px !important; }
+                    table { margin: 15px 0 !important; }
+                    th, td { padding: 12px 16px !important; font-size: ${parseInt(fontSize) + 2}px !important; }
+                    .inv-logo-bar { margin-bottom: 25px !important; }
+                `;
+            }
             
             if (printMode === 'bw') {
                 // Black and white for thermal printers with bold fonts
@@ -2276,13 +2363,14 @@ window.loadOrders = () => {
                                 max-height: ${logoSize}px !important;
                                 max-width: 180px !important;
                             }
+                            ${layoutStyles}
                         </style>
                     </head>
                     <body>${content}</body>
                     </html>
                 `);
             } else {
-                // Colored for WhatsApp and display
+                // Colored for WhatsApp and display - with pure black text
                 win.document.write(`
                     <html>
                     <head>
@@ -2292,11 +2380,16 @@ window.loadOrders = () => {
                             body {
                                 font-family: '${font}', sans-serif;
                                 font-size: ${fontSize}px;
+                                color: #000;
+                            }
+                            * {
+                                color: #000 !important;
                             }
                             .inv-logo-bar img {
                                 max-height: ${logoSize}px !important;
                                 max-width: 180px !important;
                             }
+                            ${layoutStyles}
                         </style>
                     </head>
                     <body>${content}</body>
@@ -5394,6 +5487,14 @@ window.loadDeliveryRatings = async function() {
                     <input id="pos-set-font-size" type="number" min="10" max="24" value="14" style="width:100%;padding:8px;background:#0a0a0a;border:1px solid #333;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:12px;outline:none;">
                 </div>
                 <div style="margin-bottom:8px;">
+                    <label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">تخطيط الفاتورة</label>
+                    <select id="pos-set-layout" style="width:100%;padding:8px;background:#0a0a0a;border:1px solid #333;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:12px;outline:none;">
+                        <option value="compact">مدمج (قصير)</option>
+                        <option value="normal">عادي</option>
+                        <option value="detailed">مفصل (طويل)</option>
+                    </select>
+                </div>
+                <div style="margin-bottom:8px;">
                     <label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">نوع الباركود في الفاتورة</label>
                     <select id="pos-set-barcode-type" style="width:100%;padding:8px;background:#0a0a0a;border:1px solid #333;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:12px;outline:none;">
                         <option value="rectangular">باركود مستطيل (CODE128)</option>
@@ -6265,6 +6366,7 @@ window.openPosSettings = function() {
     set('pos-set-print-mode', s.printMode || 'bw');
     set('pos-set-font', s.font || 'Cairo');
     set('pos-set-font-size', s.fontSize || '14');
+    set('pos-set-layout', s.layout || 'normal');
     set('pos-set-barcode-type', s.barcodeType || 'rectangular');
     set('pos-set-logo-position', s.logoPosition || 'right');
     set('pos-set-logo-size', s.logoSize || '90');
@@ -6313,6 +6415,7 @@ window.savePosSettings = function() {
         printMode: (document.getElementById('pos-set-print-mode')?.value) || 'bw',
         font: (document.getElementById('pos-set-font')?.value) || 'Cairo',
         fontSize: (document.getElementById('pos-set-font-size')?.value) || '14',
+        layout: (document.getElementById('pos-set-layout')?.value) || 'normal',
         barcodeType: (document.getElementById('pos-set-barcode-type')?.value) || 'rectangular',
         logoPosition: (document.getElementById('pos-set-logo-position')?.value) || 'right',
         logoSize: (document.getElementById('pos-set-logo-size')?.value) || '90',
