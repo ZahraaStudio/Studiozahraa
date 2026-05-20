@@ -12,6 +12,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         body { font-family: 'Cairo', sans-serif; background-color: #0a0a0a; color: #fff; }
         .gold-border { border: 1px solid #d4af37; }
@@ -5330,6 +5331,9 @@ window.loadDeliveryRatings = async function() {
                 <a id="pos-whatsapp-btn" href="#" target="_blank" style="display:none;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;background:#25D366;color:#fff;border:none;border-radius:10px;font-family:'Cairo',sans-serif;font-weight:700;cursor:pointer;text-decoration:none;text-align:center;">
                     💬 إرسال الفاتورة عبر واتساب
                 </a>
+                <button id="pos-download-invoice-btn" onclick="downloadInvoiceAsImage()" style="display:none;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;background:#3b82f6;color:#fff;border:none;border-radius:10px;font-family:'Cairo',sans-serif;font-weight:700;cursor:pointer;text-align:center;margin-top:8px;">
+                    📥 تحميل الفاتورة كصورة
+                </button>
             </div>
             <div id="pos-partial-payment-row" style="display:none;margin-top:8px;">
                 <div style="display:flex;gap:8px;align-items:center;">
@@ -6744,14 +6748,17 @@ function _renderPOSReceipt(inv) {
     }
     // Show WhatsApp button if customer has phone
     const waBtn = document.getElementById('pos-whatsapp-btn');
+    const downloadBtn = document.getElementById('pos-download-invoice-btn');
     if (waBtn && inv.phone) {
         const phone = inv.phone.replace(/\D/g,'');
         const waPhone = phone.startsWith('01') ? '2'+phone : phone.startsWith('1') ? '20'+phone : phone;
-        const msg = encodeURIComponent(`مرحباً ${inv.userName}،\nشكراً لتسوقك معنا 🌹\nرقم فاتورتك: ${inv.invoiceNumber}\nالإجمالي: ${inv.totalPrice.toFixed(2)} ج\n${inv.remainingAmount > 0 ? 'المتبقي: '+inv.remainingAmount.toFixed(2)+' ج' : '✅ تم السداد الكامل'}`);
+        const msg = encodeURIComponent(`مرحباً ${inv.userName}،\nشكراً لتسوقك معنا 🌹\nرقم فاتورتك: ${inv.invoiceNumber}\nالإجمالي: ${inv.totalPrice.toFixed(2)} ج\n${inv.remainingAmount > 0 ? 'المتبقي: '+inv.remainingAmount.toFixed(2)+' ج' : '✅ تم السداد الكامل'}\n\nيرجى تحميل الفاتورة من الزر الأزرق وإرفاقها هنا.`);
         waBtn.href = `https://wa.me/${waPhone}?text=${msg}`;
         waBtn.style.display = 'inline-flex';
+        if (downloadBtn) downloadBtn.style.display = 'inline-flex';
     } else if (waBtn) {
         waBtn.style.display = 'none';
+        if (downloadBtn) downloadBtn.style.display = 'none';
     }
     // Auto-print based on settings
     const s = _posSettings;
@@ -6765,6 +6772,32 @@ function _renderPOSReceipt(inv) {
 
 window.reprintInvoice = function() {
     if (_lastInvoiceData) _renderPOSReceipt(_lastInvoiceData);
+};
+
+window.downloadInvoiceAsImage = function() {
+    const invoiceElement = document.getElementById('printable-invoice');
+    if (!invoiceElement) {
+        zahraaToast('لم يتم العثور على الفاتورة', 'error');
+        return;
+    }
+    
+    zahraaToast('جاري تحويل الفاتورة إلى صورة...', 'info');
+    
+    html2canvas(invoiceElement, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false
+    }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `invoice_${_lastInvoiceData?.invoiceNumber || 'new'}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        zahraaToast('تم تحميل الفاتورة بنجاح', 'success');
+    }).catch(err => {
+        console.error('Error converting invoice to image:', err);
+        zahraaToast('خطأ في تحويل الفاتورة إلى صورة', 'error');
+    });
 };
 
 // Invoice preview without printing
