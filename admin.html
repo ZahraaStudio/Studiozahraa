@@ -13,6 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
     <style>
         body { font-family: 'Cairo', sans-serif; background-color: #0a0a0a; color: #fff; }
         .gold-border { border: 1px solid #d4af37; }
@@ -5328,9 +5329,9 @@ window.loadDeliveryRatings = async function() {
                 <button id="pos-confirm-payment-btn" onclick="confirmInvoicePayment()" style="padding:12px;background:#166534;color:#fff;border:none;border-radius:10px;font-family:'Cairo',sans-serif;font-weight:700;cursor:pointer;display:none;">✅ تأكيد سداد المتبقي</button>
             </div>
             <div style="margin-top:8px;">
-                <a id="pos-whatsapp-btn" href="#" target="_blank" style="display:none;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;background:#25D366;color:#fff;border:none;border-radius:10px;font-family:'Cairo',sans-serif;font-weight:700;cursor:pointer;text-decoration:none;text-align:center;">
+                <button id="pos-whatsapp-btn" onclick="sendInvoiceViaWhatsApp()" style="display:none;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;background:#25D366;color:#fff;border:none;border-radius:10px;font-family:'Cairo',sans-serif;font-weight:700;cursor:pointer;text-align:center;">
                     💬 إرسال الفاتورة عبر واتساب
-                </a>
+                </button>
                 <button id="pos-download-invoice-btn" onclick="downloadInvoiceAsImage()" style="display:none;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;background:#3b82f6;color:#fff;border:none;border-radius:10px;font-family:'Cairo',sans-serif;font-weight:700;cursor:pointer;text-align:center;margin-top:8px;">
                     📥 تحميل الفاتورة كصورة
                 </button>
@@ -6750,10 +6751,6 @@ function _renderPOSReceipt(inv) {
     const waBtn = document.getElementById('pos-whatsapp-btn');
     const downloadBtn = document.getElementById('pos-download-invoice-btn');
     if (waBtn && inv.phone) {
-        const phone = inv.phone.replace(/\D/g,'');
-        const waPhone = phone.startsWith('01') ? '2'+phone : phone.startsWith('1') ? '20'+phone : phone;
-        const msg = encodeURIComponent(`مرحباً ${inv.userName}،\nشكراً لتسوقك معنا 🌹\nرقم فاتورتك: ${inv.invoiceNumber}\nالإجمالي: ${inv.totalPrice.toFixed(2)} ج\n${inv.remainingAmount > 0 ? 'المتبقي: '+inv.remainingAmount.toFixed(2)+' ج' : '✅ تم السداد الكامل'}\n\nيرجى تحميل الفاتورة من الزر الأزرق وإرفاقها هنا.`);
-        waBtn.href = `https://wa.me/${waPhone}?text=${msg}`;
         waBtn.style.display = 'inline-flex';
         if (downloadBtn) downloadBtn.style.display = 'inline-flex';
     } else if (waBtn) {
@@ -6816,6 +6813,104 @@ window.downloadInvoiceAsImage = function() {
     }).catch(err => {
         console.error('Error converting invoice to image:', err);
         zahraaToast('خطأ في تحويل الفاتورة إلى صورة', 'error');
+        
+        // Restore original display state on error
+        if (wasHidden && invoiceElement.id === 'cashier-receipt-print') {
+            invoiceElement.style.display = 'none';
+        }
+    });
+};
+
+// Upload invoice image to Cloudinary
+window.uploadInvoiceToCloudinary = function(canvas, invoiceNumber) {
+    return new Promise((resolve, reject) => {
+        const cloudName = 'dxlxwe55b';
+        const uploadPreset = 'zahraa_upload';
+        
+        // Convert canvas to blob
+        canvas.toBlob((blob) => {
+            const formData = new FormData();
+            formData.append('file', blob);
+            formData.append('upload_preset', uploadPreset);
+            formData.append('public_id', `invoice_${invoiceNumber}_${Date.now()}`);
+            formData.append('folder', 'zahraa_invoices');
+            
+            fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.secure_url) {
+                    resolve(data.secure_url);
+                } else {
+                    reject(new Error('Failed to get secure URL from Cloudinary'));
+                }
+            })
+            .catch(error => {
+                console.error('Cloudinary upload error:', error);
+                reject(error);
+            });
+        }, 'image/jpeg', 0.85); // JPEG with 85% quality for optimization
+    });
+};
+
+// Capture and upload invoice image, then open WhatsApp
+window.sendInvoiceViaWhatsApp = function() {
+    // Try to find the invoice element
+    let invoiceElement = document.getElementById('printable-invoice');
+    let wasHidden = false;
+    
+    if (!invoiceElement) {
+        invoiceElement = document.getElementById('cashier-receipt-print');
+        if (invoiceElement) {
+            wasHidden = invoiceElement.style.display === 'none';
+            invoiceElement.style.display = 'block';
+        }
+    }
+    if (!invoiceElement) {
+        invoiceElement = document.getElementById('pos-invoice-detail-content');
+    }
+    
+    if (!invoiceElement) {
+        zahraaToast('لم يتم العثور على الفاتورة', 'error');
+        return;
+    }
+    
+    if (!_lastInvoiceData || !_lastInvoiceData.phone) {
+        zahraaToast('لا يوجد رقم هاتف للعميل', 'error');
+        return;
+    }
+    
+    zahraaToast('جاري التقاط ورفع الفاتورة...', 'info');
+    
+    // Capture invoice as image with optimized settings
+    html2canvas(invoiceElement, {
+        scale: 1.5, // Lower scale for faster upload
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        width: invoiceElement.offsetWidth,
+        height: invoiceElement.offsetHeight
+    }).then(canvas => {
+        // Upload to Cloudinary
+        return window.uploadInvoiceToCloudinary(canvas, _lastInvoiceData.invoiceNumber);
+    }).then(imageUrl => {
+        // Restore original display state
+        if (wasHidden && invoiceElement.id === 'cashier-receipt-print') {
+            invoiceElement.style.display = 'none';
+        }
+        
+        // Open WhatsApp with image URL
+        const phone = _lastInvoiceData.phone.replace(/\D/g,'');
+        const waPhone = phone.startsWith('01') ? '2'+phone : phone.startsWith('1') ? '20'+phone : phone;
+        const msg = encodeURIComponent(`مرحباً ${_lastInvoiceData.userName}،\nشكراً لتسوقك معنا 🌹\nرقم فاتورتك: ${_lastInvoiceData.invoiceNumber}\nالإجمالي: ${_lastInvoiceData.totalPrice.toFixed(2)} ج\n${_lastInvoiceData.remainingAmount > 0 ? 'المتبقي: '+_lastInvoiceData.remainingAmount.toFixed(2)+' ج' : '✅ تم السداد الكامل'}\n\n📎 الفاتورة: ${imageUrl}`);
+        
+        window.open(`https://wa.me/${waPhone}?text=${msg}`, '_blank');
+        zahraaToast('تم إرسال الفاتورة عبر واتساب', 'success');
+    }).catch(err => {
+        console.error('Error:', err);
+        zahraaToast('خطأ في رفع الفاتورة', 'error');
         
         // Restore original display state on error
         if (wasHidden && invoiceElement.id === 'cashier-receipt-print') {
