@@ -7366,10 +7366,11 @@ window.showInvoiceDetail = function(invId) {
                 try {
                     JsBarcode(barcodeEl, inv.invoiceNumber, {
                         format: 'CODE128',
-                        width: 1,
+                        width: 1.5,
                         height: 35,
-                        displayValue: false,
-                        margin: 0
+                        displayValue: true,
+                        fontSize: 10,
+                        margin: 2
                     });
                 } catch(e) {}
             }
