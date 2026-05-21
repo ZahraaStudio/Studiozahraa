@@ -5318,24 +5318,26 @@ window.loadDeliveryRatings = async function() {
         }
         #cashier-receipt-print {
             font-family: 'Cairo', 'Tajawal', 'Arial', sans-serif;
-            font-weight: 800;
+            font-weight: 700;
             direction: rtl;
             width: 72mm;
             margin: 0 auto;
             color: #000 !important;
             background: #fff !important;
-            font-size: 12px;
-            line-height: 1.3;
+            font-size: 11px;
+            line-height: 1.2;
             padding: 2mm;
             box-sizing: border-box;
         }
         #cashier-receipt-print * { color: #000 !important; }
         #cashier-receipt-print .r-center { text-align: center; }
         #cashier-receipt-print .r-bold { font-weight: 900; }
-        #cashier-receipt-print .r-lg { font-size: 16px; }
+        #cashier-receipt-print .r-lg { font-size: 18px; }
         #cashier-receipt-print .r-sm { font-size: 10px; }
         #cashier-receipt-print .r-line { border-top: 2px solid #000; margin: 4px 0; }
         #cashier-receipt-print .r-row { display: flex; justify-content: space-between; }
+        #cashier-receipt-print img { max-width: 100%; height: auto; }
+        #cashier-receipt-print svg { display: block; margin: 0 auto; }
         #cashier-receipt-print .header-row { display: flex; align-items: center; gap: 4px; margin-bottom: 6px; }
         #cashier-receipt-print .logo-img { max-height: 25mm; max-width: 25mm; object-fit: contain; }
         #cashier-receipt-print .store-name { font-size: 14px; font-weight: 900; flex: 1; }
@@ -5547,6 +5549,14 @@ window.loadDeliveryRatings = async function() {
                 <div style="margin-bottom:8px;">
                     <label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">حجم الخط في الفاتورة (بكسل)</label>
                     <input id="pos-set-font-size" type="number" min="10" max="24" value="14" style="width:100%;padding:8px;background:#0a0a0a;border:1px solid #333;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:12px;outline:none;">
+                </div>
+                <div style="margin-bottom:8px;">
+                    <label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">نمط الفاتورة</label>
+                    <select id="pos-set-invoice-style" style="width:100%;padding:8px;background:#0a0a0a;border:1px solid #333;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:12px;outline:none;">
+                        <option value="minimal">✨ مينيمال حديث (Minimal)</option>
+                        <option value="professional">🏢 احترافي POS (Professional)</option>
+                        <option value="premium">💎 بريميوم فاخر (Premium)</option>
+                    </select>
                 </div>
                 <div style="margin-bottom:8px;">
                     <label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">تخطيط الفاتورة</label>
@@ -6432,6 +6442,7 @@ window.openPosSettings = function() {
     set('pos-set-print-mode', s.printMode || 'bw');
     set('pos-set-font', s.font || 'Cairo');
     set('pos-set-font-size', s.fontSize || '14');
+    set('pos-set-invoice-style', s.invoiceStyle || 'minimal');
     set('pos-set-layout', s.layout || 'normal');
     set('pos-set-barcode-type', s.barcodeType || 'rectangular');
     set('pos-set-logo-position', s.logoPosition || 'right');
@@ -6481,6 +6492,7 @@ window.savePosSettings = function() {
         printMode: (document.getElementById('pos-set-print-mode')?.value) || 'bw',
         font: (document.getElementById('pos-set-font')?.value) || 'Cairo',
         fontSize: (document.getElementById('pos-set-font-size')?.value) || '14',
+        invoiceStyle: (document.getElementById('pos-set-invoice-style')?.value) || 'minimal',
         layout: (document.getElementById('pos-set-layout')?.value) || 'normal',
         barcodeType: (document.getElementById('pos-set-barcode-type')?.value) || 'rectangular',
         logoPosition: (document.getElementById('pos-set-logo-position')?.value) || 'right',
@@ -6640,137 +6652,187 @@ window.posCompleteSale = async function() {
 };
 
 function _renderPOSReceipt(inv) {
-    const theme = inv.theme || window._posTheme || 'luxury';
-    const dateStr = (inv.createdAt instanceof Date ? inv.createdAt : new Date()).toLocaleString('ar-EG');
-    const itemsHTML = inv.items.map(i =>
-        `<div class="r-row"><span>${i.name} × ${i.qty}</span><span>${(i.price*i.qty).toFixed(2)} ج</span></div>`
-    ).join('');
+    const invoiceStyle = _posSettings.invoiceStyle || 'minimal';
+    const dateStr = (inv.createdAt instanceof Date ? inv.createdAt : new Date()).toLocaleDateString('ar-EG', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
     const storeLogo = _posSettings.logoUrl || '';
     const storeName = _posSettings.storeName || 'استوديو الزهراء';
     const logoSize = _posSettings.logoSize || '90';
     const logoPosition = _posSettings.logoPosition || 'right';
-    const logoSecondary = _posSettings.logoSecondary || '';
-    const fontSize = _posSettings.fontSize || '14';
+    const fontSize = _posSettings.fontSize || '12';
+    const font = _posSettings.font || 'Cairo';
 
-    // Theme styles
-    const themeStyles = {
-        luxury: {
-            headerBg: 'linear-gradient(135deg,#1a1200,#2d2000)',
-            headerColor: '#d4af37',
-            accentColor: '#d4af37',
-            bodyBg: '#fff',
-            bodyColor: '#111',
-            border: '2px solid #d4af37',
-            footerBg: '#1a1200',
-            footerColor: '#d4af37',
-            totalColor: '#b8962e',
-            ornament: '✦ ——— ✦',
-            logo: storeLogo ? `<img src="${storeLogo}" style="max-height:${logoSize}px;max-width:180px;object-fit:contain;margin-bottom:4px;display:block;margin-left:auto;margin-right:auto;">` : `👑 ${storeName} 👑`,
-            tagline: '✨ الأناقة والفخامة معاً ✨',
-        },
+    // Invoice style templates
+    const invoiceStyles = {
         minimal: {
-            headerBg: '#fff',
-            headerColor: '#000',
-            accentColor: '#333',
-            bodyBg: '#fff',
-            bodyColor: '#222',
-            border: '1px solid #ddd',
-            footerBg: '#f5f5f5',
-            footerColor: '#555',
-            totalColor: '#000',
-            ornament: '────────────',
-            logo: storeLogo ? `<img src="${storeLogo}" style="max-height:${logoSize}px;max-width:180px;object-fit:contain;margin-bottom:4px;display:block;margin-left:auto;margin-right:auto;">` : storeName,
-            tagline: 'فاتورة مبيعات',
-        },
-        dark: {
-            headerBg: '#111',
-            headerColor: '#e0e0e0',
-            accentColor: '#aaa',
-            bodyBg: '#1a1a1a',
-            bodyColor: '#e0e0e0',
-            border: '1px solid #333',
-            footerBg: '#0a0a0a',
-            footerColor: '#888',
+            headerPadding: '8px',
+            itemPadding: '4px 0',
+            sectionDivider: 'border-bottom: 2px solid #000',
+            totalBg: '#000',
             totalColor: '#fff',
-            ornament: '— ◆ —',
-            logo: storeLogo ? `<img src="${storeLogo}" style="max-height:${logoSize}px;max-width:180px;object-fit:contain;margin-bottom:4px;display:block;margin-left:auto;margin-right:auto;">` : `⬛ ${storeName}`,
-            tagline: 'فاتورة مبيعات',
-        },
-        thermal: {
-            headerBg: '#fff',
-            headerColor: '#000',
             accentColor: '#000',
-            bodyBg: '#fff',
-            bodyColor: '#000',
-            border: '1px solid #000',
-            footerBg: '#fff',
-            footerColor: '#000',
-            totalColor: '#000',
-            ornament: '================================',
-            logo: storeLogo ? `<img src="${storeLogo}" style="max-height:${logoSize}px;max-width:180px;object-fit:contain;margin-bottom:4px;display:block;margin-left:auto;margin-right:auto;">` : `** ${storeName} **`,
-            tagline: 'فاتورة مبيعات — نقطة البيع',
+            headerFont: '16px',
+            itemFont: '11px',
+            totalFont: '14px',
+            showLogo: true,
+            logoAlign: 'center'
+        },
+        professional: {
+            headerPadding: '10px',
+            itemPadding: '5px 0',
+            sectionDivider: 'border-bottom: 3px solid #000',
+            totalBg: '#000',
+            totalColor: '#fff',
+            accentColor: '#000',
+            headerFont: '18px',
+            itemFont: '12px',
+            totalFont: '16px',
+            showLogo: true,
+            logoAlign: 'left'
+        },
+        premium: {
+            headerPadding: '12px',
+            itemPadding: '6px 0',
+            sectionDivider: 'border-bottom: 4px double #000',
+            totalBg: '#000',
+            totalColor: '#d4af37',
+            accentColor: '#d4af37',
+            headerFont: '20px',
+            itemFont: '13px',
+            totalFont: '18px',
+            showLogo: true,
+            logoAlign: 'right'
         }
     };
-    const t = themeStyles[theme] || themeStyles.luxury;
+
+    const style = invoiceStyles[invoiceStyle] || invoiceStyles.minimal;
 
     const receiptEl = document.getElementById('cashier-receipt-content');
     if (!receiptEl) return;
 
-    // Override receipt print wrapper bg for dark/minimal
     const wrapper = document.getElementById('cashier-receipt-print');
-    if (wrapper) wrapper.style.background = theme === 'dark' ? '#1a1a1a' : '#fff';
+    if (wrapper) wrapper.style.background = '#fff';
 
-    receiptEl.style.background = t.bodyBg;
-    receiptEl.style.color = t.bodyColor;
-    receiptEl.style.border = t.border;
-    receiptEl.style.borderRadius = '12px';
+    receiptEl.style.background = '#fff';
+    receiptEl.style.color = '#000';
+    receiptEl.style.border = 'none';
+    receiptEl.style.borderRadius = '0';
     receiptEl.style.overflow = 'hidden';
     receiptEl.style.padding = '0';
     receiptEl.style.fontSize = `${fontSize}px`;
+    receiptEl.style.fontFamily = `'${font}', 'Cairo', sans-serif`;
+    receiptEl.style.fontWeight = '700';
+
+    // Generate items HTML
+    const itemsHTML = inv.items.map(i => `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:${style.itemPadding};border-bottom:1px solid #eee;">
+            <div style="flex:1;">
+                <div style="font-weight:800;font-size:${style.itemFont};color:#000;line-height:1.3;">${i.name}</div>
+                <div style="font-size:${parseInt(style.itemFont)-2}px;color:#333;margin-top:2px;">${i.qty} × ${i.price.toFixed(2)} ج</div>
+            </div>
+            <div style="font-weight:900;font-size:${style.itemFont};color:#000;">${(i.price*i.qty).toFixed(2)} ج</div>
+        </div>
+    `).join('');
+
+    // Logo HTML based on style
+    const logoHTML = style.showLogo && storeLogo ? `
+        <div style="text-align:${style.logoAlign};margin-bottom:6px;">
+            <img src="${storeLogo}" style="max-height:${logoSize}px;max-width:100%;object-fit:contain;">
+        </div>
+    ` : '';
 
     receiptEl.innerHTML = `
         <!-- Header -->
-        <div style="background:${t.headerBg};color:${t.headerColor};text-align:center;padding:14px 12px 10px;border-bottom:1px solid ${t.accentColor}30;">
-            <div style="font-size:15px;font-weight:800;letter-spacing:1px;margin-bottom:2px;">${t.logo}</div>
-            <div style="font-size:10px;opacity:0.8;">${t.tagline}</div>
-            <div style="font-size:10px;opacity:0.7;margin-top:2px;">${dateStr}</div>
+        <div style="padding:${style.headerPadding};text-align:center;${style.sectionDivider};margin-bottom:8px;">
+            ${logoHTML}
+            <div style="font-size:${style.headerFont};font-weight:900;color:#000;line-height:1.2;margin-bottom:2px;">${storeName}</div>
+            <div style="font-size:${parseInt(style.headerFont)-4}px;color:#000;font-weight:700;">فاتورة مبيعات</div>
         </div>
-        <!-- Body -->
-        <div style="padding:12px;background:${t.bodyBg};color:${t.bodyColor};">
-            <div style="text-align:center;color:${t.accentColor};font-size:11px;margin-bottom:8px;">${t.ornament}</div>
-            <div class="r-row r-bold" style="color:${t.bodyColor};"><span>رقم الفاتورة</span><span style="font-size:9px;letter-spacing:1px;color:${t.accentColor};">${inv.invoiceNumber}</span></div>
-            <div class="r-row" style="color:${t.bodyColor};"><span>العميل</span><span>${inv.userName}</span></div>
-            ${inv.phone ? `<div class="r-row" style="color:${t.bodyColor};"><span>الهاتف</span><span>${inv.phone}</span></div>` : ''}
-            <div class="r-row" style="color:${t.bodyColor};"><span>الدفع</span><span style="color:${t.accentColor};font-weight:700;">${inv.paymentMethod}</span></div>
-            ${inv.dueDate ? `<div class="r-row" style="color:#e67e22;font-weight:700;"><span>📅 تاريخ الاستلام</span><span>${inv.dueDate}</span></div>` : ''}
-            ${inv.deliveryAgentName && _posSettings.showAgent !== false ? `<div class="r-row" style="color:${t.bodyColor};"><span>🚚 المندوب</span><span>${inv.deliveryAgentName}</span></div>` : ''}
-            ${inv.deliveryAddress && _posSettings.showDeliveryAddr !== false ? `<div class="r-row" style="color:${t.bodyColor};"><span>📍 عنوان التوصيل</span><span style="font-size:10px;">${inv.deliveryAddress}</span></div>` : ''}
-            ${inv.deliveryNotes ? `<div class="r-row" style="color:${t.bodyColor};"><span>📝 ملاحظات التوصيل</span><span style="font-size:10px;">${inv.deliveryNotes}</span></div>` : ''}
-            <div style="border-top:1px dashed ${t.accentColor}50;margin:8px 0;"></div>
-            <div style="font-weight:700;font-size:11px;margin-bottom:6px;color:${t.accentColor};">المنتجات:</div>
-            ${itemsHTML}
-            <div style="border-top:1px dashed ${t.accentColor}50;margin:8px 0;"></div>
-            <div class="r-row" style="color:${t.bodyColor};"><span>المجموع الفرعي</span><span>${inv.subtotal.toFixed(2)} ج</span></div>
-            ${inv.discountAmount ? `<div class="r-row" style="color:#e74c3c;"><span>خصم</span><span>- ${inv.discountAmount.toFixed(2)} ج</span></div>` : ''}
-            ${(inv.deliveryFee||0) > 0 ? `<div class="r-row" style="color:#3b82f6;"><span>🚚 التوصيل</span><span>+ ${(inv.deliveryFee).toFixed(2)} ج</span></div>` : ''}
-            <div class="r-row r-bold r-lg" style="color:${t.totalColor};margin-top:4px;padding-top:6px;border-top:2px solid ${t.accentColor}50;"><span>الإجمالي</span><span>${inv.totalPrice.toFixed(2)} ج</span></div>
-            ${inv.paidAmount ? `<div class="r-row" style="color:#27ae60;"><span>✅ المدفوع</span><span>${inv.paidAmount.toFixed(2)} ج</span></div>` : ''}
-            ${inv.remainingAmount > 0 ? `<div class="r-row r-bold" style="color:#e74c3c;background:#ffeaea;padding:4px 6px;border-radius:6px;margin-top:4px;"><span>⚠️ المتبقي</span><span>${inv.remainingAmount.toFixed(2)} ج</span></div>` : ''}
-            ${inv.notes ? `<div style="margin-top:10px;padding:8px;background:${t.accentColor}15;border-radius:6px;border-right:3px solid ${t.accentColor};"><div style="font-size:10px;font-weight:700;color:${t.accentColor};margin-bottom:3px;">📝 ملاحظات:</div><div style="font-size:11px;color:${t.bodyColor};line-height:1.5;">${inv.notes}</div></div>` : ''}
-            <div style="text-align:center;margin:12px 0 8px;">
-                ${(_posSettings.barcodeType === 'qr' ? `<img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(inv.invoiceNumber)}" style="width:70px;height:70px;border-radius:8px;${theme==='luxury'?'border:1px solid #d4af37;':''}" alt="QR">` : `<svg id="pos-receipt-barcode-${inv.invoiceNumber}" style="width:120px;height:40px;"></svg>`)}
-                <div style="font-size:8px;color:${t.accentColor};margin-top:2px;letter-spacing:1px;">${inv.invoiceNumber}</div>
+
+        <!-- Invoice Info -->
+        <div style="padding:6px 8px;margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                <span style="font-weight:800;font-size:${parseInt(style.itemFont)+1}px;color:#000;">رقم الفاتورة</span>
+                <span style="font-weight:900;font-size:${parseInt(style.itemFont)+1}px;color:${style.accentColor};letter-spacing:1px;">${inv.invoiceNumber}</span>
             </div>
+            <div style="font-weight:700;font-size:${style.itemFont};color:#000;margin-bottom:2px;">${dateStr}</div>
+            ${inv.userName ? `<div style="font-weight:700;font-size:${style.itemFont};color:#000;margin-bottom:2px;">العميل: ${inv.userName}</div>` : ''}
+            ${inv.phone ? `<div style="font-weight:700;font-size:${style.itemFont};color:#000;margin-bottom:2px;">الهاتف: ${inv.phone}</div>` : ''}
+            ${inv.paymentMethod ? `<div style="font-weight:700;font-size:${style.itemFont};color:#000;">الدفع: ${inv.paymentMethod}</div>` : ''}
         </div>
+
+        <!-- Products -->
+        <div style="padding:0 8px;margin-bottom:8px;">
+            <div style="font-weight:900;font-size:${parseInt(style.itemFont)+1}px;color:#000;margin-bottom:6px;padding-bottom:4px;${style.sectionDivider};">المنتجات</div>
+            ${itemsHTML}
+        </div>
+
+        <!-- Totals -->
+        <div style="padding:8px;margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-weight:700;font-size:${style.itemFont};color:#000;">
+                <span>المجموع الفرعي</span>
+                <span>${inv.subtotal.toFixed(2)} ج</span>
+            </div>
+            ${inv.discountAmount > 0 ? `
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-weight:700;font-size:${style.itemFont};color:#000;">
+                <span>الخصم</span>
+                <span>- ${inv.discountAmount.toFixed(2)} ج</span>
+            </div>
+            ` : ''}
+            ${(inv.deliveryFee||0) > 0 ? `
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-weight:700;font-size:${style.itemFont};color:#000;">
+                <span>التوصيل</span>
+                <span>+ ${(inv.deliveryFee).toFixed(2)} ج</span>
+            </div>
+            ` : ''}
+            <div style="display:flex;justify-content:space-between;padding:8px;background:${style.totalBg};color:${style.totalColor};margin-top:6px;font-weight:900;font-size:${style.totalFont};border-radius:4px;">
+                <span>الإجمالي</span>
+                <span>${inv.totalPrice.toFixed(2)} ج</span>
+            </div>
+            ${inv.paidAmount ? `
+            <div style="display:flex;justify-content:space-between;margin-top:4px;font-weight:700;font-size:${style.itemFont};color:#000;">
+                <span>✅ المدفوع</span>
+                <span>${inv.paidAmount.toFixed(2)} ج</span>
+            </div>
+            ` : ''}
+            ${inv.remainingAmount > 0 ? `
+            <div style="display:flex;justify-content:space-between;margin-top:4px;padding:4px;background:#fff3cd;border:2px solid #000;font-weight:900;font-size:${style.itemFont};border-radius:4px;">
+                <span>⚠️ المتبقي</span>
+                <span>${inv.remainingAmount.toFixed(2)} ج</span>
+            </div>
+            ` : ''}
+        </div>
+
+        <!-- QR Code -->
+        ${_posSettings.showBarcode ? `
+        <div style="text-align:center;padding:8px;">
+            ${_posSettings.barcodeType === 'qr' ? 
+                `<img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(inv.invoiceNumber)}" style="width:80px;height:80px;border:2px solid #000;">` :
+                `<svg id="pos-receipt-barcode-${inv.invoiceNumber}" style="width:140px;height:50px;"></svg>`
+            }
+            <div style="font-weight:900;font-size:10px;color:#000;margin-top:4px;letter-spacing:1px;">${inv.invoiceNumber}</div>
+        </div>
+        ` : ''}
+
         <!-- Footer -->
-        <div style="background:${t.footerBg};color:${t.footerColor};text-align:center;padding:10px;border-top:1px solid ${t.accentColor}30;">
-            <div style="font-size:11px;margin-bottom:2px;">${_posSettings.footer || 'شكراً لتعاملكم معنا 🌹'}</div>
-            ${(_posSettings.phone1||_posSettings.phone2)&&(_posSettings.showPhone!==false)?`<div style="font-size:10px;opacity:0.8;">📞 ${_posSettings.phone1||''}${_posSettings.phone2?' | '+_posSettings.phone2:''}</div>`:''}
-            ${_posSettings.address&&(_posSettings.showAddress!==false)?`<div style="font-size:9px;opacity:0.6;">📍 ${_posSettings.address}</div>`:''}
+        <div style="text-align:center;padding:8px;margin-top:4px;padding-top:8px;${style.sectionDivider};">
+            <div style="font-weight:800;font-size:${style.itemFont};color:#000;margin-bottom:4px;">${_posSettings.footer || 'شكراً لتعاملكم معنا 🌹'}</div>
+            ${(_posSettings.phone1||_posSettings.phone2) && _posSettings.showPhone !== false ? `
+            <div style="font-weight:700;font-size:${parseInt(style.itemFont)-1}px;color:#000;margin-bottom:2px;">📞 ${_posSettings.phone1||''}${_posSettings.phone2?' | '+_posSettings.phone2:''}</div>
+            ` : ''}
+            ${_posSettings.address && _posSettings.showAddress !== false ? `
+            <div style="font-weight:700;font-size:${parseInt(style.itemFont)-2}px;color:#000;">📍 ${_posSettings.address}</div>
+            ` : ''}
         </div>
     `;
-    // Generate barcode if JsBarcode is available and barcodeType is rectangular
-    if (_posSettings.barcodeType === 'rectangular' && typeof JsBarcode !== 'undefined') {
+
+    // Generate barcode if JsBarcode is available
+    if (_posSettings.barcodeType !== 'qr' && typeof JsBarcode !== 'undefined') {
         setTimeout(() => {
             const barcodeEl = document.getElementById(`pos-receipt-barcode-${inv.invoiceNumber}`);
             if (barcodeEl) {
@@ -6778,7 +6840,7 @@ function _renderPOSReceipt(inv) {
                     JsBarcode(barcodeEl, inv.invoiceNumber, {
                         format: 'CODE128',
                         width: 1,
-                        height: 40,
+                        height: 50,
                         displayValue: false,
                         margin: 0
                     });
@@ -6786,6 +6848,7 @@ function _renderPOSReceipt(inv) {
             }
         }, 100);
     }
+
     // Show WhatsApp button if customer has phone
     const waBtn = document.getElementById('pos-whatsapp-btn');
     const downloadBtn = document.getElementById('pos-download-invoice-btn');
