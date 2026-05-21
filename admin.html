@@ -5423,6 +5423,7 @@ window.loadDeliveryRatings = async function() {
             box-sizing: border-box;
         }
         #cashier-receipt-print * { color: #000 !important; }
+        #cashier-receipt-print .r-total { background: #000 !important; color: #fff !important; padding: 8px; border-radius: 4px; }
         #cashier-receipt-print .r-center { text-align: center; }
         #cashier-receipt-print .r-bold { font-weight: 900; }
         #cashier-receipt-print .r-lg { font-size: 18px; }
@@ -6885,17 +6886,17 @@ function _renderPOSReceipt(inv) {
     // Header based on layout
     const headerHTML = layout.headerLayout === 'inline' ? `
         <div style="display:flex;align-items:center;gap:10px;padding:${layout.headerPadding};margin-bottom:6px;">
-            ${layout.showLogo && storeLogo ? `<img src="${storeLogo}" style="height:${layout.logoSize};width:${layout.logoSize};object-fit:contain;">` : ''}
             <div style="flex:1;">
                 <div style="font-weight:900;font-size:${layout.headerFont};color:#000;line-height:1.2;">${storeName}</div>
-                ${storePhone ? `<div style="font-weight:700;font-size:${parseInt(layout.headerFont)-3}px;color:#000;line-height:1.2;">📞 ${storePhone}</div>` : ''}
+                ${storePhone ? `<div style="font-weight:700;font-size:${parseInt(layout.headerFont)-3}px;color:#000;line-height:1.2;">${storePhone}</div>` : ''}
             </div>
+            ${layout.showLogo && storeLogo ? `<img src="${storeLogo}" style="height:${layout.logoSize};width:${layout.logoSize};object-fit:contain;">` : ''}
         </div>
     ` : `
         <div style="text-align:center;padding:${layout.headerPadding};margin-bottom:6px;">
             ${layout.showLogo && storeLogo ? `<img src="${storeLogo}" style="height:${layout.logoSize};width:${layout.logoSize};object-fit:contain;margin-bottom:4px;">` : ''}
             <div style="font-weight:900;font-size:${layout.headerFont};color:#000;line-height:1.2;">${storeName}</div>
-            ${storePhone ? `<div style="font-weight:700;font-size:${parseInt(layout.headerFont)-3}px;color:#000;line-height:1.2;">📞 ${storePhone}</div>` : ''}
+            ${storePhone ? `<div style="font-weight:700;font-size:${parseInt(layout.headerFont)-3}px;color:#000;line-height:1.2;">${storePhone}</div>` : ''}
         </div>
     `;
 
@@ -6908,8 +6909,8 @@ function _renderPOSReceipt(inv) {
             <span>#${inv.invoiceNumber}</span>
             <span>${dateStr}</span>
         </div>
-        ${inv.userName ? `<div style="padding:3px 8px;font-weight:700;font-size:${layout.itemFont};color:#000;">👤 ${inv.userName}</div>` : ''}
-        ${inv.paymentMethod ? `<div style="padding:3px 8px;font-weight:700;font-size:${layout.itemFont};color:#000;">💳 ${inv.paymentMethod}</div>` : ''}
+        ${inv.userName ? `<div style="padding:3px 8px;font-weight:700;font-size:${layout.itemFont};color:#000;">الاسم: ${inv.userName}</div>` : ''}
+        ${inv.paymentMethod ? `<div style="padding:3px 8px;font-weight:700;font-size:${layout.itemFont};color:#000;">طريقة الدفع: ${inv.paymentMethod}</div>` : ''}
 
         <!-- Products -->
         <div style="padding:6px 8px;margin-bottom:6px;">
@@ -6940,7 +6941,7 @@ function _renderPOSReceipt(inv) {
                 <span>+ ${(inv.deliveryFee).toFixed(2)} ج</span>
             </div>
             ` : ''}
-            <div style="display:flex;justify-content:space-between;padding:8px;background:${layout.totalBg};color:${layout.totalColor};margin-top:4px;font-weight:900;font-size:${layout.totalFont};border-radius:4px;">
+            <div class="r-total" style="display:flex;justify-content:space-between;padding:8px;background:${layout.totalBg};color:${layout.totalColor};margin-top:4px;font-weight:900;font-size:${layout.totalFont};border-radius:4px;">
                 <span>الإجمالي</span>
                 <span>${inv.totalPrice.toFixed(2)} ج</span>
             </div>
@@ -6980,10 +6981,11 @@ function _renderPOSReceipt(inv) {
                 try {
                     JsBarcode(barcodeEl, inv.invoiceNumber, {
                         format: 'CODE128',
-                        width: 1,
+                        width: 1.5,
                         height: 45,
-                        displayValue: false,
-                        margin: 0
+                        displayValue: true,
+                        fontSize: 10,
+                        margin: 2
                     });
                 } catch(e) {}
             }
