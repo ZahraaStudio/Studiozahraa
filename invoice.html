@@ -10,6 +10,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <style>
         * {
             font-family: 'Cairo', sans-serif;
@@ -320,6 +322,10 @@
             .total-row.final {
                 font-size: 12px;
                 padding-top: 6px;
+                background: #000 !important;
+                color: #fff !important;
+                padding: 8px;
+                border-radius: 4px;
             }
             
             .action-buttons {
@@ -383,6 +389,23 @@
     </div>
 
     <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
+            authDomain: "zahraa-store-f4c90.firebaseapp.com",
+            projectId: "zahraa-store-f4c90",
+            storageBucket: "zahraa-store-f4c90.appspot.com",
+            messagingSenderId: "885722081307",
+            appId: "1:885722081307:web:7c91e0f8b0ea9b8b4df0be"
+        };
+        
+        // Initialize Firebase
+        try {
+            firebase.initializeApp(firebaseConfig);
+        } catch (e) {
+            console.error('Firebase initialization error:', e);
+        }
+        
         // Cloudinary Configuration
         const CLOUDINARY_CLOUD_NAME = 'dxlxwe55b';
         const CLOUDINARY_UPLOAD_PRESET = 'zahraa_upload';
@@ -396,13 +419,25 @@
             return pathParts[pathParts.length - 1];
         }
         
-        // Load invoice data from database
+        // Load invoice data from Firestore
         async function loadInvoiceData() {
             const invoiceId = getInvoiceId();
             
             try {
-                // Replace this with your actual API call
-                // For now, we'll use localStorage as a demo
+                // Try to load from Firestore first
+                if (typeof firebase !== 'undefined' && firebase.firestore) {
+                    const db = firebase.firestore();
+                    const doc = await db.collection('invoices').doc(invoiceId).get();
+                    
+                    if (doc.exists) {
+                        invoiceData = doc.data();
+                        invoiceData.id = doc.id;
+                        renderInvoice();
+                        return;
+                    }
+                }
+                
+                // Fallback to localStorage for demo
                 const allInvoices = JSON.parse(localStorage.getItem('zahraa_invoices') || '[]');
                 invoiceData = allInvoices.find(inv => inv.id === invoiceId || inv.invoiceNumber === invoiceId);
                 
@@ -447,20 +482,23 @@
             
             document.getElementById('invoice-content').innerHTML = `
                 <div class="invoice-header">
-                    <div>
-                        <div class="invoice-title">ZAHRAA STUDIO</div>
-                        <div class="invoice-number">فاتورة رقم: ${invoiceData.invoiceNumber}</div>
-                    </div>
-                    <div style="text-align: left;">
-                        <div style="font-size: 14px; color: #333;">${date}</div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div>
+                            <div class="invoice-title">ZAHRAA STUDIO</div>
+                            <div class="invoice-number">فاتورة رقم: ${invoiceData.invoiceNumber}</div>
+                        </div>
+                        <div style="text-align: left;">
+                            <div style="font-size: 14px; color: #333;">${date}</div>
+                        </div>
                     </div>
                 </div>
                 
                 <div class="customer-info">
                     <h3>بيانات العميل</h3>
-                    <p><strong>الاسم:</strong> ${invoiceData.customerName}</p>
-                    <p><strong>الهاتف:</strong> ${invoiceData.customerPhone}</p>
-                    ${invoiceData.customerAddress ? `<p><strong>العنوان:</strong> ${invoiceData.customerAddress}</p>` : ''}
+                    <p>الاسم: ${invoiceData.customerName}</p>
+                    <p>الهاتف: ${invoiceData.customerPhone}</p>
+                    ${invoiceData.customerAddress ? `<p>العنوان: ${invoiceData.customerAddress}</p>` : ''}
+                    ${invoiceData.paymentMethod ? `<p>طريقة الدفع: ${invoiceData.paymentMethod}</p>` : ''}
                 </div>
                 
                 <table class="products-table">
