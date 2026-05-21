@@ -2108,17 +2108,75 @@ window.loadOrders = () => {
             });
         };
 
+        // Helper function to check HTTPS/localhost
+        function isSecureContext() {
+            return window.location.protocol === 'https:' || 
+                   window.location.hostname === 'localhost' || 
+                   window.location.hostname === '127.0.0.1';
+        }
+
+        // Helper function to check camera permissions
+        async function checkCameraPermissions() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                return { allowed: false, error: 'المتصفح لا يدعم الوصول للكاميرا' };
+            }
+
+            if (!isSecureContext()) {
+                return { allowed: false, error: 'الكاميرا تعمل فقط على HTTPS أو localhost' };
+            }
+
+            try {
+                // Try to request camera permission
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                // If successful, stop the stream immediately
+                stream.getTracks().forEach(track => track.stop());
+                return { allowed: true, error: null };
+            } catch (err) {
+                console.error('Camera permission error:', err);
+                let errorMessage = 'لا يمكن الوصول للكاميرا';
+                
+                if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                    errorMessage = 'تم رفض صلاحية الكاميرا. يرجى السماح بالوصول للكاميرا في إعدادات المتصفح';
+                } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                    errorMessage = 'لم يتم العثور على كاميرا في الجهاز';
+                } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+                    errorMessage = 'الكاميرا قيد الاستخدام من تطبيق آخر';
+                } else if (err.name === 'OverconstrainedError' || err.name === 'ConstraintNotSatisfiedError') {
+                    errorMessage = 'الكاميرا لا تدعم الإعدادات المطلوبة';
+                }
+                
+                return { allowed: false, error: errorMessage };
+            }
+        }
+
+        // Helper function to get available cameras
+        async function getAvailableCameras() {
+            try {
+                const cameras = await Html5Qrcode.getCameras();
+                return cameras || [];
+            } catch (e) {
+                console.warn('Could not get camera list:', e);
+                return [];
+            }
+        }
+
         // Barcode scanning function
-        window.scanBarcode = () => {
+        window.scanBarcode = async () => {
+            // Check camera permissions first
+            const permissionCheck = await checkCameraPermissions();
+            
             // Create modal for barcode scanning
             const modal = document.createElement('div');
             modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:99999;display:flex;align-items:center;justify-content:center;';
+            
+            let loadingMessage = permissionCheck.allowed ? 'جاري تشغيل الكاميرا...' : permissionCheck.error;
+            
             modal.innerHTML = `
                 <div style="background:#1a1a1a;border:1px solid #333;border-radius:16px;padding:24px;max-width:500px;width:90%;text-align:center;">
                     <h3 style="color:#d4af37;font-size:18px;font-weight:700;margin-bottom:16px;">مسح الباركود</h3>
                     <p style="color:#888;font-size:12px;margin-bottom:16px;">استخدم الكاميرا أو ماسح الباركود USB لمسح الباركود</p>
                     <div id="barcode-reader" style="width:100%;min-height:250px;background:#0a0a0a;border:1px solid #333;border-radius:8px;margin-bottom:16px;position:relative;">
-                        <div id="barcode-reader-loading" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#888;font-size:12px;">جاري تشغيل الكاميرا...</div>
+                        <div id="barcode-reader-loading" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#888;font-size:12px;">${loadingMessage}</div>
                     </div>
                     <input type="text" id="barcode-input" placeholder="أو أدخل الباركود يدوياً..." style="width:100%;padding:12px;background:#0a0a0a;border:1px solid #333;border-radius:8px;color:#fff;font-size:14px;outline:none;margin-bottom:16px;">
                     <div style="display:flex;gap:8px;">
@@ -2135,35 +2193,49 @@ window.loadOrders = () => {
                 const readerElement = document.getElementById('barcode-reader');
                 const loadingElement = document.getElementById('barcode-reader-loading');
                 
+                if (!permissionCheck.allowed) {
+                    // Camera not allowed, show error and focus on manual input
+                    if (loadingElement) loadingElement.textContent = permissionCheck.error;
+                    zahraaToast(permissionCheck.error, 'warning');
+                    
+                    const input = document.getElementById('barcode-input');
+                    if (input) input.focus();
+                    input.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') confirmBarcode();
+                    });
+                    return;
+                }
+                
                 if (readerElement && typeof Html5Qrcode !== 'undefined') {
                     try {
                         html5QrcodeScanner = new Html5Qrcode(readerElement);
                         const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
                         
-                        // Try to get available cameras
-                        let cameras = [];
-                        try {
-                            cameras = await Html5Qrcode.getCameras();
-                        } catch (e) {
-                            console.warn('Could not get camera list:', e);
-                        }
+                        // Get available cameras
+                        const cameras = await getAvailableCameras();
                         
-                        if (cameras && cameras.length > 0) {
+                        if (cameras.length > 0) {
                             // Use the first camera or the environment camera
                             const cameraId = cameras.find(c => c.label && c.label.toLowerCase().includes('back'))?.id || cameras[0].id;
                             
-                            await html5QrcodeScanner.start(cameraId, config, (decodedText) => {
-                                document.getElementById('barcode-input').value = decodedText;
-                                zahraaToast('تم مسح الباركود: ' + decodedText, 'success');
-                                if (html5QrcodeScanner) {
-                                    html5QrcodeScanner.stop();
-                                }
-                                confirmBarcode();
-                            }, (errorMessage) => {
-                                // Ignore errors during scanning
-                            });
-                            
-                            if (loadingElement) loadingElement.style.display = 'none';
+                            try {
+                                await html5QrcodeScanner.start(cameraId, config, (decodedText) => {
+                                    document.getElementById('barcode-input').value = decodedText;
+                                    zahraaToast('تم مسح الباركود: ' + decodedText, 'success');
+                                    if (html5QrcodeScanner) {
+                                        html5QrcodeScanner.stop();
+                                    }
+                                    confirmBarcode();
+                                }, (errorMessage) => {
+                                    // Ignore errors during scanning
+                                });
+                                
+                                if (loadingElement) loadingElement.style.display = 'none';
+                            } catch (cameraErr) {
+                                console.error('Camera start error:', cameraErr);
+                                if (loadingElement) loadingElement.textContent = 'خطأ في تشغيل الكاميرا، استخدم الإدخال اليدوي';
+                                zahraaToast('خطأ في تشغيل الكاميرا، استخدم الإدخال اليدوي', 'warning');
+                            }
                         } else {
                             // Fallback to environment mode
                             try {
@@ -2186,9 +2258,9 @@ window.loadOrders = () => {
                             }
                         }
                     } catch (err) {
-                        console.error('Camera error:', err);
-                        if (loadingElement) loadingElement.textContent = 'خطأ في الوصول للكاميرا، استخدم الإدخال اليدوي';
-                        zahraaToast('خطأ في الوصول للكاميرا، استخدم الإدخال اليدوي', 'warning');
+                        console.error('Camera initialization error:', err);
+                        if (loadingElement) loadingElement.textContent = 'خطأ في تهيئة الكاميرا، استخدم الإدخال اليدوي';
+                        zahraaToast('خطأ في تهيئة الكاميرا، استخدم الإدخال اليدوي', 'warning');
                     }
                 } else {
                     if (loadingElement) loadingElement.textContent = 'مكتبة الكاميرا غير متوفرة، استخدم الإدخال اليدوي';
@@ -2227,7 +2299,7 @@ window.loadOrders = () => {
         };
 
         // Order barcode scanning function
-        window.scanOrderBarcode = () => {
+        window.scanOrderBarcode = async () => {
             const modal = document.createElement('div');
             modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:99999;display:flex;align-items:center;justify-content:center;';
             modal.innerHTML = `
@@ -2246,41 +2318,62 @@ window.loadOrders = () => {
             `;
             document.body.appendChild(modal);
 
+            // Check camera permissions first
+            const permissionCheck = await checkCameraPermissions();
+            
+            // Update loading message based on permission check
+            const loadingElement = document.getElementById('order-barcode-reader-loading');
+            if (loadingElement) {
+                loadingElement.textContent = permissionCheck.allowed ? 'جاري تشغيل الكاميرا...' : permissionCheck.error;
+            }
+
             // Initialize HTML5-QRCode
             let html5QrcodeScanner = null;
             setTimeout(async () => {
                 const readerElement = document.getElementById('order-barcode-reader');
-                const loadingElement = document.getElementById('order-barcode-reader-loading');
+                
+                if (!permissionCheck.allowed) {
+                    // Camera not allowed, show error and focus on manual input
+                    zahraaToast(permissionCheck.error, 'warning');
+                    
+                    const input = document.getElementById('order-barcode-input');
+                    if (input) input.focus();
+                    input.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') confirmOrderBarcode();
+                    });
+                    return;
+                }
                 
                 if (readerElement && typeof Html5Qrcode !== 'undefined') {
                     try {
                         html5QrcodeScanner = new Html5Qrcode(readerElement);
                         const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
                         
-                        // Try to get available cameras
-                        let cameras = [];
-                        try {
-                            cameras = await Html5Qrcode.getCameras();
-                        } catch (e) {
-                            console.warn('Could not get camera list:', e);
-                        }
+                        // Get available cameras
+                        const cameras = await getAvailableCameras();
                         
-                        if (cameras && cameras.length > 0) {
+                        if (cameras.length > 0) {
                             // Use the first camera or the environment camera
                             const cameraId = cameras.find(c => c.label && c.label.toLowerCase().includes('back'))?.id || cameras[0].id;
                             
-                            await html5QrcodeScanner.start(cameraId, config, (decodedText) => {
-                                document.getElementById('order-barcode-input').value = decodedText;
-                                zahraaToast('تم مسح الباركود: ' + decodedText, 'success');
-                                if (html5QrcodeScanner) {
-                                    html5QrcodeScanner.stop();
-                                }
-                                confirmOrderBarcode();
-                            }, (errorMessage) => {
-                                // Ignore errors during scanning
-                            });
-                            
-                            if (loadingElement) loadingElement.style.display = 'none';
+                            try {
+                                await html5QrcodeScanner.start(cameraId, config, (decodedText) => {
+                                    document.getElementById('order-barcode-input').value = decodedText;
+                                    zahraaToast('تم مسح الباركود: ' + decodedText, 'success');
+                                    if (html5QrcodeScanner) {
+                                        html5QrcodeScanner.stop();
+                                    }
+                                    confirmOrderBarcode();
+                                }, (errorMessage) => {
+                                    // Ignore errors during scanning
+                                });
+                                
+                                if (loadingElement) loadingElement.style.display = 'none';
+                            } catch (cameraErr) {
+                                console.error('Camera start error:', cameraErr);
+                                if (loadingElement) loadingElement.textContent = 'خطأ في تشغيل الكاميرا، استخدم الإدخال اليدوي';
+                                zahraaToast('خطأ في تشغيل الكاميرا، استخدم الإدخال اليدوي', 'warning');
+                            }
                         } else {
                             // Fallback to environment mode
                             try {
@@ -2303,9 +2396,9 @@ window.loadOrders = () => {
                             }
                         }
                     } catch (err) {
-                        console.error('Camera error:', err);
-                        if (loadingElement) loadingElement.textContent = 'خطأ في الوصول للكاميرا، استخدم الإدخال اليدوي';
-                        zahraaToast('خطأ في الوصول للكاميرا، استخدم الإدخال اليدوي', 'warning');
+                        console.error('Camera initialization error:', err);
+                        if (loadingElement) loadingElement.textContent = 'خطأ في تهيئة الكاميرا، استخدم الإدخال اليدوي';
+                        zahraaToast('خطأ في تهيئة الكاميرا، استخدم الإدخال اليدوي', 'warning');
                     }
                 } else {
                     if (loadingElement) loadingElement.textContent = 'مكتبة الكاميرا غير متوفرة، استخدم الإدخال اليدوي';
@@ -6664,78 +6757,82 @@ function _renderPOSReceipt(inv) {
     const storeLogo = _posSettings.logoUrl || '';
     const storeName = _posSettings.storeName || 'استوديو الزهراء';
     const storePhone = _posSettings.phone1 || '';
-    const fontSize = _posSettings.fontSize || '10';
+    const fontSize = _posSettings.fontSize || '11';
     const font = _posSettings.font || 'Cairo';
 
-    // Compact thermal invoice layouts (4 versions)
+    // Distinct thermal invoice layouts (4 different styles)
     const compactLayouts = {
         minimal: {
             headerLayout: 'inline',
-            headerPadding: '4px 6px',
-            itemPadding: '3px 0',
-            sectionDivider: 'border-bottom: 1px solid #000',
-            totalBg: '#000',
-            totalColor: '#fff',
-            accentColor: '#000',
-            headerFont: '13px',
-            itemFont: '10px',
-            totalFont: '12px',
-            logoSize: '24px',
-            qrSize: '50px',
-            footerFont: '8px',
-            showLogo: true,
-            logoAlign: 'left'
-        },
-        cashier: {
-            headerLayout: 'inline',
-            headerPadding: '4px 6px',
+            headerPadding: '6px 8px',
             itemPadding: '4px 0',
             sectionDivider: 'border-bottom: 2px solid #000',
             totalBg: '#000',
             totalColor: '#fff',
             accentColor: '#000',
-            headerFont: '14px',
+            headerFont: '16px',
             itemFont: '11px',
-            totalFont: '13px',
-            logoSize: '28px',
-            qrSize: '55px',
+            totalFont: '14px',
+            logoSize: '50px',
+            qrSize: '60px',
             footerFont: '9px',
             showLogo: true,
-            logoAlign: 'left'
+            logoAlign: 'left',
+            tableStyle: 'simple'
+        },
+        cashier: {
+            headerLayout: 'centered',
+            headerPadding: '8px',
+            itemPadding: '5px 0',
+            sectionDivider: 'border-bottom: 3px double #000',
+            totalBg: '#000',
+            totalColor: '#fff',
+            accentColor: '#000',
+            headerFont: '18px',
+            itemFont: '12px',
+            totalFont: '16px',
+            logoSize: '60px',
+            qrSize: '70px',
+            footerFont: '10px',
+            showLogo: true,
+            logoAlign: 'center',
+            tableStyle: 'boxed'
         },
         centered: {
             headerLayout: 'centered',
-            headerPadding: '6px',
-            itemPadding: '4px 0',
-            sectionDivider: 'border-bottom: 1px dashed #000',
+            headerPadding: '8px',
+            itemPadding: '5px 0',
+            sectionDivider: 'border-bottom: 2px dashed #000',
             totalBg: '#000',
             totalColor: '#fff',
             accentColor: '#000',
-            headerFont: '14px',
-            itemFont: '10px',
-            totalFont: '13px',
-            logoSize: '30px',
-            qrSize: '60px',
-            footerFont: '9px',
+            headerFont: '17px',
+            itemFont: '11px',
+            totalFont: '15px',
+            logoSize: '55px',
+            qrSize: '65px',
+            footerFont: '10px',
             showLogo: true,
-            logoAlign: 'center'
+            logoAlign: 'center',
+            tableStyle: 'simple'
         },
         professional: {
             headerLayout: 'inline',
-            headerPadding: '5px 6px',
-            itemPadding: '4px 0',
-            sectionDivider: 'border-bottom: 2px solid #000',
+            headerPadding: '6px 8px',
+            itemPadding: '5px 0',
+            sectionDivider: 'border-bottom: 3px solid #000',
             totalBg: '#000',
             totalColor: '#fff',
             accentColor: '#000',
-            headerFont: '15px',
-            itemFont: '11px',
-            totalFont: '14px',
-            logoSize: '32px',
-            qrSize: '60px',
-            footerFont: '9px',
+            headerFont: '17px',
+            itemFont: '12px',
+            totalFont: '15px',
+            logoSize: '55px',
+            qrSize: '65px',
+            footerFont: '10px',
             showLogo: true,
-            logoAlign: 'left'
+            logoAlign: 'left',
+            tableStyle: 'boxed'
         }
     };
 
@@ -6756,52 +6853,67 @@ function _renderPOSReceipt(inv) {
     receiptEl.style.fontSize = `${fontSize}px`;
     receiptEl.style.fontFamily = `'${font}', 'Cairo', sans-serif`;
     receiptEl.style.fontWeight = '700';
-    receiptEl.style.lineHeight = '1.1';
+    receiptEl.style.lineHeight = '1.2';
 
-    // Generate compact items HTML
-    const itemsHTML = inv.items.map(i => `
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:${layout.itemPadding};border-bottom:1px solid #eee;">
-            <div style="flex:1;">
-                <div style="font-weight:800;font-size:${layout.itemFont};color:#000;line-height:1.1;">${i.name}</div>
+    // Generate items HTML with proper alignment
+    const itemsHTML = inv.items.map(i => {
+        if (layout.tableStyle === 'boxed') {
+            return `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:${layout.itemPadding};border:1px solid #000;border-left:none;border-right:none;border-top:none;margin-bottom:2px;">
+                <div style="flex:1;">
+                    <div style="font-weight:800;font-size:${layout.itemFont};color:#000;line-height:1.2;">${i.name}</div>
+                </div>
+                <div style="font-weight:800;font-size:${layout.itemFont};color:#000;min-width:40px;text-align:center;">${i.qty}</div>
+                <div style="font-weight:800;font-size:${layout.itemFont};color:#000;min-width:50px;text-align:right;">${i.price.toFixed(2)}</div>
+                <div style="font-weight:900;font-size:${layout.itemFont};color:#000;min-width:60px;text-align:right;">${(i.price*i.qty).toFixed(2)}</div>
             </div>
-            <div style="font-weight:800;font-size:${layout.itemFont};color:#000;">${i.qty}</div>
-            <div style="font-weight:800;font-size:${layout.itemFont};color:#000;">${i.price.toFixed(2)}</div>
-            <div style="font-weight:900;font-size:${layout.itemFont};color:#000;">${(i.price*i.qty).toFixed(2)}</div>
-        </div>
-    `).join('');
+            `;
+        } else {
+            return `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:${layout.itemPadding};border-bottom:1px solid #eee;">
+                <div style="flex:1;">
+                    <div style="font-weight:800;font-size:${layout.itemFont};color:#000;line-height:1.2;">${i.name}</div>
+                </div>
+                <div style="font-weight:800;font-size:${layout.itemFont};color:#000;min-width:40px;text-align:center;">${i.qty}</div>
+                <div style="font-weight:800;font-size:${layout.itemFont};color:#000;min-width:50px;text-align:right;">${i.price.toFixed(2)}</div>
+                <div style="font-weight:900;font-size:${layout.itemFont};color:#000;min-width:60px;text-align:right;">${(i.price*i.qty).toFixed(2)}</div>
+            </div>
+            `;
+        }
+    }).join('');
 
-    // Compact header based on layout
+    // Header based on layout
     const headerHTML = layout.headerLayout === 'inline' ? `
-        <div style="display:flex;align-items:center;gap:6px;padding:${layout.headerPadding};margin-bottom:4px;">
+        <div style="display:flex;align-items:center;gap:10px;padding:${layout.headerPadding};margin-bottom:6px;">
             ${layout.showLogo && storeLogo ? `<img src="${storeLogo}" style="height:${layout.logoSize};width:${layout.logoSize};object-fit:contain;">` : ''}
             <div style="flex:1;">
-                <div style="font-weight:900;font-size:${layout.headerFont};color:#000;line-height:1.1;">${storeName}</div>
-                ${storePhone ? `<div style="font-weight:700;font-size:${parseInt(layout.headerFont)-2}px;color:#000;line-height:1.1;">📞 ${storePhone}</div>` : ''}
+                <div style="font-weight:900;font-size:${layout.headerFont};color:#000;line-height:1.2;">${storeName}</div>
+                ${storePhone ? `<div style="font-weight:700;font-size:${parseInt(layout.headerFont)-3}px;color:#000;line-height:1.2;">📞 ${storePhone}</div>` : ''}
             </div>
         </div>
     ` : `
-        <div style="text-align:center;padding:${layout.headerPadding};margin-bottom:4px;">
-            ${layout.showLogo && storeLogo ? `<img src="${storeLogo}" style="height:${layout.logoSize};width:${layout.logoSize};object-fit:contain;margin-bottom:2px;">` : ''}
-            <div style="font-weight:900;font-size:${layout.headerFont};color:#000;line-height:1.1;">${storeName}</div>
-            ${storePhone ? `<div style="font-weight:700;font-size:${parseInt(layout.headerFont)-2}px;color:#000;line-height:1.1;">📞 ${storePhone}</div>` : ''}
+        <div style="text-align:center;padding:${layout.headerPadding};margin-bottom:6px;">
+            ${layout.showLogo && storeLogo ? `<img src="${storeLogo}" style="height:${layout.logoSize};width:${layout.logoSize};object-fit:contain;margin-bottom:4px;">` : ''}
+            <div style="font-weight:900;font-size:${layout.headerFont};color:#000;line-height:1.2;">${storeName}</div>
+            ${storePhone ? `<div style="font-weight:700;font-size:${parseInt(layout.headerFont)-3}px;color:#000;line-height:1.2;">📞 ${storePhone}</div>` : ''}
         </div>
     `;
 
     receiptEl.innerHTML = `
-        <!-- Compact Header -->
+        <!-- Header -->
         ${headerHTML}
 
-        <!-- Invoice Info - Inline -->
-        <div style="display:flex;justify-content:space-between;padding:4px 6px;margin-bottom:4px;font-weight:700;font-size:${parseInt(layout.itemFont)+1}px;color:#000;">
+        <!-- Invoice Info -->
+        <div style="display:flex;justify-content:space-between;padding:4px 8px;margin-bottom:6px;font-weight:700;font-size:${parseInt(layout.itemFont)+1}px;color:#000;">
             <span>#${inv.invoiceNumber}</span>
             <span>${dateStr}</span>
         </div>
-        ${inv.userName ? `<div style="padding:2px 6px;font-weight:700;font-size:${layout.itemFont};color:#000;">👤 ${inv.userName}</div>` : ''}
-        ${inv.paymentMethod ? `<div style="padding:2px 6px;font-weight:700;font-size:${layout.itemFont};color:#000;">💳 ${inv.paymentMethod}</div>` : ''}
+        ${inv.userName ? `<div style="padding:3px 8px;font-weight:700;font-size:${layout.itemFont};color:#000;">👤 ${inv.userName}</div>` : ''}
+        ${inv.paymentMethod ? `<div style="padding:3px 8px;font-weight:700;font-size:${layout.itemFont};color:#000;">💳 ${inv.paymentMethod}</div>` : ''}
 
-        <!-- Products - Compact Table -->
-        <div style="padding:4px 6px;margin-bottom:4px;">
-            <div style="display:flex;justify-content:space-between;padding:2px 0;font-weight:900;font-size:${layout.itemFont};color:#000;padding-bottom:2px;${layout.sectionDivider};">
+        <!-- Products -->
+        <div style="padding:6px 8px;margin-bottom:6px;">
+            <div style="display:flex;justify-content:space-between;padding:3px 0;font-weight:900;font-size:${layout.itemFont};color:#000;padding-bottom:3px;${layout.sectionDivider};">
                 <span>المنتج</span>
                 <span>الكمية</span>
                 <span>السعر</span>
@@ -6810,52 +6922,52 @@ function _renderPOSReceipt(inv) {
             ${itemsHTML}
         </div>
 
-        <!-- Totals - Compact -->
-        <div style="padding:4px 6px;margin-bottom:4px;">
+        <!-- Totals -->
+        <div style="padding:6px 8px;margin-bottom:6px;">
             ${inv.discountAmount > 0 ? `
-            <div style="display:flex;justify-content:space-between;margin-bottom:2px;font-weight:700;font-size:${layout.itemFont};color:#000;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:3px;font-weight:700;font-size:${layout.itemFont};color:#000;">
                 <span>المجموع</span>
                 <span>${inv.subtotal.toFixed(2)} ج</span>
             </div>
-            <div style="display:flex;justify-content:space-between;margin-bottom:2px;font-weight:700;font-size:${layout.itemFont};color:#000;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:3px;font-weight:700;font-size:${layout.itemFont};color:#000;">
                 <span>خصم</span>
                 <span>- ${inv.discountAmount.toFixed(2)} ج</span>
             </div>
             ` : ''}
             ${(inv.deliveryFee||0) > 0 ? `
-            <div style="display:flex;justify-content:space-between;margin-bottom:2px;font-weight:700;font-size:${layout.itemFont};color:#000;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:3px;font-weight:700;font-size:${layout.itemFont};color:#000;">
                 <span>توصيل</span>
                 <span>+ ${(inv.deliveryFee).toFixed(2)} ج</span>
             </div>
             ` : ''}
-            <div style="display:flex;justify-content:space-between;padding:6px;background:${layout.totalBg};color:${layout.totalColor};margin-top:2px;font-weight:900;font-size:${layout.totalFont};border-radius:2px;">
+            <div style="display:flex;justify-content:space-between;padding:8px;background:${layout.totalBg};color:${layout.totalColor};margin-top:4px;font-weight:900;font-size:${layout.totalFont};border-radius:4px;">
                 <span>الإجمالي</span>
                 <span>${inv.totalPrice.toFixed(2)} ج</span>
             </div>
             ${inv.remainingAmount > 0 ? `
-            <div style="display:flex;justify-content:space-between;margin-top:2px;padding:3px;background:#fff3cd;border:1px solid #000;font-weight:900;font-size:${layout.itemFont};border-radius:2px;">
+            <div style="display:flex;justify-content:space-between;margin-top:4px;padding:4px;background:#fff3cd;border:2px solid #000;font-weight:900;font-size:${layout.itemFont};border-radius:4px;">
                 <span>المتبقي</span>
                 <span>${inv.remainingAmount.toFixed(2)} ج</span>
             </div>
             ` : ''}
         </div>
 
-        <!-- QR Code - Compact -->
+        <!-- QR Code -->
         ${_posSettings.showBarcode ? `
-        <div style="text-align:center;padding:4px;">
+        <div style="text-align:center;padding:6px;">
             ${_posSettings.barcodeType === 'qr' ? 
-                `<img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(inv.invoiceNumber)}" style="width:${layout.qrSize};height:${layout.qrSize};border:1px solid #000;">` :
-                `<svg id="pos-receipt-barcode-${inv.invoiceNumber}" style="width:120px;height:35px;"></svg>`
+                `<img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(inv.invoiceNumber)}" style="width:${layout.qrSize};height:${layout.qrSize};border:2px solid #000;">` :
+                `<svg id="pos-receipt-barcode-${inv.invoiceNumber}" style="width:140px;height:45px;"></svg>`
             }
-            <div style="font-weight:900;font-size:8px;color:#000;margin-top:2px;letter-spacing:0.5px;">${inv.invoiceNumber}</div>
+            <div style="font-weight:900;font-size:9px;color:#000;margin-top:3px;letter-spacing:1px;">${inv.invoiceNumber}</div>
         </div>
         ` : ''}
 
-        <!-- Footer - Compact -->
-        <div style="text-align:center;padding:4px;padding-top:4px;${layout.sectionDivider};margin-top:2px;">
-            <div style="font-weight:700;font-size:${layout.footerFont};color:#000;line-height:1.2;">${_posSettings.footer || 'شكراً لتعاملكم معنا 🌹'}</div>
+        <!-- Footer -->
+        <div style="text-align:center;padding:6px;padding-top:6px;${layout.sectionDivider};margin-top:4px;">
+            <div style="font-weight:700;font-size:${layout.footerFont};color:#000;line-height:1.3;">${_posSettings.footer || 'شكراً لتعاملكم معنا 🌹'}</div>
             ${_posSettings.address && _posSettings.showAddress !== false ? `
-            <div style="font-weight:700;font-size:${parseInt(layout.footerFont)-1}px;color:#000;line-height:1.2;">📍 ${_posSettings.address}</div>
+            <div style="font-weight:700;font-size:${parseInt(layout.footerFont)-1}px;color:#000;line-height:1.3;">📍 ${_posSettings.address}</div>
             ` : ''}
         </div>
     `;
@@ -6869,7 +6981,7 @@ function _renderPOSReceipt(inv) {
                     JsBarcode(barcodeEl, inv.invoiceNumber, {
                         format: 'CODE128',
                         width: 1,
-                        height: 35,
+                        height: 45,
                         displayValue: false,
                         margin: 0
                     });
