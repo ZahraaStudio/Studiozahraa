@@ -6962,7 +6962,7 @@ function _renderPOSReceipt(inv) {
         ${_posSettings.showBarcode ? `
         <div style="text-align:center;padding:6px;">
             ${_posSettings.barcodeType === 'qr' ? 
-                `<img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(window.location.origin + '/order-status.html?id=' + inv.invoiceNumber)}" style="width:${layout.qrSize};height:${layout.qrSize};border:2px solid #000;">` :
+                `<img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(window.location.origin + '/Studiozahraa/order-status.html?id=' + inv.invoiceNumber)}" style="width:${layout.qrSize};height:${layout.qrSize};border:2px solid #000;">` :
                 `<svg id="pos-receipt-barcode-${inv.invoiceNumber}" style="width:140px;height:45px;"></svg>`
             }
             <div style="font-weight:900;font-size:9px;color:#000;margin-top:3px;letter-spacing:1px;">${inv.invoiceNumber}</div>
@@ -7445,7 +7445,7 @@ window.showInvoiceDetail = function(invId) {
         <button onclick="updateOrderPrepared('${invId}', ${!isPrepared})" style="width:100%;margin-top:10px;padding:10px;background:${isPrepared ? '#7f1d1d' : '#166534'};color:#fff;border:none;border-radius:8px;font-family:'Cairo',sans-serif;font-weight:700;font-size:13px;cursor:pointer;">
             ${isPrepared ? '↩️ إلغاء التجهيز' : '✅ تم التجهيز'}
         </button>
-        <a href="${window.location.origin}/order-status.html?id=${inv.invoiceNumber}" target="_blank"
+        <a href="${window.location.origin}/Studiozahraa/order-status.html?id=${inv.invoiceNumber}" target="_blank"
            style="display:block;text-align:center;margin-top:8px;padding:8px;background:#1e3a5f;color:#93c5fd;border:none;border-radius:8px;font-family:'Cairo',sans-serif;font-weight:700;font-size:11px;text-decoration:none;">
             🔗 صفحة العميل (معاينة)
         </a>
