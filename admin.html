@@ -6962,7 +6962,7 @@ function _renderPOSReceipt(inv) {
         ${_posSettings.showBarcode ? `
         <div style="text-align:center;padding:6px;">
             ${_posSettings.barcodeType === 'qr' ? 
-                `<img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(window.location.origin + '/Studiozahraa/order-status.html?id=' + inv.invoiceNumber)}" style="width:${layout.qrSize};height:${layout.qrSize};border:2px solid #000;">` :
+                `<img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(window.location.origin + '/order-status.html?id=' + inv.invoiceNumber)}" style="width:${layout.qrSize};height:${layout.qrSize};border:2px solid #000;">` :
                 `<svg id="pos-receipt-barcode-${inv.invoiceNumber}" style="width:140px;height:45px;"></svg>`
             }
             <div style="font-weight:900;font-size:9px;color:#000;margin-top:3px;letter-spacing:1px;">${inv.invoiceNumber}</div>
@@ -7445,7 +7445,7 @@ window.showInvoiceDetail = function(invId) {
         <button onclick="updateOrderPrepared('${invId}', ${!isPrepared})" style="width:100%;margin-top:10px;padding:10px;background:${isPrepared ? '#7f1d1d' : '#166534'};color:#fff;border:none;border-radius:8px;font-family:'Cairo',sans-serif;font-weight:700;font-size:13px;cursor:pointer;">
             ${isPrepared ? '↩️ إلغاء التجهيز' : '✅ تم التجهيز'}
         </button>
-        <a href="${window.location.origin}/Studiozahraa/order-status.html?id=${inv.invoiceNumber}" target="_blank"
+        <a href="${window.location.origin}/order-status.html?id=${inv.invoiceNumber}" target="_blank"
            style="display:block;text-align:center;margin-top:8px;padding:8px;background:#1e3a5f;color:#93c5fd;border:none;border-radius:8px;font-family:'Cairo',sans-serif;font-weight:700;font-size:11px;text-decoration:none;">
             🔗 صفحة العميل (معاينة)
         </a>
@@ -7542,15 +7542,22 @@ window.posScanInvoiceBarcode = async function() {
             { fps: 10, qrbox: { width: 250, height: 250 } },
             async (decodedText) => {
                 await posScannerStop();
-                zahraaToast('تم مسح: ' + decodedText, 'success');
+                // Extract invoice number from URL if QR contains full URL (order-status.html?id=INV-XXX)
+                let invoiceNum = decodedText;
+                try {
+                    const urlObj = new URL(decodedText);
+                    const idParam = urlObj.searchParams.get('id');
+                    if (idParam) invoiceNum = idParam;
+                } catch(e) {} // Not a URL, use raw text as-is
+                zahraaToast('تم مسح: ' + invoiceNum, 'success');
                 // Search saved invoices
                 const panel = document.getElementById('pos-saved-invoices-panel');
                 if (panel) panel.style.display = 'block';
                 const searchInput = document.getElementById('pos-invoice-search');
-                if (searchInput) searchInput.value = decodedText;
+                if (searchInput) searchInput.value = invoiceNum;
                 await loadSavedInvoices();
-                renderInvoicesList(decodedText);
-                const match = _savedInvoicesCache.find(i => i.invoiceNumber === decodedText);
+                renderInvoicesList(invoiceNum);
+                const match = _savedInvoicesCache.find(i => i.invoiceNumber === invoiceNum);
                 if (match) {
                     showInvoiceDetail(match.id);
                     // Open customer images folder if available
