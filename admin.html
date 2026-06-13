@@ -6958,15 +6958,27 @@ function _renderPOSReceipt(inv) {
             ` : ''}
         </div>
 
-        <!-- QR Code / Barcode linking to customer order status page -->
+        <!-- Barcodes: QR for customer + rectangular for admin -->
         ${_posSettings.showBarcode ? `
-        <div style="text-align:center;padding:6px;">
-            ${_posSettings.barcodeType === 'qr' ? 
-                `<img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(window.location.origin + '/Studiozahraa/order-status.html?id=' + inv.invoiceNumber)}" style="width:${layout.qrSize};height:${layout.qrSize};border:2px solid #000;">` :
-                `<svg id="pos-receipt-barcode-${inv.invoiceNumber}" style="width:140px;height:45px;"></svg>`
-            }
-            <div style="font-weight:900;font-size:9px;color:#000;margin-top:3px;letter-spacing:1px;">${inv.invoiceNumber}</div>
-            <div style="font-size:8px;color:#555;margin-top:2px;">امسح لمتابعة طلبك</div>
+        <div style="display:flex;align-items:flex-start;justify-content:center;gap:8px;padding:6px;border-top:1px dashed #ccc;margin-top:4px;">
+
+            <!-- QR للعميل: يفتح صفحة متابعة الطلب -->
+            <div style="text-align:center;flex:1;">
+                <div style="font-size:7px;color:#888;margin-bottom:3px;letter-spacing:0.5px;">للعميل ▼</div>
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(window.location.origin + '/order-status.html?id=' + inv.invoiceNumber)}" style="width:70px;height:70px;border:1.5px solid #000;display:block;margin:0 auto;">
+                <div style="font-size:7px;color:#888;margin-top:3px;">تتبع طلبك</div>
+            </div>
+
+            <!-- خط فاصل -->
+            <div style="width:1px;background:#ddd;align-self:stretch;margin:4px 0;"></div>
+
+            <!-- باركود مستطيل للأدمن: رقم الفاتورة فقط -->
+            <div style="text-align:center;flex:1;">
+                <div style="font-size:7px;color:#888;margin-bottom:3px;letter-spacing:0.5px;">للأدمن ▼</div>
+                <svg id="pos-admin-barcode-${inv.invoiceNumber}" style="width:110px;height:40px;display:block;margin:0 auto;"></svg>
+                <div style="font-size:7px;color:#888;margin-top:2px;">مسح الأدمن</div>
+            </div>
+
         </div>
         ` : ''}
 
@@ -6979,7 +6991,42 @@ function _renderPOSReceipt(inv) {
         </div>
     `;
 
-    // Generate barcode if JsBarcode is available
+    // Generate admin rectangular barcode (always, regardless of barcodeType)
+    const _renderAdminBarcode = () => {
+        const adminBcEl = document.getElementById(`pos-admin-barcode-${inv.invoiceNumber}`);
+        if (!adminBcEl) return;
+        if (typeof JsBarcode !== 'undefined') {
+            try {
+                JsBarcode(adminBcEl, inv.invoiceNumber, {
+                    format: 'CODE128',
+                    width: 1.3,
+                    height: 38,
+                    displayValue: true,
+                    fontSize: 8,
+                    margin: 2,
+                    lineColor: '#000',
+                    background: '#fff'
+                });
+            } catch(e) {}
+        } else {
+            // Fallback: load JsBarcode then render
+            const s = document.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js';
+            s.onload = () => {
+                try {
+                    JsBarcode(adminBcEl, inv.invoiceNumber, {
+                        format: 'CODE128', width: 1.3, height: 38,
+                        displayValue: true, fontSize: 8, margin: 2,
+                        lineColor: '#000', background: '#fff'
+                    });
+                } catch(e) {}
+            };
+            document.head.appendChild(s);
+        }
+    };
+    if (_posSettings.showBarcode) setTimeout(_renderAdminBarcode, 120);
+
+    // Also render the old rectangular barcode slot if barcodeType is set to rectangular
     if (_posSettings.barcodeType !== 'qr' && typeof JsBarcode !== 'undefined') {
         setTimeout(() => {
             const barcodeEl = document.getElementById(`pos-receipt-barcode-${inv.invoiceNumber}`);
@@ -7445,7 +7492,7 @@ window.showInvoiceDetail = function(invId) {
         <button onclick="updateOrderPrepared('${invId}', ${!isPrepared})" style="width:100%;margin-top:10px;padding:10px;background:${isPrepared ? '#7f1d1d' : '#166534'};color:#fff;border:none;border-radius:8px;font-family:'Cairo',sans-serif;font-weight:700;font-size:13px;cursor:pointer;">
             ${isPrepared ? '↩️ إلغاء التجهيز' : '✅ تم التجهيز'}
         </button>
-        <a href="${window.location.origin}/Studiozahraa/order-status.html?id=${inv.invoiceNumber}" target="_blank"
+        <a href="${window.location.origin}/order-status.html?id=${inv.invoiceNumber}" target="_blank"
            style="display:block;text-align:center;margin-top:8px;padding:8px;background:#1e3a5f;color:#93c5fd;border:none;border-radius:8px;font-family:'Cairo',sans-serif;font-weight:700;font-size:11px;text-decoration:none;">
             🔗 صفحة العميل (معاينة)
         </a>
