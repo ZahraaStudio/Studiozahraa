@@ -6965,7 +6965,7 @@ function _renderPOSReceipt(inv) {
             <!-- QR للعميل: يفتح صفحة متابعة الطلب -->
             <div style="text-align:center;flex:1;">
                 <div style="font-size:7px;color:#888;margin-bottom:3px;letter-spacing:0.5px;">للعميل ▼</div>
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(window.location.origin + '/order-status.html?id=' + inv.invoiceNumber)}" style="width:70px;height:70px;border:1.5px solid #000;display:block;margin:0 auto;">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(window.location.origin + '/Studiozahraa/order-status.html?id=' + inv.invoiceNumber)}" style="width:70px;height:70px;border:1.5px solid #000;display:block;margin:0 auto;">
                 <div style="font-size:7px;color:#888;margin-top:3px;">تتبع طلبك</div>
             </div>
 
@@ -7492,7 +7492,7 @@ window.showInvoiceDetail = function(invId) {
         <button onclick="updateOrderPrepared('${invId}', ${!isPrepared})" style="width:100%;margin-top:10px;padding:10px;background:${isPrepared ? '#7f1d1d' : '#166534'};color:#fff;border:none;border-radius:8px;font-family:'Cairo',sans-serif;font-weight:700;font-size:13px;cursor:pointer;">
             ${isPrepared ? '↩️ إلغاء التجهيز' : '✅ تم التجهيز'}
         </button>
-        <a href="${window.location.origin}/order-status.html?id=${inv.invoiceNumber}" target="_blank"
+        <a href="${window.location.origin}/Studiozahraa/order-status.html?id=${inv.invoiceNumber}" target="_blank"
            style="display:block;text-align:center;margin-top:8px;padding:8px;background:#1e3a5f;color:#93c5fd;border:none;border-radius:8px;font-family:'Cairo',sans-serif;font-weight:700;font-size:11px;text-decoration:none;">
             🔗 صفحة العميل (معاينة)
         </a>
