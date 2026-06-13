@@ -6972,11 +6972,11 @@ function _renderPOSReceipt(inv) {
             <!-- خط فاصل -->
             <div style="width:1px;background:#ddd;align-self:stretch;margin:4px 0;"></div>
 
-            <!-- باركود مستطيل للأدمن: رقم الفاتورة فقط -->
+            <!-- QR مربع للأدمن: رقم الفاتورة فقط (بدون URL) -->
             <div style="text-align:center;flex:1;">
                 <div style="font-size:7px;color:#888;margin-bottom:3px;letter-spacing:0.5px;">للأدمن ▼</div>
-                <img src="https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(inv.invoiceNumber)}&scale=2&height=10&includetext&textsize=8" style="width:110px;height:42px;display:block;margin:0 auto;object-fit:contain;" onerror="this.src='https://barcode.tec-it.com/barcode.ashx?DATA=${encodeURIComponent(inv.invoiceNumber)}&TYPE=Code128&WIDTH=110&HEIGHT=42'">
-                <div style="font-size:7px;color:#888;margin-top:2px;">مسح الأدمن</div>
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=70x70&data=${encodeURIComponent(inv.invoiceNumber)}" style="width:70px;height:70px;border:1.5px solid #000;display:block;margin:0 auto;">
+                <div style="font-size:7px;color:#888;margin-top:3px;">رقم الفاتورة</div>
             </div>
 
         </div>
