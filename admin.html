@@ -6975,7 +6975,7 @@ function _renderPOSReceipt(inv) {
             <!-- باركود مستطيل للأدمن: رقم الفاتورة فقط -->
             <div style="text-align:center;flex:1;">
                 <div style="font-size:7px;color:#888;margin-bottom:3px;letter-spacing:0.5px;">للأدمن ▼</div>
-                <svg id="pos-admin-barcode-${inv.invoiceNumber}" style="width:110px;height:40px;display:block;margin:0 auto;"></svg>
+                <img src="https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(inv.invoiceNumber)}&scale=2&height=10&includetext&textsize=8" style="width:110px;height:42px;display:block;margin:0 auto;object-fit:contain;" onerror="this.src='https://barcode.tec-it.com/barcode.ashx?DATA=${encodeURIComponent(inv.invoiceNumber)}&TYPE=Code128&WIDTH=110&HEIGHT=42'">
                 <div style="font-size:7px;color:#888;margin-top:2px;">مسح الأدمن</div>
             </div>
 
