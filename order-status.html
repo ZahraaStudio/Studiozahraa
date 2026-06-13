@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حالة طلبك — Studio Zahraa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 16px 40px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 24px 0 16px;
+            width: 100%;
+            max-width: 460px;
+        }
+        .header .store-name {
+            font-size: 22px;
+            font-weight: 900;
+            color: #d4af37;
+            margin-bottom: 4px;
+        }
+        .header .page-title {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .card {
+            background: #111;
+            border: 1px solid #222;
+            border-radius: 18px;
+            padding: 20px;
+            width: 100%;
+            max-width: 460px;
+            margin-top: 12px;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 18px;
+            border-radius: 14px;
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: 900;
+        }
+        .status-badge.prepared {
+            background: #052e16;
+            border: 2px solid #4ade80;
+            color: #4ade80;
+        }
+        .status-badge.pending {
+            background: #1c1400;
+            border: 2px solid #f59e0b;
+            color: #f59e0b;
+        }
+        .status-badge .icon { font-size: 28px; }
+
+        .progress-track {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            position: relative;
+        }
+        .progress-track::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            left: 20px;
+            height: 3px;
+            background: #222;
+            z-index: 0;
+        }
+        .progress-track .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            z-index: 1;
+            flex: 1;
+        }
+        .progress-track .step .dot {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #1a1a1a;
+            border: 2px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.4s;
+        }
+        .progress-track .step .label {
+            font-size: 10px;
+            color: #555;
+            text-align: center;
+        }
+        .progress-track .step.active .dot {
+            background: #d4af37;
+            border-color: #d4af37;
+        }
+        .progress-track .step.active .label { color: #d4af37; }
+        .progress-track .step.done .dot {
+            background: #166534;
+            border-color: #4ade80;
+        }
+        .progress-track .step.done .label { color: #4ade80; }
+
+        .section-title {
+            font-size: 12px;
+            color: #555;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #1e1e1e;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            font-size: 13px;
+            border-bottom: 1px solid #1a1a1a;
+        }
+        .info-row:last-child { border-bottom: none; }
+        .info-row .label { color: #666; }
+        .info-row .value { color: #e2e8f0; font-weight: 700; }
+
+        .items-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        .items-table th {
+            background: #1a1a1a;
+            color: #888;
+            font-size: 11px;
+            padding: 8px 10px;
+            text-align: right;
+        }
+        .items-table td {
+            padding: 8px 10px;
+            font-size: 12px;
+            border-bottom: 1px solid #1a1a1a;
+            color: #e2e8f0;
+        }
+        .items-table tr:last-child td { border-bottom: none; }
+
+        .total-row-final {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 10px;
+            background: #000;
+            border-radius: 8px;
+            margin-top: 12px;
+            font-weight: 900;
+            font-size: 16px;
+            color: #fff;
+        }
+
+        .loading { text-align: center; padding: 40px; color: #555; font-size: 14px; }
+        .error-box {
+            background: #1c0000;
+            border: 1px solid #f8717140;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            color: #f87171;
+            font-size: 14px;
+        }
+
+        .refresh-btn {
+            display: block;
+            width: 100%;
+            max-width: 460px;
+            margin: 12px auto 0;
+            padding: 12px;
+            background: #1e3a5f;
+            color: #93c5fd;
+            border: 1px solid #3b82f640;
+            border-radius: 12px;
+            font-family: 'Cairo', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .auto-refresh {
+            text-align: center;
+            font-size: 11px;
+            color: #333;
+            margin-top: 8px;
+        }
+        .auto-refresh span { color: #d4af37; }
+
+        @media (prefers-color-scheme: light) {
+            body { background: #f5f5f5; color: #111; }
+            .card { background: #fff; border-color: #e5e7eb; }
+            .info-row .value { color: #111; }
+            .items-table td { color: #111; }
+            .items-table th { background: #f9f9f9; color: #555; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="store-name">🌸 Studio Zahraa</div>
+    <div class="page-title">متابعة حالة طلبك</div>
+</div>
+
+<div id="root-content" class="card">
+    <div class="loading">⏳ جاري تحميل بيانات الطلب...</div>
+</div>
+
+<button class="refresh-btn" onclick="loadOrder()">🔄 تحديث الحالة</button>
+<div class="auto-refresh" id="auto-refresh-label">يتجدد تلقائياً كل <span>30</span> ثانية</div>
+
+<!-- Firebase -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // ======= Firebase config (same as admin.html) =======
+    const firebaseConfig = {
+        apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
+        authDomain: "zahraa-store-f4c90.firebaseapp.com",
+        projectId: "zahraa-store-f4c90",
+        storageBucket: "zahraa-store-f4c90.firebasestorage.app",
+        messagingSenderId: "885722081307",
+        appId: "1:885722081307:web:7c91e0f8b0ea9b8b4df0be"
+    };
+
+    const app = initializeApp(firebaseConfig, 'order-status');
+    const db = getFirestore(app);
+
+    // Get invoice ID from URL
+    const params = new URLSearchParams(window.location.search);
+    const invoiceId = params.get('id');
+
+    window._db = db;
+    window._invoiceId = invoiceId;
+
+    window.loadOrder = async function() {
+        const root = document.getElementById('root-content');
+        if (!invoiceId) {
+            root.innerHTML = `<div class="error-box">❌ لم يتم تحديد رقم الطلب.<br><small>يرجى مسح الباركود مرة أخرى.</small></div>`;
+            return;
+        }
+
+        root.innerHTML = '<div class="loading">⏳ جاري تحميل بيانات الطلب...</div>';
+
+        try {
+            // Query pos_invoices by invoiceNumber
+            const q = query(
+                collection(db, 'pos_invoices'),
+                where('invoiceNumber', '==', invoiceId),
+                limit(1)
+            );
+            const snap = await getDocs(q);
+
+            if (snap.empty) {
+                root.innerHTML = `<div class="error-box">❌ لم يتم العثور على طلب برقم <b>${invoiceId}</b>.<br><small>تحقق من الباركود وحاول مجدداً.</small></div>`;
+                return;
+            }
+
+            const inv = { id: snap.docs[0].id, ...snap.docs[0].data() };
+            renderOrder(inv);
+        } catch(e) {
+            root.innerHTML = `<div class="error-box">❌ خطأ في الاتصال: ${e.message}</div>`;
+        }
+    };
+
+    function renderOrder(inv) {
+        const root = document.getElementById('root-content');
+        const isPrepared = inv.orderPrepared || false;
+        const createdAt = inv.createdAt?.toDate ? inv.createdAt.toDate() : new Date();
+        const preparedAt = inv.orderPreparedAt?.toDate ? inv.orderPreparedAt.toDate() : null;
+        const items = inv.items || [];
+        const rem = inv.remainingAmount || 0;
+
+        // Payment status
+        let payBadge = '';
+        if (rem > 0 && inv.paymentType === 'deferred') {
+            payBadge = `<span style="color:#f87171;font-weight:700;">🔴 آجل (متبقي ${rem.toFixed(2)} ج)</span>`;
+        } else if (rem > 0) {
+            payBadge = `<span style="color:#fb923c;font-weight:700;">🟠 جزئي (متبقي ${rem.toFixed(2)} ج)</span>`;
+        } else {
+            payBadge = `<span style="color:#4ade80;font-weight:700;">🟢 مكتمل</span>`;
+        }
+
+        // Progress steps: 1=تم الاستلام, 2=قيد التجهيز, 3=جاهز
+        const step1 = 'done', step2 = isPrepared ? 'done' : 'active', step3 = isPrepared ? 'active' : '';
+
+        root.innerHTML = `
+            <div class="status-badge ${isPrepared ? 'prepared' : 'pending'}">
+                <span class="icon">${isPrepared ? '✅' : '⏳'}</span>
+                <span>${isPrepared ? 'طلبك جاهز للاستلام!' : 'طلبك قيد التجهيز...'}</span>
+            </div>
+
+            <div class="progress-track">
+                <div class="step ${step1}">
+                    <div class="dot">📋</div>
+                    <div class="label">تم الاستلام</div>
+                </div>
+                <div class="step ${step2}">
+                    <div class="dot">⚙️</div>
+                    <div class="label">قيد التجهيز</div>
+                </div>
+                <div class="step ${step3}">
+                    <div class="dot">🎁</div>
+                    <div class="label">جاهز</div>
+                </div>
+            </div>
+
+            <div class="section-title">📄 بيانات الطلب</div>
+            <div class="info-row">
+                <span class="label">رقم الطلب</span>
+                <span class="value">${inv.invoiceNumber}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">العميل</span>
+                <span class="value">${inv.userName || '—'}</span>
+            </div>
+            ${inv.phone ? `
+            <div class="info-row">
+                <span class="label">الهاتف</span>
+                <span class="value">${inv.phone}</span>
+            </div>` : ''}
+            <div class="info-row">
+                <span class="label">تاريخ الطلب</span>
+                <span class="value">${createdAt.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">طريقة الدفع</span>
+                <span class="value">${inv.paymentMethod || '—'}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">حالة الدفع</span>
+                <span class="value">${payBadge}</span>
+            </div>
+            ${isPrepared && preparedAt ? `
+            <div class="info-row">
+                <span class="label">وقت التجهيز</span>
+                <span class="value" style="color:#4ade80;">${preparedAt.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+            </div>` : ''}
+            ${inv.deliveryAgentName ? `
+            <div class="info-row">
+                <span class="label">مندوب التوصيل</span>
+                <span class="value" style="color:#818cf8;">🚚 ${inv.deliveryAgentName}</span>
+            </div>` : ''}
+
+            <div class="section-title" style="margin-top:16px;">🛍️ المنتجات (${items.length} صنف)</div>
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th>المنتج</th>
+                        <th style="text-align:center;">الكمية</th>
+                        <th style="text-align:left;">السعر</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${items.map(item => `
+                    <tr>
+                        <td>${item.name || item.productName || '—'}</td>
+                        <td style="text-align:center;">${item.quantity || 1}</td>
+                        <td style="text-align:left;">${((item.price || 0) * (item.quantity || 1)).toFixed(2)} ج</td>
+                    </tr>`).join('')}
+                </tbody>
+            </table>
+            ${inv.discountAmount > 0 ? `
+            <div class="info-row" style="margin-top:8px;">
+                <span class="label">خصم</span>
+                <span class="value" style="color:#f59e0b;">- ${inv.discountAmount.toFixed(2)} ج</span>
+            </div>` : ''}
+            ${inv.deliveryFee > 0 ? `
+            <div class="info-row">
+                <span class="label">رسوم توصيل</span>
+                <span class="value">+ ${inv.deliveryFee.toFixed(2)} ج</span>
+            </div>` : ''}
+            <div class="total-row-final">
+                <span>الإجمالي النهائي</span>
+                <span>${(inv.totalPrice || 0).toFixed(2)} ج</span>
+            </div>
+            ${inv.notes ? `
+            <div style="margin-top:12px;padding:10px;background:#1a1a1a;border-radius:8px;font-size:12px;color:#94a3b8;">
+                📝 <b>ملاحظات:</b> ${inv.notes}
+            </div>` : ''}
+        `;
+    }
+
+    // Auto-refresh every 30 seconds
+    let countdown = 30;
+    window.loadOrder();
+    setInterval(() => {
+        countdown--;
+        const label = document.getElementById('auto-refresh-label');
+        if (label) label.innerHTML = `يتجدد تلقائياً كل <span>${countdown}</span> ثانية`;
+        if (countdown <= 0) {
+            countdown = 30;
+            window.loadOrder();
+        }
+    }, 1000);
+</script>
+</body>
+</html>

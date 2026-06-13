@@ -5424,6 +5424,7 @@ window.loadDeliveryRatings = async function() {
         }
         #cashier-receipt-print * { color: #000 !important; }
         #cashier-receipt-print .r-total { background: #000 !important; color: #fff !important; padding: 8px; border-radius: 4px; }
+        #cashier-receipt-print .r-total * { color: #fff !important; background: transparent !important; }
         #cashier-receipt-print .r-center { text-align: center; }
         #cashier-receipt-print .r-bold { font-weight: 900; }
         #cashier-receipt-print .r-lg { font-size: 18px; }
@@ -5863,6 +5864,8 @@ window.loadDeliveryRatings = async function() {
                     <h4 style="color:#d4af37;font-weight:700;font-size:14px;margin:0;">📋 الفواتير المحفوظة</h4>
                     <div style="display:flex;gap:8px;align-items:center;">
                         <button onclick="exportPosInvoicesExcel()" style="padding:6px 12px;background:#166534;color:#fff;border:none;border-radius:7px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">📊 تصدير Excel</button>
+                        <button onclick="bulkMarkPrepared()" id="bulk-prepared-btn" style="display:none;padding:6px 12px;background:#7c3aed;color:#fff;border:none;border-radius:7px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">✅ تم التجهيز للمحدد</button>
+                        <button onclick="selectAllInvoices()" style="padding:6px 12px;background:#1e3a5f;color:#93c5fd;border:1px solid #3b82f640;border-radius:7px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">☑️ تحديد الكل</button>
                         <input id="pos-invoice-search" type="text" placeholder="ابحث برقم الفاتورة أو اسم العميل أو باركود..." oninput="searchSavedInvoices(this.value)"
                             style="padding:7px 12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;font-family:'Cairo',sans-serif;font-size:12px;outline:none;width:220px;">
                         <button onclick="document.getElementById('pos-saved-invoices-panel').style.display='none'" style="background:none;border:none;color:#555;font-size:18px;cursor:pointer;">✕</button>
@@ -6706,6 +6709,8 @@ window.posCompleteSale = async function() {
         status: remaining > 0 ? 'آجل' : 'مكتمل',
         dueDate: dueDate || null,
         theme: window._posTheme || 'luxury',
+        orderPrepared: false,
+        orderPreparedAt: null,
         createdAt: new Date()
     };
 
@@ -6953,14 +6958,15 @@ function _renderPOSReceipt(inv) {
             ` : ''}
         </div>
 
-        <!-- QR Code -->
+        <!-- QR Code / Barcode linking to customer order status page -->
         ${_posSettings.showBarcode ? `
         <div style="text-align:center;padding:6px;">
             ${_posSettings.barcodeType === 'qr' ? 
-                `<img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(inv.invoiceNumber)}" style="width:${layout.qrSize};height:${layout.qrSize};border:2px solid #000;">` :
+                `<img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(window.location.origin + '/order-status.html?id=' + inv.invoiceNumber)}" style="width:${layout.qrSize};height:${layout.qrSize};border:2px solid #000;">` :
                 `<svg id="pos-receipt-barcode-${inv.invoiceNumber}" style="width:140px;height:45px;"></svg>`
             }
             <div style="font-weight:900;font-size:9px;color:#000;margin-top:3px;letter-spacing:1px;">${inv.invoiceNumber}</div>
+            <div style="font-size:8px;color:#555;margin-top:2px;">امسح لمتابعة طلبك</div>
         </div>
         ` : ''}
 
@@ -7267,38 +7273,85 @@ function renderInvoicesList(filter) {
         listEl.innerHTML = '<p style="color:#555;font-family:\'Cairo\',sans-serif;font-size:12px;text-align:center;padding:12px;">لا توجد فواتير</p>';
         return;
     }
-    listEl.innerHTML = filtered.map(inv => {
+
+    // Group by date (day/month/year)
+    const groups = {};
+    filtered.forEach(inv => {
         const d = inv.createdAt?.toDate ? inv.createdAt.toDate() : new Date();
-        const dateStr = d.toLocaleString('ar-EG');
-        const rem = inv.remainingAmount || 0;
-        const pt = inv.paymentType;
-        // Color coding
-        let rowBorder, statusColor, statusLabel;
-        if (rem > 0 && pt === 'deferred') {
-            rowBorder = '#f8717130'; statusColor = '#f87171';
-            statusLabel = '🔴 آجل — متبقي ' + rem.toFixed(2) + ' ج';
-        } else if (rem > 0 && pt === 'partial') {
-            rowBorder = '#fb923c30'; statusColor = '#fb923c';
-            statusLabel = '🟠 جزئي — متبقي ' + rem.toFixed(2) + ' ج';
-        } else {
-            rowBorder = '#4ade8030'; statusColor = '#4ade80';
-            statusLabel = '🟢 مكتمل';
-        }
-        return `
-        <div onclick="showInvoiceDetail('${inv.id}')" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;margin-bottom:4px;border:1px solid ${rowBorder};cursor:pointer;font-family:'Cairo',sans-serif;direction:rtl;border-radius:10px;transition:background 0.15s;" onmouseover="this.style.background='#1a1a1a'" onmouseout="this.style.background='transparent'">
-            <div>
-                <p style="color:#fff;font-size:12px;font-weight:700;margin:0;">${inv.invoiceNumber}</p>
-                <p style="color:#888;font-size:10px;margin:2px 0 0;">${inv.userName} ${inv.phone ? '· '+inv.phone : ''}</p>
-                <p style="color:#555;font-size:10px;margin:1px 0 0;">${dateStr}</p>
-                ${inv.deliveryAgentName ? `<p style="color:#818cf8;font-size:10px;margin:1px 0 0;">🚚 ${inv.deliveryAgentName}</p>` : ''}
+        const dayKey = d.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
+        const dayKeyEn = d.toISOString().slice(0, 10); // for sorting
+        if (!groups[dayKeyEn]) groups[dayKeyEn] = { label: dayKey, items: [] };
+        groups[dayKeyEn].items.push(inv);
+    });
+
+    // Sort groups newest first
+    const sortedKeys = Object.keys(groups).sort((a, b) => b.localeCompare(a));
+
+    let html = '';
+    sortedKeys.forEach(key => {
+        const group = groups[key];
+        const allPrepared = group.items.every(i => i.orderPrepared);
+        html += `
+        <div style="margin-bottom:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#1a1a1a;border-radius:10px;margin-bottom:6px;border:1px solid #2a2a2a;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="checkbox" class="date-group-check" data-date="${key}" onchange="toggleDateGroup('${key}', this.checked)"
+                        style="width:15px;height:15px;cursor:pointer;accent-color:#d4af37;">
+                    <span style="color:#d4af37;font-weight:700;font-size:13px;font-family:'Cairo',sans-serif;">📅 ${group.label}</span>
+                    <span style="color:#555;font-size:11px;font-family:'Cairo',sans-serif;">(${group.items.length} عميل)</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                    ${allPrepared ? '<span style="color:#4ade80;font-size:11px;font-family:\'Cairo\',sans-serif;">✅ كل الطلبات جُهزت</span>' : ''}
+                    <button onclick="bulkMarkDatePrepared('${key}')" style="padding:4px 10px;background:#7c3aed;color:#fff;border:none;border-radius:7px;font-family:\'Cairo\',sans-serif;font-size:10px;font-weight:700;cursor:pointer;">✅ تجهيز الكل</button>
+                </div>
             </div>
-            <div style="text-align:left;">
-                <p style="color:#d4af37;font-weight:700;font-size:13px;margin:0;">${(inv.totalPrice||0).toFixed(2)} ج</p>
-                <p style="color:${statusColor};font-size:10px;margin:2px 0 0;">${statusLabel}</p>
-                <p style="color:#555;font-size:10px;margin:1px 0 0;">${inv.paymentMethod}</p>
-            </div>
-        </div>`;
-    }).join('');
+            <div style="padding-right:12px;">
+        `;
+        group.items.forEach(inv => {
+            const d2 = inv.createdAt?.toDate ? inv.createdAt.toDate() : new Date();
+            const timeStr = d2.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+            const rem = inv.remainingAmount || 0;
+            const pt = inv.paymentType;
+            let rowBorder, statusColor, statusLabel;
+            if (rem > 0 && pt === 'deferred') {
+                rowBorder = '#f8717130'; statusColor = '#f87171'; statusLabel = '🔴 آجل';
+            } else if (rem > 0 && pt === 'partial') {
+                rowBorder = '#fb923c30'; statusColor = '#fb923c'; statusLabel = '🟠 جزئي';
+            } else {
+                rowBorder = '#4ade8030'; statusColor = '#4ade80'; statusLabel = '🟢 مكتمل';
+            }
+            const prepBg = inv.orderPrepared ? '#052e16' : '#1a1a1a';
+            const prepBorder = inv.orderPrepared ? '#4ade8060' : rowBorder;
+            const prepLabel = inv.orderPrepared ? '✅ تم التجهيز' : '⏳ قيد التجهيز';
+            const prepColor = inv.orderPrepared ? '#4ade80' : '#f59e0b';
+            html += `
+            <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;margin-bottom:4px;border:1px solid ${prepBorder};border-radius:10px;background:${prepBg};font-family:'Cairo',sans-serif;direction:rtl;transition:background 0.15s;">
+                <input type="checkbox" class="inv-select-check" data-id="${inv.id}"
+                    onchange="onInvoiceCheckChange()"
+                    style="width:15px;height:15px;cursor:pointer;accent-color:#d4af37;flex-shrink:0;">
+                <div onclick="showInvoiceDetail('${inv.id}')" style="flex:1;cursor:pointer;">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                        <div>
+                            <p style="color:#fff;font-size:12px;font-weight:700;margin:0;">${inv.userName || 'عميل'}</p>
+                            <p style="color:#666;font-size:10px;margin:2px 0 0;">${inv.invoiceNumber} · ${timeStr}</p>
+                            ${inv.phone ? `<p style="color:#555;font-size:10px;margin:1px 0 0;">📞 ${inv.phone}</p>` : ''}
+                        </div>
+                        <div style="text-align:left;">
+                            <p style="color:#d4af37;font-weight:700;font-size:13px;margin:0;">${(inv.totalPrice||0).toFixed(2)} ج</p>
+                            <p style="color:${statusColor};font-size:10px;margin:2px 0 0;">${statusLabel}</p>
+                            <p style="color:${prepColor};font-size:10px;margin:1px 0 0;font-weight:700;">${prepLabel}</p>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="event.stopPropagation();updateOrderPrepared('${inv.id}', ${!inv.orderPrepared})"
+                    style="flex-shrink:0;padding:5px 10px;background:${inv.orderPrepared ? '#166534' : '#374151'};color:#fff;border:none;border-radius:7px;font-size:10px;font-family:'Cairo',sans-serif;font-weight:700;cursor:pointer;min-width:70px;">
+                    ${inv.orderPrepared ? '✅ تم' : '⬜ جهّز'}
+                </button>
+            </div>`;
+        });
+        html += `</div></div>`;
+    });
+    listEl.innerHTML = html;
 }
 
 window.filterPosInvoices = function(type) {
@@ -7378,6 +7431,26 @@ window.showInvoiceDetail = function(invId) {
             }
         }, 100);
     }
+
+    // Add order preparation status section
+    const prepSection = document.createElement('div');
+    prepSection.style.cssText = 'margin-top:12px;padding:12px;border-radius:10px;border:1px solid #333;background:#0f172a;';
+    const isPrepared = inv.orderPrepared || false;
+    prepSection.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;font-family:'Cairo',sans-serif;">
+            <span style="color:#94a3b8;font-size:13px;">حالة تجهيز الطلب:</span>
+            <span style="color:${isPrepared ? '#4ade80' : '#f59e0b'};font-weight:700;font-size:13px;">${isPrepared ? '✅ تم التجهيز' : '⏳ قيد التجهيز'}</span>
+        </div>
+        ${isPrepared && inv.orderPreparedAt ? `<p style="color:#555;font-size:10px;font-family:'Cairo',sans-serif;margin:4px 0 0;">جُهّز في: ${inv.orderPreparedAt?.toDate ? inv.orderPreparedAt.toDate().toLocaleString('ar-EG') : ''}</p>` : ''}
+        <button onclick="updateOrderPrepared('${invId}', ${!isPrepared})" style="width:100%;margin-top:10px;padding:10px;background:${isPrepared ? '#7f1d1d' : '#166534'};color:#fff;border:none;border-radius:8px;font-family:'Cairo',sans-serif;font-weight:700;font-size:13px;cursor:pointer;">
+            ${isPrepared ? '↩️ إلغاء التجهيز' : '✅ تم التجهيز'}
+        </button>
+        <a href="${window.location.origin}/order-status.html?id=${inv.invoiceNumber}" target="_blank"
+           style="display:block;text-align:center;margin-top:8px;padding:8px;background:#1e3a5f;color:#93c5fd;border:none;border-radius:8px;font-family:'Cairo',sans-serif;font-weight:700;font-size:11px;text-decoration:none;">
+            🔗 صفحة العميل (معاينة)
+        </a>
+    `;
+    contentEl.appendChild(prepSection);
 
     // Show/hide payment confirm buttons
     const confirmBtn = document.getElementById('pos-confirm-payment-btn');
@@ -7492,6 +7565,102 @@ window.posScanInvoiceBarcode = async function() {
         scannerModal.style.display = 'none';
         zahraaToast('لا يمكن فتح الكاميرا: ' + e.message, 'error');
     }
+};
+
+// ===== ORDER PREPARATION STATUS FUNCTIONS =====
+
+window.updateOrderPrepared = async function(invId, prepared) {
+    try {
+        const { doc, updateDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+        const updateData = {
+            orderPrepared: prepared,
+            orderPreparedAt: prepared ? new Date() : null
+        };
+        await updateDoc(doc(db, 'pos_invoices', invId), updateData);
+        // Update local cache
+        const cached = _savedInvoicesCache.find(i => i.id === invId);
+        if (cached) {
+            cached.orderPrepared = prepared;
+            cached.orderPreparedAt = prepared ? { toDate: () => new Date() } : null;
+        }
+        zahraaToast(prepared ? '✅ تم تجهيز الطلب' : '↩️ تم إلغاء التجهيز', prepared ? 'success' : 'info');
+        renderInvoicesList();
+        // Refresh detail modal if still open
+        if (window._currentDetailInvId === invId) {
+            showInvoiceDetail(invId);
+        }
+    } catch(e) {
+        zahraaToast('خطأ: ' + e.message, 'error');
+    }
+};
+
+window.bulkMarkPrepared = async function() {
+    const checks = document.querySelectorAll('.inv-select-check:checked');
+    if (!checks.length) { zahraaToast('اختر فواتير أولاً', 'warning'); return; }
+    if (!confirm(`تأكيد تجهيز ${checks.length} طلب؟`)) return;
+    const ids = Array.from(checks).map(c => c.dataset.id);
+    try {
+        const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+        const now = new Date();
+        await Promise.all(ids.map(id => updateDoc(doc(db, 'pos_invoices', id), { orderPrepared: true, orderPreparedAt: now })));
+        ids.forEach(id => {
+            const cached = _savedInvoicesCache.find(i => i.id === id);
+            if (cached) { cached.orderPrepared = true; cached.orderPreparedAt = { toDate: () => now }; }
+        });
+        zahraaToast(`✅ تم تجهيز ${ids.length} طلب`, 'success');
+        renderInvoicesList();
+        document.getElementById('bulk-prepared-btn').style.display = 'none';
+    } catch(e) {
+        zahraaToast('خطأ: ' + e.message, 'error');
+    }
+};
+
+window.bulkMarkDatePrepared = async function(dateKey) {
+    const group = _savedInvoicesCache.filter(inv => {
+        const d = inv.createdAt?.toDate ? inv.createdAt.toDate() : new Date();
+        return d.toISOString().slice(0, 10) === dateKey;
+    });
+    const unprepared = group.filter(i => !i.orderPrepared);
+    if (!unprepared.length) { zahraaToast('كل طلبات هذا اليوم مجهّزة بالفعل', 'info'); return; }
+    if (!confirm(`تأكيد تجهيز ${unprepared.length} طلب ليوم ${dateKey}؟`)) return;
+    try {
+        const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+        const now = new Date();
+        await Promise.all(unprepared.map(inv => updateDoc(doc(db, 'pos_invoices', inv.id), { orderPrepared: true, orderPreparedAt: now })));
+        unprepared.forEach(inv => {
+            inv.orderPrepared = true;
+            inv.orderPreparedAt = { toDate: () => now };
+        });
+        zahraaToast(`✅ تم تجهيز ${unprepared.length} طلب`, 'success');
+        renderInvoicesList();
+    } catch(e) {
+        zahraaToast('خطأ: ' + e.message, 'error');
+    }
+};
+
+window.selectAllInvoices = function() {
+    const checks = document.querySelectorAll('.inv-select-check');
+    const allChecked = Array.from(checks).every(c => c.checked);
+    checks.forEach(c => { c.checked = !allChecked; });
+    onInvoiceCheckChange();
+};
+
+window.toggleDateGroup = function(dateKey, checked) {
+    const checks = document.querySelectorAll('.inv-select-check');
+    checks.forEach(c => {
+        const inv = _savedInvoicesCache.find(i => i.id === c.dataset.id);
+        if (inv) {
+            const d = inv.createdAt?.toDate ? inv.createdAt.toDate() : new Date();
+            if (d.toISOString().slice(0, 10) === dateKey) c.checked = checked;
+        }
+    });
+    onInvoiceCheckChange();
+};
+
+window.onInvoiceCheckChange = function() {
+    const anyChecked = document.querySelectorAll('.inv-select-check:checked').length > 0;
+    const btn = document.getElementById('bulk-prepared-btn');
+    if (btn) btn.style.display = anyChecked ? 'inline-block' : 'none';
 };
 
 window.openCustomerImagesFolder = function(customerId) {
