@@ -117,8 +117,15 @@
   <div class="page-content">
     <div class="page-header">
       <h1><i class="fas fa-hourglass-half"></i> الطلبات النشطة</h1>
-      <div style="display:flex;gap:8px">
-        <button class="cam-btn" onclick="openScanner()"><i class="fas fa-qrcode"></i> مسح باركود</button>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <!-- Barcode / Invoice search box — USB scanner types here or Enter manually -->
+        <div style="position:relative;display:flex;align-items:center">
+          <i class="fas fa-barcode" style="position:absolute;right:10px;color:var(--text3);font-size:14px;pointer-events:none"></i>
+          <input id="barcode-inp" type="text" placeholder="امسح الباركود أو اكتب رقم الفاتورة..." autocomplete="off"
+            onkeydown="onSearchKeydown(event)"
+            style="padding:7px 34px 7px 12px;background:var(--bg3);border:1.5px solid var(--gold);border-radius:var(--r);color:var(--text);font-family:Cairo,sans-serif;font-size:12px;font-weight:700;width:260px;outline:none">
+        </div>
+        <button class="cam-btn" onclick="openScanner()"><i class="fas fa-qrcode"></i> كاميرا</button>
         <button class="btn btn-ghost" onclick="loadOrders()"><i class="fas fa-sync-alt"></i> تحديث</button>
       </div>
     </div>
@@ -614,6 +621,63 @@ window.closeScanner = function(){
 document.getElementById('scanner-overlay').addEventListener('click',e=>{
   if(e.target===document.getElementById('scanner-overlay')) closeScanner();
 });
+
+/* ══ USB BARCODE KEYBOARD HANDLER ══
+   Captures fast typing (barcode scanner) + Enter and searches for the order */
+let _bBuf = '', _bTimer = null;
+document.addEventListener('keydown', e => {
+  const tag = document.activeElement.tagName;
+  /* If user is typing in a real input/textarea skip */
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+  /* Ignore modifier keys */
+  if (e.key.length > 1 && e.key !== 'Enter') return;
+  if (e.key === 'Enter') {
+    const val = _bBuf.trim();
+    _bBuf = ''; clearTimeout(_bTimer);
+    if (val.length >= 3) searchAndOpenOrder(val);
+    return;
+  }
+  _bBuf += e.key;
+  clearTimeout(_bTimer);
+  /* Reset buffer if no more keys within 300ms (end of scan) */
+  _bTimer = setTimeout(() => { _bBuf = ''; }, 300);
+});
+
+/* Also handle the search input in header */
+window.onSearchInput = function(v) {
+  if (!v) return;
+};
+window.onSearchKeydown = async function(e) {
+  if (e.key === 'Enter') {
+    const val = e.target.value.trim();
+    e.target.value = '';
+    if (val) await searchAndOpenOrder(val);
+  }
+};
+
+async function searchAndOpenOrder(rawVal) {
+  /* Extract id from URL if QR contains full URL */
+  let val = rawVal;
+  const urlMatch = rawVal.match(/[?&]id=([^&\s]+)/);
+  if (urlMatch) val = decodeURIComponent(urlMatch[1]);
+  val = val.trim();
+  /* Check in-memory list first */
+  const found = allOrders.find(o => o.invoiceNumber === val || o.id === val);
+  if (found) { openOrderModal(found); return; }
+  /* Fallback: Firestore */
+  toast('🔍 جاري البحث...', 'info');
+  try {
+    let docData = null;
+    const byId = await db.collection('pos_invoices').doc(val).get().catch(()=>null);
+    if (byId && byId.exists) docData = { id: byId.id, ...byId.data() };
+    if (!docData) {
+      const byNum = await db.collection('pos_invoices').where('invoiceNumber','==',val).limit(1).get();
+      if (!byNum.empty) docData = { id: byNum.docs[0].id, ...byNum.docs[0].data() };
+    }
+    if (docData) { openOrderModal(docData); }
+    else { toast('⚠️ لم يُعثر على طلب بهذا الكود', 'warn'); }
+  } catch(e) { toast('❌ خطأ: ' + e.message, 'err'); }
+}
 </script>
 </body>
 </html>

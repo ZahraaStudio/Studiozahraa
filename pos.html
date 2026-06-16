@@ -1329,7 +1329,12 @@ document.addEventListener('keydown', e => {
 // Lookup deferred invoice by barcode / invoice number
 let _defInvId = null, _defInvRem = 0, _defInvTot = 0;
 
-async function lookupDeferredInvoice(val) {
+async function lookupDeferredInvoice(rawVal) {
+  /* Extract id from URL if QR contains full URL e.g. /order-status.html?id=INV-001 */
+  let val = rawVal;
+  const urlMatch = rawVal.match(/[?&]id=([^&\s]+)/);
+  if (urlMatch) val = decodeURIComponent(urlMatch[1]);
+  val = val.trim();
   try {
     let inv = null;
     /* Try by invoiceNumber */
