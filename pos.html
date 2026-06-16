@@ -1176,7 +1176,7 @@ function printReceipt(inv) {
 
   const qrSrc = (t,sz) => `https://api.qrserver.com/v1/create-qr-code/?size=${sz}x${sz}&data=${encodeURIComponent(t)}&qzone=1&format=png`;
   const q1 = qrSrc(inv.invoiceNumber, 80);
-  const q2 = qrSrc(`${location.origin}/order-status.html?id=${encodeURIComponent(inv.invoiceNumber)}`, 80);
+  const q2 = qrSrc(`${location.origin/Studiozahraa}/order-status.html?id=${encodeURIComponent(inv.invoiceNumber)}`, 80);
 
   let logosHTML = '';
   if (showLg) {
@@ -1330,7 +1330,7 @@ document.addEventListener('keydown', e => {
 let _defInvId = null, _defInvRem = 0, _defInvTot = 0;
 
 async function lookupDeferredInvoice(rawVal) {
-  /* Extract id from URL if QR contains full URL e.g. /order-status.html?id=INV-001 */
+  /* Extract id from URL if QR contains full URL e.g. /Studiozahraa/order-status.html?id=INV-001 */
   let val = rawVal;
   const urlMatch = rawVal.match(/[?&]id=([^&\s]+)/);
   if (urlMatch) val = decodeURIComponent(urlMatch[1]);
