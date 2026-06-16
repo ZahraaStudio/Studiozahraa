@@ -701,15 +701,15 @@ let payType='cash', npTarget=null, npVal='';
 let todayRev=0, todayInv=0, todayCash=0, todayCard=0, todayDefer=0, todayProfit=0;
 let todayProdMap={};
 
-/* ─── AUTH ─── */
+/* ─── AUTH (optional — don't block POS on auth) ─── */
 auth.onAuthStateChanged(u => {
-  if (!u) { location.href='admin.html'; return; }
-  user = u;
-  document.getElementById('sb-user').textContent = '👤 ' + (u.displayName||u.email||'الكاشير');
-  initPOS();
+  if (u) {
+    user = u;
+    document.getElementById('sb-user').textContent = '👤 ' + (u.displayName||u.email||'الكاشير');
+  }
 });
 
-/* ─── INIT ─── */
+/* ─── INIT — runs immediately, no auth wait ─── */
 async function initPOS() {
   holds = JSON.parse(localStorage.getItem('z_holds')||'[]');
   updHoldBdg();
@@ -721,12 +721,14 @@ async function initPOS() {
     document.getElementById('clock').textContent =
       String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
   }, 1000);
-  setTimeout(()=>{
-    const sp=document.getElementById('splash');
-    sp.classList.add('out');
-    setTimeout(()=>sp.remove(),600);
-  },1500);
+  // Always dismiss splash after loading
+  const sp=document.getElementById('splash');
+  sp.classList.add('out');
+  setTimeout(()=>{ try{sp.remove();}catch(e){} },600);
 }
+
+// Start immediately
+initPOS();
 
 /* ─── SETTINGS ─── */
 async function loadStng() {
