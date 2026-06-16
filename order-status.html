@@ -289,22 +289,55 @@
         root.innerHTML = '<div class="loading">⏳ جاري تحميل بيانات الطلب...</div>';
 
         try {
-            const q = query(
-                collection(db, 'pos_invoices'),
-                where('invoiceNumber', '==', invoiceId),
-                limit(1)
-            );
-            const snap = await getDocs(q);
+            let inv = null;
 
-            if (snap.empty) {
+            /* 1) try by invoiceNumber field */
+            try {
+                const q = query(
+                    collection(db, 'pos_invoices'),
+                    where('invoiceNumber', '==', invoiceId),
+                    limit(1)
+                );
+                const snap = await getDocs(q);
+                if (!snap.empty) inv = { id: snap.docs[0].id, ...snap.docs[0].data() };
+            } catch(e1) {
+                /* if permission-denied here, re-throw to outer catch */
+                if (e1.code === 'permission-denied') throw e1;
+            }
+
+            /* 2) fallback: try by document ID */
+            if (!inv) {
+                try {
+                    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+                    const d = await getDoc(doc(db, 'pos_invoices', invoiceId));
+                    if (d.exists()) inv = { id: d.id, ...d.data() };
+                } catch(e2) {}
+            }
+
+            if (!inv) {
                 root.innerHTML = `<div class="error-box">❌ لم يتم العثور على طلب برقم <b>${invoiceId}</b>.<br><small>تحقق من الباركود وحاول مجدداً.</small></div>`;
                 return;
             }
 
-            const inv = { id: snap.docs[0].id, ...snap.docs[0].data() };
             renderOrder(inv);
         } catch(e) {
-            root.innerHTML = `<div class="error-box">❌ خطأ في الاتصال: ${e.message}</div>`;
+            const isPermission = e.code === 'permission-denied' || e.message?.includes('Missing or insufficient permissions');
+            if (isPermission) {
+                root.innerHTML = `
+                <div class="error-box">
+                    <div style="font-size:22px;margin-bottom:8px">🔒</div>
+                    <b>يحتاج إذن وصول</b><br>
+                    <small style="line-height:1.8">
+                        يجب تحديث Firestore Security Rules من Firebase Console:<br>
+                        <code style="background:#1a1a1a;padding:2px 8px;border-radius:4px;display:block;margin:8px 0;font-size:11px;text-align:left;direction:ltr">
+                        match /pos_invoices/{id} { allow read: if true; }
+                        </code>
+                        ثم أعد تحميل الصفحة
+                    </small>
+                </div>`;
+            } else {
+                root.innerHTML = `<div class="error-box">❌ خطأ في الاتصال: ${e.message}</div>`;
+            }
         }
     };
 

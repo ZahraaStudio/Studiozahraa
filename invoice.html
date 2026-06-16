@@ -5,18 +5,19 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=yes">
 <title>ZAHRAA STUDIO | فاتورة</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode-generator.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html{background:#d1d5db}
+html{background:#c8c8c8}
 body{
-  background:#d1d5db;min-height:100vh;
+  background:#c8c8c8;min-height:100vh;
   display:flex;flex-direction:column;align-items:center;
-  font-family:'Segoe UI','Cairo','Arial Black',sans-serif;
-  padding:16px 8px 30px;
+  font-family:'Cairo','Segoe UI',sans-serif;
+  padding:16px 8px 40px;
 }
 
-/* ── Action bar ── */
+/* Action bar */
 .actions{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;justify-content:center}
 .actions button{
   padding:9px 20px;border:none;border-radius:8px;font-size:13px;
@@ -28,104 +29,120 @@ body{
 .btn-w{background:#25D366;color:#fff}
 .btn-b{background:#64748b;color:#fff}
 
-/* ── Loading / Error ── */
-.loader{text-align:center;padding:50px 20px;color:#64748b;font-family:'Cairo',sans-serif;font-size:15px}
+/* Loading / Error */
+.loader{text-align:center;padding:50px 20px;color:#555;font-family:'Cairo',sans-serif;font-size:15px}
 .err{background:#fff;border:2px solid #dc2626;border-radius:12px;
   padding:20px;text-align:center;color:#dc2626;font-family:'Cairo',sans-serif;
   max-width:360px;margin:20px auto;font-size:14px}
 
-/* ═══════════════════════════════════
-   RECEIPT — 80mm
-═══════════════════════════════════ */
+/* ═══════════════════════════════
+   RECEIPT — 80mm thermal
+═══════════════════════════════ */
 .receipt{
   width:80mm;max-width:80mm;background:#fff;color:#000;
-  margin:0 auto;padding:4px 5px 6px;
-  box-shadow:0 6px 24px rgba(0,0,0,.18);
+  margin:0 auto;padding:5px 6px 8px;
+  box-shadow:0 8px 30px rgba(0,0,0,.25);
   font-family:'Cairo','Segoe UI',sans-serif;
 }
-.receipt *{font-weight:900;color:#000;letter-spacing:-.3px}
+.receipt *{color:#000}
 
 /* separators */
-.sep{display:block;width:100%;height:3px;background:#000;margin:5px 0}
+.sep {display:block;width:100%;height:3px;background:#000;margin:5px 0}
 .sep1{display:block;width:100%;height:1px;background:#000;margin:3px 0}
-.sep-dash{display:block;width:100%;text-align:center;font-size:9px;letter-spacing:3px;margin:3px 0;color:#000}
+.sep-dot{display:block;text-align:center;font-size:9px;letter-spacing:3px;margin:2px 0}
 
-/* header */
-.hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
-.hdr-cam{font-size:26px}
-.hdr-logo{font-size:13px;background:#000;color:#fff;padding:3px 9px;font-weight:900;letter-spacing:1px}
-.hdr-logo *{color:#fff}
-.s-name{text-align:center;font-size:21px;line-height:1.2;margin:2px 0}
-.s-phones{text-align:center;font-size:12px;direction:ltr;margin-bottom:2px;letter-spacing:.5px}
-
-/* info grid — two columns */
-.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 6px;margin:5px 0}
-.info-grid.three{grid-template-columns:1fr 1fr 1fr}
-.info-cell{display:flex;flex-direction:column;gap:1px}
-.info-cell .lbl{font-size:9px;color:#555;font-weight:900}
-.info-cell .val{
-  font-size:10px;background:#f7f7f7;border:1.5px solid #000;
-  padding:2px 5px;word-break:break-all;font-weight:900;
+/* ── Header logo area ── */
+.logo-row{display:flex;justify-content:flex-end;margin-bottom:4px}
+.logo-box{
+  background:#1a1a1a;color:#fff;
+  padding:4px 10px;text-align:center;
+  font-weight:900;line-height:1.1;
 }
-.info-cell .val.hl{background:#000;color:#fff}
-.info-cell .val.hl *{color:#fff}
+.logo-z{font-size:18px;font-weight:900;color:#fff;display:block}
+.logo-text{font-size:8px;letter-spacing:2px;color:#ccc;display:block}
 
-/* products table */
+/* ── Store name & phone ── */
+.s-name{text-align:center;font-size:20px;font-weight:900;line-height:1.2;margin:2px 0}
+.s-phone{text-align:center;font-size:13px;font-weight:900;direction:ltr;margin-bottom:2px;letter-spacing:.5px}
+
+/* ── Invoice header line ── */
+.inv-line{
+  text-align:center;font-size:10.5px;font-weight:900;
+  margin:4px 0;letter-spacing:.2px;
+}
+
+/* ── Customer info rows ── */
+.cust-row{font-size:11px;font-weight:900;margin:2px 0;display:flex;gap:4px}
+.cust-row .cl{color:#333;white-space:nowrap}
+.cust-row .cv{font-weight:700;flex:1}
+
+/* ── Products table ── */
 .pt{width:100%;border-collapse:collapse;margin:5px 0;font-size:10px}
-.pt th,.pt td{border:1.5px solid #000;padding:3px 2px;text-align:center;font-weight:900}
-.pt th{background:#000;color:#fff;font-size:9px}
-.pt th *,.pt th{color:#fff}
-.pt td:first-child,.pt th:first-child{text-align:right;max-width:26mm;word-break:break-word}
+.pt th,.pt td{border:1.5px solid #000;padding:3px 3px;text-align:center;font-weight:900}
+.pt th{background:#000;color:#fff;font-size:9.5px;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+.pt td:first-child,.pt th:first-child{text-align:right;max-width:28mm;word-break:break-word;padding-right:4px}
 
 /* subtotals */
-.st-row{display:flex;justify-content:space-between;font-size:10px;padding:1px 0}
+.st-row{display:flex;justify-content:space-between;font-size:10px;padding:1px 2px;font-weight:900}
 
-/* total box */
-.tot{
-  background:#000;color:#fff;margin:5px 0;padding:7px 10px;
+/* ── Total box (black) ── */
+.tot-box{
+  background:#000;color:#fff;margin:5px 0 3px;padding:8px 12px;
   display:flex;justify-content:space-between;align-items:center;
   border:2.5px solid #000;
+  print-color-adjust:exact;-webkit-print-color-adjust:exact;
 }
-.tot *{color:#fff}
-.tot-lbl{font-size:14px}
-.tot-amt{font-size:22px;direction:ltr}
+.tot-box *{color:#fff}
+.tot-lbl{font-size:15px;font-weight:900}
+.tot-amt{font-size:23px;font-weight:900;direction:ltr}
 
-/* payment badges */
-.pay-row{display:flex;gap:4px;margin:3px 0}
-.pay-badge{flex:1;border:1.5px solid #000;text-align:center;font-size:9px;padding:2px 3px}
-.pay-badge.done{background:#000;color:#fff}
-.pay-badge.done *{color:#fff}
+/* ── Remaining box (gold) ── */
+.rem-box{
+  background:#d4af37;color:#000;margin:3px 0 5px;padding:6px 12px;
+  display:flex;justify-content:space-between;align-items:center;
+  border:2px solid #a88520;
+  print-color-adjust:exact;-webkit-print-color-adjust:exact;
+}
+.rem-lbl{font-size:13px;font-weight:900}
+.rem-amt{font-size:18px;font-weight:900;direction:ltr}
 
-/* QR codes — side by side */
-.qr-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0}
+/* ── Paid badge ── */
+.paid-badge{
+  border:1.5px solid #000;text-align:center;padding:3px;
+  font-size:10px;font-weight:900;margin:3px 0;background:#f0f0f0;
+}
+
+/* ── QR grid ── */
+.qr-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:5px 0}
 .qr-cell{border:1.5px solid #000;padding:4px 3px;text-align:center}
-.qr-cell canvas{display:block;margin:0 auto;border:1px solid #ccc}
-.qr-cell .ql{
-  font-size:9px;background:#000;color:#fff;
-  display:block;text-align:center;padding:2px 0;margin-top:3px;font-weight:900;
+.qr-cell canvas{display:block;margin:0 auto}
+.qr-lbl{
+  font-size:9px;background:#000;color:#fff;display:block;
+  text-align:center;padding:2px 0;margin-top:3px;font-weight:900;
+  print-color-adjust:exact;-webkit-print-color-adjust:exact;
 }
-.qr-cell .ql *{color:#fff}
 
-/* notice */
+/* ── Notice ── */
 .notice{
   border:1.5px solid #000;text-align:center;
-  padding:4px;margin:4px 0;font-size:9px;line-height:1.5;
+  padding:5px 4px;margin:4px 0;font-size:9px;line-height:1.6;font-weight:700;
 }
 
-/* footer */
-.ftr{border-top:2px solid #000;border-bottom:2px solid #000;padding:4px 0;margin:4px 0 2px}
-.ftr-row{display:flex;align-items:center;gap:5px;font-size:10px;margin-bottom:3px}
+/* ── Footer ── */
+.ftr{border-top:2px solid #000;padding:4px 0;margin:4px 0 2px}
+.ftr-row{display:flex;align-items:center;gap:5px;font-size:10px;margin-bottom:2px;font-weight:900}
 .ftr-row:last-child{margin-bottom:0}
-.ftr-icon{width:20px;text-align:center;font-size:13px}
-.ftr-badge{background:#000;color:#fff;padding:1px 5px;font-size:9px;display:inline-block;margin-left:3px}
-.ftr-badge *{color:#fff}
+.ftr-icon{width:18px;text-align:center;font-size:12px}
 
-/* print */
+/* ── Notes ── */
+.notes-box{background:#f9f9f9;border:1px solid #ccc;padding:3px 6px;font-size:9px;margin:3px 0;font-weight:700}
+
+/* PRINT */
 @media print{
   html,body{background:#fff;padding:0;margin:0}
   .actions{display:none!important}
-  .receipt{width:80mm;box-shadow:none;padding:2px}
-  .hdr-logo,.tot,.pt th,.pay-badge.done,.qr-cell .ql,.ftr-badge{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  .receipt{width:80mm;box-shadow:none;padding:2px 4px}
+  @page{size:80mm auto;margin:0}
 }
 </style>
 </head>
@@ -152,131 +169,113 @@ firebase.initializeApp({
 },'inv-app');
 const db = firebase.firestore();
 
-const params = new URLSearchParams(location.search);
+const params  = new URLSearchParams(location.search);
 const orderId = params.get('id');
 const invNum  = params.get('inv');
-const isPOS   = params.get('pos')==='1';
+const isPOS   = params.get('pos') === '1';
 
-/* ── helpers ── */
-function pad(n){return String(n).padStart(2,'0')}
-function fmtDate(d){return`${pad(d.getDate())}-${pad(d.getMonth()+1)}-${d.getFullYear()}`}
-function fmtTime(d){return`${pad(d.getHours())}:${pad(d.getMinutes())}`}
+/* helpers */
+function pad(n){ return String(n).padStart(2,'0'); }
+function fmtDateAr(d){
+  return d.toLocaleDateString('ar-EG',{year:'numeric',month:'numeric',day:'numeric'});
+}
+function fmtTime(d){ return `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
 
-/* ── Draw QR on a canvas element by ID ── */
-function drawQR(canvasId, text, sz) {
+/* Draw QR on canvas */
+function drawQR(canvasId, text, sz){
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
-  // Try error correction L → M → H
-  for (const lvl of ['L','M','Q']) {
-    try {
+  for (const lvl of ['L','M','Q']){
+    try{
       const qr = qrcode(0, lvl);
-      qr.addData(encodeURIComponent(text).length > 200 ? text.slice(0, 180) : text);
+      qr.addData(text.length > 200 ? text.slice(0,180) : text);
       qr.make();
-      const mc = qr.getModuleCount();
-      const cs = sz / mc;
+      const mc = qr.getModuleCount(), cs = sz/mc;
       canvas.width = sz; canvas.height = sz;
       const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,sz,sz);
-      ctx.fillStyle = '#000';
-      for (let r=0;r<mc;r++) for (let c=0;c<mc;c++)
-        if (qr.isDark(r,c)) ctx.fillRect(c*cs, r*cs, cs, cs);
-      return; // success
-    } catch(e) { /* try next level */ }
+      ctx.fillStyle='#fff'; ctx.fillRect(0,0,sz,sz);
+      ctx.fillStyle='#000';
+      for(let r=0;r<mc;r++) for(let c=0;c<mc;c++)
+        if(qr.isDark(r,c)) ctx.fillRect(c*cs,r*cs,cs,cs);
+      return;
+    } catch(e){}
   }
-  // ultimate fallback — show text
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle='#fff'; ctx.fillRect(0,0,sz,sz);
-  ctx.fillStyle='#000'; ctx.font=`7px monospace`;
-  ctx.fillText('QR', 2, 14);
 }
 
-/* ── Render receipt ── */
-function renderReceipt(inv, store) {
-  const root = document.getElementById('root');
-
+/* Render receipt */
+function renderReceipt(inv, store){
+  const root  = document.getElementById('root');
   const items = inv.items || inv.products || [];
-  const raw = inv.createdAt;
+  const raw   = inv.createdAt;
   const createdAt = raw && raw.toDate ? raw.toDate() : (raw ? new Date(raw) : new Date());
-  const dateStr = fmtDate(createdAt);
-  const timeStr = fmtTime(createdAt);
 
-  const sub  = typeof inv.subtotal === 'number'      ? inv.subtotal      : items.reduce((s,i)=>s+(i.price||0)*(i.qty||i.quantity||1),0);
-  const disc = typeof inv.discountAmount === 'number' ? inv.discountAmount : 0;
-  const del  = typeof inv.deliveryFee === 'number'    ? inv.deliveryFee   : 0;
-  const tot  = typeof inv.totalPrice === 'number'     ? inv.totalPrice    : (sub-disc+del);
-  const paid = typeof inv.paidAmount === 'number'     ? inv.paidAmount    : tot;
+  const sub  = typeof inv.subtotal       === 'number' ? inv.subtotal       : items.reduce((s,i)=>s+(parseFloat(i.price)||0)*(i.qty||i.quantity||1),0);
+  const disc = typeof inv.discountAmount  === 'number' ? inv.discountAmount  : 0;
+  const del  = typeof inv.deliveryFee    === 'number' ? inv.deliveryFee    : 0;
+  const tot  = typeof inv.totalPrice     === 'number' ? inv.totalPrice     : (sub - disc + del);
+  const paid = typeof inv.paidAmount     === 'number' ? inv.paidAmount     : tot;
   const rem  = Math.max(0, tot - paid);
 
-  const cust   = inv.userName || inv.customerName || inv.name || 'عميل';
-  const phone  = inv.phone || inv.customerPhone || '';
+  const cust   = inv.userName   || inv.customerName || inv.name || 'عميل';
+  const phone  = inv.phone      || inv.customerPhone || '';
   const invNo  = inv.invoiceNumber || inv.id || '—';
   const payLbl = inv.paymentMethod || inv.paymentType || 'نقدي';
   const notes  = inv.notes || '';
   const dlvDate= inv.deliveryDate || inv.dueDate || '';
 
-  const sName  = store.storeName  || store.name     || 'استوديو الزهراء';
-  const sPhone = store.storePhone || store.phone1   || '';
-  const sPhone2= store.storePhone2|| store.phone2   || '';
-  const sAddr  = store.storeAddress||store.address  || '';
-  const sInsta = store.instagram  || store.storeInstagram || '';
-  const sEmail = store.email      || store.storeEmail     || '';
+  const sName  = store.storeName   || store.name            || 'استوديو الزهراء';
+  const sPhone = store.storePhone  || store.phone1          || '';
+  const sPhone2= store.storePhone2 || store.phone2          || '';
+  const sAddr  = store.storeAddress|| store.address         || '';
+  const sInsta = store.instagram   || store.storeInstagram  || '';
+  const sEmail = store.email       || store.storeEmail      || '';
 
-  // WhatsApp
-  if (phone) {
-    const btn = document.getElementById('wa-btn');
-    btn.style.display = 'flex';
+  if(phone){
+    document.getElementById('wa-btn').style.display = 'flex';
     window._wa = { phone, invNo, cust, tot };
   }
 
-  // Build receipt HTML
+  const origin   = location.origin;
+  const trackURL = `${origin}/order-status.html?id=${encodeURIComponent(invNo)}`;
+
   root.innerHTML = `
   <div class="receipt" id="rcp">
 
-    <!-- HEADER -->
-    <div class="hdr">
-      <span class="hdr-cam"><i class="fas fa-camera-retro"></i></span>
-      <span class="hdr-logo">ZAHRAA STUDIO</span>
+    <!-- LOGO -->
+    <div class="logo-row">
+      <div class="logo-box">
+        <span class="logo-z">Z</span>
+        <span class="logo-text">ZAHRAA STUDIO</span>
+      </div>
     </div>
+
+    <!-- STORE NAME & PHONE -->
     <div class="s-name">${sName}</div>
-    ${sPhone ? `<div class="s-phones">${sPhone}${sPhone2?' &nbsp;|&nbsp; '+sPhone2:''}</div>` : ''}
+    ${sPhone ? `<div class="s-phone">${sPhone}${sPhone2 ? ' | ' + sPhone2 : ''}</div>` : ''}
     <span class="sep"></span>
 
-    <!-- INFO GRID -->
-    <div class="info-grid">
-      <div class="info-cell">
-        <span class="lbl">العميل</span>
-        <span class="val">${cust}</span>
-      </div>
-      <div class="info-cell">
-        <span class="lbl">رقم الفاتورة</span>
-        <span class="val">${invNo}</span>
-      </div>
-      <div class="info-cell">
-        <span class="lbl">التاريخ</span>
-        <span class="val">${dateStr}</span>
-      </div>
-      <div class="info-cell">
-        <span class="lbl">الوقت</span>
-        <span class="val">${timeStr}</span>
-      </div>
-      <div class="info-cell">
-        <span class="lbl">طريقة الدفع</span>
-        <span class="val">${payLbl}</span>
-      </div>
-      ${dlvDate ? `<div class="info-cell"><span class="lbl">موعد الاستلام</span><span class="val hl">${dlvDate}</span></div>` : ''}
-      ${phone ? `<div class="info-cell"><span class="lbl">الهاتف</span><span class="val">${phone}</span></div>` : ''}
-    </div>
-    <span class="sep"></span>
+    <!-- INVOICE LINE: # + date + time -->
+    <div class="inv-line"># ${invNo} &nbsp; ${fmtDateAr(createdAt)} &nbsp; ${fmtTime(createdAt)}</div>
+    <span class="sep1"></span>
+
+    <!-- CUSTOMER INFO -->
+    <div class="cust-row"><span class="cl">الاسم:</span><span class="cv">${cust}</span></div>
+    ${phone ? `<div class="cust-row"><span class="cl">الهاتف:</span><span class="cv" style="direction:ltr">${phone}</span></div>` : ''}
+    <div class="cust-row"><span class="cl">طريقة الدفع:</span><span class="cv">${payLbl}</span></div>
+    ${dlvDate ? `<div class="cust-row"><span class="cl">📅 موعد الاستلام:</span><span class="cv" style="color:#000;font-weight:900">${dlvDate}</span></div>` : ''}
+    <span class="sep1"></span>
 
     <!-- PRODUCTS TABLE -->
     <table class="pt">
-      <thead><tr><th>المنتج</th><th>كم</th><th>سعر</th><th>إجمالي</th></tr></thead>
+      <thead>
+        <tr><th>المنتج</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr>
+      </thead>
       <tbody>
         ${items.map(i=>{
-          const q=i.qty||i.quantity||1;
-          const p=parseFloat(i.price)||0;
+          const q = i.qty || i.quantity || 1;
+          const p = parseFloat(i.price) || 0;
           return `<tr>
-            <td>${i.name||i.productName||'—'}</td>
+            <td>${i.name || i.productName || '—'}</td>
             <td>${q}</td>
             <td>${p.toFixed(2)}</td>
             <td>${(p*q).toFixed(2)}</td>
@@ -285,120 +284,126 @@ function renderReceipt(inv, store) {
       </tbody>
     </table>
 
-    <!-- SUBTOTALS -->
-    ${disc>0||del>0 ? `
-    <div style="padding:2px 0;border-top:1px solid #ccc">
-      <div class="st-row"><span>المجموع الفرعي:</span><span>${sub.toFixed(2)} ج</span></div>
-      ${disc>0?`<div class="st-row"><span>خصم:</span><span style="color:#000">- ${disc.toFixed(2)} ج</span></div>`:''}
-      ${del>0?`<div class="st-row"><span>توصيل:</span><span>+ ${del.toFixed(2)} ج</span></div>`:''}
-    </div>
-    ` : ''}
+    <!-- SUBTOTALS if needed -->
+    ${disc > 0 || del > 0 ? `
+    <div style="padding:2px 2px;border-top:1px solid #ccc">
+      <div class="st-row"><span>المجموع:</span><span>${sub.toFixed(2)} ج</span></div>
+      ${disc > 0 ? `<div class="st-row"><span>خصم:</span><span>- ${disc.toFixed(2)} ج</span></div>` : ''}
+      ${del  > 0 ? `<div class="st-row"><span>توصيل:</span><span>+ ${del.toFixed(2)} ج</span></div>` : ''}
+    </div>` : ''}
 
-    <!-- TOTAL BOX -->
-    <div class="tot">
+    <!-- TOTAL BOX (black) -->
+    <div class="tot-box">
       <span class="tot-lbl">الإجمالي</span>
       <span class="tot-amt">${tot.toFixed(2)} ج</span>
     </div>
 
-    <!-- PAYMENT STATUS -->
-    <div class="pay-row">
-      <div class="pay-badge ${rem<=0?'done':''}">${rem<=0?'✅ تم السداد':'💰 '+payLbl}</div>
-      ${paid<tot?`<div class="pay-badge">مدفوع: ${paid.toFixed(2)} ج</div>`:''}
-      ${rem>0?`<div class="pay-badge done">متبقي: ${rem.toFixed(2)} ج</div>`:''}
-    </div>
+    <!-- REMAINING BOX (gold) — only if there's remaining -->
+    ${rem > 0 ? `
+    <div class="rem-box">
+      <span class="rem-lbl">المتبقي</span>
+      <span class="rem-amt">${rem.toFixed(2)} ج</span>
+    </div>` : `
+    <div class="paid-badge">✅ تم السداد بالكامل</div>`}
 
-    ${notes ? `<div class="notice">📝 ${notes}</div>` : ''}
+    ${notes ? `<div class="notes-box">📝 ${notes}</div>` : ''}
     <span class="sep1"></span>
 
-    <!-- QR CODES — SIDE BY SIDE -->
+    <!-- QR CODES — side by side -->
     <div class="qr-grid">
       <div class="qr-cell">
-        <canvas id="qr1" width="70" height="70"></canvas>
-        <span class="ql">رقم الفاتورة</span>
+        <canvas id="qr1" width="75" height="75"></canvas>
+        <span class="qr-lbl">رقم الفاتورة</span>
       </div>
       <div class="qr-cell">
-        <canvas id="qr2" width="70" height="70"></canvas>
-        <span class="ql">تتبع الطلب</span>
+        <canvas id="qr2" width="75" height="75"></canvas>
+        <span class="qr-lbl">تتبع طلبك</span>
       </div>
     </div>
 
     <!-- NOTICE -->
     <div class="notice">
-      عميلنا العزيز: يرجى الاحتفاظ بالفاتورة لأي استفسار.<br>نسعد بخدمتكم دائماً 🌸
+      عميلنا العزيز 💛 نرجو استلام الطلب خلال <b>15 يوماً</b> من تاريخ التجهيز،<br>
+      حيث لا يتحمل الاستوديو مسؤولية الطلبات غير المستلمة بعد هذه المدة،<br>
+      وقد تتعرض للتلف أو الفقدان. شكراً لثقتكم 💛
     </div>
 
     <!-- FOOTER -->
-    ${sAddr||sPhone||sInsta ? `
+    ${sAddr || sPhone || sInsta ? `
     <div class="ftr">
-      ${sAddr?`<div class="ftr-row"><span class="ftr-icon"><i class="fas fa-map-marker-alt"></i></span><span>${sAddr}</span></div>`:''}
-      ${sPhone?`<div class="ftr-row"><span class="ftr-icon"><i class="fas fa-phone-alt"></i></span><span><span class="ftr-badge">${sPhone}</span>${sPhone2?`<span class="ftr-badge">${sPhone2}</span>`:''}</span></div>`:''}
-      ${sInsta?`<div class="ftr-row"><span class="ftr-icon"><i class="fab fa-instagram"></i></span><span>${sInsta}${sEmail?' | '+sEmail:''}</span></div>`:''}
-    </div>
-    ` : ''}
-    <span class="sep" style="margin-top:3px"></span>
+      ${sAddr  ? `<div class="ftr-row"><span class="ftr-icon">📍</span><span>${sAddr}</span></div>` : ''}
+      ${sPhone ? `<div class="ftr-row"><span class="ftr-icon"><i class="fas fa-phone-alt"></i></span><span>${sPhone}${sPhone2 ? ' | ' + sPhone2 : ''}</span></div>` : ''}
+      ${sInsta ? `<div class="ftr-row"><span class="ftr-icon"><i class="fab fa-instagram"></i></span><span>${sInsta}${sEmail ? ' | ' + sEmail : ''}</span></div>` : ''}
+    </div>` : ''}
 
+    <span class="sep" style="margin-top:4px"></span>
   </div>`;
 
-  // Draw QR codes after DOM is painted
+  /* Draw QR after DOM paint */
   setTimeout(() => {
-    const origin = location.origin;
-    const trackURL = `${origin}/order-status.html?id=${invNo}`;
-    drawQR('qr1', invNo, 70);              // short text → reliable
-    drawQR('qr2', trackURL, 70);           // tracking URL
+    drawQR('qr1', invNo, 75);
+    drawQR('qr2', trackURL, 75);
   }, 80);
 }
 
-/* ── WhatsApp share ── */
+/* WhatsApp share */
 window.shareWA = function(){
   const { phone, invNo, cust, tot } = window._wa || {};
-  const msg = `فاتورة رقم ${invNo}\nالعميل: ${cust}\nالإجمالي: ${tot?.toFixed(2)} ج\nتتبع: ${location.origin}/order-status.html?id=${invNo}`;
+  const msg = `فاتورة رقم ${invNo}\nالعميل: ${cust}\nالإجمالي: ${(tot||0).toFixed(2)} ج\nتتبع طلبك: ${location.origin}/order-status.html?id=${encodeURIComponent(invNo)}`;
   const num = (phone||'').replace(/\D/g,'');
-  const e = num.startsWith('0') ? '2'+num : num;
+  const e = num.startsWith('0') ? '2' + num : num;
   window.open(`https://wa.me/${e}?text=${encodeURIComponent(msg)}`);
 };
 
-/* ── Load invoice ── */
-async function loadInvoice() {
+/* Load invoice */
+async function loadInvoice(){
   const root = document.getElementById('root');
   try {
     let inv = null;
 
-    if (isPOS || invNum) {
-      const val = invNum || orderId;
+    if (isPOS || invNum){
+      const val  = invNum || orderId;
       const snap = await db.collection('pos_invoices').where('invoiceNumber','==',val).limit(1).get();
       if (!snap.empty) inv = { id: snap.docs[0].id, ...snap.docs[0].data() };
     }
 
-    if (!inv && orderId) {
-      // Try pos_invoices by doc ID
-      try {
+    if (!inv && orderId){
+      /* try by doc ID */
+      try{
         const d = await db.collection('pos_invoices').doc(orderId).get();
         if (d.exists) inv = { id: d.id, ...d.data() };
-      } catch(e) {}
-      // Try online orders
-      if (!inv) {
-        try {
+      } catch(e){}
+      /* try by invoiceNumber */
+      if (!inv){
+        try{
+          const snap = await db.collection('pos_invoices').where('invoiceNumber','==',orderId).limit(1).get();
+          if (!snap.empty) inv = { id: snap.docs[0].id, ...snap.docs[0].data() };
+        } catch(e){}
+      }
+      /* try online orders */
+      if (!inv){
+        try{
           const d = await db.collection('orders').doc(orderId).get();
           if (d.exists) inv = { id: d.id, ...d.data() };
-        } catch(e) {}
+        } catch(e){}
       }
     }
 
-    if (!inv) {
-      root.innerHTML = `<div class="err">❌ الفاتورة غير موجودة<br><small>${orderId||invNum||'—'}</small></div>`;
+    if (!inv){
+      root.innerHTML = `<div class="err">❌ الفاتورة غير موجودة<br><small>${orderId || invNum || '—'}</small></div>`;
       return;
     }
 
-    // Load store settings
+    /* Load store settings */
     let store = {};
-    try {
+    try{
       const sd = await db.collection('settings').doc('general').get();
       if (sd.exists) store = sd.data();
-    } catch(e) {}
+    } catch(e){}
 
     renderReceipt(inv, store);
-  } catch(e) {
-    root.innerHTML = `<div class="err">❌ خطأ: ${e.message}</div>`;
+  } catch(e){
+    root.innerHTML = `<div class="err">❌ خطأ: ${e.message}<br><small>تأكد من إعدادات Firestore Security Rules للسماح بالقراءة</small></div>`;
   }
 }
 

@@ -8,30 +8,92 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
 <script src="shared.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
-.filter-bar{display:flex;gap:10px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
+/* Filters */
+.top-bar{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
 .filter-btn{padding:6px 16px;border-radius:20px;border:1.5px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;transition:all .17s}
 .filter-btn.on{background:var(--gold);border-color:var(--gold);color:#000}
-.order-grid{display:flex;flex-direction:column;gap:10px}
-.ocard{background:var(--card);border:1.5px solid var(--border);border-radius:var(--r2);padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;transition:all .2s}
+
+/* Bulk action bar */
+.bulk-bar{display:none;align-items:center;gap:10px;background:rgba(212,175,55,.12);border:1px solid var(--gold);border-radius:var(--r2);padding:10px 14px;margin-bottom:12px;flex-wrap:wrap}
+.bulk-bar.show{display:flex}
+.bulk-count{font-size:13px;font-weight:700;color:var(--gold)}
+
+/* Scanner modal */
+.scanner-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.scanner-overlay.open{display:flex}
+.scanner-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:20px;width:100%;max-width:420px}
+.scanner-box h3{font-size:15px;font-weight:900;color:var(--gold);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+#qr-reader{width:100%;border-radius:10px;overflow:hidden}
+.scanner-result{margin-top:12px;padding:10px;background:var(--bg3);border-radius:8px;font-size:12px;min-height:36px}
+
+/* Date group header */
+.date-group-hdr{
+  display:flex;align-items:center;gap:10px;
+  font-size:12px;font-weight:900;color:var(--text2);
+  padding:8px 0 6px;margin-top:10px;
+  border-bottom:1px solid var(--border);
+  position:sticky;top:0;background:var(--bg);z-index:10;
+}
+.date-group-hdr .dg-sel{display:flex;align-items:center;gap:6px;cursor:pointer}
+.date-group-hdr .dg-badge{
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:12px;padding:2px 10px;font-size:11px;
+}
+
+/* Order card */
+.ocard{
+  background:var(--card);border:1.5px solid var(--border);
+  border-radius:var(--r2);padding:12px 14px;margin-bottom:8px;
+  display:flex;align-items:flex-start;gap:10px;transition:border-color .2s;
+}
 .ocard:hover{border-color:var(--border2)}
 .ocard.prepared{border-color:var(--green);background:rgba(34,197,94,.06)}
 .ocard.deferred{border-color:var(--red)}
-.ocard-left{flex:1;min-width:200px}
-.ocard-num{font-size:14px;font-weight:900;color:var(--gold);font-family:monospace}
+.ocard.selected{border-color:var(--gold);background:rgba(212,175,55,.07)}
+.oc-check{flex-shrink:0;margin-top:2px}
+.oc-check input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--gold)}
+.oc-body{flex:1;min-width:0}
+.ocard-num{font-size:13px;font-weight:900;color:var(--gold);font-family:monospace}
 .ocard-name{font-size:13px;font-weight:700;margin-top:2px}
-.ocard-meta{font-size:11px;color:var(--text3);margin-top:3px;display:flex;gap:10px;flex-wrap:wrap}
-.ocard-right{text-align:center;min-width:80px}
-.ocard-total{font-size:16px;font-weight:900}
-.ocard-rem{font-size:11px;margin-top:2px}
-.ocard-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.prepare-btn{background:linear-gradient(135deg,#166534,#22c55e);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-family:'Cairo',sans-serif;font-weight:900;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap;transition:all .2s}
+.ocard-meta{font-size:11px;color:var(--text3);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap}
+.ocard-notes{font-size:11px;color:var(--text3);margin-top:3px}
+.oc-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+.ocard-total{font-size:15px;font-weight:900;text-align:left}
+.ocard-rem{font-size:11px;text-align:left}
+.ocard-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+
+/* Buttons */
+.prepare-btn{
+  background:linear-gradient(135deg,#166534,#22c55e);color:#fff;
+  border:none;border-radius:8px;padding:7px 14px;
+  font-family:'Cairo',sans-serif;font-weight:900;font-size:11px;
+  cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .2s;
+}
 .prepare-btn:hover{opacity:.85}
 .prepare-btn:disabled{opacity:.5;cursor:default}
-.prepared-badge{background:rgba(34,197,94,.12);color:var(--green);border:1px solid var(--green);border-radius:8px;padding:7px 14px;font-size:12px;font-weight:900;display:flex;align-items:center;gap:5px;white-space:nowrap}
-.small-btn{background:var(--bg3);color:var(--text2);border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-family:'Cairo',sans-serif;font-weight:700;font-size:11px;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:4px}
+.unprepare-btn{
+  background:rgba(239,68,68,.12);color:var(--red);
+  border:1px solid var(--red);border-radius:8px;padding:7px 12px;
+  font-family:'Cairo',sans-serif;font-weight:700;font-size:11px;
+  cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .2s;
+}
+.unprepare-btn:hover{background:rgba(239,68,68,.2)}
+.small-btn{
+  background:var(--bg3);color:var(--text2);border:1.5px solid var(--border);
+  border-radius:8px;padding:6px 10px;font-family:'Cairo',sans-serif;
+  font-weight:700;font-size:11px;cursor:pointer;transition:all .2s;
+  text-decoration:none;display:inline-flex;align-items:center;gap:4px;
+}
 .small-btn:hover{border-color:var(--gold);color:var(--gold)}
-.count-badge{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--red);color:#fff;font-size:10px;font-weight:900;margin-right:4px}
+.cam-btn{
+  background:var(--blue);color:#fff;border:none;border-radius:8px;
+  padding:8px 14px;font-family:'Cairo',sans-serif;font-weight:700;
+  font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;
+  transition:all .2s;margin-right:auto;
+}
+.cam-btn:hover{opacity:.85}
 </style>
 </head>
 <body>
@@ -40,108 +102,192 @@
   <div class="page-content">
     <div class="page-header">
       <h1><i class="fas fa-hourglass-half"></i> الطلبات النشطة</h1>
-      <button class="btn btn-ghost" onclick="loadOrders()"><i class="fas fa-sync-alt"></i> تحديث</button>
+      <div style="display:flex;gap:8px">
+        <button class="cam-btn" onclick="openScanner()"><i class="fas fa-qrcode"></i> مسح باركود</button>
+        <button class="btn btn-ghost" onclick="loadOrders()"><i class="fas fa-sync-alt"></i> تحديث</button>
+      </div>
     </div>
     <div class="page-body">
-      <div class="filter-bar" id="filter-bar">
+
+      <!-- Filter bar -->
+      <div class="top-bar">
         <button class="filter-btn on" onclick="setFilter('all',this)">الكل</button>
         <button class="filter-btn" onclick="setFilter('pending',this)"><i class="fas fa-hourglass"></i> قيد التجهيز</button>
         <button class="filter-btn" onclick="setFilter('prepared',this)"><i class="fas fa-check"></i> جاهزة</button>
-        <button class="filter-btn" onclick="setFilter('deferred',this)"><i class="fas fa-credit-card"></i> آجل / جزئي</button>
-        <input class="search-input" id="q" placeholder="🔍 بحث بالاسم أو رقم الفاتورة..." oninput="filterOrders()" style="margin-right:auto;max-width:260px">
+        <button class="filter-btn" onclick="setFilter('deferred',this)"><i class="fas fa-credit-card"></i> آجل/جزئي</button>
+        <input class="search-input" id="q" placeholder="🔍 اسم أو رقم فاتورة أو هاتف..." oninput="filterOrders()" style="max-width:260px;margin-right:auto">
       </div>
-      <div id="stats-row" style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap"></div>
+
+      <!-- Bulk action bar -->
+      <div class="bulk-bar" id="bulk-bar">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
+          <input type="checkbox" id="select-all-chk" onchange="toggleSelectAll(this.checked)" style="width:16px;height:16px;accent-color:var(--gold)">
+          <span>تحديد الكل</span>
+        </label>
+        <span class="bulk-count" id="bulk-count">0 محدد</span>
+        <button class="prepare-btn" onclick="bulkPrepare()"><i class="fas fa-check-double"></i> تجهيز المحدد</button>
+        <button class="unprepare-btn" onclick="bulkUnprepare()"><i class="fas fa-times-circle"></i> إلغاء تجهيز المحدد</button>
+        <button class="small-btn" onclick="clearSelection()"><i class="fas fa-times"></i> إلغاء التحديد</button>
+      </div>
+
+      <!-- Stats -->
+      <div id="stats-row" style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap"></div>
+
+      <!-- Orders -->
       <div id="orders-list"><div class="spinner"></div></div>
     </div>
   </div>
 </div>
 
+<!-- Camera scanner modal -->
+<div class="scanner-overlay" id="scanner-overlay">
+  <div class="scanner-box">
+    <h3>
+      <span><i class="fas fa-qrcode"></i> مسح باركود الفاتورة</span>
+      <button onclick="closeScanner()" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:18px">✕</button>
+    </h3>
+    <div id="qr-reader"></div>
+    <div class="scanner-result" id="scanner-result">
+      <span style="color:var(--text3)">وجّه الكاميرا نحو باركود الفاتورة...</span>
+    </div>
+    <button class="small-btn" style="width:100%;justify-content:center;margin-top:10px" onclick="closeScanner()">
+      <i class="fas fa-times"></i> إغلاق
+    </button>
+  </div>
+</div>
+
 <script>
 injectSharedCSS();
-let allOrders = [], activeFilter = 'all';
+
+let allOrders = [], activeFilter = 'all', selectedIds = new Set();
+let qrScanner = null;
 
 requireAuth(async () => { await loadOrders(); });
 
-async function loadOrders() {
+/* ─── Load ─────────────────────────────── */
+async function loadOrders(){
   document.getElementById('orders-list').innerHTML = '<div class="spinner"></div>';
   try {
-    const snap = await db.collection('pos_invoices')
-      .orderBy('createdAt', 'desc')
-      .limit(200)
-      .get();
+    const snap = await db.collection('pos_invoices').orderBy('createdAt','desc').limit(300).get();
     allOrders = [];
     snap.forEach(d => allOrders.push({ id: d.id, ...d.data() }));
+    selectedIds.clear();
     renderStats();
     filterOrders();
-  } catch(e) {
+  } catch(e){
     document.getElementById('orders-list').innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>${e.message}</p></div>`;
   }
 }
 
-function renderStats() {
-  const pending = allOrders.filter(o => !o.orderPrepared).length;
-  const prepared = allOrders.filter(o => o.orderPrepared).length;
-  const deferred = allOrders.filter(o => (o.remainingAmount||0) > 0).length;
+/* ─── Stats ─────────────────────────────── */
+function renderStats(){
+  const pending  = allOrders.filter(o=>!o.orderPrepared).length;
+  const prepared = allOrders.filter(o=>o.orderPrepared).length;
+  const deferred = allOrders.filter(o=>(o.remainingAmount||0)>0).length;
   const totalRem = allOrders.reduce((s,o)=>s+(o.remainingAmount||0),0);
   document.getElementById('stats-row').innerHTML = `
-    <div class="card" style="flex:1;min-width:120px">
+    <div class="card" style="flex:1;min-width:110px">
       <div class="card-title">قيد التجهيز</div>
-      <div class="card-value" style="color:var(--orange);font-size:28px">${pending}</div>
+      <div class="card-value" style="color:var(--orange);font-size:26px">${pending}</div>
     </div>
-    <div class="card" style="flex:1;min-width:120px">
+    <div class="card" style="flex:1;min-width:110px">
       <div class="card-title">جاهزة</div>
-      <div class="card-value" style="color:var(--green);font-size:28px">${prepared}</div>
+      <div class="card-value" style="color:var(--green);font-size:26px">${prepared}</div>
     </div>
-    <div class="card" style="flex:1;min-width:120px">
-      <div class="card-title">آجل / جزئي</div>
-      <div class="card-value" style="color:var(--red);font-size:28px">${deferred}</div>
+    <div class="card" style="flex:1;min-width:110px">
+      <div class="card-title">آجل/جزئي</div>
+      <div class="card-value" style="color:var(--red);font-size:26px">${deferred}</div>
     </div>
-    <div class="card" style="flex:1;min-width:120px">
+    <div class="card" style="flex:1;min-width:110px">
       <div class="card-title">إجمالي المستحق</div>
-      <div class="card-value" style="font-size:20px">${fmt(totalRem)}</div>
+      <div class="card-value" style="font-size:18px">${fmt(totalRem)}</div>
     </div>`;
 }
 
-function setFilter(f, btn) {
+/* ─── Filter ─────────────────────────────── */
+function setFilter(f, btn){
   activeFilter = f;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('on'));
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
   filterOrders();
 }
 
-function filterOrders() {
-  const q = (document.getElementById('q').value || '').toLowerCase();
+function filterOrders(){
+  const q = (document.getElementById('q').value||'').toLowerCase();
   let list = allOrders;
-
-  if (activeFilter === 'pending') list = list.filter(o => !o.orderPrepared);
-  else if (activeFilter === 'prepared') list = list.filter(o => o.orderPrepared);
-  else if (activeFilter === 'deferred') list = list.filter(o => (o.remainingAmount||0) > 0);
-
-  if (q) list = list.filter(o =>
-    (o.userName||'').toLowerCase().includes(q) ||
-    (o.invoiceNumber||'').toLowerCase().includes(q) ||
+  if (activeFilter==='pending')  list = list.filter(o=>!o.orderPrepared);
+  else if (activeFilter==='prepared') list = list.filter(o=>o.orderPrepared);
+  else if (activeFilter==='deferred') list = list.filter(o=>(o.remainingAmount||0)>0);
+  if (q) list = list.filter(o=>
+    (o.userName||'').toLowerCase().includes(q)||
+    (o.invoiceNumber||'').toLowerCase().includes(q)||
     (o.phone||'').includes(q)
   );
-
-  renderList(list);
+  renderGrouped(list);
+  updateBulkBar();
 }
 
-function renderList(list) {
+/* ─── Grouped render (by date) ─────────────── */
+function getDateLabel(ts){
+  if (!ts) return 'بدون تاريخ';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const yest  = new Date(today); yest.setDate(yest.getDate()-1);
+  const day   = new Date(d); day.setHours(0,0,0,0);
+  if (day.getTime()===today.getTime()) return '📅 اليوم';
+  if (day.getTime()===yest.getTime())  return '📅 أمس';
+  return '📅 ' + d.toLocaleDateString('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+}
+
+function renderGrouped(list){
   const el = document.getElementById('orders-list');
-  if (!list.length) {
+  if (!list.length){
     el.innerHTML = `<div class="empty-state"><i class="fas fa-inbox"></i><p>لا توجد طلبات</p></div>`;
     return;
   }
-  el.innerHTML = `<div class="order-grid">${list.map(o => orderCard(o)).join('')}</div>`;
+
+  /* Group by date */
+  const groups = {};
+  list.forEach(o=>{
+    const label = getDateLabel(o.createdAt);
+    if (!groups[label]) groups[label] = [];
+    groups[label].push(o);
+  });
+
+  let html = '';
+  for (const [dateLabel, orders] of Object.entries(groups)){
+    const groupIds = orders.map(o=>o.id);
+    html += `
+      <div class="date-group-hdr">
+        <label class="dg-sel">
+          <input type="checkbox" class="grp-chk" data-ids='${JSON.stringify(groupIds)}' onchange="toggleGroup(this)" style="width:15px;height:15px;accent-color:var(--gold)">
+        </label>
+        <span>${dateLabel}</span>
+        <span class="dg-badge">${orders.length} طلب</span>
+      </div>
+      ${orders.map(o=>orderCard(o)).join('')}
+    `;
+  }
+  el.innerHTML = html;
 }
 
-function orderCard(o) {
-  const rem = o.remainingAmount||0;
+/* ─── Single order card ─────────────────────── */
+function orderCard(o){
+  const rem        = o.remainingAmount||0;
   const isPrepared = o.orderPrepared||false;
-  const dt = o.createdAt ? fmtDate(o.createdAt) : '—';
-  const cls = isPrepared ? ' prepared' : rem > 0 ? ' deferred' : '';
+  const isSelected = selectedIds.has(o.id);
+  const dt         = o.createdAt ? fmtDate(o.createdAt) : '—';
+  let cls = '';
+  if (isSelected) cls = ' selected';
+  else if (isPrepared) cls = ' prepared';
+  else if (rem>0) cls = ' deferred';
+
   return `<div class="ocard${cls}" id="oc-${o.id}">
-    <div class="ocard-left">
+    <div class="oc-check">
+      <input type="checkbox" class="order-chk" data-id="${o.id}"
+        ${isSelected?'checked':''} onchange="toggleSelect('${o.id}',this.checked)">
+    </div>
+    <div class="oc-body">
       <div class="ocard-num"># ${o.invoiceNumber||o.id.slice(0,8)}</div>
       <div class="ocard-name">${o.userName||'—'}</div>
       <div class="ocard-meta">
@@ -150,57 +296,223 @@ function orderCard(o) {
         <span><i class="fas fa-shopping-bag"></i> ${o.items?.length||0} صنف</span>
         <span><i class="fas fa-wallet"></i> ${o.paymentMethod||'نقدي'}</span>
       </div>
-      ${o.notes?`<div style="font-size:11px;color:var(--text3);margin-top:4px">📝 ${o.notes}</div>`:''}
+      ${o.notes?`<div class="ocard-notes">📝 ${o.notes}</div>`:''}
+      <div class="ocard-actions">
+        <a href="invoice.html?id=${o.id}" target="_blank" class="small-btn"><i class="fas fa-receipt"></i> فاتورة</a>
+        ${o.phone?`<button class="small-btn" onclick="openByPhone('${encodeURIComponent(o.phone)}')"><i class="fas fa-user"></i></button>`:''}
+        ${isPrepared
+          ? `<button class="unprepare-btn" id="pb-${o.id}" onclick="markUnprepared('${o.id}')"><i class="fas fa-times-circle"></i> إلغاء التجهيز</button>`
+          : `<button class="prepare-btn"  id="pb-${o.id}" onclick="markPrepared('${o.id}')"><i class="fas fa-check-double"></i> تم التجهيز ✓</button>`
+        }
+      </div>
     </div>
-    <div class="ocard-right">
+    <div class="oc-right">
       <div class="ocard-total" style="color:${rem>0?'var(--red)':'var(--green)'}">${fmt(o.totalPrice||0)}</div>
       ${rem>0
         ? `<div class="ocard-rem" style="color:var(--red)">متبقي: ${fmt(rem)}</div>`
         : `<div class="ocard-rem" style="color:var(--green)">✅ مسدد</div>`
       }
-    </div>
-    <div class="ocard-actions">
-      <a href="invoice.html?id=${o.id}" target="_blank" class="small-btn"><i class="fas fa-receipt"></i> فاتورة</a>
-      ${o.phone ? `<a href="customer-profile.html?id=__phone__${encodeURIComponent(o.phone)}" onclick="openByPhone('${encodeURIComponent(o.phone)}');return false" class="small-btn"><i class="fas fa-user"></i></a>` : ''}
-      ${isPrepared
-        ? `<div class="prepared-badge"><i class="fas fa-check-circle"></i> جاهز للاستلام</div>`
-        : `<button class="prepare-btn" id="pb-${o.id}" onclick="markPrepared('${o.id}')"><i class="fas fa-check-double"></i> تم التجهيز ✓</button>`
-      }
+      ${isPrepared?`<span style="font-size:10px;color:var(--green);font-weight:700">✅ جاهز</span>`:''}
     </div>
   </div>`;
 }
 
-window.openByPhone = async (phone) => {
-  const dec = decodeURIComponent(phone);
-  try {
-    const snap = await db.collection('pos_customers').where('phone','==',dec).limit(1).get();
-    if (!snap.empty) {
-      location.href = `customer-profile.html?id=${snap.docs[0].id}`;
-    } else {
-      toast('لم يتم العثور على ملف العميل', 'warn');
-    }
-  } catch(e) { toast('خطأ: '+e.message,'err'); }
-};
+/* ─── Selection ─────────────────────────────── */
+function toggleSelect(id, checked){
+  checked ? selectedIds.add(id) : selectedIds.delete(id);
+  const card = document.getElementById(`oc-${id}`);
+  if (card) card.classList.toggle('selected', checked);
+  updateBulkBar();
+}
 
-window.markPrepared = async (orderId) => {
+function toggleGroup(chk){
+  const ids = JSON.parse(chk.dataset.ids||'[]');
+  ids.forEach(id=>{
+    chk.checked ? selectedIds.add(id) : selectedIds.delete(id);
+    const card = document.getElementById(`oc-${id}`);
+    if (card) card.classList.toggle('selected', chk.checked);
+    const cb = card?.querySelector('.order-chk');
+    if (cb) cb.checked = chk.checked;
+  });
+  updateBulkBar();
+}
+
+document.getElementById('select-all-chk') && (document.getElementById('select-all-chk').onchange = (e)=>toggleSelectAll(e.target.checked));
+
+function toggleSelectAll(checked){
+  allOrders.forEach(o=>{
+    checked ? selectedIds.add(o.id) : selectedIds.delete(o.id);
+    const card = document.getElementById(`oc-${o.id}`);
+    if (card) card.classList.toggle('selected', checked);
+    const cb = card?.querySelector('.order-chk');
+    if (cb) cb.checked = checked;
+  });
+  updateBulkBar();
+}
+
+function clearSelection(){
+  selectedIds.clear();
+  document.querySelectorAll('.order-chk').forEach(cb=>cb.checked=false);
+  document.querySelectorAll('.ocard').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('select-all-chk') && (document.getElementById('select-all-chk').checked=false);
+  updateBulkBar();
+}
+
+function updateBulkBar(){
+  const bar = document.getElementById('bulk-bar');
+  const cnt = document.getElementById('bulk-count');
+  bar.classList.toggle('show', selectedIds.size > 0);
+  cnt.textContent = `${selectedIds.size} محدد`;
+}
+
+/* ─── Mark prepared / unprepared ─────────────── */
+async function markPrepared(orderId){
   const btn = document.getElementById(`pb-${orderId}`);
-  if (btn) { btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> جاري...'; }
+  if (btn){ btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i>'; }
   try {
     await db.collection('pos_invoices').doc(orderId).update({
       orderPrepared: true,
       orderPreparedAt: firebase.firestore.FieldValue.serverTimestamp(),
       status: 'جاهز للاستلام',
     });
-    toast('✅ الطلب جاهز للاستلام!', 'ok');
+    toast('✅ الطلب جاهز للاستلام!','ok');
     const idx = allOrders.findIndex(o=>o.id===orderId);
-    if (idx>=0) allOrders[idx].orderPrepared = true;
-    renderStats();
-    filterOrders();
-  } catch(e) {
+    if (idx>=0) allOrders[idx].orderPrepared=true;
+    renderStats(); filterOrders();
+  } catch(e){
     toast('خطأ: '+e.message,'err');
-    if (btn) { btn.disabled=false; btn.innerHTML='<i class="fas fa-check-double"></i> تم التجهيز ✓'; }
+    if (btn){ btn.disabled=false; btn.innerHTML='<i class="fas fa-check-double"></i> تم التجهيز ✓'; }
+  }
+}
+
+async function markUnprepared(orderId){
+  const btn = document.getElementById(`pb-${orderId}`);
+  if (btn){ btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i>'; }
+  try {
+    await db.collection('pos_invoices').doc(orderId).update({
+      orderPrepared: false,
+      orderPreparedAt: firebase.firestore.FieldValue.delete(),
+      status: 'قيد التجهيز',
+    });
+    toast('↩️ تم إلغاء التجهيز','ok');
+    const idx = allOrders.findIndex(o=>o.id===orderId);
+    if (idx>=0) allOrders[idx].orderPrepared=false;
+    renderStats(); filterOrders();
+  } catch(e){
+    toast('خطأ: '+e.message,'err');
+    if (btn){ btn.disabled=false; btn.innerHTML='<i class="fas fa-times-circle"></i> إلغاء التجهيز'; }
+  }
+}
+
+/* ─── Bulk actions ─────────────────────────── */
+async function bulkPrepare(){
+  if (!selectedIds.size){ toast('لم تحدد أي طلبات','warn'); return; }
+  const ids = [...selectedIds];
+  let done = 0;
+  for (const id of ids){
+    try{
+      await db.collection('pos_invoices').doc(id).update({
+        orderPrepared: true,
+        orderPreparedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        status: 'جاهز للاستلام',
+      });
+      const idx = allOrders.findIndex(o=>o.id===id);
+      if (idx>=0) allOrders[idx].orderPrepared=true;
+      done++;
+    } catch(e){}
+  }
+  toast(`✅ تم تجهيز ${done} طلب`,'ok');
+  clearSelection(); renderStats(); filterOrders();
+}
+
+async function bulkUnprepare(){
+  if (!selectedIds.size){ toast('لم تحدد أي طلبات','warn'); return; }
+  const ids = [...selectedIds];
+  let done = 0;
+  for (const id of ids){
+    try{
+      await db.collection('pos_invoices').doc(id).update({
+        orderPrepared: false,
+        status: 'قيد التجهيز',
+      });
+      const idx = allOrders.findIndex(o=>o.id===id);
+      if (idx>=0) allOrders[idx].orderPrepared=false;
+      done++;
+    } catch(e){}
+  }
+  toast(`↩️ تم إلغاء تجهيز ${done} طلب`,'ok');
+  clearSelection(); renderStats(); filterOrders();
+}
+
+/* ─── Customer profile by phone ─────────────── */
+window.openByPhone = async (phone) => {
+  const dec = decodeURIComponent(phone);
+  try {
+    const snap = await db.collection('pos_customers').where('phone','==',dec).limit(1).get();
+    if (!snap.empty) location.href = `customer-profile.html?id=${snap.docs[0].id}`;
+    else toast('لم يتم العثور على ملف العميل','warn');
+  } catch(e){ toast('خطأ: '+e.message,'err'); }
+};
+
+/* ─── QR/Barcode Scanner ─────────────────── */
+window.openScanner = function(){
+  document.getElementById('scanner-overlay').classList.add('open');
+  document.getElementById('scanner-result').innerHTML = '<span style="color:var(--text3)">وجّه الكاميرا نحو باركود الفاتورة...</span>';
+  if (typeof Html5Qrcode === 'undefined'){
+    document.getElementById('scanner-result').innerHTML = '<span style="color:var(--red)">مكتبة الماسح غير محملة. تحقق من الاتصال بالإنترنت.</span>';
+    return;
+  }
+  try {
+    qrScanner = new Html5Qrcode('qr-reader');
+    qrScanner.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 240, height: 240 } },
+      (text) => {
+        /* Extract invoice ID from URL or use raw text */
+        let id = text.trim();
+        const m = text.match(/[?&]id=([^&\s]+)/);
+        if (m) id = decodeURIComponent(m[1]);
+        document.getElementById('scanner-result').innerHTML =
+          `<span style="color:var(--green)">✅ تم المسح: <b>${id}</b></span>
+           <br><a href="invoice.html?id=${encodeURIComponent(id)}" target="_blank"
+              style="color:var(--gold);font-weight:700">فتح الفاتورة ←</a>`;
+        /* Search in list */
+        const found = allOrders.find(o=>
+          o.invoiceNumber===id || o.id===id
+        );
+        if (found){
+          closeScanner();
+          /* Highlight or scroll to order */
+          setTimeout(()=>{
+            document.getElementById(`oc-${found.id}`)?.scrollIntoView({behavior:'smooth',block:'center'});
+            document.getElementById(`oc-${found.id}`)?.classList.add('selected');
+          }, 300);
+        }
+        qrScanner.stop().catch(()=>{});
+      },
+      () => {}
+    ).catch(e=>{
+      document.getElementById('scanner-result').innerHTML =
+        `<span style="color:var(--red)">❌ ${e}</span>`;
+    });
+  } catch(e){
+    document.getElementById('scanner-result').innerHTML =
+      `<span style="color:var(--red)">❌ ${e.message}</span>`;
   }
 };
+
+window.closeScanner = function(){
+  document.getElementById('scanner-overlay').classList.remove('open');
+  if (qrScanner){
+    qrScanner.stop().catch(()=>{});
+    qrScanner = null;
+    document.getElementById('qr-reader').innerHTML = '';
+  }
+};
+
+document.getElementById('scanner-overlay').addEventListener('click', e=>{
+  if (e.target===document.getElementById('scanner-overlay')) closeScanner();
+});
 </script>
 </body>
 </html>
