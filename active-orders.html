@@ -204,8 +204,8 @@ async function loadOrders(){
 function renderStats(){
   const pending  = allOrders.filter(o=>!o.orderPrepared).length;
   const prepared = allOrders.filter(o=>o.orderPrepared).length;
-  const deferred = allOrders.filter(o=>(o.remainingAmount||0)>0).length;
-  const totalRem = allOrders.reduce((s,o)=>s+(o.remainingAmount||0),0);
+  const deferred = allOrders.filter(o=>(parseFloat(o.remainingAmount)||0)>0).length;
+  const totalRem = allOrders.reduce((s,o)=>s+(parseFloat(o.remainingAmount)||0),0);
   document.getElementById('stats-row').innerHTML = `
     <div class="card" style="flex:1;min-width:100px"><div class="card-title">قيد التجهيز</div><div class="card-value" style="color:var(--orange);font-size:26px">${pending}</div></div>
     <div class="card" style="flex:1;min-width:100px"><div class="card-title">جاهزة</div><div class="card-value" style="color:var(--green);font-size:26px">${prepared}</div></div>
@@ -225,7 +225,7 @@ function filterOrders(){
   let list = allOrders;
   if (activeFilter==='pending')  list = list.filter(o=>!o.orderPrepared);
   else if (activeFilter==='prepared') list = list.filter(o=>o.orderPrepared);
-  else if (activeFilter==='deferred') list = list.filter(o=>(o.remainingAmount||0)>0);
+  else if (activeFilter==='deferred') list = list.filter(o=>(parseFloat(o.remainingAmount)||0)>0);
   if (q) list = list.filter(o=>
     (o.userName||'').toLowerCase().includes(q)||
     (o.invoiceNumber||'').toLowerCase().includes(q)||
@@ -267,7 +267,7 @@ function renderGrouped(list){
 
 /* ── Order card ── */
 function orderCard(o){
-  const rem = o.remainingAmount||0;
+  const rem = parseFloat(o.remainingAmount)||0;
   const isPrepared = o.orderPrepared||false;
   const isSelected = selectedIds.has(o.id);
   const dt = o.createdAt ? fmtDate(o.createdAt) : '—';
@@ -311,12 +311,12 @@ window.onCardClick = function(e, orderId){
 ══════════════════════════════════════════ */
 function openOrderModal(o){
   const items = o.items || [];
-  const rem   = o.remainingAmount||0;
-  const sub   = typeof o.subtotal==='number' ? o.subtotal : items.reduce((s,i)=>s+(parseFloat(i.price)||0)*(i.qty||i.quantity||1),0);
-  const disc  = o.discountAmount||0;
-  const del   = o.deliveryFee||0;
-  const tot   = typeof o.totalPrice==='number' ? o.totalPrice : sub;
-  const paid  = typeof o.paidAmount==='number' ? o.paidAmount : tot;
+  const rem   = parseFloat(o.remainingAmount)||0;
+  const sub   = parseFloat(o.subtotal) || items.reduce((s,i)=>s+(parseFloat(i.price)||0)*(i.qty||i.quantity||1),0);
+  const disc  = parseFloat(o.discountAmount)||0;
+  const del   = parseFloat(o.deliveryFee)||0;
+  const tot   = parseFloat(o.totalPrice) || sub;
+  const paid  = parseFloat(o.paidAmount) || (rem>0 ? tot-rem : tot);
   const isPrepared = o.orderPrepared||false;
   const raw   = o.createdAt;
   const dt    = raw && raw.toDate ? raw.toDate() : (raw ? new Date(raw) : new Date());
