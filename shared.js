@@ -51,6 +51,7 @@ const NAV = [
   { href:'products.html',  icon:'fa-box',         label:'المنتجات' },
   { href:'inventory.html', icon:'fa-warehouse',   label:'المخزون' },
   { href:'customers.html', icon:'fa-users',       label:'العملاء' },
+  { href:'active-orders.html', icon:'fa-hourglass-half', label:'الطلبات النشطة' },
   { href:'suppliers.html', icon:'fa-truck',       label:'الموردون' },
   { href:'purchases.html', icon:'fa-cart-arrow-down', label:'المشتريات' },
   { href:'expenses.html',  icon:'fa-money-bill-wave', label:'المصروفات' },

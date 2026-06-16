@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>صفحة العميل — كاشير الزهراء</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode-generator.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+<style>
+.cust-header{display:flex;align-items:center;gap:20px;background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:20px;margin-bottom:20px;flex-wrap:wrap}
+.cust-avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold3));display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0;border:3px solid var(--gold)}
+.cust-info h2{font-size:20px;font-weight:900;color:var(--gold);margin-bottom:4px}
+.cust-info .sub{font-size:12px;color:var(--text3);margin-top:3px;display:flex;align-items:center;gap:5px}
+.stats-strip{display:flex;gap:16px;margin-right:auto;flex-wrap:wrap}
+.stat-pill{text-align:center;padding:8px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:10px}
+.stat-pill .sv{font-size:18px;font-weight:900;color:var(--gold)}
+.stat-pill .sl{font-size:10px;color:var(--text3);margin-top:2px}
+
+.qr-sidebar{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:20px;text-align:center;position:sticky;top:0}
+.qr-sidebar canvas{border:3px solid var(--gold);border-radius:10px;display:block;margin:0 auto}
+
+.section-head{font-size:13px;font-weight:900;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:8px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+
+.order-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--r2);padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;transition:border-color .2s}
+.order-card.prepared{border-color:var(--green);background:rgba(34,197,94,.06)}
+.order-card.deferred{border-color:var(--red)}
+.order-num{font-size:13px;font-weight:900;color:var(--gold);font-family:monospace}
+.order-meta{font-size:11px;color:var(--text3);margin-top:3px}
+.order-total{font-size:15px;font-weight:900}
+
+.prepare-btn{background:linear-gradient(135deg,#166534,#22c55e);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-family:'Cairo',sans-serif;font-weight:900;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;white-space:nowrap}
+.prepare-btn:hover{opacity:.85;transform:translateY(-1px)}
+.prepare-btn:disabled{opacity:.5;cursor:default;transform:none}
+.prepared-badge{background:rgba(34,197,94,.12);color:var(--green);border:1px solid var(--green);border-radius:8px;padding:7px 14px;font-size:12px;font-weight:900;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.view-btn{background:var(--bg3);color:var(--text2);border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;font-family:'Cairo',sans-serif;font-weight:700;font-size:11px;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:5px}
+.view-btn:hover{border-color:var(--gold);color:var(--gold)}
+
+.hist-table{width:100%;border-collapse:collapse;font-size:12px}
+.hist-table th{background:var(--bg3);color:var(--text3);padding:8px 10px;text-align:right;font-weight:700;font-size:11px}
+.hist-table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+.hist-table tr:last-child td{border-bottom:none}
+
+@media print{
+  body>*:not(#print-area){display:none!important}
+  #print-area{display:block!important;position:fixed;top:0;left:0}
+}
+#print-area{display:none}
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <div id="sidebar"></div>
+  <div class="page-content">
+    <div class="page-header">
+      <h1><i class="fas fa-user-circle"></i> <span id="pg-title">صفحة العميل</span></h1>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="printCard()"><i class="fas fa-print"></i> طباعة بطاقة العميل</button>
+        <button class="btn btn-ghost" onclick="history.back()"><i class="fas fa-arrow-right"></i> رجوع</button>
+      </div>
+    </div>
+    <div class="page-body" id="main-body"><div class="spinner"></div></div>
+  </div>
+</div>
+
+<div id="print-area">
+  <div id="print-card"></div>
+</div>
+
+<script>
+injectSharedCSS();
+const params = new URLSearchParams(location.search);
+const custId = params.get('id');
+let customer = null, orders = [];
+
+requireAuth(async () => {
+  if (!custId) { showErr('لم يتم تحديد عميل'); return; }
+  await loadCustomer();
+});
+
+function showErr(msg) {
+  document.getElementById('main-body').innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>${msg}</p></div>`;
+}
+
+async function loadCustomer() {
+  try {
+    const doc = await db.collection('pos_customers').doc(custId).get();
+    if (!doc.exists) { showErr('العميل غير موجود'); return; }
+    customer = { id: doc.id, ...doc.data() };
+    document.getElementById('pg-title').textContent = customer.name;
+    await loadOrders();
+    render();
+  } catch(e) { showErr(e.message); }
+}
+
+async function loadOrders() {
+  orders = [];
+  if (!customer.phone) return;
+  try {
+    const snap = await db.collection('pos_invoices')
+      .where('phone', '==', customer.phone)
+      .orderBy('createdAt', 'desc')
+      .limit(50)
+      .get();
+    snap.forEach(d => orders.push({ id: d.id, ...d.data() }));
+  } catch(e) {}
+}
+
+function render() {
+  const origin = location.origin;
+  const trackBase = `${origin}/order-status.html`;
+  const custTrack = `${trackBase}?phone=${encodeURIComponent(customer.phone||customer.id)}`;
+
+  const active = orders.filter(o => !o.orderPrepared);
+  const done   = orders.filter(o => o.orderPrepared);
+  const totalSpent = orders.reduce((s,o)=>s+(o.totalPrice||0),0);
+  const totalRem   = orders.reduce((s,o)=>s+(o.remainingAmount||0),0);
+
+  document.getElementById('main-body').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 220px;gap:20px;align-items:start">
+      <div>
+        <!-- Customer header -->
+        <div class="cust-header">
+          <div class="cust-avatar">📷</div>
+          <div class="cust-info">
+            <h2>${customer.name}</h2>
+            ${customer.phone?`<div class="sub"><i class="fas fa-phone-alt"></i> ${customer.phone}</div>`:''}
+            ${customer.email?`<div class="sub"><i class="fas fa-envelope"></i> ${customer.email}</div>`:''}
+            ${customer.address?`<div class="sub"><i class="fas fa-map-marker-alt"></i> ${customer.address}</div>`:''}
+          </div>
+          <div class="stats-strip">
+            <div class="stat-pill"><div class="sv">${orders.length}</div><div class="sl">طلبات</div></div>
+            <div class="stat-pill"><div class="sv" style="color:var(--green)">${fmt(totalSpent)}</div><div class="sl">إجمالي المشتريات</div></div>
+            ${totalRem>0?`<div class="stat-pill"><div class="sv" style="color:var(--red)">${fmt(totalRem)}</div><div class="sl">مستحق</div></div>`:''}
+            <div class="stat-pill"><div class="sv">🌟 ${customer.points||0}</div><div class="sl">نقاط</div></div>
+          </div>
+        </div>
+
+        <!-- Active orders -->
+        <div style="margin-bottom:24px">
+          <div class="section-head">
+            <i class="fas fa-hourglass-half" style="color:var(--orange)"></i>
+            الطلبات قيد التجهيز (${active.length})
+          </div>
+          ${active.length
+            ? active.map(o=>orderCard(o)).join('')
+            : `<div style="color:var(--text3);font-size:13px;padding:14px;text-align:center;border:1px dashed var(--border);border-radius:var(--r2)">لا توجد طلبات قيد التجهيز</div>`
+          }
+        </div>
+
+        <!-- Done orders -->
+        ${done.length ? `
+        <div>
+          <div class="section-head">
+            <i class="fas fa-check-circle" style="color:var(--green)"></i>
+            الطلبات المنجزة (${done.length})
+          </div>
+          <div class="tbl-wrap" style="border-radius:var(--r2);overflow:hidden;border:1px solid var(--border)">
+            <table class="hist-table">
+              <thead><tr><th>#</th><th>التاريخ</th><th>الإجمالي</th><th>الدفع</th><th>الحالة</th><th></th></tr></thead>
+              <tbody>${done.map(o=>{
+                const dt = o.createdAt ? fmtDate(o.createdAt) : '—';
+                const rem = o.remainingAmount||0;
+                return `<tr>
+                  <td style="font-family:monospace;color:var(--gold)">${o.invoiceNumber||o.id.slice(0,8)}</td>
+                  <td style="font-size:11px;color:var(--text3)">${dt}</td>
+                  <td style="font-weight:900">${fmt(o.totalPrice||0)}</td>
+                  <td>${o.paymentMethod||'—'}</td>
+                  <td><span class="badge ${rem>0?'badge-orange':'badge-green'}">${rem>0?'جزئي':'مكتمل'}</span></td>
+                  <td><a href="invoice.html?id=${o.id}" target="_blank" class="view-btn"><i class="fas fa-receipt"></i></a></td>
+                </tr>`;
+              }).join('')}</tbody>
+            </table>
+          </div>
+        </div>` : ''}
+      </div>
+
+      <!-- QR Sidebar -->
+      <div>
+        <div class="qr-sidebar">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:8px;font-weight:700"><i class="fas fa-qrcode"></i> بطاقة متابعة الطلبات</div>
+          <div style="font-size:14px;font-weight:900;color:var(--gold);margin-bottom:14px">${customer.name}</div>
+          <canvas id="cust-qr" width="170" height="170"></canvas>
+          ${customer.phone?`<div style="font-size:11px;color:var(--text3);margin-top:8px;direction:ltr;font-family:monospace">${customer.phone}</div>`:''}
+          <div style="font-size:10px;color:var(--text3);margin-top:6px;line-height:1.5">يمسح العميل هذا الكود ليتابع حالة طلباته</div>
+          <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:14px" onclick="printCard()">
+            <i class="fas fa-print"></i> طباعة البطاقة
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  setTimeout(() => drawQR('cust-qr', custTrack, 170), 80);
+}
+
+function orderCard(o) {
+  const rem = o.remainingAmount||0;
+  const isPrepared = o.orderPrepared||false;
+  const dt = o.createdAt ? fmtDate(o.createdAt) : '—';
+  const cls = isPrepared ? ' prepared' : rem>0 ? ' deferred' : '';
+  return `<div class="order-card${cls}" id="oc-${o.id}">
+    <div style="flex:1;min-width:160px">
+      <div class="order-num"># ${o.invoiceNumber||o.id.slice(0,8)}</div>
+      <div class="order-meta">${dt} · ${o.paymentMethod||'نقدي'} · ${o.items?.length||0} صنف</div>
+      ${o.notes?`<div style="font-size:11px;color:var(--text3);margin-top:3px">📝 ${o.notes}</div>`:''}
+    </div>
+    <div style="text-align:center;min-width:80px">
+      <div class="order-total" style="color:${rem>0?'var(--red)':'var(--green)'}">${fmt(o.totalPrice||0)}</div>
+      ${rem>0?`<div style="font-size:10px;color:var(--red)">متبقي: ${fmt(rem)}</div>`:`<div style="font-size:10px;color:var(--green)">✅ مسدد</div>`}
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <a href="invoice.html?id=${o.id}" target="_blank" class="view-btn"><i class="fas fa-receipt"></i> فاتورة</a>
+      ${isPrepared
+        ? `<div class="prepared-badge"><i class="fas fa-check-circle"></i> جاهز للاستلام</div>`
+        : `<button class="prepare-btn" id="pb-${o.id}" onclick="markPrepared('${o.id}')"><i class="fas fa-check-double"></i> تم التجهيز ✓</button>`
+      }
+    </div>
+  </div>`;
+}
+
+window.markPrepared = async (orderId) => {
+  const btn = document.getElementById(`pb-${orderId}`);
+  if (btn) { btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> جاري...'; }
+  try {
+    await db.collection('pos_invoices').doc(orderId).update({
+      orderPrepared: true,
+      orderPreparedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      status: 'جاهز للاستلام',
+    });
+    toast('✅ تم تحديث الحالة — الطلب جاهز!', 'ok');
+    const idx = orders.findIndex(o=>o.id===orderId);
+    if (idx>=0) orders[idx].orderPrepared = true;
+    render();
+  } catch(e) {
+    toast('خطأ: '+e.message, 'err');
+    if (btn) { btn.disabled=false; btn.innerHTML='<i class="fas fa-check-double"></i> تم التجهيز ✓'; }
+  }
+};
+
+function drawQR(canvasId, text, sz) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  for (const lvl of ['L','M','Q']) {
+    try {
+      const qr = qrcode(0, lvl);
+      qr.addData(text.length>250?text.slice(0,240):text);
+      qr.make();
+      const mc = qr.getModuleCount(), cs = sz/mc;
+      canvas.width=sz; canvas.height=sz;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle='#fff'; ctx.fillRect(0,0,sz,sz);
+      ctx.fillStyle='#000';
+      for (let r=0;r<mc;r++) for (let c=0;c<mc;c++)
+        if (qr.isDark(r,c)) ctx.fillRect(c*cs,r*cs,cs,cs);
+      return;
+    } catch(e) {}
+  }
+}
+
+window.printCard = () => {
+  if (!customer) return;
+  const custTrack = `${location.origin}/order-status.html?phone=${encodeURIComponent(customer.phone||customer.id)}`;
+  const pa = document.getElementById('print-area');
+  pa.style.display = 'block';
+  document.getElementById('print-card').innerHTML = `
+    <div style="width:80mm;font-family:'Cairo',sans-serif;padding:8mm;border:2px solid #000;text-align:center;margin:0 auto;direction:rtl">
+      <div style="font-size:18px;font-weight:900;margin-bottom:4px">📸 استوديو الزهراء</div>
+      <div style="font-size:11px;color:#555;margin-bottom:8px">بطاقة متابعة الطلبات</div>
+      <div style="border-top:2px solid #000;border-bottom:2px solid #000;padding:7px 0;margin:8px 0">
+        <div style="font-size:17px;font-weight:900">${customer.name}</div>
+        ${customer.phone?`<div style="font-size:12px;direction:ltr;font-family:monospace;margin-top:4px">${customer.phone}</div>`:''}
+      </div>
+      <canvas id="print-qr" width="160" height="160"></canvas>
+      <div style="font-size:10px;color:#555;margin-top:8px;line-height:1.6">
+        امسح الكود للاطلاع على حالة طلباتك<br>
+        <b style="color:#000">استوديو الزهراء</b>
+      </div>
+    </div>`;
+  setTimeout(() => {
+    drawQR('print-qr', custTrack, 160);
+    setTimeout(() => { window.print(); pa.style.display='none'; }, 300);
+  }, 100);
+};
+</script>
+</body>
+</html>

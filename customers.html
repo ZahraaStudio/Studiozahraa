@@ -103,6 +103,7 @@ function render(list) {
       <td>${fmt(c.creditLimit||0)}</td>
       <td style="font-size:11px;color:var(--text3)">${fmtDate(c.lastVisit)||'—'}</td>
       <td style="white-space:nowrap">
+        <a href="customer-profile.html?id=${c.id}" class="btn btn-primary" style="padding:5px 10px;font-size:11px;text-decoration:none"><i class="fas fa-user-circle"></i> صفحة العميل</a>
         <button class="btn btn-ghost" style="padding:5px 8px;font-size:11px" onclick="showStmt('${c.id}','${c.name}')"><i class="fas fa-file-invoice"></i></button>
         <button class="btn btn-ghost" style="padding:5px 8px;font-size:11px" onclick="editCust('${c.id}')"><i class="fas fa-edit"></i></button>
         <button class="btn btn-danger" style="padding:5px 8px;font-size:11px" onclick="delCust('${c.id}','${c.name}')"><i class="fas fa-trash"></i></button>

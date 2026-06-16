@@ -247,15 +247,40 @@
     const app = initializeApp(firebaseConfig, 'order-status');
     const db = getFirestore(app);
 
-    // Get invoice ID from URL
+    // Get params from URL
     const params = new URLSearchParams(window.location.search);
     const invoiceId = params.get('id');
+    const phoneParam = params.get('phone');
 
     window._db = db;
-    window._invoiceId = invoiceId;
 
     window.loadOrder = async function() {
         const root = document.getElementById('root-content');
+
+        // ── Mode 1: phone → show all active orders for this customer ──
+        if (phoneParam && !invoiceId) {
+            root.innerHTML = '<div class="loading">⏳ جاري تحميل طلباتك...</div>';
+            try {
+                const q = query(
+                    collection(db, 'pos_invoices'),
+                    where('phone', '==', decodeURIComponent(phoneParam)),
+                    limit(20)
+                );
+                const snap = await getDocs(q);
+                if (snap.empty) {
+                    root.innerHTML = `<div class="error-box">❌ لا توجد طلبات مسجلة لهذا الرقم.<br><small>${decodeURIComponent(phoneParam)}</small></div>`;
+                    return;
+                }
+                const orders = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+                    .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+                renderCustomerOrders(orders);
+            } catch(e) {
+                root.innerHTML = `<div class="error-box">❌ خطأ: ${e.message}</div>`;
+            }
+            return;
+        }
+
+        // ── Mode 2: single invoice ──
         if (!invoiceId) {
             root.innerHTML = `<div class="error-box">❌ لم يتم تحديد رقم الطلب.<br><small>يرجى مسح الباركود مرة أخرى.</small></div>`;
             return;
@@ -264,7 +289,6 @@
         root.innerHTML = '<div class="loading">⏳ جاري تحميل بيانات الطلب...</div>';
 
         try {
-            // Query pos_invoices by invoiceNumber
             const q = query(
                 collection(db, 'pos_invoices'),
                 where('invoiceNumber', '==', invoiceId),
@@ -283,6 +307,54 @@
             root.innerHTML = `<div class="error-box">❌ خطأ في الاتصال: ${e.message}</div>`;
         }
     };
+
+    function renderCustomerOrders(orders) {
+        const root = document.getElementById('root-content');
+        const customerName = orders[0]?.userName || 'عميلنا العزيز';
+        const active = orders.filter(o => !o.orderPrepared);
+        const done   = orders.filter(o =>  o.orderPrepared);
+
+        const orderRow = (inv) => {
+            const isPrepared = inv.orderPrepared || false;
+            const createdAt = inv.createdAt?.toDate ? inv.createdAt.toDate() : new Date();
+            const rem = inv.remainingAmount || 0;
+            return `
+            <div style="border:1px solid ${isPrepared?'#4ade80':'#333'};border-radius:12px;padding:14px;margin-bottom:10px;background:${isPrepared?'rgba(74,222,128,.07)':'#111'}">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                    <span style="font-weight:900;color:#d4af37;font-family:monospace"># ${inv.invoiceNumber||inv.id.slice(0,8)}</span>
+                    <span style="font-size:12px;background:${isPrepared?'#166534':'#1c1400'};color:${isPrepared?'#4ade80':'#f59e0b'};padding:3px 10px;border-radius:20px;font-weight:700">
+                        ${isPrepared ? '✅ جاهز للاستلام' : '⏳ قيد التجهيز'}
+                    </span>
+                </div>
+                <div class="info-row"><span class="label">التاريخ</span><span class="value">${createdAt.toLocaleDateString('ar-EG',{year:'numeric',month:'long',day:'numeric'})}</span></div>
+                <div class="info-row"><span class="label">الإجمالي</span><span class="value" style="color:#d4af37">${(inv.totalPrice||0).toFixed(2)} ج</span></div>
+                ${rem>0?`<div class="info-row"><span class="label">متبقي</span><span class="value" style="color:#f87171">${rem.toFixed(2)} ج</span></div>`:''}
+                <div class="info-row"><span class="label">الأصناف</span><span class="value">${inv.items?.length||0} صنف</span></div>
+            </div>`;
+        };
+
+        root.innerHTML = `
+            <div style="text-align:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #222">
+                <div style="font-size:18px;font-weight:900;color:#d4af37">🌸 مرحباً ${customerName}</div>
+                <div style="font-size:12px;color:#666;margin-top:4px">متابعة جميع طلباتك</div>
+            </div>
+            ${active.length ? `
+            <div style="margin-bottom:16px">
+                <div style="font-size:12px;color:#f59e0b;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px">
+                    <span>⏳</span> قيد التجهيز (${active.length})
+                </div>
+                ${active.map(orderRow).join('')}
+            </div>` : `
+            <div style="text-align:center;padding:20px;color:#4ade80;font-size:14px;font-weight:700;background:rgba(74,222,128,.07);border-radius:12px;margin-bottom:16px">
+                ✅ جميع طلباتك جاهزة للاستلام!
+            </div>`}
+            ${done.length ? `
+            <div>
+                <div style="font-size:12px;color:#4ade80;font-weight:700;margin-bottom:10px">✅ جاهزة (${done.length})</div>
+                ${done.map(orderRow).join('')}
+            </div>` : ''}
+        `;
+    }
 
     function renderOrder(inv) {
         const root = document.getElementById('root-content');

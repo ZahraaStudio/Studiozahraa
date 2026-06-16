@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>الطلبات النشطة — كاشير الزهراء</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+<style>
+.filter-bar{display:flex;gap:10px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
+.filter-btn{padding:6px 16px;border-radius:20px;border:1.5px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;transition:all .17s}
+.filter-btn.on{background:var(--gold);border-color:var(--gold);color:#000}
+.order-grid{display:flex;flex-direction:column;gap:10px}
+.ocard{background:var(--card);border:1.5px solid var(--border);border-radius:var(--r2);padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;transition:all .2s}
+.ocard:hover{border-color:var(--border2)}
+.ocard.prepared{border-color:var(--green);background:rgba(34,197,94,.06)}
+.ocard.deferred{border-color:var(--red)}
+.ocard-left{flex:1;min-width:200px}
+.ocard-num{font-size:14px;font-weight:900;color:var(--gold);font-family:monospace}
+.ocard-name{font-size:13px;font-weight:700;margin-top:2px}
+.ocard-meta{font-size:11px;color:var(--text3);margin-top:3px;display:flex;gap:10px;flex-wrap:wrap}
+.ocard-right{text-align:center;min-width:80px}
+.ocard-total{font-size:16px;font-weight:900}
+.ocard-rem{font-size:11px;margin-top:2px}
+.ocard-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.prepare-btn{background:linear-gradient(135deg,#166534,#22c55e);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-family:'Cairo',sans-serif;font-weight:900;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap;transition:all .2s}
+.prepare-btn:hover{opacity:.85}
+.prepare-btn:disabled{opacity:.5;cursor:default}
+.prepared-badge{background:rgba(34,197,94,.12);color:var(--green);border:1px solid var(--green);border-radius:8px;padding:7px 14px;font-size:12px;font-weight:900;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.small-btn{background:var(--bg3);color:var(--text2);border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-family:'Cairo',sans-serif;font-weight:700;font-size:11px;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:4px}
+.small-btn:hover{border-color:var(--gold);color:var(--gold)}
+.count-badge{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--red);color:#fff;font-size:10px;font-weight:900;margin-right:4px}
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <div id="sidebar"></div>
+  <div class="page-content">
+    <div class="page-header">
+      <h1><i class="fas fa-hourglass-half"></i> الطلبات النشطة</h1>
+      <button class="btn btn-ghost" onclick="loadOrders()"><i class="fas fa-sync-alt"></i> تحديث</button>
+    </div>
+    <div class="page-body">
+      <div class="filter-bar" id="filter-bar">
+        <button class="filter-btn on" onclick="setFilter('all',this)">الكل</button>
+        <button class="filter-btn" onclick="setFilter('pending',this)"><i class="fas fa-hourglass"></i> قيد التجهيز</button>
+        <button class="filter-btn" onclick="setFilter('prepared',this)"><i class="fas fa-check"></i> جاهزة</button>
+        <button class="filter-btn" onclick="setFilter('deferred',this)"><i class="fas fa-credit-card"></i> آجل / جزئي</button>
+        <input class="search-input" id="q" placeholder="🔍 بحث بالاسم أو رقم الفاتورة..." oninput="filterOrders()" style="margin-right:auto;max-width:260px">
+      </div>
+      <div id="stats-row" style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap"></div>
+      <div id="orders-list"><div class="spinner"></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+injectSharedCSS();
+let allOrders = [], activeFilter = 'all';
+
+requireAuth(async () => { await loadOrders(); });
+
+async function loadOrders() {
+  document.getElementById('orders-list').innerHTML = '<div class="spinner"></div>';
+  try {
+    const snap = await db.collection('pos_invoices')
+      .orderBy('createdAt', 'desc')
+      .limit(200)
+      .get();
+    allOrders = [];
+    snap.forEach(d => allOrders.push({ id: d.id, ...d.data() }));
+    renderStats();
+    filterOrders();
+  } catch(e) {
+    document.getElementById('orders-list').innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>${e.message}</p></div>`;
+  }
+}
+
+function renderStats() {
+  const pending = allOrders.filter(o => !o.orderPrepared).length;
+  const prepared = allOrders.filter(o => o.orderPrepared).length;
+  const deferred = allOrders.filter(o => (o.remainingAmount||0) > 0).length;
+  const totalRem = allOrders.reduce((s,o)=>s+(o.remainingAmount||0),0);
+  document.getElementById('stats-row').innerHTML = `
+    <div class="card" style="flex:1;min-width:120px">
+      <div class="card-title">قيد التجهيز</div>
+      <div class="card-value" style="color:var(--orange);font-size:28px">${pending}</div>
+    </div>
+    <div class="card" style="flex:1;min-width:120px">
+      <div class="card-title">جاهزة</div>
+      <div class="card-value" style="color:var(--green);font-size:28px">${prepared}</div>
+    </div>
+    <div class="card" style="flex:1;min-width:120px">
+      <div class="card-title">آجل / جزئي</div>
+      <div class="card-value" style="color:var(--red);font-size:28px">${deferred}</div>
+    </div>
+    <div class="card" style="flex:1;min-width:120px">
+      <div class="card-title">إجمالي المستحق</div>
+      <div class="card-value" style="font-size:20px">${fmt(totalRem)}</div>
+    </div>`;
+}
+
+function setFilter(f, btn) {
+  activeFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  filterOrders();
+}
+
+function filterOrders() {
+  const q = (document.getElementById('q').value || '').toLowerCase();
+  let list = allOrders;
+
+  if (activeFilter === 'pending') list = list.filter(o => !o.orderPrepared);
+  else if (activeFilter === 'prepared') list = list.filter(o => o.orderPrepared);
+  else if (activeFilter === 'deferred') list = list.filter(o => (o.remainingAmount||0) > 0);
+
+  if (q) list = list.filter(o =>
+    (o.userName||'').toLowerCase().includes(q) ||
+    (o.invoiceNumber||'').toLowerCase().includes(q) ||
+    (o.phone||'').includes(q)
+  );
+
+  renderList(list);
+}
+
+function renderList(list) {
+  const el = document.getElementById('orders-list');
+  if (!list.length) {
+    el.innerHTML = `<div class="empty-state"><i class="fas fa-inbox"></i><p>لا توجد طلبات</p></div>`;
+    return;
+  }
+  el.innerHTML = `<div class="order-grid">${list.map(o => orderCard(o)).join('')}</div>`;
+}
+
+function orderCard(o) {
+  const rem = o.remainingAmount||0;
+  const isPrepared = o.orderPrepared||false;
+  const dt = o.createdAt ? fmtDate(o.createdAt) : '—';
+  const cls = isPrepared ? ' prepared' : rem > 0 ? ' deferred' : '';
+  return `<div class="ocard${cls}" id="oc-${o.id}">
+    <div class="ocard-left">
+      <div class="ocard-num"># ${o.invoiceNumber||o.id.slice(0,8)}</div>
+      <div class="ocard-name">${o.userName||'—'}</div>
+      <div class="ocard-meta">
+        <span><i class="fas fa-calendar-alt"></i> ${dt}</span>
+        ${o.phone?`<span><i class="fas fa-phone-alt"></i> ${o.phone}</span>`:''}
+        <span><i class="fas fa-shopping-bag"></i> ${o.items?.length||0} صنف</span>
+        <span><i class="fas fa-wallet"></i> ${o.paymentMethod||'نقدي'}</span>
+      </div>
+      ${o.notes?`<div style="font-size:11px;color:var(--text3);margin-top:4px">📝 ${o.notes}</div>`:''}
+    </div>
+    <div class="ocard-right">
+      <div class="ocard-total" style="color:${rem>0?'var(--red)':'var(--green)'}">${fmt(o.totalPrice||0)}</div>
+      ${rem>0
+        ? `<div class="ocard-rem" style="color:var(--red)">متبقي: ${fmt(rem)}</div>`
+        : `<div class="ocard-rem" style="color:var(--green)">✅ مسدد</div>`
+      }
+    </div>
+    <div class="ocard-actions">
+      <a href="invoice.html?id=${o.id}" target="_blank" class="small-btn"><i class="fas fa-receipt"></i> فاتورة</a>
+      ${o.phone ? `<a href="customer-profile.html?id=__phone__${encodeURIComponent(o.phone)}" onclick="openByPhone('${encodeURIComponent(o.phone)}');return false" class="small-btn"><i class="fas fa-user"></i></a>` : ''}
+      ${isPrepared
+        ? `<div class="prepared-badge"><i class="fas fa-check-circle"></i> جاهز للاستلام</div>`
+        : `<button class="prepare-btn" id="pb-${o.id}" onclick="markPrepared('${o.id}')"><i class="fas fa-check-double"></i> تم التجهيز ✓</button>`
+      }
+    </div>
+  </div>`;
+}
+
+window.openByPhone = async (phone) => {
+  const dec = decodeURIComponent(phone);
+  try {
+    const snap = await db.collection('pos_customers').where('phone','==',dec).limit(1).get();
+    if (!snap.empty) {
+      location.href = `customer-profile.html?id=${snap.docs[0].id}`;
+    } else {
+      toast('لم يتم العثور على ملف العميل', 'warn');
+    }
+  } catch(e) { toast('خطأ: '+e.message,'err'); }
+};
+
+window.markPrepared = async (orderId) => {
+  const btn = document.getElementById(`pb-${orderId}`);
+  if (btn) { btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> جاري...'; }
+  try {
+    await db.collection('pos_invoices').doc(orderId).update({
+      orderPrepared: true,
+      orderPreparedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      status: 'جاهز للاستلام',
+    });
+    toast('✅ الطلب جاهز للاستلام!', 'ok');
+    const idx = allOrders.findIndex(o=>o.id===orderId);
+    if (idx>=0) allOrders[idx].orderPrepared = true;
+    renderStats();
+    filterOrders();
+  } catch(e) {
+    toast('خطأ: '+e.message,'err');
+    if (btn) { btn.disabled=false; btn.innerHTML='<i class="fas fa-check-double"></i> تم التجهيز ✓'; }
+  }
+};
+</script>
+</body>
+</html>
