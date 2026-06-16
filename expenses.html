@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>المصروفات — كاشير الزهراء</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+</head>
+<body>
+<div class="app-shell">
+  <div id="sidebar"></div>
+  <div class="page-content">
+    <div class="page-header">
+      <h1><i class="fas fa-money-bill-wave"></i> المصروفات</h1>
+      <button class="btn btn-primary" onclick="openAdd()"><i class="fas fa-plus"></i> تسجيل مصروف</button>
+    </div>
+    <div class="page-body">
+      <div class="stat-grid">
+        <div class="card"><div class="card-title">مصروفات اليوم</div><div class="card-value" id="k-today" style="color:var(--red)">—</div></div>
+        <div class="card"><div class="card-title">مصروفات الشهر</div><div class="card-value" id="k-month" style="color:var(--orange)">—</div></div>
+        <div class="card"><div class="card-title">إجمالي</div><div class="card-value" id="k-total" style="color:var(--text2)">—</div></div>
+      </div>
+      <div class="search-bar">
+        <input class="search-input" id="q" placeholder="🔍 بحث..." oninput="filter()">
+        <select class="search-input" style="flex:unset;width:150px" id="cat-filter" onchange="filter()">
+          <option value="">كل الفئات</option>
+          <option>إيجار</option><option>رواتب</option><option>كهرباء وماء</option>
+          <option>مواد تشغيل</option><option>شحن ومواصلات</option><option>صيانة</option><option>أخرى</option>
+        </select>
+        <input class="search-input" style="flex:unset;width:140px" id="date-filter" type="date" onchange="filter()">
+      </div>
+      <div id="exp-table"><div class="spinner"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="exp-modal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header"><h3>تسجيل مصروف</h3><button class="close-btn" onclick="closeModal('exp-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>البيان *</label><input class="form-control" id="e-desc" placeholder="وصف المصروف"></div>
+        <div class="form-group"><label>المبلغ (ج) *</label><input class="form-control" id="e-amount" type="number" min="0" step="0.01"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>الفئة</label>
+          <select class="form-control" id="e-cat">
+            <option>إيجار</option><option>رواتب</option><option>كهرباء وماء</option>
+            <option>مواد تشغيل</option><option>شحن ومواصلات</option><option>صيانة</option><option>أخرى</option>
+          </select></div>
+        <div class="form-group"><label>التاريخ</label><input class="form-control" id="e-date" type="date"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>طريقة الدفع</label>
+          <select class="form-control" id="e-pay"><option>نقدي</option><option>بطاقة</option><option>تحويل</option></select></div>
+        <div class="form-group"><label>مستلم الدفع</label><input class="form-control" id="e-payee" placeholder="اسم المستلم"></div>
+      </div>
+      <div class="form-group"><label>ملاحظات</label><textarea class="form-control" id="e-notes" rows="2"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="saveExp()"><i class="fas fa-save"></i> حفظ</button>
+      <button class="btn btn-ghost" onclick="closeModal('exp-modal')">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<script>
+injectSharedCSS();
+let all = [];
+
+requireAuth(async () => { await load(); });
+
+async function load() {
+  try {
+    const snap = await db.collection('pos_expenses').orderBy('createdAt','desc').limit(200).get();
+    all = [];
+    snap.forEach(d => all.push({ id:d.id, ...d.data() }));
+    // KPIs
+    const now = new Date();
+    const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const today = all.filter(e => e.createdAt?.toDate?.()>=todayStart);
+    const month = all.filter(e => e.createdAt?.toDate?.()>=monthStart);
+    document.getElementById('k-today').textContent = fmt(today.reduce((s,e)=>s+(e.amount||0),0));
+    document.getElementById('k-month').textContent = fmt(month.reduce((s,e)=>s+(e.amount||0),0));
+    document.getElementById('k-total').textContent = fmt(all.reduce((s,e)=>s+(e.amount||0),0));
+    filter();
+  } catch(e) {
+    document.getElementById('exp-table').innerHTML = `<div class="empty-state"><i class="fas fa-money-bill-wave"></i><p>لا توجد مصروفات</p></div>`;
+  }
+}
+
+function filter() {
+  const q = document.getElementById('q').value.toLowerCase();
+  const cat = document.getElementById('cat-filter').value;
+  const date = document.getElementById('date-filter').value;
+  let list = all;
+  if (q) list = list.filter(e=>(e.description||'').toLowerCase().includes(q)||(e.payee||'').toLowerCase().includes(q));
+  if (cat) list = list.filter(e=>e.category===cat);
+  if (date) list = list.filter(e=>e.createdAt?.toDate?.()?.toLocaleDateString('en-CA')===date);
+  render(list);
+}
+
+function render(list) {
+  const el = document.getElementById('exp-table');
+  if (!list.length) { el.innerHTML = `<div class="empty-state"><i class="fas fa-money-bill-wave"></i><p>لا توجد مصروفات</p></div>`; return; }
+  const total = list.reduce((s,e)=>s+(e.amount||0),0);
+  el.innerHTML = `<div class="tbl-wrap"><table>
+    <thead><tr><th>التاريخ</th><th>البيان</th><th>الفئة</th><th>المبلغ</th><th>طريقة الدفع</th><th>المستلم</th><th>إجراءات</th></tr></thead>
+    <tbody>${list.map(e=>`<tr>
+      <td style="font-size:11px;color:var(--text3)">${fmtDate(e.createdAt)}</td>
+      <td style="font-weight:700">${e.description||'—'}</td>
+      <td><span class="badge badge-orange">${e.category||'أخرى'}</span></td>
+      <td style="color:var(--red);font-weight:900">${fmt(e.amount)}</td>
+      <td>${e.paymentMethod||'نقدي'}</td>
+      <td style="font-size:11px">${e.payee||'—'}</td>
+      <td><button class="btn btn-danger" style="padding:4px 8px;font-size:11px" onclick="delExp('${e.id}')"><i class="fas fa-trash"></i></button></td>
+    </tr>`).join('')}
+    <tr style="background:var(--bg2)">
+      <td colspan="3" style="font-weight:900;text-align:left">الإجمالي</td>
+      <td style="color:var(--red);font-weight:900;font-size:15px">${fmt(total)}</td>
+      <td colspan="3"></td>
+    </tr></tbody>
+  </table></div>`;
+}
+
+window.openAdd = () => {
+  document.getElementById('e-date').value = new Date().toISOString().split('T')[0];
+  ['e-desc','e-notes','e-payee'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('e-amount').value='';
+  openModal('exp-modal');
+};
+
+window.saveExp = async () => {
+  const desc = document.getElementById('e-desc').value.trim();
+  const amount = parseFloat(document.getElementById('e-amount').value)||0;
+  if (!desc||!amount) { toast('أدخل البيان والمبلغ','warn'); return; }
+  const data = {
+    description:desc, amount,
+    category:document.getElementById('e-cat').value,
+    paymentMethod:document.getElementById('e-pay').value,
+    payee:document.getElementById('e-payee').value.trim(),
+    notes:document.getElementById('e-notes').value.trim(),
+    date:document.getElementById('e-date').value,
+    createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+    cashierId:currentUser?.uid
+  };
+  try {
+    await db.collection('pos_expenses').add(data);
+    toast('✅ تم تسجيل المصروف','ok');
+    closeModal('exp-modal'); load();
+  } catch(e) { toast('خطأ: '+e.message,'err'); }
+};
+
+window.delExp = async id => {
+  if (!await confirm2('حذف هذا المصروف؟')) return;
+  try { await db.collection('pos_expenses').doc(id).delete(); toast('🗑️ تم الحذف','ok'); load(); }
+  catch(e) { toast('خطأ: '+e.message,'err'); }
+};
+
+document.querySelectorAll('.overlay').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});});
+</script>
+</body>
+</html>

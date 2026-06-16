@@ -2,78 +2,56 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ════════════════════════════════════════════════════════
-    //  ZAHRAA STUDIO — Firestore Security Rules (Round 2)
-    //  يشمل: pos_customers + orders update للعميل (إلغاء)
-    // ════════════════════════════════════════════════════════
+    // ╔══════════════════════════════════════════════╗
+    // ║          ZAHRAA STUDIO FIRESTORE RULES       ║
+    // ║  نسخة مطورة — تشمل ألبومات معاينة العملاء    ║
+    // ╚══════════════════════════════════════════════╝
 
-    // ── PRODUCTS ──────────────────────────────────────────
     match /products/{id} {
       allow read: if true;
       allow write: if request.auth != null;
     }
-
-    // ── CLIENT PREVIEWS ───────────────────────────────────
     match /client_previews/{id} {
       allow read: if true;
       allow write: if request.auth != null;
     }
-
-    // ── PREVIEW COMMENTS ──────────────────────────────────
     match /preview_comments/{id} {
       allow create: if true;
       allow read, update, delete: if request.auth != null;
     }
-
-    // ── CATEGORIES ────────────────────────────────────────
     match /categories/{id} {
       allow read: if true;
       allow write: if request.auth != null;
     }
-
-    // ── SETTINGS ──────────────────────────────────────────
     match /settings/{id} {
       allow read: if true;
       allow write: if request.auth != null;
     }
-
-    // ── ORDERS ────────────────────────────────────────────
-    // أي زائر ينشئ | العميل يقرأ ويعدّل طلباته | الأدمن يتحكم في كل شيء
     match /orders/{id} {
       allow create: if true;
-      allow read: if request.auth != null
-                  || (resource != null && resource.data.userId == request.auth.uid);
-      allow update: if request.auth != null
-                    || (request.auth != null
-                        && resource.data.userId == request.auth.uid
-                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','cancelledAt','cancelledBy','cancellationNote']));
-      allow delete: if request.auth != null;
+      allow read, update, delete: if request.auth != null;
     }
-
-    // ── POS INVOICES ──────────────────────────────────────
     match /pos_invoices/{id} {
-      allow read, write: if request.auth != null;
+      allow read: if true;
+      allow write: if request.auth != null;
     }
-
-    // ── POS CUSTOMERS (كاشير — سجل العملاء) ──────────────
-    match /pos_customers/{id} {
-      allow read, write: if request.auth != null;
+    match /invoices/{id} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null;
     }
-
-    // ── USERS ─────────────────────────────────────────────
+    match /invoice_images/{id} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if request.auth != null;
+    }
     match /users/{userId} {
       allow read: if request.auth != null;
       allow create: if true;
       allow update, delete: if request.auth != null;
     }
-
-    // ── WISHLISTS ─────────────────────────────────────────
     match /wishlists/{userId} {
-      allow read, write: if request.auth != null
-                         && request.auth.uid == userId;
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-
-    // ── POINTS ────────────────────────────────────────────
     match /points/{userId} {
       allow read: if request.auth != null;
       allow write: if request.auth != null;
@@ -83,27 +61,19 @@ service cloud.firestore {
       allow create: if true;
       allow update, delete: if request.auth != null;
     }
-
-    // ── TESTIMONIALS ──────────────────────────────────────
     match /testimonials/{id} {
       allow read: if true;
       allow create: if true;
       allow update, delete: if request.auth != null;
     }
-
-    // ── PRODUCT REVIEWS ───────────────────────────────────
     match /product_reviews/{id} {
       allow read: if true;
       allow create: if true;
       allow update, delete: if request.auth != null;
     }
-
-    // ── VISITORS ──────────────────────────────────────────
     match /visitors/{id} {
       allow read, write: if true;
     }
-
-    // ── COUPONS ───────────────────────────────────────────
     match /coupons/{id} {
       allow read: if true;
       allow write: if request.auth != null;
@@ -113,8 +83,6 @@ service cloud.firestore {
       allow create: if true;
       allow update, delete: if request.auth != null;
     }
-
-    // ── REFERRALS ─────────────────────────────────────────
     match /referrals/{id} {
       allow read: if request.auth != null;
       allow create: if true;
@@ -125,20 +93,14 @@ service cloud.firestore {
       allow create: if true;
       allow update, delete: if request.auth != null;
     }
-
-    // ── BANNERS ───────────────────────────────────────────
     match /banners/{id} {
       allow read: if true;
       allow write: if request.auth != null;
     }
-
-    // ── POSTS ─────────────────────────────────────────────
     match /posts/{id} {
       allow read: if true;
       allow write: if request.auth != null;
     }
-
-    // ── COMMUNITY POSTS ───────────────────────────────────
     match /community_posts/{id} {
       allow read: if true;
       allow create: if true;
@@ -148,14 +110,10 @@ service cloud.firestore {
                         .hasOnly(['isHidden', 'hiddenByOwner', 'reportCount']));
       allow delete: if request.auth != null;
     }
-
-    // ── REPORTS ───────────────────────────────────────────
     match /reports/{id} {
       allow create: if true;
       allow read, update, delete: if request.auth != null;
     }
-
-    // ── BLOCKED / BANNED USERS ────────────────────────────
     match /blocked_users/{id} {
       allow read: if true;
       allow write: if request.auth != null;
@@ -168,48 +126,61 @@ service cloud.firestore {
       allow create: if true;
       allow read, delete: if request.auth != null;
     }
-
-    // ── DELIVERY AGENTS ───────────────────────────────────
     match /delivery_agents/{id} {
       allow read, write: if request.auth != null;
     }
-
-    // ── ADS ───────────────────────────────────────────────
+    match /delivery_ratings/{id} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null;
+    }
     match /ads/{id} {
       allow read: if true;
       allow write: if request.auth != null;
     }
-
-    // ── PUSH TOKENS ───────────────────────────────────────
     match /push_tokens/{id} {
       allow read: if request.auth != null;
       allow create, update: if true;
       allow delete: if request.auth != null;
     }
-
-    // ── NOTIFICATIONS ─────────────────────────────────────
     match /notifications/{id} {
       allow read, write: if request.auth != null;
     }
-
-    // ── SUPPORT CHATS ─────────────────────────────────────
     match /support_chats/{chatId} {
       allow read: if request.auth != null
+                  || request.resource == null
                   || resource == null
                   || resource.data.deviceId == chatId;
       allow create, update: if true;
       allow delete: if request.auth != null;
     }
-
-    // ── ABANDONED CARTS ───────────────────────────────────
     match /abandoned_carts/{deviceId} {
       allow read, create, update, delete: if true;
     }
 
-    // ── DEFAULT: deny all ─────────────────────────────────
+    // ── POS System Collections ────────────────────
+    match /pos_customers/{id} {
+      allow read, write: if request.auth != null;
+    }
+    match /pos_suppliers/{id} {
+      allow read, write: if request.auth != null;
+    }
+    match /pos_purchases/{id} {
+      allow read, write: if request.auth != null;
+    }
+    match /pos_expenses/{id} {
+      allow read, write: if request.auth != null;
+    }
+    match /pos_users/{id} {
+      allow read, write: if request.auth != null;
+    }
+    match /pos_inventory_log/{id} {
+      allow read, write: if request.auth != null;
+    }
+
+    // ── Default: deny all ─────────────────────────
     match /{document=**} {
       allow read, write: if false;
     }
-
   }
 }

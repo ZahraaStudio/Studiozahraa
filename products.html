@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>المنتجات — كاشير الزهراء</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+</head>
+<body>
+<div class="app-shell">
+  <div id="sidebar"></div>
+  <div class="page-content">
+    <div class="page-header">
+      <h1><i class="fas fa-box"></i> إدارة المنتجات</h1>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" onclick="openCatModal()"><i class="fas fa-tags"></i> الفئات</button>
+        <button class="btn btn-primary" onclick="openAddModal()"><i class="fas fa-plus"></i> إضافة منتج</button>
+      </div>
+    </div>
+    <div class="page-body">
+      <div class="search-bar">
+        <input class="search-input" id="q" placeholder="🔍 بحث بالاسم أو الباركود أو SKU..." oninput="filterProds()">
+        <select class="search-input" style="flex:unset;width:150px" id="cat-filter" onchange="filterProds()">
+          <option value="">كل الفئات</option>
+        </select>
+        <select class="search-input" style="flex:unset;width:130px" id="stock-filter" onchange="filterProds()">
+          <option value="">كل المخزون</option>
+          <option value="low">مخزون منخفض</option>
+          <option value="out">نفد المخزون</option>
+        </select>
+      </div>
+      <div id="prods-table"><div class="spinner"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Product Modal -->
+<div class="overlay" id="prod-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3 id="prod-modal-title">إضافة منتج</h3>
+      <button class="close-btn" onclick="closeModal('prod-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>اسم المنتج *</label><input class="form-control" id="p-name" placeholder="اسم المنتج"></div>
+        <div class="form-group"><label>الفئة</label>
+          <select class="form-control" id="p-cat"><option value="">بدون فئة</option></select></div>
+      </div>
+      <div class="form-row-3">
+        <div class="form-group"><label>سعر البيع (ج) *</label><input class="form-control" id="p-price" type="number" min="0" step="0.01"></div>
+        <div class="form-group"><label>سعر الشراء (ج)</label><input class="form-control" id="p-cost" type="number" min="0" step="0.01"></div>
+        <div class="form-group"><label>سعر الجملة (ج)</label><input class="form-control" id="p-wholesale" type="number" min="0" step="0.01"></div>
+      </div>
+      <div class="form-row-3">
+        <div class="form-group"><label>الباركود</label><input class="form-control" id="p-barcode" placeholder="تلقائي أو يدوي"></div>
+        <div class="form-group"><label>SKU</label><input class="form-control" id="p-sku" placeholder="رمز المنتج"></div>
+        <div class="form-group"><label>الوحدة</label>
+          <select class="form-control" id="p-unit">
+            <option>قطعة</option><option>كرتونة</option><option>متر</option>
+            <option>كيلو</option><option>لتر</option><option>علبة</option><option>دوزينة</option>
+          </select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label><input type="checkbox" id="p-track" style="margin-left:6px;accent-color:var(--gold)"> تتبع المخزون</label>
+        </div>
+        <div class="form-group"><label>الكمية الحالية</label><input class="form-control" id="p-stock" type="number" min="0" value="0"></div>
+        <div class="form-group"><label>حد إعادة الطلب</label><input class="form-control" id="p-reorder" type="number" min="0" value="5"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>إيموجي (أيقونة)</label><input class="form-control" id="p-icon" placeholder="📦" maxlength="4"></div>
+        <div class="form-group"><label>رابط الصورة (اختياري)</label><input class="form-control" id="p-img" placeholder="https://..."></div>
+      </div>
+      <div class="form-group"><label>الوصف</label><textarea class="form-control" id="p-desc" rows="2" placeholder="وصف المنتج..."></textarea></div>
+      <div class="form-group">
+        <label><input type="checkbox" id="p-active" checked style="margin-left:6px;accent-color:var(--gold)"> منتج نشط (يظهر في الكاشير)</label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="saveProduct()"><i class="fas fa-save"></i> حفظ</button>
+      <button class="btn btn-ghost" onclick="closeModal('prod-modal')">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- Category Modal -->
+<div class="overlay" id="cat-modal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header"><h3>إدارة الفئات</h3><button class="close-btn" onclick="closeModal('cat-modal')">✕</button></div>
+    <div class="modal-body">
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <input class="form-control" id="new-cat-name" placeholder="اسم الفئة الجديدة" style="flex:1">
+        <input class="form-control" id="new-cat-icon" placeholder="أيقونة" style="width:60px" maxlength="4">
+        <button class="btn btn-primary" onclick="addCategory()"><i class="fas fa-plus"></i></button>
+      </div>
+      <div id="cats-list"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+injectSharedCSS();
+let allProds = [], cats = [], editId = null;
+
+requireAuth(async () => {
+  await loadCats();
+  await loadProds();
+});
+
+async function loadCats() {
+  try {
+    const snap = await db.collection('categories').orderBy('name').get();
+    cats = [];
+    snap.forEach(d => cats.push({ id: d.id, ...d.data() }));
+    const sel = document.getElementById('cat-filter');
+    sel.innerHTML = '<option value="">كل الفئات</option>' + cats.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    const pSel = document.getElementById('p-cat');
+    pSel.innerHTML = '<option value="">بدون فئة</option>' + cats.map(c => `<option value="${c.id}">${c.icon||'📁'} ${c.name}</option>`).join('');
+  } catch(e) {}
+}
+
+async function loadProds() {
+  try {
+    const snap = await db.collection('products').orderBy('name').get();
+    allProds = [];
+    snap.forEach(d => allProds.push({ id: d.id, ...d.data() }));
+    filterProds();
+  } catch(e) {
+    document.getElementById('prods-table').innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>خطأ في تحميل المنتجات</p><p style="font-size:12px">${e.message}</p></div>`;
+  }
+}
+
+function filterProds() {
+  const q = document.getElementById('q').value.toLowerCase();
+  const cat = document.getElementById('cat-filter').value;
+  const stock = document.getElementById('stock-filter').value;
+  let list = allProds;
+  if (q) list = list.filter(p => (p.name||'').toLowerCase().includes(q)||(p.barcode||'').includes(q)||(p.sku||'').toLowerCase().includes(q));
+  if (cat) list = list.filter(p => p.category === cat || p.categoryId === cat);
+  if (stock === 'low') list = list.filter(p => p.trackStock && (p.stock||0) <= (p.reorderLevel||5) && (p.stock||0) > 0);
+  if (stock === 'out') list = list.filter(p => p.trackStock && (p.stock||0) <= 0);
+  renderTable(list);
+}
+
+function renderTable(list) {
+  const el = document.getElementById('prods-table');
+  if (!list.length) {
+    el.innerHTML = `<div class="empty-state"><i class="fas fa-box-open"></i><p>لا توجد منتجات</p></div>`;
+    return;
+  }
+  el.innerHTML = `<div class="tbl-wrap"><table>
+    <thead><tr>
+      <th>الأيقونة</th><th>الاسم</th><th>الفئة</th><th>سعر البيع</th><th>التكلفة</th>
+      <th>الربح</th><th>المخزون</th><th>الباركود</th><th>الحالة</th><th>إجراءات</th>
+    </tr></thead>
+    <tbody>${list.map(p => {
+      const cat = cats.find(c => c.id === p.category || c.id === p.categoryId);
+      const profit = ((p.price||0)-(p.cost||0)).toFixed(2);
+      const stockLow = p.trackStock && (p.stock||0) <= (p.reorderLevel||5);
+      return `<tr>
+        <td>${p.image?`<img src="${p.image}" style="width:32px;height:32px;border-radius:6px;object-fit:cover">`:p.icon||'📦'}</td>
+        <td><div style="font-weight:700">${p.name}</div>${p.sku?`<div style="font-size:10px;color:var(--text3)">${p.sku}</div>`:''}</td>
+        <td>${cat?cat.name:'—'}</td>
+        <td style="font-weight:900;color:var(--gold)">${fmt(p.price)}</td>
+        <td>${fmt(p.cost)}</td>
+        <td style="color:${parseFloat(profit)>=0?'var(--green)':'var(--red)'}">${fmt(profit)}</td>
+        <td>${p.trackStock?`<span class="badge ${stockLow?'badge-red':'badge-green'}">${p.stock||0} ${p.unit||'قطعة'}</span>`:'<span class="badge badge-gray">—</span>'}</td>
+        <td style="font-size:11px">${p.barcode||'—'}</td>
+        <td><span class="badge ${p.active===false?'badge-red':'badge-green'}">${p.active===false?'معطل':'نشط'}</span></td>
+        <td>
+          <button class="btn btn-ghost" style="padding:5px 10px;font-size:11px" onclick="editProd('${p.id}')"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-danger" style="padding:5px 10px;font-size:11px" onclick="deleteProd('${p.id}','${p.name}')"><i class="fas fa-trash"></i></button>
+        </td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>
+  <div style="margin-top:10px;font-size:12px;color:var(--text3)">إجمالي: ${list.length} منتج</div>`;
+}
+
+window.openAddModal = () => {
+  editId = null;
+  document.getElementById('prod-modal-title').textContent = 'إضافة منتج';
+  ['p-name','p-barcode','p-sku','p-img','p-desc','p-icon'].forEach(id => document.getElementById(id).value='');
+  ['p-price','p-cost','p-wholesale'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('p-stock').value='0';
+  document.getElementById('p-reorder').value='5';
+  document.getElementById('p-unit').value='قطعة';
+  document.getElementById('p-cat').value='';
+  document.getElementById('p-track').checked=true;
+  document.getElementById('p-active').checked=true;
+  openModal('prod-modal');
+};
+
+window.editProd = id => {
+  const p = allProds.find(x => x.id===id);
+  if (!p) return;
+  editId = id;
+  document.getElementById('prod-modal-title').textContent = 'تعديل منتج';
+  document.getElementById('p-name').value = p.name||'';
+  document.getElementById('p-price').value = p.price||'';
+  document.getElementById('p-cost').value = p.cost||'';
+  document.getElementById('p-wholesale').value = p.wholesale||'';
+  document.getElementById('p-barcode').value = p.barcode||'';
+  document.getElementById('p-sku').value = p.sku||'';
+  document.getElementById('p-unit').value = p.unit||'قطعة';
+  document.getElementById('p-stock').value = p.stock||0;
+  document.getElementById('p-reorder').value = p.reorderLevel||5;
+  document.getElementById('p-icon').value = p.icon||'';
+  document.getElementById('p-img').value = p.image||'';
+  document.getElementById('p-desc').value = p.description||'';
+  document.getElementById('p-cat').value = p.category||p.categoryId||'';
+  document.getElementById('p-track').checked = !!p.trackStock;
+  document.getElementById('p-active').checked = p.active!==false;
+  openModal('prod-modal');
+};
+
+window.saveProduct = async () => {
+  const name = document.getElementById('p-name').value.trim();
+  if (!name) { toast('أدخل اسم المنتج','warn'); return; }
+  const price = parseFloat(document.getElementById('p-price').value)||0;
+  const barcode = document.getElementById('p-barcode').value.trim() || Date.now().toString();
+  const data = {
+    name, price,
+    cost: parseFloat(document.getElementById('p-cost').value)||0,
+    wholesale: parseFloat(document.getElementById('p-wholesale').value)||0,
+    barcode,
+    sku: document.getElementById('p-sku').value.trim(),
+    unit: document.getElementById('p-unit').value,
+    stock: parseInt(document.getElementById('p-stock').value)||0,
+    reorderLevel: parseInt(document.getElementById('p-reorder').value)||5,
+    trackStock: document.getElementById('p-track').checked,
+    active: document.getElementById('p-active').checked,
+    icon: document.getElementById('p-icon').value.trim()||'📦',
+    image: document.getElementById('p-img').value.trim(),
+    description: document.getElementById('p-desc').value.trim(),
+    category: document.getElementById('p-cat').value,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  };
+  if (!editId) data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+  try {
+    if (editId) await db.collection('products').doc(editId).update(data);
+    else await db.collection('products').add(data);
+    toast(editId?'✅ تم التحديث':'✅ تم الإضافة','ok');
+    closeModal('prod-modal');
+    loadProds();
+  } catch(e) { toast('خطأ: '+e.message,'err'); }
+};
+
+window.deleteProd = async (id, name) => {
+  if (!await confirm2(`هل تريد حذف "${name}"؟`)) return;
+  try {
+    await db.collection('products').doc(id).delete();
+    toast('🗑️ تم الحذف','ok');
+    loadProds();
+  } catch(e) { toast('خطأ: '+e.message,'err'); }
+};
+
+window.openCatModal = async () => {
+  await loadCats();
+  renderCatsList();
+  openModal('cat-modal');
+};
+
+function renderCatsList() {
+  document.getElementById('cats-list').innerHTML = cats.map(c => `
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:20px">${c.icon||'📁'}</span>
+      <span style="flex:1;font-size:13px;font-weight:700">${c.name}</span>
+      <button class="btn btn-danger" style="padding:4px 10px;font-size:11px" onclick="deleteCat('${c.id}','${c.name}')">🗑️</button>
+    </div>`).join('') || '<p style="color:var(--text3);text-align:center;padding:20px">لا توجد فئات</p>';
+}
+
+window.addCategory = async () => {
+  const name = document.getElementById('new-cat-name').value.trim();
+  const icon = document.getElementById('new-cat-icon').value.trim()||'📁';
+  if (!name) { toast('أدخل اسم الفئة','warn'); return; }
+  try {
+    await db.collection('categories').add({ name, icon, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    toast('✅ تم إضافة الفئة','ok');
+    document.getElementById('new-cat-name').value='';
+    document.getElementById('new-cat-icon').value='';
+    await loadCats();
+    renderCatsList();
+  } catch(e) { toast('خطأ: '+e.message,'err'); }
+};
+
+window.deleteCat = async (id, name) => {
+  if (!await confirm2(`حذف فئة "${name}"؟`)) return;
+  try {
+    await db.collection('categories').doc(id).delete();
+    await loadCats(); renderCatsList();
+    toast('🗑️ تم الحذف','ok');
+  } catch(e) { toast('خطأ: '+e.message,'err'); }
+};
+
+document.querySelectorAll('.overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target===m) m.classList.remove('open'); });
+});
+</script>
+</body>
+</html>

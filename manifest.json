@@ -1,59 +1,19 @@
 {
-  "name": "استوديو الزهراء - ZAHRAA STUDIO",
-  "short_name": "استوديو الزهراء",
-  "description": "متجر فاخر للمنتجات والخدمات. تصاميم عصرية، طباعة فاخرة، وهدايا تليق بأحبابك",
-  "start_url": "./#/",
-  "scope": ".",
+  "name": "كاشير استوديو الزهراء",
+  "short_name": "كاشير الزهراء",
+  "description": "نظام الكاشير الاحترافي لاستوديو الزهراء",
+  "start_url": "dashboard.html",
   "display": "standalone",
-  "orientation": "portrait-primary",
-  "background_color": "#0F0F0F",
-  "theme_color": "#D4AF37",
+  "background_color": "#0c0c15",
+  "theme_color": "#d4af37",
+  "lang": "ar",
+  "dir": "rtl",
   "icons": [
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
-  ],
-  "categories": ["shopping"],
-  "screenshots": [
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
   ],
   "shortcuts": [
-    {
-      "name": "تصفح المتجر",
-      "short_name": "المتجر",
-      "description": "تصفح منتجات استوديو الزهراء",
-      "url": "./#store",
-      "icons": [
-        {
-          "src": "icon-192.png",
-          "sizes": "192x192"
-        }
-      ]
-    }
+    { "name": "الكاشير", "url": "pos.html", "description": "فتح شاشة الكاشير" },
+    { "name": "لوحة التحكم", "url": "dashboard.html", "description": "لوحة التحكم" }
   ]
 }

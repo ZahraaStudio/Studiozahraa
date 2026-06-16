@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>المستخدمون — كاشير الزهراء</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+</head>
+<body>
+<div class="app-shell">
+  <div id="sidebar"></div>
+  <div class="page-content">
+    <div class="page-header">
+      <h1><i class="fas fa-user-shield"></i> المستخدمون والصلاحيات</h1>
+      <button class="btn btn-primary" onclick="openAdd()"><i class="fas fa-user-plus"></i> إضافة مستخدم</button>
+    </div>
+    <div class="page-body">
+      <div style="background:rgba(245,158,11,.1);border:1px solid var(--orange);border-radius:var(--r);padding:12px;margin-bottom:16px;font-size:12px;color:#fcd34d">
+        <i class="fas fa-triangle-exclamation"></i>
+        <strong> تنبيه:</strong> إنشاء المستخدمين يتطلب Firebase Admin SDK أو Firebase Console.
+        يمكنك إضافة مستخدمين مباشرة من <strong>Firebase Console → Authentication → Users</strong>.
+        هذه الصفحة تتيح إدارة الصلاحيات والأدوار فقط.
+      </div>
+
+      <div id="users-table"><div class="spinner"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Role Modal -->
+<div class="overlay" id="role-modal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header"><h3>تعديل صلاحيات المستخدم</h3><button class="close-btn" onclick="closeModal('role-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>البريد الإلكتروني</label><input class="form-control" id="r-email" readonly></div>
+      <div class="form-group"><label>الدور</label>
+        <select class="form-control" id="r-role">
+          <option value="admin">مدير (كامل الصلاحيات)</option>
+          <option value="cashier">كاشير (البيع فقط)</option>
+          <option value="viewer">عارض (قراءة فقط)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label style="margin-bottom:10px;display:block">الصلاحيات التفصيلية:</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          ${['الكاشير','المنتجات','المخزون','العملاء','الموردون','المشتريات','المصروفات','التقارير','المستخدمون','الإعدادات'].map(p=>`
+            <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer">
+              <input type="checkbox" class="perm-cb" data-perm="${p}" style="accent-color:var(--gold)"> ${p}
+            </label>`).join('')}
+        </div>
+      </div>
+      <div class="form-group"><label>ملاحظات</label><input class="form-control" id="r-notes" placeholder="أي ملاحظات..."></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="saveRole()"><i class="fas fa-save"></i> حفظ</button>
+      <button class="btn btn-ghost" onclick="closeModal('role-modal')">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="overlay" id="user-add-modal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header"><h3>إضافة مستخدم جديد</h3><button class="close-btn" onclick="closeModal('user-add-modal')">✕</button></div>
+    <div class="modal-body">
+      <div style="background:var(--bg3);border-radius:var(--r);padding:12px;margin-bottom:14px;font-size:12px;color:var(--text2)">
+        لإضافة مستخدم جديد، اتبع الخطوات التالية:<br><br>
+        1. اذهب إلى <strong style="color:var(--gold)">Firebase Console</strong><br>
+        2. افتح قسم <strong style="color:var(--gold)">Authentication → Users</strong><br>
+        3. اضغط <strong style="color:var(--gold)">Add User</strong><br>
+        4. أدخل البريد وكلمة المرور<br>
+        5. ثم أضف الصلاحيات هنا باستخدام البريد المسجّل
+      </div>
+      <div class="form-group">
+        <label>بريد المستخدم الجديد (بعد إنشائه من Firebase)</label>
+        <input class="form-control" id="nu-email" type="email" placeholder="user@example.com">
+      </div>
+      <div class="form-group"><label>الاسم</label><input class="form-control" id="nu-name" placeholder="الاسم الكامل"></div>
+      <div class="form-group"><label>الدور</label>
+        <select class="form-control" id="nu-role">
+          <option value="cashier">كاشير</option>
+          <option value="admin">مدير</option>
+          <option value="viewer">عارض</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="saveNewUser()"><i class="fas fa-save"></i> حفظ الصلاحيات</button>
+      <button class="btn btn-ghost" onclick="closeModal('user-add-modal')">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<script>
+injectSharedCSS();
+let users = [], editUserId = null;
+
+requireAuth(async () => { await load(); });
+
+async function load() {
+  try {
+    const snap = await db.collection('pos_users').get();
+    users = [];
+    snap.forEach(d => users.push({ id:d.id, ...d.data() }));
+    render();
+  } catch(e) {
+    document.getElementById('users-table').innerHTML = `<div class="empty-state"><i class="fas fa-users"></i><p>لا يوجد مستخدمون مسجّلون بعد</p>
+      <button class="btn btn-primary" style="margin-top:12px" onclick="openAdd()">إضافة أول مستخدم</button></div>`;
+  }
+}
+
+function render() {
+  const el = document.getElementById('users-table');
+  if (!users.length) {
+    el.innerHTML = `<div class="empty-state"><i class="fas fa-users"></i><p>لا يوجد مستخدمون مسجّلون</p>
+      <button class="btn btn-primary" style="margin-top:12px" onclick="openAdd()">إضافة أول مستخدم</button></div>`;
+    return;
+  }
+  const roleLabels = { admin:'مدير', cashier:'كاشير', viewer:'عارض' };
+  const roleBadge = { admin:'badge-red', cashier:'badge-green', viewer:'badge-blue' };
+  el.innerHTML = `<div class="tbl-wrap"><table>
+    <thead><tr><th>البريد الإلكتروني</th><th>الاسم</th><th>الدور</th><th>آخر دخول</th><th>إجراءات</th></tr></thead>
+    <tbody>${users.map(u=>`<tr>
+      <td style="font-family:monospace;font-size:12px">${u.email||'—'}</td>
+      <td style="font-weight:700">${u.name||'—'}</td>
+      <td><span class="badge ${roleBadge[u.role]||'badge-gray'}">${roleLabels[u.role]||u.role||'—'}</span></td>
+      <td style="font-size:11px;color:var(--text3)">${fmtDate(u.lastLogin)||'—'}</td>
+      <td>
+        <button class="btn btn-ghost" style="padding:5px 8px;font-size:11px" onclick="editUser('${u.id}')"><i class="fas fa-edit"></i> صلاحيات</button>
+        <button class="btn btn-danger" style="padding:5px 8px;font-size:11px" onclick="delUser('${u.id}','${u.email}')"><i class="fas fa-trash"></i></button>
+      </td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+window.openAdd = () => openModal('user-add-modal');
+
+window.saveNewUser = async () => {
+  const email = document.getElementById('nu-email').value.trim();
+  const name = document.getElementById('nu-name').value.trim();
+  if (!email) { toast('أدخل البريد الإلكتروني','warn'); return; }
+  try {
+    await db.collection('pos_users').add({
+      email, name,
+      role: document.getElementById('nu-role').value,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    toast('✅ تم إضافة المستخدم','ok');
+    closeModal('user-add-modal');
+    load();
+  } catch(e) { toast('خطأ: '+e.message,'err'); }
+};
+
+window.editUser = id => {
+  const u = users.find(x=>x.id===id); if(!u) return;
+  editUserId = id;
+  document.getElementById('r-email').value = u.email||'';
+  document.getElementById('r-role').value = u.role||'cashier';
+  document.getElementById('r-notes').value = u.notes||'';
+  document.querySelectorAll('.perm-cb').forEach(cb => {
+    cb.checked = (u.permissions||[]).includes(cb.dataset.perm);
+  });
+  openModal('role-modal');
+};
+
+window.saveRole = async () => {
+  const perms = [...document.querySelectorAll('.perm-cb:checked')].map(cb=>cb.dataset.perm);
+  try {
+    await db.collection('pos_users').doc(editUserId).update({
+      role: document.getElementById('r-role').value,
+      permissions: perms,
+      notes: document.getElementById('r-notes').value,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    toast('✅ تم حفظ الصلاحيات','ok');
+    closeModal('role-modal'); load();
+  } catch(e) { toast('خطأ: '+e.message,'err'); }
+};
+
+window.delUser = async (id, email) => {
+  if (!await confirm2(`حذف "${email}" من قائمة المستخدمين؟\n(لن يحذف الحساب من Firebase Auth)`)) return;
+  try { await db.collection('pos_users').doc(id).delete(); toast('🗑️ تم الحذف','ok'); load(); }
+  catch(e) { toast('خطأ: '+e.message,'err'); }
+};
+
+document.querySelectorAll('.overlay').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});});
+</script>
+</body>
+</html>

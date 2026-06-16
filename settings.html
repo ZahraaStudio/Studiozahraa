@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>الإعدادات — كاشير الزهراء</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+<style>
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:768px){.settings-grid{grid-template-columns:1fr}}
+.settings-section{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:18px}
+.section-title{font-size:13px;font-weight:900;color:var(--gold);margin-bottom:14px;
+  padding-bottom:10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px}
+.toggle-row:last-child{border-bottom:none}
+.toggle{position:relative;display:inline-block;width:44px;height:24px}
+.toggle input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;background:var(--border);border-radius:24px;cursor:pointer;transition:.3s}
+.slider::before{content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s}
+input:checked+.slider{background:var(--gold)}
+input:checked+.slider::before{transform:translateX(20px)}
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <div id="sidebar"></div>
+  <div class="page-content">
+    <div class="page-header">
+      <h1><i class="fas fa-gear"></i> الإعدادات</h1>
+      <button class="btn btn-primary" onclick="saveAll()"><i class="fas fa-save"></i> حفظ التغييرات</button>
+    </div>
+    <div class="page-body">
+      <div class="settings-grid">
+
+        <!-- Store Info -->
+        <div class="settings-section">
+          <div class="section-title"><i class="fas fa-store"></i> بيانات المتجر</div>
+          <div class="form-group"><label>اسم المتجر</label><input class="form-control" id="s-store-name" placeholder="استوديو الزهراء"></div>
+          <div class="form-group"><label>رقم الهاتف الأول</label><input class="form-control" id="s-phone1" type="tel"></div>
+          <div class="form-group"><label>رقم الهاتف الثاني</label><input class="form-control" id="s-phone2" type="tel"></div>
+          <div class="form-group"><label>العنوان</label><input class="form-control" id="s-address"></div>
+          <div class="form-group"><label>Instagram</label><input class="form-control" id="s-instagram" placeholder="@username"></div>
+          <div class="form-group"><label>نص إضافي في الإيصال</label><textarea class="form-control" id="s-receipt-footer" rows="2" placeholder="شكراً لثقتك بنا..."></textarea></div>
+        </div>
+
+        <!-- Financial Settings -->
+        <div class="settings-section">
+          <div class="section-title"><i class="fas fa-coins"></i> الإعدادات المالية</div>
+          <div class="form-group"><label>العملة</label>
+            <select class="form-control" id="s-currency">
+              <option value="ج">جنيه مصري (ج)</option>
+              <option value="ر.س">ريال سعودي (ر.س)</option>
+              <option value="د.إ">درهم إماراتي (د.إ)</option>
+              <option value="د.ك">دينار كويتي (د.ك)</option>
+              <option value="ر.ع">ريال عماني (ر.ع)</option>
+              <option value="USD">دولار أمريكي (USD)</option>
+            </select>
+          </div>
+          <div class="form-group"><label>نسبة الضريبة (%)</label><input class="form-control" id="s-tax" type="number" min="0" max="100" step="0.1" placeholder="0"></div>
+          <div class="toggle-row">
+            <span>تضمين الضريبة في السعر</span>
+            <label class="toggle"><input type="checkbox" id="s-tax-included"><span class="slider"></span></label>
+          </div>
+          <div class="form-group" style="margin-top:12px"><label>نسبة الخصم الافتراضية (%)</label><input class="form-control" id="s-disc" type="number" min="0" max="100" placeholder="0"></div>
+          <div class="form-group"><label>رسوم التوصيل الافتراضية (ج)</label><input class="form-control" id="s-del-fee" type="number" min="0" placeholder="0"></div>
+        </div>
+
+        <!-- Inventory & Products -->
+        <div class="settings-section">
+          <div class="section-title"><i class="fas fa-warehouse"></i> إعدادات المخزون</div>
+          <div class="toggle-row">
+            <span>تتبع المخزون تلقائياً</span>
+            <label class="toggle"><input type="checkbox" id="s-track-stock"><span class="slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <span>تحذير عند نقص المخزون</span>
+            <label class="toggle"><input type="checkbox" id="s-stock-warn"><span class="slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <span>منع البيع عند انتهاء المخزون</span>
+            <label class="toggle"><input type="checkbox" id="s-block-oos"><span class="slider"></span></label>
+          </div>
+          <div class="form-group" style="margin-top:12px"><label>حد المخزون الافتراضي للتنبيه</label><input class="form-control" id="s-reorder" type="number" min="1" value="5"></div>
+        </div>
+
+        <!-- POS Settings -->
+        <div class="settings-section">
+          <div class="section-title"><i class="fas fa-cash-register"></i> إعدادات الكاشير</div>
+          <div class="toggle-row">
+            <span>طباعة الإيصال تلقائياً</span>
+            <label class="toggle"><input type="checkbox" id="s-auto-print"><span class="slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <span>تفعيل رمز QR في الإيصال</span>
+            <label class="toggle"><input type="checkbox" id="s-qr"><span class="slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <span>إظهار صور المنتجات في الكاشير</span>
+            <label class="toggle"><input type="checkbox" id="s-show-imgs"><span class="slider"></span></label>
+          </div>
+          <div class="form-group" style="margin-top:12px"><label>عدد المنتجات في الصفحة</label>
+            <select class="form-control" id="s-page-size">
+              <option value="12">12</option><option value="18" selected>18</option>
+              <option value="24">24</option><option value="30">30</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Loyalty -->
+        <div class="settings-section">
+          <div class="section-title"><i class="fas fa-star"></i> نقاط الولاء</div>
+          <div class="toggle-row">
+            <span>تفعيل نظام نقاط الولاء</span>
+            <label class="toggle"><input type="checkbox" id="s-loyalty"><span class="slider"></span></label>
+          </div>
+          <div class="form-group" style="margin-top:12px"><label>كل كم جنيه = نقطة واحدة</label><input class="form-control" id="s-pts-per" type="number" min="1" value="100" placeholder="100"></div>
+          <div class="form-group"><label>قيمة النقطة الواحدة (ج)</label><input class="form-control" id="s-pt-val" type="number" min="0" step="0.01" value="0.1" placeholder="0.10"></div>
+        </div>
+
+        <!-- Firebase Config -->
+        <div class="settings-section">
+          <div class="section-title"><i class="fab fa-google"></i> إعداد Firebase</div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:12px">
+            هذه البيانات مخزّنة محلياً فقط على متصفحك ولا تُرسل لأحد.
+          </div>
+          <div class="form-group"><label>API Key</label><input class="form-control" id="fb-api" placeholder="AIzaSy..."></div>
+          <div class="form-group"><label>Auth Domain</label><input class="form-control" id="fb-auth"></div>
+          <div class="form-group"><label>Project ID</label><input class="form-control" id="fb-proj"></div>
+          <div class="form-group"><label>App ID</label><input class="form-control" id="fb-app"></div>
+          <button class="btn btn-ghost" style="width:100%" onclick="saveFbConfig()"><i class="fas fa-cloud"></i> حفظ إعداد Firebase</button>
+        </div>
+
+      </div>
+
+      <!-- Danger Zone -->
+      <div style="margin-top:20px;background:var(--card);border:1px solid var(--red);border-radius:var(--r2);padding:18px">
+        <div style="font-size:13px;font-weight:900;color:var(--red);margin-bottom:14px"><i class="fas fa-triangle-exclamation"></i> منطقة الخطر</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-danger" onclick="clearLocalData()"><i class="fas fa-eraser"></i> مسح البيانات المحلية</button>
+          <button class="btn btn-danger" onclick="doLogout()"><i class="fas fa-right-from-bracket"></i> تسجيل الخروج</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+injectSharedCSS();
+
+requireAuth(async () => {
+  loadSettings();
+  // Try to load from Firestore too
+  try {
+    const snap = await db.collection('settings').doc('pos').get();
+    if (snap.exists) {
+      const data = snap.data();
+      const s = getSettings();
+      Object.assign(s, data);
+      saveSettings(s);
+      loadSettings();
+    }
+  } catch(e) {}
+});
+
+function loadSettings() {
+  const s = getSettings();
+  const set = (id, val) => { const el=document.getElementById(id); if(el) { if(el.type==='checkbox') el.checked=!!val; else el.value=val||''; } };
+  set('s-store-name', s.storeName);
+  set('s-phone1', s.storePhone);
+  set('s-phone2', s.storePhone2);
+  set('s-address', s.storeAddress);
+  set('s-instagram', s.instagram);
+  set('s-receipt-footer', s.receiptFooter);
+  set('s-currency', s.currency||'ج');
+  set('s-tax', s.taxRate||0);
+  set('s-tax-included', s.taxIncluded);
+  set('s-disc', s.defaultDiscount||0);
+  set('s-del-fee', s.deliveryFee||0);
+  set('s-track-stock', s.trackStock!==false);
+  set('s-stock-warn', s.stockWarning!==false);
+  set('s-block-oos', s.blockOutOfStock);
+  set('s-reorder', s.defaultReorderLevel||5);
+  set('s-auto-print', s.autoPrint);
+  set('s-qr', s.receiptQR!==false);
+  set('s-show-imgs', s.showProductImages!==false);
+  set('s-page-size', s.posPageSize||18);
+  set('s-loyalty', s.loyaltyEnabled);
+  set('s-pts-per', s.pointsPerAmount||100);
+  set('s-pt-val', s.pointValue||0.1);
+
+  // Firebase config
+  const cfg = JSON.parse(localStorage.getItem(CFG_KEY)||'{}');
+  set('fb-api', cfg.apiKey);
+  set('fb-auth', cfg.authDomain);
+  set('fb-proj', cfg.projectId);
+  set('fb-app', cfg.appId);
+}
+
+window.saveAll = async () => {
+  const get = id => document.getElementById(id)?.value||'';
+  const chk = id => document.getElementById(id)?.checked||false;
+  const s = {
+    storeName: get('s-store-name'),
+    storePhone: get('s-phone1'),
+    storePhone2: get('s-phone2'),
+    storeAddress: get('s-address'),
+    instagram: get('s-instagram'),
+    receiptFooter: get('s-receipt-footer'),
+    currency: get('s-currency'),
+    taxRate: parseFloat(get('s-tax'))||0,
+    taxIncluded: chk('s-tax-included'),
+    defaultDiscount: parseFloat(get('s-disc'))||0,
+    deliveryFee: parseFloat(get('s-del-fee'))||0,
+    trackStock: chk('s-track-stock'),
+    stockWarning: chk('s-stock-warn'),
+    blockOutOfStock: chk('s-block-oos'),
+    defaultReorderLevel: parseInt(get('s-reorder'))||5,
+    autoPrint: chk('s-auto-print'),
+    receiptQR: chk('s-qr'),
+    showProductImages: chk('s-show-imgs'),
+    posPageSize: parseInt(get('s-page-size'))||18,
+    loyaltyEnabled: chk('s-loyalty'),
+    pointsPerAmount: parseInt(get('s-pts-per'))||100,
+    pointValue: parseFloat(get('s-pt-val'))||0.1,
+    updatedAt: new Date().toISOString(),
+  };
+  saveSettings(s);
+  try {
+    await db.collection('settings').doc('pos').set(s, { merge: true });
+    toast('✅ تم حفظ الإعدادات وزامنتها مع Firebase','ok');
+  } catch(e) {
+    toast('✅ تم الحفظ محلياً (خطأ في Firebase: '+e.message+')','warn');
+  }
+};
+
+window.saveFbConfig = () => {
+  const cfg = {
+    apiKey: document.getElementById('fb-api').value.trim(),
+    authDomain: document.getElementById('fb-auth').value.trim(),
+    projectId: document.getElementById('fb-proj').value.trim(),
+    appId: document.getElementById('fb-app').value.trim(),
+  };
+  if (!cfg.apiKey||!cfg.projectId) { toast('API Key و Project ID مطلوبان','warn'); return; }
+  localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
+  toast('✅ تم حفظ إعداد Firebase — أعد تحميل الصفحة','ok');
+  setTimeout(()=>location.reload(), 1500);
+};
+
+window.clearLocalData = async () => {
+  if (!await confirm2('سيتم مسح جميع البيانات المحلية (الإعداد والإعدادات). هل تريد المتابعة؟')) return;
+  localStorage.clear();
+  toast('🗑️ تم المسح — ستنتقل لصفحة الإعداد','warn');
+  setTimeout(()=>location.href='index.html', 1500);
+};
+</script>
+</body>
+</html>

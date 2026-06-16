@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>الموردون — كاشير الزهراء</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+</head>
+<body>
+<div class="app-shell">
+  <div id="sidebar"></div>
+  <div class="page-content">
+    <div class="page-header">
+      <h1><i class="fas fa-truck"></i> إدارة الموردين</h1>
+      <button class="btn btn-primary" onclick="openAdd()"><i class="fas fa-plus"></i> إضافة مورد</button>
+    </div>
+    <div class="page-body">
+      <div class="search-bar">
+        <input class="search-input" id="q" placeholder="🔍 بحث بالاسم أو الهاتف..." oninput="filter()">
+      </div>
+      <div id="sup-table"><div class="spinner"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="sup-modal">
+  <div class="modal">
+    <div class="modal-header"><h3 id="sup-modal-title">إضافة مورد</h3><button class="close-btn" onclick="closeModal('sup-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>اسم المورد *</label><input class="form-control" id="s-name"></div>
+        <div class="form-group"><label>الهاتف</label><input class="form-control" id="s-phone" type="tel"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>البريد الإلكتروني</label><input class="form-control" id="s-email" type="email"></div>
+        <div class="form-group"><label>الرصيد الحالي (ج)</label><input class="form-control" id="s-balance" type="number" value="0"></div>
+      </div>
+      <div class="form-group"><label>العنوان</label><input class="form-control" id="s-addr"></div>
+      <div class="form-group"><label>ملاحظات</label><textarea class="form-control" id="s-notes" rows="2"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="saveSupplier()"><i class="fas fa-save"></i> حفظ</button>
+      <button class="btn btn-ghost" onclick="closeModal('sup-modal')">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<script>
+injectSharedCSS();
+let all = [], editId = null;
+
+requireAuth(async () => { await load(); });
+
+async function load() {
+  try {
+    const snap = await db.collection('pos_suppliers').orderBy('name').get();
+    all = [];
+    snap.forEach(d => all.push({ id: d.id, ...d.data() }));
+    filter();
+  } catch(e) {
+    document.getElementById('sup-table').innerHTML = `<div class="empty-state"><i class="fas fa-truck"></i><p>لا يوجد موردون بعد</p><button class="btn btn-primary" style="margin-top:12px" onclick="openAdd()">إضافة أول مورد</button></div>`;
+  }
+}
+
+function filter() {
+  const q = document.getElementById('q').value.toLowerCase();
+  const list = q ? all.filter(s => (s.name||'').toLowerCase().includes(q)||(s.phone||'').includes(q)) : all;
+  render(list);
+}
+
+function render(list) {
+  const el = document.getElementById('sup-table');
+  if (!list.length) {
+    el.innerHTML = `<div class="empty-state"><i class="fas fa-truck"></i><p>لا يوجد موردون</p></div>`;
+    return;
+  }
+  el.innerHTML = `<div class="tbl-wrap"><table>
+    <thead><tr><th>#</th><th>الاسم</th><th>الهاتف</th><th>البريد</th><th>الرصيد</th><th>العنوان</th><th>إجراءات</th></tr></thead>
+    <tbody>${list.map((s,i)=>`<tr>
+      <td style="color:var(--text3)">${i+1}</td>
+      <td style="font-weight:700">${s.name}</td>
+      <td>${s.phone||'—'}</td>
+      <td style="font-size:11px">${s.email||'—'}</td>
+      <td style="color:${(s.balance||0)>0?'var(--red)':'var(--green)'}; font-weight:700">${fmt(s.balance||0)}</td>
+      <td style="font-size:11px">${s.address||'—'}</td>
+      <td>
+        <button class="btn btn-ghost" style="padding:5px 8px;font-size:11px" onclick="editSupplier('${s.id}')"><i class="fas fa-edit"></i></button>
+        <button class="btn btn-danger" style="padding:5px 8px;font-size:11px" onclick="delSupplier('${s.id}','${s.name}')"><i class="fas fa-trash"></i></button>
+      </td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+window.openAdd = () => {
+  editId = null;
+  document.getElementById('sup-modal-title').textContent = 'إضافة مورد';
+  ['s-name','s-phone','s-email','s-addr','s-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('s-balance').value='0';
+  openModal('sup-modal');
+};
+
+window.editSupplier = id => {
+  const s = all.find(x=>x.id===id); if(!s) return;
+  editId = id;
+  document.getElementById('sup-modal-title').textContent = 'تعديل مورد';
+  document.getElementById('s-name').value=s.name||'';
+  document.getElementById('s-phone').value=s.phone||'';
+  document.getElementById('s-email').value=s.email||'';
+  document.getElementById('s-addr').value=s.address||'';
+  document.getElementById('s-notes').value=s.notes||'';
+  document.getElementById('s-balance').value=s.balance||0;
+  openModal('sup-modal');
+};
+
+window.saveSupplier = async () => {
+  const name = document.getElementById('s-name').value.trim();
+  if (!name) { toast('أدخل اسم المورد','warn'); return; }
+  const data = {
+    name, phone:document.getElementById('s-phone').value.trim(),
+    email:document.getElementById('s-email').value.trim(),
+    address:document.getElementById('s-addr').value.trim(),
+    notes:document.getElementById('s-notes').value.trim(),
+    balance:parseFloat(document.getElementById('s-balance').value)||0,
+    updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
+  };
+  if (!editId) data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+  try {
+    if (editId) await db.collection('pos_suppliers').doc(editId).update(data);
+    else await db.collection('pos_suppliers').add(data);
+    toast(editId?'✅ تم التحديث':'✅ تم الإضافة','ok');
+    closeModal('sup-modal'); load();
+  } catch(e) { toast('خطأ: '+e.message,'err'); }
+};
+
+window.delSupplier = async (id,name) => {
+  if (!await confirm2(`حذف "${name}"؟`)) return;
+  try { await db.collection('pos_suppliers').doc(id).delete(); toast('🗑️ تم الحذف','ok'); load(); }
+  catch(e) { toast('خطأ: '+e.message,'err'); }
+};
+
+document.querySelectorAll('.overlay').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});});
+</script>
+</body>
+</html>

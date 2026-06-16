@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>لوحة التحكم — كاشير الزهراء</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+<style>
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:22px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:16px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;right:0;width:4px;height:100%;background:var(--gold)}
+.kpi.green::before{background:var(--green)}
+.kpi.blue::before{background:var(--blue)}
+.kpi.orange::before{background:var(--orange)}
+.kpi.red::before{background:var(--red)}
+.kpi.purple::before{background:var(--purple)}
+.kpi-icon{font-size:22px;margin-bottom:10px;opacity:.7}
+.kpi-lbl{font-size:10px;color:var(--text3);font-weight:700;margin-bottom:3px}
+.kpi-val{font-size:22px;font-weight:900;color:var(--gold)}
+.kpi.green .kpi-val{color:var(--green)}
+.kpi.blue .kpi-val{color:var(--blue)}
+.kpi.orange .kpi-val{color:var(--orange)}
+.kpi.red .kpi-val{color:var(--red)}
+.kpi.purple .kpi-val{color:var(--purple)}
+.kpi-sub{font-size:10px;color:var(--text3);margin-top:3px}
+.dash-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+@media(max-width:900px){.dash-grid{grid-template-columns:1fr}}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:16px}
+.panel-title{font-size:13px;font-weight:900;color:var(--gold);margin-bottom:14px;
+  display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);padding-bottom:10px}
+.alert-item{display:flex;align-items:center;gap:10px;padding:8px 0;
+  border-bottom:1px solid var(--border);font-size:12px}
+.alert-item:last-child{border-bottom:none}
+.alert-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.quick-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.qbtn{display:flex;flex-direction:column;align-items:center;gap:5px;
+  padding:16px;border-radius:var(--r);border:1.5px solid var(--border);
+  background:var(--bg3);cursor:pointer;transition:all .17s;text-decoration:none;color:var(--text)}
+.qbtn:hover{border-color:var(--gold);background:var(--card2)}
+.qbtn i{font-size:22px;color:var(--gold)}
+.qbtn span{font-size:11px;font-weight:700}
+.recent-item{display:flex;align-items:center;justify-content:space-between;
+  padding:8px 0;border-bottom:1px solid var(--border);font-size:12px}
+.recent-item:last-child{border-bottom:none}
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <div id="sidebar"></div>
+  <div class="page-content">
+    <div class="page-header">
+      <h1><i class="fas fa-gauge"></i> لوحة التحكم</h1>
+      <span id="dash-date" style="font-size:12px;color:var(--text3)"></span>
+    </div>
+    <div class="page-body">
+
+      <!-- KPIs -->
+      <div class="kpi-grid" id="kpi-grid">
+        <div class="kpi"><div class="kpi-icon">💰</div><div class="kpi-lbl">مبيعات اليوم</div><div class="kpi-val" id="k-rev">—</div></div>
+        <div class="kpi green"><div class="kpi-icon">📈</div><div class="kpi-lbl">ربح اليوم</div><div class="kpi-val" id="k-profit">—</div></div>
+        <div class="kpi blue"><div class="kpi-icon">🧾</div><div class="kpi-lbl">فواتير اليوم</div><div class="kpi-val" id="k-inv">—</div></div>
+        <div class="kpi orange"><div class="kpi-icon">📦</div><div class="kpi-lbl">تنبيهات المخزون</div><div class="kpi-val" id="k-stock">—</div></div>
+        <div class="kpi purple"><div class="kpi-icon">👥</div><div class="kpi-lbl">العملاء</div><div class="kpi-val" id="k-cust">—</div></div>
+        <div class="kpi red"><div class="kpi-icon">⏳</div><div class="kpi-lbl">آجل متبقي</div><div class="kpi-val" id="k-deferred">—</div></div>
+      </div>
+
+      <div class="dash-grid">
+        <!-- Left: Recent invoices + Top products -->
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="panel">
+            <div class="panel-title"><i class="fas fa-receipt"></i> آخر الفواتير</div>
+            <div id="recent-inv"><div class="spinner"></div></div>
+          </div>
+          <div class="panel">
+            <div class="panel-title"><i class="fas fa-trophy"></i> أكثر المنتجات مبيعاً اليوم</div>
+            <div id="top-prods"><div class="spinner"></div></div>
+          </div>
+        </div>
+
+        <!-- Right: Quick actions + Alerts -->
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="panel">
+            <div class="panel-title"><i class="fas fa-bolt"></i> روابط سريعة</div>
+            <div class="quick-btns">
+              <a class="qbtn" href="pos.html"><i class="fas fa-cash-register"></i><span>الكاشير</span></a>
+              <a class="qbtn" href="products.html"><i class="fas fa-plus-circle"></i><span>إضافة منتج</span></a>
+              <a class="qbtn" href="customers.html"><i class="fas fa-user-plus"></i><span>إضافة عميل</span></a>
+              <a class="qbtn" href="reports.html"><i class="fas fa-chart-bar"></i><span>التقارير</span></a>
+              <a class="qbtn" href="expenses.html"><i class="fas fa-money-bill-wave"></i><span>مصروف</span></a>
+              <a class="qbtn" href="purchases.html"><i class="fas fa-cart-arrow-down"></i><span>مشتريات</span></a>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-title"><i class="fas fa-bell"></i> تنبيهات المخزون</div>
+            <div id="stock-alerts"><div class="spinner"></div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+injectSharedCSS();
+
+requireAuth(async () => {
+  // Date
+  document.getElementById('dash-date').textContent = new Date().toLocaleDateString('ar-EG', {
+    weekday:'long', year:'numeric', month:'long', day:'numeric'
+  });
+
+  const s = new Date(); s.setHours(0, 0, 0, 0);
+
+  // Today invoices
+  let rev = 0, profit = 0, invCount = 0, deferred = 0, prodMap = {};
+  try {
+    const snap = await db.collection('pos_invoices').where('createdAt', '>=', s).orderBy('createdAt', 'desc').get();
+    const recent = [];
+    snap.forEach(d => {
+      const data = d.data();
+      rev += data.totalPrice || 0;
+      profit += data.estimatedProfit || 0;
+      invCount++;
+      deferred += data.remainingAmount || 0;
+      (data.items || []).forEach(i => { prodMap[i.name] = (prodMap[i.name] || 0) + (i.qty || 1); });
+      if (recent.length < 8) recent.push({ id: d.id, ...data });
+    });
+
+    document.getElementById('k-rev').textContent = fmt(rev);
+    document.getElementById('k-profit').textContent = fmt(profit);
+    document.getElementById('k-inv').textContent = invCount;
+    document.getElementById('k-deferred').textContent = fmt(deferred);
+
+    // Recent invoices
+    document.getElementById('recent-inv').innerHTML = recent.length ? recent.map(inv => `
+      <div class="recent-item">
+        <div>
+          <div style="font-weight:700">${inv.invoiceNumber || inv.id.slice(0,8)}</div>
+          <div style="font-size:10px;color:var(--text3)">${inv.userName || 'عميل'} · ${fmtDate(inv.createdAt)}</div>
+        </div>
+        <div style="text-align:left">
+          <div style="font-weight:900;color:var(--gold)">${fmt(inv.totalPrice)}</div>
+          <span class="badge badge-${inv.status==='مكتمل'?'green':'orange'}">${inv.status || 'مكتمل'}</span>
+        </div>
+      </div>`).join('') : '<div class="empty-state"><i class="fas fa-receipt"></i><p>لا توجد فواتير اليوم</p></div>';
+
+    // Top products
+    const top = Object.entries(prodMap).sort((a, b) => b[1] - a[1]).slice(0, 6);
+    document.getElementById('top-prods').innerHTML = top.length ? top.map(([n, q], i) => `
+      <div class="recent-item">
+        <span>${i + 1}. ${n}</span>
+        <span style="color:var(--gold);font-weight:900">${q} قطعة</span>
+      </div>`).join('') : '<p style="color:var(--text3);font-size:12px;text-align:center;padding:10px">لا بيانات بعد</p>';
+  } catch(e) {
+    console.error(e);
+  }
+
+  // Stock alerts
+  try {
+    const pSnap = await db.collection('products').where('trackStock', '==', true).get();
+    let alerts = [];
+    let lowCount = 0;
+    pSnap.forEach(d => {
+      const p = d.data();
+      const reorder = p.reorderLevel || 5;
+      if ((p.stock || 0) <= reorder) {
+        alerts.push(p);
+        lowCount++;
+      }
+    });
+    document.getElementById('k-stock').textContent = lowCount;
+    document.getElementById('stock-alerts').innerHTML = alerts.length ? alerts.slice(0, 6).map(p => `
+      <div class="alert-item">
+        <div class="alert-icon" style="background:#451a03"><i class="fas fa-triangle-exclamation" style="color:var(--orange)"></i></div>
+        <div>
+          <div style="font-weight:700;font-size:12px">${p.name}</div>
+          <div style="font-size:10px;color:var(--text3)">المخزون: ${p.stock || 0} | حد الطلب: ${p.reorderLevel || 5}</div>
+        </div>
+      </div>`).join('') : '<p style="color:var(--text3);font-size:12px;text-align:center;padding:16px">✅ المخزون بخير</p>';
+  } catch(e) {
+    document.getElementById('k-stock').textContent = '—';
+    document.getElementById('stock-alerts').innerHTML = '<p style="color:var(--text3);font-size:12px;padding:10px">تأكد من إعداد المخزون</p>';
+  }
+
+  // Customers count
+  try {
+    const cSnap = await db.collection('pos_customers').get();
+    document.getElementById('k-cust').textContent = cSnap.size;
+  } catch(e) { document.getElementById('k-cust').textContent = '—'; }
+});
+</script>
+</body>
+</html>

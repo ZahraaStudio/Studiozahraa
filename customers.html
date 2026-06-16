@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>العملاء — كاشير الزهراء</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+</head>
+<body>
+<div class="app-shell">
+  <div id="sidebar"></div>
+  <div class="page-content">
+    <div class="page-header">
+      <h1><i class="fas fa-users"></i> إدارة العملاء</h1>
+      <button class="btn btn-primary" onclick="openAdd()"><i class="fas fa-user-plus"></i> إضافة عميل</button>
+    </div>
+    <div class="page-body">
+      <div class="search-bar">
+        <input class="search-input" id="q" placeholder="🔍 بحث بالاسم أو الهاتف..." oninput="filter()">
+      </div>
+      <div id="cust-table"><div class="spinner"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="overlay" id="cust-modal">
+  <div class="modal">
+    <div class="modal-header"><h3 id="cust-modal-title">إضافة عميل</h3><button class="close-btn" onclick="closeModal('cust-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>الاسم *</label><input class="form-control" id="c-name"></div>
+        <div class="form-group"><label>الهاتف</label><input class="form-control" id="c-phone" type="tel"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>البريد الإلكتروني</label><input class="form-control" id="c-email" type="email"></div>
+        <div class="form-group"><label>تاريخ الميلاد</label><input class="form-control" id="c-dob" type="date"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>الحد الائتماني (ج)</label><input class="form-control" id="c-credit" type="number" min="0" value="0"></div>
+        <div class="form-group"><label>نقاط الولاء</label><input class="form-control" id="c-points" type="number" min="0" value="0"></div>
+      </div>
+      <div class="form-group"><label>العنوان</label><input class="form-control" id="c-addr" placeholder="العنوان"></div>
+      <div class="form-group"><label>ملاحظات</label><textarea class="form-control" id="c-notes" rows="2" placeholder="أي ملاحظات..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="saveCust()"><i class="fas fa-save"></i> حفظ</button>
+      <button class="btn btn-ghost" onclick="closeModal('cust-modal')">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- Statement Modal -->
+<div class="overlay" id="stmt-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header"><h3 id="stmt-title">كشف حساب العميل</h3><button class="close-btn" onclick="closeModal('stmt-modal')">✕</button></div>
+    <div class="modal-body">
+      <div id="stmt-content"><div class="spinner"></div></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="window.print()"><i class="fas fa-print"></i> طباعة</button>
+    </div>
+  </div>
+</div>
+
+<script>
+injectSharedCSS();
+let all = [], editId = null;
+
+requireAuth(async () => { await load(); });
+
+async function load() {
+  try {
+    const snap = await db.collection('pos_customers').orderBy('name').get();
+    all = [];
+    snap.forEach(d => all.push({ id: d.id, ...d.data() }));
+    filter();
+  } catch(e) {
+    document.getElementById('cust-table').innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>${e.message}</p></div>`;
+  }
+}
+
+function filter() {
+  const q = document.getElementById('q').value.toLowerCase();
+  const list = q ? all.filter(c => (c.name||'').toLowerCase().includes(q)||(c.phone||'').includes(q)) : all;
+  render(list);
+}
+
+function render(list) {
+  const el = document.getElementById('cust-table');
+  if (!list.length) { el.innerHTML = `<div class="empty-state"><i class="fas fa-users"></i><p>لا يوجد عملاء</p></div>`; return; }
+  el.innerHTML = `<div class="tbl-wrap"><table>
+    <thead><tr><th>#</th><th>الاسم</th><th>الهاتف</th><th>الرصيد</th><th>نقاط الولاء</th><th>الحد الائتماني</th><th>آخر زيارة</th><th>إجراءات</th></tr></thead>
+    <tbody>${list.map((c,i)=>`<tr>
+      <td style="color:var(--text3)">${i+1}</td>
+      <td><div style="font-weight:700">${c.name}</div>${c.email?`<div style="font-size:10px;color:var(--text3)">${c.email}</div>`:''}</td>
+      <td>${c.phone||'—'}</td>
+      <td style="color:${(c.balance||0)<0?'var(--red)':'var(--green)';font-weight:700}">${fmt(c.balance||0)}</td>
+      <td><span class="badge badge-blue">🌟 ${c.points||0}</span></td>
+      <td>${fmt(c.creditLimit||0)}</td>
+      <td style="font-size:11px;color:var(--text3)">${fmtDate(c.lastVisit)||'—'}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-ghost" style="padding:5px 8px;font-size:11px" onclick="showStmt('${c.id}','${c.name}')"><i class="fas fa-file-invoice"></i></button>
+        <button class="btn btn-ghost" style="padding:5px 8px;font-size:11px" onclick="editCust('${c.id}')"><i class="fas fa-edit"></i></button>
+        <button class="btn btn-danger" style="padding:5px 8px;font-size:11px" onclick="delCust('${c.id}','${c.name}')"><i class="fas fa-trash"></i></button>
+      </td>
+    </tr>`).join('')}</tbody>
+  </table></div>
+  <div style="margin-top:10px;font-size:12px;color:var(--text3)">إجمالي: ${list.length} عميل</div>`;
+}
+
+window.openAdd = () => {
+  editId = null;
+  document.getElementById('cust-modal-title').textContent = 'إضافة عميل';
+  ['c-name','c-phone','c-email','c-addr','c-notes','c-dob'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('c-credit').value='0';
+  document.getElementById('c-points').value='0';
+  openModal('cust-modal');
+};
+
+window.editCust = id => {
+  const c = all.find(x=>x.id===id);
+  if (!c) return;
+  editId = id;
+  document.getElementById('cust-modal-title').textContent = 'تعديل عميل';
+  document.getElementById('c-name').value=c.name||'';
+  document.getElementById('c-phone').value=c.phone||'';
+  document.getElementById('c-email').value=c.email||'';
+  document.getElementById('c-addr').value=c.address||'';
+  document.getElementById('c-notes').value=c.notes||'';
+  document.getElementById('c-dob').value=c.dob||'';
+  document.getElementById('c-credit').value=c.creditLimit||0;
+  document.getElementById('c-points').value=c.points||0;
+  openModal('cust-modal');
+};
+
+window.saveCust = async () => {
+  const name = document.getElementById('c-name').value.trim();
+  if (!name) { toast('أدخل اسم العميل','warn'); return; }
+  const data = {
+    name, phone: document.getElementById('c-phone').value.trim(),
+    email: document.getElementById('c-email').value.trim(),
+    address: document.getElementById('c-addr').value.trim(),
+    notes: document.getElementById('c-notes').value.trim(),
+    dob: document.getElementById('c-dob').value,
+    creditLimit: parseFloat(document.getElementById('c-credit').value)||0,
+    points: parseInt(document.getElementById('c-points').value)||0,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  };
+  if (!editId) data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+  try {
+    if (editId) await db.collection('pos_customers').doc(editId).update(data);
+    else await db.collection('pos_customers').add(data);
+    toast(editId?'✅ تم التحديث':'✅ تم الإضافة','ok');
+    closeModal('cust-modal');
+    load();
+  } catch(e) { toast('خطأ: '+e.message,'err'); }
+};
+
+window.delCust = async (id,name) => {
+  if (!await confirm2(`حذف العميل "${name}"؟`)) return;
+  try {
+    await db.collection('pos_customers').doc(id).delete();
+    toast('🗑️ تم الحذف','ok');
+    load();
+  } catch(e) { toast('خطأ: '+e.message,'err'); }
+};
+
+window.showStmt = async (id, name) => {
+  document.getElementById('stmt-title').textContent = `كشف حساب: ${name}`;
+  document.getElementById('stmt-content').innerHTML = '<div class="spinner"></div>';
+  openModal('stmt-modal');
+  try {
+    const snap = await db.collection('pos_invoices').where('phone','==', all.find(c=>c.id===id)?.phone||'__').orderBy('createdAt','desc').limit(50).get();
+    const invs = [];
+    snap.forEach(d => invs.push({ id: d.id, ...d.data() }));
+    const total = invs.reduce((s,i)=>s+(i.totalPrice||0),0);
+    const remaining = invs.reduce((s,i)=>s+(i.remainingAmount||0),0);
+    document.getElementById('stmt-content').innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+        <div class="card"><div class="card-title">إجمالي المشتريات</div><div class="card-value">${fmt(total)}</div></div>
+        <div class="card"><div class="card-title">عدد الفواتير</div><div class="card-value">${invs.length}</div></div>
+        <div class="card"><div class="card-title">مستحق</div><div class="card-value" style="color:var(--red)">${fmt(remaining)}</div></div>
+      </div>
+      ${invs.length ? `<div class="tbl-wrap"><table>
+        <thead><tr><th>رقم الفاتورة</th><th>التاريخ</th><th>الإجمالي</th><th>المدفوع</th><th>المتبقي</th><th>الحالة</th></tr></thead>
+        <tbody>${invs.map(i=>`<tr>
+          <td style="font-family:monospace">${i.invoiceNumber||i.id.slice(0,8)}</td>
+          <td style="font-size:11px">${fmtDate(i.createdAt)}</td>
+          <td style="color:var(--gold);font-weight:900">${fmt(i.totalPrice)}</td>
+          <td>${fmt(i.paidAmount)}</td>
+          <td style="color:${(i.remainingAmount||0)>0?'var(--red)':'var(--green)'}">${fmt(i.remainingAmount)}</td>
+          <td><span class="badge badge-${i.status==='مكتمل'?'green':'orange'}">${i.status||'—'}</span></td>
+        </tr>`).join('')}</tbody>
+      </table></div>` : '<p style="text-align:center;color:var(--text3);padding:20px">لا توجد فواتير</p>'}`;
+  } catch(e) {
+    document.getElementById('stmt-content').innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>${e.message}</p></div>`;
+  }
+};
+
+document.querySelectorAll('.overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target===m) m.classList.remove('open'); });
+});
+</script>
+</body>
+</html>
