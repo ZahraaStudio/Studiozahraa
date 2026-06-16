@@ -73,7 +73,20 @@
       </div>
       <div class="form-row">
         <div class="form-group"><label>إيموجي (أيقونة)</label><input class="form-control" id="p-icon" placeholder="📦" maxlength="4"></div>
-        <div class="form-group"><label>رابط الصورة (اختياري)</label><input class="form-control" id="p-img" placeholder="https://..."></div>
+        <div class="form-group">
+          <label>صورة المنتج</label>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input class="form-control" id="p-img" placeholder="رابط الصورة..." style="flex:1;min-width:0">
+            <label style="background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--r);padding:7px 12px;cursor:pointer;font-size:11px;font-weight:700;white-space:nowrap;color:var(--text2);transition:all .2s" onmouseenter="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseleave="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
+              <i class="fas fa-upload"></i> رفع من الجهاز
+              <input type="file" id="p-img-file" accept="image/*" style="display:none" onchange="uploadProductImage(this)">
+            </label>
+          </div>
+          <div id="p-img-preview" style="margin-top:6px;display:none">
+            <img id="p-img-preview-el" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1.5px solid var(--border)">
+            <span id="p-img-uploading" style="font-size:11px;color:var(--text3);margin-right:8px;display:none"><i class="fas fa-spinner fa-spin"></i> جاري الرفع...</span>
+          </div>
+        </div>
       </div>
       <div class="form-group"><label>الوصف</label><textarea class="form-control" id="p-desc" rows="2" placeholder="وصف المنتج..."></textarea></div>
       <div class="form-group">
@@ -181,6 +194,39 @@ function renderTable(list) {
   <div style="margin-top:10px;font-size:12px;color:var(--text3)">إجمالي: ${list.length} منتج</div>`;
 }
 
+// ─── Cloudinary Upload ───────────────────
+const CLOUDINARY_CLOUD = 'dxlxwe55b';
+const CLOUDINARY_PRESET = 'zahraa_upload';
+
+window.uploadProductImage = async function(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const preview = document.getElementById('p-img-preview');
+  const previewEl = document.getElementById('p-img-preview-el');
+  const uploading = document.getElementById('p-img-uploading');
+  // Show local preview immediately
+  previewEl.src = URL.createObjectURL(file);
+  preview.style.display = 'flex';
+  preview.style.alignItems = 'center';
+  uploading.style.display = 'inline';
+  // Upload to Cloudinary
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', CLOUDINARY_PRESET);
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, { method:'POST', body: fd });
+    if (!res.ok) throw new Error('فشل رفع الصورة');
+    const json = await res.json();
+    document.getElementById('p-img').value = json.secure_url;
+    previewEl.src = json.secure_url;
+    toast('✅ تم رفع الصورة','ok');
+  } catch(e) {
+    toast('خطأ في رفع الصورة: '+e.message,'err');
+  } finally {
+    uploading.style.display = 'none';
+  }
+};
+
 window.openAddModal = () => {
   editId = null;
   document.getElementById('prod-modal-title').textContent = 'إضافة منتج';
@@ -192,6 +238,8 @@ window.openAddModal = () => {
   document.getElementById('p-cat').value='';
   document.getElementById('p-track').checked=true;
   document.getElementById('p-active').checked=true;
+  document.getElementById('p-img-file').value='';
+  document.getElementById('p-img-preview').style.display='none';
   openModal('prod-modal');
 };
 
@@ -211,6 +259,13 @@ window.editProd = id => {
   document.getElementById('p-reorder').value = p.reorderLevel||5;
   document.getElementById('p-icon').value = p.icon||'';
   document.getElementById('p-img').value = p.image||'';
+  document.getElementById('p-img-file').value='';
+  const prevEl = document.getElementById('p-img-preview');
+  if (p.image) {
+    document.getElementById('p-img-preview-el').src = p.image;
+    prevEl.style.display = 'flex';
+    prevEl.style.alignItems = 'center';
+  } else { prevEl.style.display = 'none'; }
   document.getElementById('p-desc').value = p.description||'';
   document.getElementById('p-cat').value = p.category||p.categoryId||'';
   document.getElementById('p-track').checked = !!p.trackStock;

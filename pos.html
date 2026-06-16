@@ -802,19 +802,32 @@ window.doPay = async () => {
     const now = new Date();
     const pad = n => String(n).padStart(2,'0');
     const invNo = `ZPH-${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-    const profit = cart.reduce((s, i) => s + (i.finalPrice - i.cost) * i.qty, 0) - disc;
+    const profit = cart.reduce((s, i) => s + ((i.finalPrice||i.price||0) - (i.cost||0)) * (i.qty||1), 0) - disc;
+    // تنظيف الكائن من القيم undefined قبل الإرسال لـ Firestore
+    const cleanItems = cart.map(i => ({
+      id: i.id || null,
+      name: i.name || '',
+      price: i.price || 0,
+      finalPrice: i.finalPrice || i.price || 0,
+      cost: i.cost || 0,
+      qty: i.qty || 1,
+      unit: i.unit || null,
+      image: i.image || null,
+      catId: i.catId || null,
+      icon: i.icon || null,
+    }));
     const data = {
       invoiceNumber: invNo,
-      items: cart.map(i => ({...i})),
+      items: cleanItems,
       subtotal: sub, discountAmount: disc, deliveryFee: del, totalPrice: fin,
       paidAmount: paid, remainingAmount: rem,
       paymentType: payType, paymentMethod: payLbl,
       ref: ref || null,
-      userName: custName, phone: custPhone,
+      userName: custName, phone: custPhone || null,
       notes: notes || null, dueDate: dueDate || null, deliveryDate: dlvDate || null,
-      estimatedProfit: profit,
-      cashierId: currentUser?.uid,
-      cashierEmail: currentUser?.email,
+      estimatedProfit: isNaN(profit) ? 0 : profit,
+      cashierId: currentUser?.uid || null,
+      cashierEmail: currentUser?.email || null,
       isPOS: true,
       status: rem > 0 ? 'آجل' : 'مكتمل',
       createdAt: firebase.firestore.FieldValue.serverTimestamp()

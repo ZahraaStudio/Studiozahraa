@@ -101,26 +101,17 @@ body{background:var(--bg);display:flex;align-items:center;justify-content:center
 <script>
 injectSharedCSS();
 
-// Check if already configured & logged in
+// Firebase config مدمج — فتح تسجيل الدخول مباشرة
 window.onload = () => {
-  const cfg = JSON.parse(localStorage.getItem(CFG_KEY) || 'null');
-  if (cfg && cfg.apiKey) {
-    loadConfig(cfg);
-    if (initFirebase()) {
-      auth.onAuthStateChanged(u => {
-        if (u) location.href = 'dashboard.html';
-      });
-    }
-    // Pre-fill setup form
-    document.getElementById('s-apiKey').value = cfg.apiKey || '';
-    document.getElementById('s-authDomain').value = cfg.authDomain || '';
-    document.getElementById('s-projectId').value = cfg.projectId || '';
-    document.getElementById('s-storageBucket').value = cfg.storageBucket || '';
-    document.getElementById('s-messagingSenderId').value = cfg.messagingSenderId || '';
-    document.getElementById('s-appId').value = cfg.appId || '';
-  } else {
-    switchTab('setup');
-  }
+  initFirebase();
+  switchTab('login');
+  // إذا كان المستخدم مسجلاً دخوله، انتقل للداشبورد
+  auth.onAuthStateChanged(u => {
+    if (u) location.href = 'dashboard.html';
+  });
+  // إخفاء تبويب الإعداد — الكونفيج مدمج
+  const setupTab = document.getElementById('tab-setup');
+  if (setupTab) setupTab.style.display = 'none';
 };
 
 function loadConfig(cfg) {}
@@ -151,9 +142,7 @@ async function doLogin() {
   const email = document.getElementById('l-email').value.trim();
   const pass = document.getElementById('l-pass').value;
   if (!email || !pass) { toast('أدخل البريد وكلمة المرور','warn'); return; }
-  const cfg = JSON.parse(localStorage.getItem(CFG_KEY) || 'null');
-  if (!cfg || !cfg.apiKey) { toast('أعد الإعداد من تبويب Firebase أولاً','err'); return; }
-  if (!initFirebase()) { toast('خطأ في الإعداد','err'); return; }
+  if (!initFirebase()) { toast('خطأ في الاتصال بـ Firebase','err'); return; }
   const btn = document.getElementById('l-btn');
   btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الدخول...';
   try {

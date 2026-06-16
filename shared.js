@@ -6,19 +6,20 @@ const CFG_KEY = 'zahraa_pos_firebase_config';
 const SETTINGS_KEY = 'zahraa_pos_settings';
 let db, auth, currentUser = null;
 
+// ─── Firebase Config (مدمج مباشرة) ──────
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
+  authDomain: "zahraa-store-f4c90.firebaseapp.com",
+  projectId: "zahraa-store-f4c90"
+};
+
 // ─── Firebase Init ───────────────────────
 function initFirebase() {
-  const cfg = JSON.parse(localStorage.getItem(CFG_KEY) || 'null');
-  if (!cfg || !cfg.apiKey) return false;
   if (!firebase.apps.length) {
-    firebase.initializeApp(cfg);
+    firebase.initializeApp(FIREBASE_CONFIG);
   }
   db = firebase.firestore();
   auth = firebase.auth();
-  if (typeof firebase.firestore.setLogLevel === 'function') {
-    // silence logs
-  }
-  // Offline persistence
   db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
   return true;
 }
