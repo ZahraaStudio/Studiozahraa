@@ -2,670 +2,362 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>فاتورة - ZAHRAA STUDIO</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>ZAHRAA STUDIO | فاتورة</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode-generator.min.js"></script>
     <style>
-        * {
-            font-family: 'Cairo', sans-serif;
-        }
-        
+        * { margin:0; padding:0; box-sizing:border-box; }
         body {
-            background: #f5f5f5;
-            min-height: 100vh;
+            background:#e2e8f0;
+            display:flex; flex-direction:column;
+            align-items:center; min-height:100vh;
+            font-family:'Segoe UI','Tajawal','Cairo','Arial Black',sans-serif;
+            padding:20px 10px;
         }
-        
-        .invoice-container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        .invoice-card {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            padding: 40px;
-        }
-        
-        .invoice-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-bottom: 20px;
-            border-bottom: 3px solid #000;
-            margin-bottom: 30px;
-        }
-        
-        .invoice-logo {
-            max-height: 80px;
-            max-width: 200px;
-            object-fit: contain;
-        }
-        
-        .invoice-title {
-            font-size: 28px;
-            font-weight: 900;
-            color: #000;
-        }
-        
-        .invoice-number {
-            font-size: 18px;
-            font-weight: 700;
-            color: #333;
-        }
-        
-        .customer-info {
-            background: #f9f9f9;
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 30px;
-        }
-        
-        .customer-info h3 {
-            font-size: 16px;
-            font-weight: 800;
-            color: #000;
-            margin-bottom: 12px;
-        }
-        
-        .customer-info p {
-            margin: 6px 0;
-            font-size: 14px;
-            color: #333;
-        }
-        
-        .products-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 30px;
-        }
-        
-        .products-table th {
-            background: #000;
-            color: #fff;
-            padding: 12px;
-            text-align: right;
-            font-weight: 700;
-            font-size: 14px;
-        }
-        
-        .products-table td {
-            padding: 12px;
-            border-bottom: 1px solid #eee;
-            font-size: 14px;
-            color: #333;
-        }
-        
-        .products-table tr:last-child td {
-            border-bottom: none;
-        }
-        
-        .totals-section {
-            background: #f9f9f9;
-            padding: 20px;
-            border-radius: 12px;
-        }
-        
-        .total-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            font-size: 14px;
-            color: #333;
-        }
-        
-        .total-row.final {
-            border-top: 2px solid #000;
-            padding-top: 12px;
-            font-size: 18px;
-            font-weight: 900;
-            color: #000;
-        }
-        
         .action-buttons {
-            display: flex;
-            gap: 12px;
-            margin-top: 30px;
-            flex-wrap: wrap;
+            display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; justify-content:center;
         }
-        
-        .action-btn {
-            flex: 1;
-            min-width: 150px;
-            padding: 14px 20px;
-            border: none;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 700;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: all 0.3s;
+        .action-buttons button {
+            padding:10px 22px; border:none; border-radius:8px; font-size:14px;
+            font-family:'Cairo',sans-serif; font-weight:700; cursor:pointer; transition:opacity .2s;
         }
-        
-        .action-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        
-        .btn-print {
-            background: #000;
-            color: #fff;
-        }
-        
-        .btn-pdf {
-            background: #d4af37;
-            color: #000;
-        }
-        
-        .btn-whatsapp {
-            background: #25D366;
-            color: #fff;
-        }
-        
-        .btn-qr {
-            background: #6366f1;
-            color: #fff;
-        }
-        
-        .qr-code-container {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.8);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .qr-code-container.show {
-            display: flex;
-        }
-        
-        .qr-code-box {
-            background: white;
-            padding: 30px;
-            border-radius: 16px;
-            text-align: center;
-        }
-        
-        .qr-code-box h3 {
-            margin-bottom: 20px;
-            font-size: 18px;
-            font-weight: 800;
-        }
-        
-        #qrcode {
-            margin: 0 auto;
-        }
-        
-        .close-qr {
-            margin-top: 20px;
-            padding: 10px 30px;
-            background: #000;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 700;
-        }
-        
-        /* Thermal Print Layout */
-        @media print {
-            body * {
-                visibility: hidden;
-            }
-            
-            #invoice-content, #invoice-content * {
-                visibility: visible;
-            }
-            
-            #invoice-content {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 72mm;
-                padding: 2mm;
-                background: white;
-                color: #000 !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-            
-            #invoice-content * {
-                color: #000 !important;
-                background: white !important;
-            }
+        .action-buttons button:hover { opacity:.85; }
+        .btn-print { background:#1e293b; color:#fff; }
+        .btn-share { background:#25D366; color:#fff; }
+        .btn-back  { background:#64748b; color:#fff; }
 
-            #invoice-content .total-row.final,
-            #invoice-content .total-row.final * {
-                background: #000 !important;
-                color: #fff !important;
-            }
-            
-            @page {
-                margin: 0;
-                size: 80mm auto;
-            }
-            
-            .invoice-header {
-                flex-direction: row;
-                align-items: center;
-                gap: 4px;
-                padding-bottom: 6px;
-                margin-bottom: 10px;
-                border-bottom: 2px solid #000;
-            }
-            
-            .invoice-logo {
-                max-height: 25mm;
-                max-width: 25mm;
-            }
-            
-            .invoice-title {
-                font-size: 14px;
-            }
-            
-            .invoice-number {
-                font-size: 11px;
-            }
-            
-            .customer-info {
-                background: white;
-                padding: 0;
-                border-radius: 0;
-                margin-bottom: 10px;
-            }
-            
-            .customer-info h3 {
-                font-size: 11px;
-                margin-bottom: 4px;
-            }
-            
-            .customer-info p {
-                font-size: 10px;
-                margin: 2px 0;
-            }
-            
-            .products-table {
-                font-size: 10px;
-            }
-            
-            .products-table th {
-                padding: 4px;
-                font-size: 9px;
-            }
-            
-            .products-table td {
-                padding: 4px;
-                font-size: 9px;
-            }
-            
-            .totals-section {
-                background: white;
-                padding: 0;
-                border-radius: 0;
-            }
-            
-            .total-row {
-                font-size: 10px;
-                padding: 4px 0;
-            }
-            
-            .total-row.final {
-                font-size: 12px;
-                padding-top: 6px;
-                background: #000 !important;
-                color: #fff !important;
-                padding: 8px;
-                border-radius: 4px;
-            }
-            
-            .action-buttons {
-                display: none;
-            }
+        /* ===== RECEIPT ===== */
+        .receipt {
+            width:80mm; max-width:80mm;
+            background:white; color:black;
+            margin:0 auto; padding:3px 4px 4px 4px;
+            box-shadow:0 4px 20px rgba(0,0,0,.15);
         }
-        
-        @media (max-width: 640px) {
-            .invoice-card {
-                padding: 20px;
-            }
-            
-            .invoice-header {
-                flex-direction: column;
-                text-align: center;
-                gap: 15px;
-            }
-            
-            .action-buttons {
-                flex-direction: column;
-            }
-            
-            .action-btn {
-                width: 100%;
-            }
+        .receipt, .receipt * { font-weight:900; letter-spacing:-.2px; }
+        .sep { background:black; height:3px; width:100%; margin:4px 0; border:none; display:block; }
+        .sep-thin { background:black; height:1px; width:100%; margin:3px 0; border:none; display:block; }
+
+        /* Header */
+        .header-flex { display:flex; justify-content:space-between; align-items:center; margin-bottom:2px; }
+        .camera-icon { font-size:26px; }
+        .logo-text { font-size:15px; background:black; color:white; padding:3px 8px; }
+        .studio-name { text-align:center; font-size:20px; margin:2px 0 0; line-height:1.2; }
+        .phones { text-align:center; font-size:13px; direction:ltr; margin-bottom:2px; }
+
+        /* Info rows */
+        .info-row { display:flex; justify-content:space-between; gap:6px; margin:4px 0; font-size:11px; flex-wrap:wrap; }
+        .info-item { display:flex; align-items:baseline; gap:3px; flex-wrap:wrap; }
+        .info-label { font-size:10px; min-width:50px; }
+        .info-value { font-size:10px; background:#f5f5f5; border:1.5px solid black; padding:2px 5px; }
+        .highlight { background:black; color:white; border:1.5px solid black; }
+
+        /* Products table */
+        .products-table { width:100%; border-collapse:collapse; margin:5px 0; font-size:10px; }
+        .products-table th, .products-table td { border:1.5px solid black; padding:3px 2px; text-align:center; }
+        .products-table td:first-child, .products-table th:first-child { text-align:right; max-width:28mm; word-break:break-word; }
+
+        /* Total box */
+        .total-box { background:black; color:white; padding:6px 10px; margin:5px 0;
+            display:flex; justify-content:space-between; align-items:center;
+            font-size:14px; border:2px solid black; }
+        .total-amount { font-size:20px; direction:ltr; }
+
+        /* Extra totals */
+        .subtotals { font-size:10px; padding:3px 0; }
+        .subtotals div { display:flex; justify-content:space-between; padding:1px 0; }
+
+        /* Payment status */
+        .pay-status { display:flex; gap:4px; margin:3px 0; }
+        .pay-badge { border:1.5px solid black; padding:2px 6px; font-size:10px; flex:1; text-align:center; }
+        .pay-badge.active { background:black; color:white; }
+
+        /* QR row */
+        .qr-row { display:flex; gap:8px; margin:5px 0; }
+        .qr-card { flex:1; text-align:center; border:1.5px solid black; padding:4px 2px; }
+        canvas.qr-canvas { width:58px; height:58px; display:block; margin:auto; border:1px solid black; }
+        .qr-label { font-size:10px; background:black; color:white; display:inline-block;
+            padding:2px 8px; margin-top:3px; }
+
+        /* Notice */
+        .notice { border:1.5px solid black; text-align:center; padding:4px 3px; margin:4px 0;
+            font-size:9px; line-height:1.4; }
+
+        /* Footer */
+        .footer-compact { margin:4px 0 2px; border-top:2px solid black; border-bottom:2px solid black; padding:4px 0; }
+        .footer-line { display:flex; align-items:center; gap:6px; font-size:10px; margin-bottom:3px; }
+        .footer-line:last-child { margin-bottom:0; }
+        .footer-icon { width:22px; font-size:13px; text-align:center; }
+        .phone-badge { background:black; color:white; padding:2px 5px; font-size:10px;
+            display:inline-block; margin-left:3px; }
+
+        /* Loading/error */
+        .page-loader { text-align:center; padding:40px; font-family:'Cairo',sans-serif; color:#475569; font-size:16px; }
+        .error-card { background:#fff; border:2px solid #dc2626; border-radius:12px; padding:20px;
+            text-align:center; color:#dc2626; font-family:'Cairo',sans-serif; max-width:400px; margin:20px auto; }
+
+        @media print {
+            body { background:white; padding:0; margin:0; }
+            .action-buttons { display:none !important; }
+            .receipt { width:80mm; padding:2px; box-shadow:none; }
+            .total-box, .qr-label, .highlight, .phone-badge, .logo-text { print-color-adjust:exact; -webkit-print-color-adjust:exact; }
         }
     </style>
 </head>
 <body>
-    <div class="invoice-container">
-        <div id="invoice-content" class="invoice-card">
-            <!-- Invoice content will be loaded dynamically -->
-            <div class="text-center py-20">
-                <div class="text-2xl font-bold text-gray-400 mb-4">جاري تحميل الفاتورة...</div>
-                <div class="text-gray-400">يرجى الانتظار</div>
+
+<div id="action-bar" class="action-buttons">
+    <button class="btn-print" onclick="window.print()">🖨️ طباعة</button>
+    <button class="btn-share" id="wa-btn" style="display:none" onclick="shareWhatsApp()">📲 مشاركة واتساب</button>
+    <button class="btn-back" onclick="history.back()">← رجوع</button>
+</div>
+
+<div id="root">
+    <div class="page-loader">⏳ جاري تحميل الفاتورة...</div>
+</div>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, doc, getDoc, getDocs, query, where, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
+    authDomain: "zahraa-store-f4c90.firebaseapp.com",
+    projectId: "zahraa-store-f4c90",
+    storageBucket: "zahraa-store-f4c90.firebasestorage.app",
+    messagingSenderId: "885722081307",
+    appId: "1:885722081307:web:7c91e0f8b0ea9b8b4df0be"
+};
+const app = initializeApp(firebaseConfig, 'invoice-v2');
+const db = getFirestore(app);
+
+const params = new URLSearchParams(location.search);
+const orderId   = params.get('id');
+const invNum    = params.get('inv');
+const isPOS     = params.get('pos') === '1';
+
+async function loadInvoice() {
+    const root = document.getElementById('root');
+    try {
+        let inv = null;
+        if (isPOS || invNum) {
+            // Load from pos_invoices by invoiceNumber
+            const searchVal = invNum || orderId;
+            const q = query(collection(db,'pos_invoices'), where('invoiceNumber','==',searchVal), limit(1));
+            const snap = await getDocs(q);
+            if (!snap.empty) inv = { id: snap.docs[0].id, ...snap.docs[0].data(), _isPOS: true };
+        } else if (orderId) {
+            // Load from pos_invoices by doc id first
+            try {
+                const d = await getDoc(doc(db,'pos_invoices',orderId));
+                if (d.exists()) inv = { id: d.id, ...d.data(), _isPOS: true };
+            } catch(e) {}
+            // Fallback: online orders collection
+            if (!inv) {
+                const d = await getDoc(doc(db,'orders',orderId));
+                if (d.exists()) inv = { id: d.id, ...d.data() };
+            }
+        }
+        if (!inv) {
+            root.innerHTML = `<div class="error-card">❌ لم يتم العثور على الفاتورة<br><small style="color:#666;font-size:12px;">رقم: ${orderId || invNum || '—'}</small></div>`;
+            return;
+        }
+
+        // Load store settings
+        let store = { storeName:'استوديو الزهراء', storePhone:'', storePhone2:'', storeAddress:'', storeInstagram:'', storeEmail:'' };
+        try {
+            const sd = await getDoc(doc(db,'settings','general'));
+            if (sd.exists()) Object.assign(store, sd.data());
+        } catch(e) {}
+
+        renderReceipt(inv, store);
+    } catch(e) {
+        root.innerHTML = `<div class="error-card">❌ خطأ: ${e.message}</div>`;
+    }
+}
+
+function renderReceipt(inv, store) {
+    const root = document.getElementById('root');
+    const items = inv.items || inv.products || [];
+    const createdAt = inv.createdAt?.toDate ? inv.createdAt.toDate() : (inv.createdAt ? new Date(inv.createdAt) : new Date());
+    const dateStr = createdAt.toLocaleDateString('ar-EG', { year:'numeric', month:'2-digit', day:'2-digit' }).replace(/\//g,'-');
+    const timeStr = createdAt.toLocaleTimeString('ar-EG', { hour:'2-digit', minute:'2-digit' });
+
+    const subtotal    = inv.subtotal     ?? items.reduce((s,i)=>s+(i.price||0)*(i.quantity||i.qty||1),0);
+    const discount    = inv.discountAmount ?? 0;
+    const delivery    = inv.deliveryFee  ?? 0;
+    const total       = inv.totalPrice   ?? (subtotal - discount + delivery);
+    const paid        = inv.paidAmount   ?? total;
+    const remaining   = inv.remainingAmount ?? Math.max(0, total - paid);
+
+    const payMethod   = inv.paymentMethod || inv.paymentType || 'نقدي';
+    const customerName= inv.userName || inv.customerName || inv.name || 'عميل';
+    const phone       = inv.phone || inv.customerPhone || '';
+    const invoiceNum  = inv.invoiceNumber || inv.id || '—';
+    const notes       = inv.notes || '';
+    const dueDate     = inv.dueDate || '';
+
+    // Delivery/receipt date
+    const deliveryDateStr = inv.deliveryDate ? inv.deliveryDate : (dueDate || '');
+
+    // Phone for WhatsApp
+    if (phone) {
+        const waBtn = document.getElementById('wa-btn');
+        if (waBtn) {
+            waBtn.style.display = 'inline-block';
+            window._waPhone = phone;
+        }
+    }
+    window._invNum = invoiceNum;
+    window._custName = customerName;
+    window._total = total;
+
+    // Build HTML
+    root.innerHTML = `
+    <div class="receipt" id="receipt-print">
+
+        <!-- Header -->
+        <div class="header-flex">
+            <i class="fas fa-camera-retro camera-icon"></i>
+            <div class="logo-text">ZAHRAA STUDIO</div>
+        </div>
+        <div class="studio-name">${store.storeName || 'استوديو الزهراء'}</div>
+        ${(store.storePhone||store.phone1||store.phone2) ? `<div class="phones">${store.storePhone||store.phone1||''}${(store.storePhone2||store.phone2) ? ' - '+(store.storePhone2||store.phone2) : ''}</div>` : ''}
+        <div class="sep"></div>
+
+        <!-- Invoice info rows -->
+        <div class="info-row">
+            <div class="info-item"><span class="info-label">العميل:</span><span class="info-value">${customerName}</span></div>
+            <div class="info-item"><span class="info-label">الفاتورة:</span><span class="info-value">${invoiceNum}</span></div>
+        </div>
+        <div class="info-row">
+            <div class="info-item"><span class="info-label">التاريخ:</span><span class="info-value">${dateStr}</span></div>
+            <div class="info-item"><span class="info-label">الوقت:</span><span class="info-value">${timeStr}</span></div>
+            ${deliveryDateStr ? `<div class="info-item"><span class="info-label">الاستلام:</span><span class="info-value highlight">${deliveryDateStr}</span></div>` : ''}
+        </div>
+        ${phone ? `<div class="info-row"><div class="info-item"><span class="info-label">الهاتف:</span><span class="info-value">${phone}</span></div></div>` : ''}
+        <div class="sep"></div>
+
+        <!-- Products table -->
+        <table class="products-table">
+            <thead><tr><th>المنتج</th><th>كم</th><th>سعر</th><th>إجمالي</th></tr></thead>
+            <tbody>
+                ${items.map(item=>{
+                    const qty = item.quantity||item.qty||1;
+                    const price = item.price||0;
+                    const name = item.name||item.productName||'—';
+                    return `<tr><td>${name}</td><td>${qty}</td><td>${price.toFixed(2)}</td><td>${(price*qty).toFixed(2)}</td></tr>`;
+                }).join('')}
+            </tbody>
+        </table>
+
+        <!-- Subtotals -->
+        ${(discount>0||delivery>0) ? `
+        <div class="subtotals">
+            <div><span>المجموع:</span><span>${subtotal.toFixed(2)} ج</span></div>
+            ${discount>0?`<div><span>خصم:</span><span>- ${discount.toFixed(2)} ج</span></div>`:''}
+            ${delivery>0?`<div><span>توصيل:</span><span>+ ${delivery.toFixed(2)} ج</span></div>`:''}
+        </div>
+        ` : ''}
+
+        <!-- Total box -->
+        <div class="total-box">
+            <span>الإجمالي</span>
+            <span class="total-amount">${total.toFixed(2)} ج</span>
+        </div>
+
+        <!-- Payment status -->
+        <div class="pay-status">
+            <div class="pay-badge ${remaining<=0?'active':''}">${remaining<=0?'✅ مكتمل':'💰 '+payMethod}</div>
+            ${paid<total?`<div class="pay-badge">دفع: ${paid.toFixed(2)} ج</div>`:''}
+            ${remaining>0?`<div class="pay-badge active">متبقي: ${remaining.toFixed(2)} ج</div>`:''}
+        </div>
+
+        ${notes?`<div class="notice" style="margin:3px 0;">📝 ${notes}</div>`:''}
+        <div class="sep-thin"></div>
+
+        <!-- QR Codes -->
+        <div class="qr-row">
+            <div class="qr-card">
+                <canvas id="qrInvoice" class="qr-canvas" width="58" height="58"></canvas>
+                <div class="qr-label">رقم الفاتورة</div>
+            </div>
+            <div class="qr-card">
+                <canvas id="qrTrack" class="qr-canvas" width="58" height="58"></canvas>
+                <div class="qr-label">تتبع الطلب</div>
             </div>
         </div>
-        
-        <div class="action-buttons">
-            <button onclick="printInvoice()" class="action-btn btn-print">
-                🖨️ طباعة الفاتورة
-            </button>
-            <button onclick="downloadPDF()" class="action-btn btn-pdf">
-                📄 تحميل PDF
-            </button>
-            <button onclick="shareWhatsApp()" class="action-btn btn-whatsapp">
-                💬 مشاركة عبر واتساب
-            </button>
-            <button onclick="showQRCode()" class="action-btn btn-qr">
-                📱 عرض QR Code
-            </button>
-        </div>
-    </div>
-    
-    <div id="qr-modal" class="qr-code-container">
-        <div class="qr-code-box">
-            <h3>رمز QR للفاتورة</h3>
-            <div id="qrcode"></div>
-            <button onclick="closeQRCode()" class="close-qr">إغلاق</button>
-        </div>
-    </div>
 
-    <script>
-        // Firebase Configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
-            authDomain: "zahraa-store-f4c90.firebaseapp.com",
-            projectId: "zahraa-store-f4c90",
-            storageBucket: "zahraa-store-f4c90.appspot.com",
-            messagingSenderId: "885722081307",
-            appId: "1:885722081307:web:7c91e0f8b0ea9b8b4df0be"
-        };
-        
-        // Initialize Firebase
-        try {
-            firebase.initializeApp(firebaseConfig);
-        } catch (e) {
-            console.error('Firebase initialization error:', e);
-        }
-        
-        // Cloudinary Configuration
-        const CLOUDINARY_CLOUD_NAME = 'dxlxwe55b';
-        const CLOUDINARY_UPLOAD_PRESET = 'zahraa_upload';
-        
-        let invoiceData = null;
-        let invoiceImageUrl = null;
-        
-        // Get invoice ID from URL
-        function getInvoiceId() {
-            const pathParts = window.location.pathname.split('/');
-            return pathParts[pathParts.length - 1];
-        }
-        
-        // Load invoice data from Firestore
-        async function loadInvoiceData() {
-            const invoiceId = getInvoiceId();
-            
-            try {
-                // Try to load from Firestore first
-                if (typeof firebase !== 'undefined' && firebase.firestore) {
-                    const db = firebase.firestore();
-                    const doc = await db.collection('invoices').doc(invoiceId).get();
-                    
-                    if (doc.exists) {
-                        invoiceData = doc.data();
-                        invoiceData.id = doc.id;
-                        renderInvoice();
-                        return;
-                    }
-                }
-                
-                // Fallback to localStorage for demo
-                const allInvoices = JSON.parse(localStorage.getItem('zahraa_invoices') || '[]');
-                invoiceData = allInvoices.find(inv => inv.id === invoiceId || inv.invoiceNumber === invoiceId);
-                
-                if (!invoiceData) {
-                    document.getElementById('invoice-content').innerHTML = `
-                        <div class="text-center py-20">
-                            <div class="text-2xl font-bold text-red-500 mb-4">الفاتورة غير موجودة</div>
-                            <div class="text-gray-400">يرجى التحقق من رابط الفاتورة</div>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                renderInvoice();
-            } catch (error) {
-                console.error('Error loading invoice:', error);
-                document.getElementById('invoice-content').innerHTML = `
-                    <div class="text-center py-20">
-                        <div class="text-2xl font-bold text-red-500 mb-4">خطأ في تحميل الفاتورة</div>
-                        <div class="text-gray-400">يرجى المحاولة مرة أخرى</div>
-                    </div>
-                `;
-            }
-        }
-        
-        // Render invoice HTML
-        function renderInvoice() {
-            const date = new Date(invoiceData.date).toLocaleDateString('ar-EG', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-            
-            const productsHtml = invoiceData.items.map(item => `
-                <tr>
-                    <td>${item.name}</td>
-                    <td style="text-align: center;">${item.qty}</td>
-                    <td style="text-align: center;">${item.price.toFixed(2)} ج</td>
-                    <td style="text-align: center;">${(item.price * item.qty).toFixed(2)} ج</td>
-                </tr>
-            `).join('');
-            
-            document.getElementById('invoice-content').innerHTML = `
-                <div class="invoice-header">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <div>
-                            <div class="invoice-title">ZAHRAA STUDIO</div>
-                            <div class="invoice-number">فاتورة رقم: ${invoiceData.invoiceNumber}</div>
-                        </div>
-                        <div style="text-align: left;">
-                            <div style="font-size: 14px; color: #333;">${date}</div>
-                        </div>
-                    </div>
+        <!-- Notice -->
+        <div class="notice">
+            عميلنا العزيز: يرجى الاحتفاظ بالفاتورة لأي استفسار. شكراً لثقتكم 🌸
+        </div>
+
+        <!-- Footer -->
+        <div class="footer-compact">
+            ${(store.storeAddress||store.address)?`
+            <div class="footer-line">
+                <div class="footer-icon"><i class="fas fa-map-marker-alt"></i></div>
+                <div>${store.storeAddress||store.address}</div>
+            </div>`:''}
+            ${(store.storePhone||store.phone1)?`
+            <div class="footer-line">
+                <div class="footer-icon"><i class="fas fa-phone-alt"></i></div>
+                <div>
+                    ${store.storePhone||store.phone1?`<span class="phone-badge">${store.storePhone||store.phone1}</span>`:''}
+                    ${store.storePhone2||store.phone2?`<span class="phone-badge">${store.storePhone2||store.phone2}</span>`:''}
                 </div>
-                
-                <div class="customer-info">
-                    <h3>بيانات العميل</h3>
-                    <p>الاسم: ${invoiceData.customerName}</p>
-                    <p>الهاتف: ${invoiceData.customerPhone}</p>
-                    ${invoiceData.customerAddress ? `<p>العنوان: ${invoiceData.customerAddress}</p>` : ''}
-                    ${invoiceData.paymentMethod ? `<p>طريقة الدفع: ${invoiceData.paymentMethod}</p>` : ''}
-                </div>
-                
-                <table class="products-table">
-                    <thead>
-                        <tr>
-                            <th>المنتج</th>
-                            <th style="text-align: center;">الكمية</th>
-                            <th style="text-align: center;">السعر</th>
-                            <th style="text-align: center;">الإجمالي</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${productsHtml}
-                    </tbody>
-                </table>
-                
-                <div class="totals-section">
-                    <div class="total-row">
-                        <span>المجموع الفرعي</span>
-                        <span>${invoiceData.subtotal.toFixed(2)} ج</span>
-                    </div>
-                    ${invoiceData.discountAmount > 0 ? `
-                    <div class="total-row">
-                        <span>الخصم</span>
-                        <span>- ${invoiceData.discountAmount.toFixed(2)} ج</span>
-                    </div>
-                    ` : ''}
-                    ${invoiceData.deliveryFee > 0 ? `
-                    <div class="total-row">
-                        <span>التوصيل</span>
-                        <span>+ ${invoiceData.deliveryFee.toFixed(2)} ج</span>
-                    </div>
-                    ` : ''}
-                    <div class="total-row final">
-                        <span>الإجمالي النهائي</span>
-                        <span>${invoiceData.totalPrice.toFixed(2)} ج</span>
-                    </div>
-                </div>
-            `;
-        }
-        
-        // Print invoice
-        function printInvoice() {
-            window.print();
-        }
-        
-        // Download PDF
-        async function downloadPDF() {
-            const { jsPDF } = window.jspdf;
-            const element = document.getElementById('invoice-content');
-            
-            // Capture invoice as image with high quality
-            const canvas = await html2canvas(element, {
-                scale: 3,
-                useCORS: true,
-                backgroundColor: '#ffffff',
-                logging: false
-            });
-            
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            
-            const imgWidth = 210;
-            const pageHeight = 297;
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
-            
-            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-            pdf.save(`invoice_${invoiceData.invoiceNumber}.pdf`);
-        }
-        
-        // Upload invoice image to Cloudinary
-        async function uploadInvoiceToCloudinary(canvas) {
-            return new Promise((resolve, reject) => {
-                canvas.toBlob((blob) => {
-                    const formData = new FormData();
-                    formData.append('file', blob);
-                    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-                    formData.append('public_id', `invoice_${invoiceData.invoiceNumber}_${Date.now()}`);
-                    formData.append('folder', 'zahraa_invoices');
-                    
-                    fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.secure_url) {
-                            resolve(data.secure_url);
-                        } else {
-                            reject(new Error('Failed to get secure URL from Cloudinary'));
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Cloudinary upload error:', error);
-                        reject(error);
-                    });
-                }, 'image/jpeg', 0.9);
-            });
-        }
-        
-        // Share via WhatsApp
-        async function shareWhatsApp() {
-            if (!invoiceData || !invoiceData.customerPhone) {
-                alert('لا يوجد رقم هاتف للعميل');
-                return;
-            }
-            
-            const element = document.getElementById('invoice-content');
-            
-            // Capture invoice as high-quality image
-            const canvas = await html2canvas(element, {
-                scale: 3,
-                useCORS: true,
-                backgroundColor: '#ffffff',
-                logging: false
-            });
-            
-            // Upload to Cloudinary
-            try {
-                invoiceImageUrl = await uploadInvoiceToCloudinary(canvas);
-                
-                // Open WhatsApp with image URL
-                const phone = invoiceData.customerPhone.replace(/\D/g, '');
-                const waPhone = phone.startsWith('01') ? '2' + phone : phone.startsWith('1') ? '20' + phone : phone;
-                const msg = encodeURIComponent(`مرحباً ${invoiceData.customerName}،\nشكراً لتسوقك معنا 🌹\nرقم فاتورتك: ${invoiceData.invoiceNumber}\nالإجمالي: ${invoiceData.totalPrice.toFixed(2)} ج\n\n📎 الفاتورة: ${invoiceImageUrl}`);
-                
-                window.open(`https://wa.me/${waPhone}?text=${msg}`, '_blank');
-            } catch (error) {
-                console.error('Error sharing invoice:', error);
-                alert('حدث خطأ في مشاركة الفاتورة');
-            }
-        }
-        
-        // Show QR Code
-        function showQRCode() {
-            const modal = document.getElementById('qr-modal');
-            const qrContainer = document.getElementById('qrcode');
-            qrContainer.innerHTML = '';
-            
-            const invoiceUrl = window.location.href;
-            new QRCode(qrContainer, {
-                text: invoiceUrl,
-                width: 200,
-                height: 200,
-                colorDark: '#000000',
-                colorLight: '#ffffff',
-                correctLevel: QRCode.CorrectLevel.H
-            });
-            
-            modal.classList.add('show');
-        }
-        
-        // Close QR Code
-        function closeQRCode() {
-            document.getElementById('qr-modal').classList.remove('show');
-        }
-        
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            loadInvoiceData();
-        });
-    </script>
+            </div>`:''}
+            ${(store.instagram||store.storeInstagram)?`
+            <div class="footer-line">
+                <div class="footer-icon"><i class="fab fa-instagram"></i></div>
+                <div>${store.instagram||store.storeInstagram}${(store.email||store.storeEmail)?` &nbsp;|&nbsp; ${store.email||store.storeEmail}`:''}</div>
+            </div>`:''}
+        </div>
+        <div class="sep" style="margin-top:2px;"></div>
+
+    </div>`;
+
+    // Draw QR codes
+    setTimeout(() => {
+        const origin = window.location.origin;
+        const invQRData = `${origin}/order-status.html?id=${invoiceNum}`;
+        const trackData = `${origin}/order-status.html?id=${invoiceNum}`;
+        drawQR('qrInvoice', invoiceNum, 58);
+        drawQR('qrTrack', invQRData, 58);
+    }, 100);
+}
+
+function drawQR(canvasId, text, size=58) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || !window.qrcode) return;
+    try {
+        const qr = qrcode(0, 'M');
+        qr.addData(text);
+        qr.make();
+        const modCount = qr.getModuleCount();
+        const cellSize = size / modCount;
+        const ctx = canvas.getContext('2d');
+        canvas.width = size; canvas.height = size;
+        ctx.fillStyle = '#fff'; ctx.fillRect(0,0,size,size);
+        ctx.fillStyle = '#000';
+        for (let r=0; r<modCount; r++)
+            for (let c=0; c<modCount; c++)
+                if (qr.isDark(r,c)) ctx.fillRect(c*cellSize, r*cellSize, cellSize, cellSize);
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5;
+        ctx.strokeRect(0,0,size,size);
+    } catch(e) {}
+}
+
+window.shareWhatsApp = function() {
+    const text = `فاتورة رقم ${window._invNum}\nالعميل: ${window._custName}\nالإجمالي: ${window._total?.toFixed(2)} ج\nرابط التتبع: ${location.origin}/order-status.html?id=${window._invNum}`;
+    const num = (window._waPhone||'').replace(/[^0-9]/g,'');
+    const phone = num.startsWith('0') ? '2'+num : num;
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`);
+};
+
+loadInvoice();
+</script>
 </body>
 </html>
