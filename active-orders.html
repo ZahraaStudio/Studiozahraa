@@ -288,10 +288,11 @@ function orderCard(o){
         <span><i class="fas fa-wallet"></i> ${o.paymentMethod||'نقدي'}</span>
       </div>
       ${o.notes?`<div class="ocard-notes">📝 ${o.notes}</div>`:''}
+      ${rem>0&&o.dueDate?`<div class="ocard-notes" style="color:var(--orange)">📅 استحقاق: ${o.dueDate}</div>`:''}
     </div>
     <div class="oc-right">
       <div class="ocard-total" style="color:${rem>0?'var(--red)':'var(--green)'}">${fmt(o.totalPrice||0)}</div>
-      ${rem>0?`<div class="ocard-rem" style="color:var(--red)">متبقي: ${fmt(rem)}</div>`:`<div class="ocard-rem" style="color:var(--green)">✅ مسدد</div>`}
+      ${rem>0?`<div class="ocard-rem" style="color:var(--red);font-weight:900">متبقي: ${fmt(rem)}</div>`:`<div class="ocard-rem" style="color:var(--green)">✅ مسدد</div>`}
       ${isPrepared?`<span style="font-size:10px;color:var(--green);font-weight:700">✅ جاهز</span>`:''}
       <i class="fas fa-chevron-left" style="color:var(--text3);font-size:10px;margin-top:4px"></i>
     </div>
@@ -337,6 +338,7 @@ function openOrderModal(o){
       <div class="od-row"><span class="k">رقم الفاتورة</span><span class="v gold">${o.invoiceNumber||o.id}</span></div>
       <div class="od-row"><span class="k">التاريخ</span><span class="v">${dt.toLocaleDateString('ar-EG',{year:'numeric',month:'long',day:'numeric'})} — ${dt.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})}</span></div>
       <div class="od-row"><span class="k">طريقة الدفع</span><span class="v">${o.paymentMethod||'نقدي'}</span></div>
+      ${o.dueDate?`<div class="od-row"><span class="k">📅 تاريخ الاستحقاق</span><span class="v" style="color:var(--orange)">${o.dueDate}</span></div>`:''}
       ${o.deliveryDate?`<div class="od-row"><span class="k">📅 موعد الاستلام</span><span class="v red">${o.deliveryDate}</span></div>`:''}
       ${o.notes?`<div class="od-row"><span class="k">📝 ملاحظات</span><span class="v">${o.notes}</span></div>`:''}
     </div>

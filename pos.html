@@ -486,6 +486,47 @@ html,body{overflow:hidden;height:100%}
   </div>
 </div>
 
+<!-- Deferred Invoice Modal -->
+<div class="overlay" id="def-modal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <h3>🔍 فاتورة آجل / جزئي</h3>
+      <button class="close-btn" onclick="closeModal('def-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--card);border-radius:var(--r);padding:12px;margin-bottom:12px;display:flex;flex-direction:column;gap:7px;font-size:13px">
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--text3);font-weight:700">رقم الفاتورة</span><span style="font-weight:900;color:var(--gold);font-family:monospace" id="def-invno">—</span></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--text3);font-weight:700">العميل</span><span style="font-weight:900" id="def-cust">—</span></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--text3);font-weight:700">الهاتف</span><span style="font-weight:900;direction:ltr" id="def-phone">—</span></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--text3);font-weight:700">طريقة الدفع</span><span style="font-weight:900" id="def-method">—</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+        <div style="background:var(--card);border-radius:var(--r);padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--text3);font-weight:700;margin-bottom:3px">الإجمالي</div>
+          <div style="font-size:14px;font-weight:900;color:var(--text)" id="def-tot">—</div>
+        </div>
+        <div style="background:rgba(34,197,94,.1);border:1px solid var(--green);border-radius:var(--r);padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--green);font-weight:700;margin-bottom:3px">المدفوع</div>
+          <div style="font-size:14px;font-weight:900;color:var(--green)" id="def-paid">—</div>
+        </div>
+        <div style="background:rgba(212,175,55,.12);border:2px solid var(--gold);border-radius:var(--r);padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--gold);font-weight:700;margin-bottom:3px">المتبقي</div>
+          <div style="font-size:16px;font-weight:900;color:var(--gold)" id="def-rem">—</div>
+        </div>
+      </div>
+      <div style="background:rgba(245,158,11,.1);border:1px solid var(--orange);border-radius:var(--r);padding:10px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:12px;font-weight:700;color:var(--orange)">📅 تاريخ الاستحقاق</span>
+        <span style="font-size:14px;font-weight:900;color:var(--orange)" id="def-due">—</span>
+      </div>
+      <div style="text-align:center;font-size:14px;font-weight:900;padding:8px;border-radius:var(--r);background:var(--card)" id="def-status">—</div>
+    </div>
+    <div class="modal-footer">
+      <a id="def-open-btn" href="#" target="_blank" class="btn btn-primary"><i class="fas fa-print"></i> فتح الفاتورة</a>
+      <button class="btn btn-ghost" onclick="closeModal('def-modal')">إغلاق</button>
+    </div>
+  </div>
+</div>
+
 <!-- Print area -->
 <div id="rprint"></div>
 
@@ -503,11 +544,13 @@ let todayProdMap = {};
 let custData = [], selectedCust = null;
 let npTarget = null, npVal = '';
 let retInvoice = null;
+window.storeSettings = {};
 
 requireAuth(user => {
   document.getElementById('sb-user').textContent = user.email;
   const s = getSettings();
   if (s.storeName) document.getElementById('tb-name').textContent = s.storeName;
+  loadStoreSettings();
   loadCats();
   loadProds();
   loadCusts();
@@ -726,6 +769,19 @@ window.clearCust = () => {
   document.getElementById('cust-sugg').style.display = 'none';
 };
 window.focusCust = () => document.getElementById('cust-name').focus();
+
+// Load store settings from Firestore and cache
+async function loadStoreSettings() {
+  try {
+    const d = await db.collection('settings').doc('general').get();
+    if (d.exists) {
+      window.storeSettings = d.data();
+      saveSettings({ ...getSettings(), ...d.data() });
+      const n = window.storeSettings.storeName;
+      if (n) document.getElementById('tb-name').textContent = n;
+    }
+  } catch(e) {}
+}
 
 // Payment
 window.openPay = t => {
@@ -1069,22 +1125,24 @@ window.processReturn = async () => {
   } catch(e) { toast('خطأ: '+e.message,'err'); }
 };
 
-// Print receipt
+// Print receipt — exact same style as invoice.html
 function printReceipt(inv) {
-  const s = getSettings();
-  const sName   = s.storeName    || 'استوديو الزهراء';
-  const p1      = s.storePhone   || '';
-  const p2      = s.storePhone2  || '';
-  const addr    = s.storeAddress || '';
-  const insta   = s.instagram    || '';
-  const logoR   = s.invoiceLogoRight || '';
-  const logoL   = s.invoiceLogoLeft  || '';
-  const fSize   = s.invoiceFontSize  || 10;
-  const fFamily = s.invoiceFontFamily|| 'Cairo';
-  const theme   = s.invoiceTheme     || 'classic';
-  const notice  = s.receiptNotice    || 'عميلنا العزيز 💛 نرجو استلام الطلب خلال 15 يوماً من تاريخ التجهيز. شكراً لثقتكم 💛';
-  const showQR  = s.receiptQR !== false;
-  const showLogo= s.showLogoOnReceipt !== false;
+  const cfg   = { ...getSettings(), ...window.storeSettings };
+  const sName  = cfg.storeName    || 'استوديو الزهراء';
+  const p1     = cfg.storePhone   || '';
+  const p2     = cfg.storePhone2  || '';
+  const addr   = cfg.storeAddress || '';
+  const insta  = cfg.instagram    || '';
+  const logoR  = cfg.invoiceLogoRight || '';
+  const logoL  = cfg.invoiceLogoLeft  || '';
+  const fSize  = cfg.invoiceFontSize  || 10;
+  const fFamily= cfg.invoiceFontFamily|| 'Cairo';
+  const theme  = cfg.invoiceTheme     || 'classic';
+  const notice = cfg.receiptNotice    || 'عميلنا العزيز 💛 نرجو استلام الطلب خلال 15 يوماً من تاريخ التجهيز. شكراً لثقتكم 💛';
+  const showQR = cfg.receiptQR !== false;
+  const showLg = cfg.showLogoOnReceipt !== false;
+  const logoH  = cfg.invoiceLogoSize  || 70;
+  const logoW  = Math.round(logoH * 1.57);
 
   const themes = {
     classic:{ hBg:'#000', hClr:'#fff' },
@@ -1095,97 +1153,141 @@ function printReceipt(inv) {
   };
   const tc = themes[theme] || themes.classic;
 
-  const now = inv.createdAt instanceof Date ? inv.createdAt : new Date();
-  const pad = n => String(n).padStart(2,'0');
+  const now  = inv.createdAt instanceof Date ? inv.createdAt : new Date();
+  const pad  = n => String(n).padStart(2,'0');
   const dateStr = `${pad(now.getDate())}-${pad(now.getMonth()+1)}-${now.getFullYear()}`;
   const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
-  const items = inv.items || [];
+  const items   = inv.items || [];
+  const tot  = parseFloat(inv.totalPrice)    || 0;
+  const paid = parseFloat(inv.paidAmount)    || 0;
+  const rem  = Math.max(0, parseFloat(inv.remainingAmount) || (tot - paid));
+  const disc = parseFloat(inv.discountAmount)|| 0;
+  const del  = parseFloat(inv.deliveryFee)   || 0;
 
-  const tot  = parseFloat(inv.totalPrice) || 0;
-  const paid = parseFloat(inv.paidAmount) || 0;
-  const rem  = Math.max(0, parseFloat(inv.remainingAmount) || 0);
-  const disc = parseFloat(inv.discountAmount) || 0;
-  const del  = parseFloat(inv.deliveryFee) || 0;
-
-  const qrSrc = (text, sz) =>
-    `https://api.qrserver.com/v1/create-qr-code/?size=${sz}x${sz}&data=${encodeURIComponent(text)}&qzone=1&format=png`;
+  const qrSrc = (t,sz) => `https://api.qrserver.com/v1/create-qr-code/?size=${sz}x${sz}&data=${encodeURIComponent(t)}&qzone=1&format=png`;
   const q1 = qrSrc(inv.invoiceNumber, 80);
   const q2 = qrSrc(`${location.origin}/order-status.html?id=${encodeURIComponent(inv.invoiceNumber)}`, 80);
 
   let logosHTML = '';
-  if (showLogo) {
-    const leftEl  = logoL ? `<img src="${logoL}" style="max-height:70px;max-width:110px;object-fit:contain" alt="logo">` : '<span></span>';
-    const rightEl = logoR ? `<img src="${logoR}" style="max-height:70px;max-width:110px;object-fit:contain" alt="logo">` :
-      `<div style="background:#111;color:#fff;padding:3px 8px;text-align:center;line-height:1.1;print-color-adjust:exact;-webkit-print-color-adjust:exact"><span style="font-size:16px;font-weight:900;display:block">Z</span><span style="font-size:7px;letter-spacing:1.5px;color:#ccc;display:block">ZAHRAA STUDIO</span></div>`;
-    logosHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">${leftEl}${rightEl}</div>`;
+  if (showLg) {
+    const leftEl  = logoL
+      ? `<img src="${logoL}" class="r-logo-img" alt="logo">`
+      : '<span></span>';
+    const rightEl = logoR
+      ? `<img src="${logoR}" class="r-logo-img" alt="logo">`
+      : `<div class="r-logo-box"><span class="z">Z</span><span class="s">ZAHRAA STUDIO</span></div>`;
+    logosHTML = `<div class="r-logos">${leftEl}${rightEl}</div>`;
   }
 
   const rowsHTML = items.map(i => {
-    const q = i.qty || i.quantity || 1;
-    const p = parseFloat(i.finalPrice || i.price || 0);
-    return `<tr><td style="text-align:right;max-width:28mm;word-break:break-word">${i.name||'—'}</td><td>${q}</td><td>${p.toFixed(2)}</td><td>${(p*q).toFixed(2)}</td></tr>`;
+    const q = i.qty||i.quantity||1;
+    const p = parseFloat(i.finalPrice||i.price||0);
+    return `<tr>
+      <td style="text-align:right;max-width:28mm;word-break:break-word">${i.name||'—'}</td>
+      <td>${q}</td><td>${p.toFixed(2)}</td><td>${(p*q).toFixed(2)}</td>
+    </tr>`;
   }).join('');
 
   const html = `<style>
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');
 *{margin:0;padding:0;box-sizing:border-box;font-family:'${fFamily}','Cairo',sans-serif;font-weight:900;color:#000}
 .rs{display:block;width:100%;height:3px;background:#000;margin:5px 0;print-color-adjust:exact;-webkit-print-color-adjust:exact}
 .rs1{display:block;width:100%;height:1px;background:#000;margin:3px 0}
-table{width:100%;border-collapse:collapse;margin:4px 0}
-th,td{border:1px solid #000;padding:2px 3px;text-align:center;font-weight:900;font-size:${fSize-1}px}
-th{background:${tc.hBg};color:${tc.hClr};font-size:${fSize-2}px;print-color-adjust:exact;-webkit-print-color-adjust:exact}
-.r-tot{background:${tc.hBg};color:${tc.hClr};display:flex;justify-content:space-between;align-items:center;padding:6px 8px;margin:4px 0 2px;print-color-adjust:exact;-webkit-print-color-adjust:exact}
-.r-rem{display:flex;justify-content:space-between;align-items:center;padding:5px 8px;margin-bottom:4px;border:1.5px solid #a88520;background:#d4af37;print-color-adjust:exact;-webkit-print-color-adjust:exact}
-.r-paid{border:1px solid #000;text-align:center;padding:3px;font-weight:900;margin:3px 0;background:#f0f0f0;font-size:${fSize-1}px}
+.r-logos{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.r-logo-img{max-height:${logoH}px;max-width:${logoW}px;object-fit:contain}
+.r-logo-box{background:#111;color:#fff;padding:3px 8px;text-align:center;line-height:1.1;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+.r-logo-box .z{font-size:16px;font-weight:900;color:#fff;display:block}
+.r-logo-box .s{font-size:7px;letter-spacing:1.5px;color:#ccc;display:block}
+.r-store{text-align:center;font-weight:900;margin:2px 0;font-size:${fSize+7}px}
+.r-phone{text-align:center;direction:ltr;margin-bottom:2px;letter-spacing:.3px;font-size:${fSize+1}px}
+.r-invline{text-align:center;font-weight:900;margin:3px 0;font-size:${fSize}px}
 .r-cust{font-weight:900;margin:2px 0;display:flex;gap:3px;font-size:${fSize}px}
 .r-cl{white-space:nowrap;color:#444}
 .r-cv{font-weight:700;flex:1;word-break:break-word}
-.qgrid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:5px 0}
-.qcell{border:1px solid #000;padding:3px;text-align:center}
-.qcell img{display:block;margin:0 auto}
-.qlbl{font-size:8px;background:${tc.hBg};color:${tc.hClr};display:block;padding:1px 0;margin-top:2px;font-weight:900;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+.r-table{width:100%;border-collapse:collapse;margin:4px 0}
+.r-table th,.r-table td{border:1px solid #000;padding:2px 3px;text-align:center;font-weight:900;font-size:${fSize-1}px}
+.r-table th{background:${tc.hBg};color:${tc.hClr};print-color-adjust:exact;-webkit-print-color-adjust:exact}
+.r-table td:first-child,.r-table th:first-child{text-align:right;max-width:28mm;word-break:break-word}
+.r-tot{background:${tc.hBg};color:${tc.hClr};display:flex;justify-content:space-between;align-items:center;padding:6px 8px;margin:4px 0 2px;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+.r-tot *{color:${tc.hClr}}
+.r-tot .l{font-weight:900;font-size:${fSize}px}
+.r-tot .a{font-weight:900;direction:ltr;font-size:${fSize+8}px}
+.r-rem{display:flex;justify-content:space-between;align-items:center;padding:5px 8px;margin-bottom:4px;border:1.5px solid #a88520;background:#d4af37;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+.r-rem .l{font-weight:900;font-size:${fSize}px}
+.r-rem .a{font-weight:900;direction:ltr;font-size:${fSize+4}px}
+.r-paid{border:1px solid #000;text-align:center;padding:3px;font-weight:900;margin:3px 0;background:#f0f0f0;font-size:${fSize-1}px}
+.r-paid-row{display:flex;justify-content:space-between;font-size:${fSize-1}px;padding:2px 4px}
+.r-paid-row span:last-child{color:#166534;font-weight:900}
+.r-qr-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:5px 0}
+.r-qr-cell{border:1px solid #000;padding:3px;text-align:center}
+.r-qr-cell img{display:block;margin:0 auto;border:1px solid #eee}
+.r-qr-lbl{font-size:8px;background:${tc.hBg};color:${tc.hClr};display:block;padding:1px 0;margin-top:2px;font-weight:900;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+.r-notice{border:1px solid #000;text-align:center;padding:4px 3px;margin:3px 0;line-height:1.5;font-weight:700;font-size:${fSize-2}px}
+.r-ftr{border-top:2px solid #000;padding:3px 0;margin:3px 0}
+.r-ftr-row{display:flex;align-items:center;gap:4px;margin-bottom:2px;font-weight:900;font-size:${fSize-1}px}
+.r-ftr-row:last-child{margin-bottom:0}
+.r-disc-row{display:flex;justify-content:space-between;font-size:${fSize-1}px;padding:1px 2px}
 </style>
 <div style="width:80mm;font-size:${fSize}px">
+
   ${logosHTML}
-  <div style="text-align:center;font-size:${fSize+7}px;font-weight:900;margin:2px 0">${sName}</div>
-  ${p1?`<div style="text-align:center;font-size:${fSize+1}px;direction:ltr">${p1}${p2?' | '+p2:''}</div>`:''}
+
+  <div class="r-store">${sName}</div>
+  ${p1?`<div class="r-phone">${p1}${p2?' | '+p2:''}</div>`:''}
   <span class="rs"></span>
-  <div style="text-align:center;font-size:${fSize}px;font-weight:900;margin:3px 0"># ${inv.invoiceNumber} &nbsp; ${dateStr} &nbsp; ${timeStr}</div>
+
+  <div class="r-invline"># ${inv.invoiceNumber} &nbsp; ${dateStr} &nbsp; ${timeStr}</div>
   <span class="rs1"></span>
+
   <div class="r-cust"><span class="r-cl">الاسم:</span><span class="r-cv">${inv.userName||'عميل'}</span></div>
   ${inv.phone?`<div class="r-cust"><span class="r-cl">الهاتف:</span><span class="r-cv" style="direction:ltr">${inv.phone}</span></div>`:''}
   <div class="r-cust"><span class="r-cl">طريقة الدفع:</span><span class="r-cv">${inv.paymentMethod||'—'}</span></div>
-  ${inv.dueDate?`<div class="r-cust"><span class="r-cl">📅 تاريخ الاستحقاق:</span><span class="r-cv">${inv.dueDate}</span></div>`:''}
+  ${inv.dueDate?`<div class="r-cust"><span class="r-cl">📅 استحقاق:</span><span class="r-cv">${inv.dueDate}</span></div>`:''}
   ${inv.deliveryDate?`<div class="r-cust"><span class="r-cl">📅 الاستلام:</span><span class="r-cv">${inv.deliveryDate}</span></div>`:''}
   <span class="rs1"></span>
-  <table>
-    <thead><tr><th style="text-align:right">المنتج</th><th>كم</th><th>سعر</th><th>إجمالي</th></tr></thead>
+
+  <table class="r-table">
+    <thead><tr>
+      <th>المنتج</th><th>كم</th><th>سعر</th><th>إجمالي</th>
+    </tr></thead>
     <tbody>${rowsHTML}</tbody>
   </table>
+
   ${disc>0||del>0?`<div style="border-top:1px solid #ccc;padding:2px 0">
-    ${disc>0?`<div style="display:flex;justify-content:space-between;font-size:${fSize-1}px;padding:1px 2px"><span>خصم:</span><span>- ${disc.toFixed(2)} ج</span></div>`:''}
-    ${del>0?`<div style="display:flex;justify-content:space-between;font-size:${fSize-1}px;padding:1px 2px"><span>توصيل:</span><span>+ ${del.toFixed(2)} ج</span></div>`:''}
+    ${disc>0?`<div class="r-disc-row"><span>خصم:</span><span>- ${disc.toFixed(2)} ج</span></div>`:''}
+    ${del>0?`<div class="r-disc-row"><span>توصيل:</span><span>+ ${del.toFixed(2)} ج</span></div>`:''}
   </div>`:''}
-  <div class="r-tot">
-    <span style="font-weight:900;color:${tc.hClr};font-size:${fSize}px">الإجمالي</span>
-    <span style="font-weight:900;color:${tc.hClr};font-size:${fSize+8}px;direction:ltr">${tot.toFixed(2)} ج</span>
-  </div>
+
+  <div class="r-tot"><span class="l">الإجمالي</span><span class="a">${tot.toFixed(2)} ج</span></div>
+
   ${rem>0
-    ? `<div class="r-rem"><span style="font-weight:900;font-size:${fSize}px">المتبقي</span><span style="font-weight:900;font-size:${fSize+4}px;direction:ltr">${rem.toFixed(2)} ج</span></div>
-       <div style="display:flex;justify-content:space-between;font-size:${fSize-1}px;padding:2px 2px"><span>المدفوع:</span><span style="color:#166534;font-weight:900">${paid.toFixed(2)} ج</span></div>`
+    ? `<div class="r-rem"><span class="l">المتبقي</span><span class="a">${rem.toFixed(2)} ج</span></div>
+       <div class="r-paid-row"><span>المدفوع:</span><span>${paid.toFixed(2)} ج</span></div>`
     : `<div class="r-paid">✅ تم السداد بالكامل — ${tot.toFixed(2)} ج</div>`
   }
+
   ${inv.notes?`<div style="border:1px dashed #999;padding:3px;font-size:${fSize-1}px;margin:2px 0">📝 ${inv.notes}</div>`:''}
   <span class="rs1"></span>
-  ${showQR?`<div class="qgrid">
-    <div class="qcell"><img src="${q1}" width="80" height="80" alt="QR"><span class="qlbl">رقم الفاتورة</span></div>
-    <div class="qcell"><img src="${q2}" width="80" height="80" alt="QR"><span class="qlbl">تتبع طلبك</span></div>
+
+  ${showQR?`<div class="r-qr-grid">
+    <div class="r-qr-cell">
+      <img src="${q1}" width="80" height="80" alt="QR" loading="lazy" onerror="this.style.display='none'">
+      <span class="r-qr-lbl">رقم الفاتورة</span>
+    </div>
+    <div class="r-qr-cell">
+      <img src="${q2}" width="80" height="80" alt="QR" loading="lazy" onerror="this.style.display='none'">
+      <span class="r-qr-lbl">تتبع طلبك</span>
+    </div>
   </div>`:''}
-  <div style="border:1px solid #000;text-align:center;padding:4px 3px;margin:3px 0;font-size:${fSize-2}px;font-weight:700;line-height:1.5">${notice}</div>
-  ${addr||insta?`<div style="border-top:2px solid #000;padding:3px 0;margin:3px 0">
-    ${addr?`<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px;font-size:${fSize-1}px;font-weight:900">📍 <span>${addr}</span></div>`:''}
-    ${insta?`<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px;font-size:${fSize-1}px;font-weight:900">📷 <span>${insta}</span></div>`:''}
-    ${p1?`<div style="display:flex;align-items:center;gap:4px;font-size:${fSize-1}px;font-weight:900">📞 <span>${p1}</span></div>`:''}
+
+  <div class="r-notice">${notice}</div>
+
+  ${addr||insta?`<div class="r-ftr">
+    ${addr?`<div class="r-ftr-row">📍 <span>${addr}</span></div>`:''}
+    ${insta?`<div class="r-ftr-row">📷 <span>${insta}</span></div>`:''}
+    ${p1?`<div class="r-ftr-row">📞 <span>${p1}</span></div>`:''}
   </div>`:''}
+
   <span class="rs" style="margin-top:4px"></span>
 </div>`;
   document.getElementById('rprint').innerHTML = html;
@@ -1208,10 +1310,36 @@ document.addEventListener('keydown', e => {
       const v = si.value.trim();
       const p = allProds.find(x => x.barcode === v || x.sku === v);
       if (p) { addProd(p.id); si.value = ''; srchQ = ''; applyFilters(); }
-      else toast('لا يوجد منتج بهذا الباركود: ' + v, 'warn');
+      else { si.value = ''; srchQ = ''; applyFilters(); lookupDeferredInvoice(v); }
     }
   }
 });
+
+// Lookup deferred invoice by barcode / invoice number
+async function lookupDeferredInvoice(val) {
+  try {
+    let inv = null;
+    const snap = await db.collection('pos_invoices').where('invoiceNumber','==',val).limit(1).get();
+    if (!snap.empty) inv = { id: snap.docs[0].id, ...snap.docs[0].data() };
+    if (!inv) { toast('لا يوجد منتج أو فاتورة: ' + val, 'warn'); return; }
+    const rem = parseFloat(inv.remainingAmount) || 0;
+    const tot = parseFloat(inv.totalPrice) || 0;
+    const paid = parseFloat(inv.paidAmount) || 0;
+    const m = document.getElementById('def-modal');
+    document.getElementById('def-invno').textContent  = inv.invoiceNumber || inv.id;
+    document.getElementById('def-cust').textContent   = inv.userName || '—';
+    document.getElementById('def-phone').textContent  = inv.phone || '—';
+    document.getElementById('def-tot').textContent    = fmt(tot);
+    document.getElementById('def-paid').textContent   = fmt(paid);
+    document.getElementById('def-rem').textContent    = fmt(rem);
+    document.getElementById('def-due').textContent    = inv.dueDate || '—';
+    document.getElementById('def-method').textContent = inv.paymentMethod || '—';
+    document.getElementById('def-status').textContent = rem > 0 ? `⏳ متبقي ${fmt(rem)}` : '✅ مسدد';
+    document.getElementById('def-open-btn').href = `invoice.html?id=${inv.id}`;
+    openModal('def-modal');
+  } catch(e) { toast('خطأ في البحث: '+e.message,'err'); }
+}
+window.lookupDeferredInvoice = lookupDeferredInvoice;
 
 // Close modal on overlay click
 document.querySelectorAll('.overlay').forEach(m => {

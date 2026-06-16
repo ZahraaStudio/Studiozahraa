@@ -123,6 +123,15 @@ input:checked+.slider::before{transform:translateX(20px)}
             </div>
           </div>
 
+          <!-- Logo size -->
+          <div style="font-size:12px;color:var(--text3);font-weight:700;margin:14px 0 8px"><i class="fas fa-expand-arrows-alt"></i> حجم الشعار في الإيصال</div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="font-size:10px;color:var(--text3)">صغير (30)</span>
+            <input type="range" class="font-slider" id="s-logo-size" min="30" max="120" step="5" value="70" oninput="previewLogoSize(this.value)">
+            <span style="font-size:10px;color:var(--text3)">كبير (120)</span>
+            <span id="logo-size-val" style="font-size:11px;color:var(--gold);font-weight:900;min-width:30px">70px</span>
+          </div>
+
           <!-- Font size -->
           <div style="font-size:12px;color:var(--text3);font-weight:700;margin:14px 0 8px"><i class="fas fa-text-height"></i> حجم الخط في الإيصال</div>
           <div style="display:flex;align-items:center;gap:12px">
@@ -311,6 +320,10 @@ function loadSettings(){
 function applyInvoiceSettings(data){
   if (data.invoiceLogoRight) setLogoPreview('logo-r', data.invoiceLogoRight);
   if (data.invoiceLogoLeft)  setLogoPreview('logo-l', data.invoiceLogoLeft);
+  if (data.invoiceLogoSize){
+    document.getElementById('s-logo-size').value = data.invoiceLogoSize;
+    previewLogoSize(data.invoiceLogoSize);
+  }
   if (data.invoiceFontSize){
     document.getElementById('s-font-size').value = data.invoiceFontSize;
     previewFont(data.invoiceFontSize);
@@ -370,6 +383,11 @@ window.clearLogo = function(prefix){
 };
 
 /* ── Font preview ── */
+window.previewLogoSize = function(v){
+  document.getElementById('logo-size-val').textContent = v+'px';
+  const imgs = document.querySelectorAll('.logo-preview');
+  imgs.forEach(img => { img.style.maxHeight = v+'px'; });
+};
 window.previewFont = function(v){
   document.getElementById('font-size-val').textContent = v;
   document.getElementById('font-preview-text').style.fontSize = v+'px';
@@ -413,6 +431,7 @@ window.saveAll = async () => {
     storeAddress: get('s-address'), instagram: get('s-instagram'),
     invoiceLogoRight: get('logo-r-url'),
     invoiceLogoLeft:  get('logo-l-url'),
+    invoiceLogoSize:  parseInt(get('s-logo-size'))||70,
     invoiceFontSize:  parseInt(get('s-font-size'))||10,
     invoiceFontFamily: get('s-font-family')||'Cairo',
     invoiceTheme: get('s-invoice-theme')||'classic',
