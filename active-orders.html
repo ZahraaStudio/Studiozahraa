@@ -385,9 +385,16 @@ function openOrderModal(o){
       ? `<button class="unprepare-btn" onclick="modalTogglePrepare('${o.id}',false)"><i class="fas fa-times-circle"></i> إلغاء التجهيز</button>`
       : `<button class="prepare-btn"  onclick="modalTogglePrepare('${o.id}',true)"><i class="fas fa-check-double"></i> تم التجهيز ✓</button>`
     }
+    ${rem>0
+      ? `<button class="btn" style="background:var(--green);color:#fff;font-size:12px;padding:8px 12px;border-radius:var(--r);font-weight:900;border:none;cursor:pointer" onclick="showPayPanel('${o.id}',${rem},${tot})"><i class="fas fa-money-bill-wave"></i> تسجيل دفع</button>`
+      : ''
+    }
     ${o.phone?`<button class="small-btn" onclick="openByPhone('${encodeURIComponent(o.phone)}')"><i class="fas fa-user"></i> ملف العميل</button>`:''}
     <button class="small-btn" onclick="closeOrderModal()" style="margin-right:auto"><i class="fas fa-times"></i> إغلاق</button>
   `;
+  /* payment panel (injected inline below footer) */
+  let pp = document.getElementById('pay-panel-inline');
+  if (pp) pp.remove();
 
   document.getElementById('od-overlay').classList.add('open');
 }
@@ -395,6 +402,56 @@ function openOrderModal(o){
 window.closeOrderModal = function(e){
   if (e && e.target !== document.getElementById('od-overlay')) return;
   document.getElementById('od-overlay').classList.remove('open');
+};
+
+/* ══ PAY PANEL ══ */
+window.showPayPanel = function(orderId, rem, tot){
+  let pp = document.getElementById('pay-panel-inline');
+  if (pp) { pp.remove(); return; }
+  pp = document.createElement('div');
+  pp.id = 'pay-panel-inline';
+  pp.style.cssText = 'padding:12px 16px;background:rgba(34,197,94,.08);border-top:1px solid var(--green);display:flex;flex-direction:column;gap:8px';
+  pp.innerHTML = `
+    <div style="font-size:12px;font-weight:900;color:var(--green)">💰 تسجيل دفع — المتبقي: <span style="color:var(--gold)">${rem.toFixed(2)} ج</span></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <input id="pay-amount-inp" type="number" step="0.01" min="0.01" max="${rem}" value="${rem.toFixed(2)}"
+        style="flex:1;min-width:100px;padding:8px;border-radius:var(--r);border:1px solid var(--green);background:var(--bg2);color:var(--text);font-size:13px;font-weight:900;text-align:center">
+      <button onclick="confirmPayment('${orderId}',${rem},${tot})" style="background:var(--green);color:#fff;border:none;border-radius:var(--r);padding:8px 14px;font-weight:900;font-size:12px;cursor:pointer;white-space:nowrap"><i class="fas fa-check"></i> تأكيد الدفع</button>
+      <button onclick="document.getElementById('pay-panel-inline').remove()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;font-weight:900;font-size:12px;cursor:pointer">إلغاء</button>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button onclick="document.getElementById('pay-amount-inp').value='${rem.toFixed(2)}'" style="font-size:10px;padding:4px 8px;border-radius:var(--r);border:1px solid var(--border);background:var(--card);color:var(--gold);cursor:pointer;font-weight:700">سداد كامل (${rem.toFixed(2)} ج)</button>
+    </div>`;
+  document.getElementById('od-foot').after(pp);
+};
+
+window.confirmPayment = async function(orderId, oldRem, tot){
+  const inp = document.getElementById('pay-amount-inp');
+  const amount = parseFloat(inp.value);
+  if (!amount || amount <= 0) { toast('أدخل مبلغ صحيح','warn'); return; }
+  if (amount > oldRem + 0.01) { toast('المبلغ أكبر من المتبقي','warn'); return; }
+  const btn = inp.nextElementSibling;
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+  try {
+    const newRem  = Math.max(0, parseFloat((oldRem - amount).toFixed(2)));
+    const docRef  = db.collection('pos_invoices').doc(orderId);
+    const docSnap = await docRef.get();
+    const data    = docSnap.data() || {};
+    const newPaid = parseFloat(((data.paidAmount||0) + amount).toFixed(2));
+    await docRef.update({
+      paidAmount: newPaid,
+      remainingAmount: newRem,
+      status: newRem > 0 ? 'جزئي' : 'مكتمل',
+      ...(newRem === 0 ? { fullyPaidAt: firebase.firestore.FieldValue.serverTimestamp() } : {}),
+    });
+    const idx = allOrders.findIndex(o => o.id === orderId);
+    if (idx >= 0) { allOrders[idx].paidAmount = newPaid; allOrders[idx].remainingAmount = newRem; }
+    toast(newRem === 0 ? '✅ تم السداد بالكامل!' : `✅ تم تسجيل ${amount.toFixed(2)} ج`, 'ok');
+    renderStats(); filterOrders();
+    /* Refresh modal */
+    const updated = allOrders[idx] || { ...data, id: orderId, paidAmount: newPaid, remainingAmount: newRem };
+    openOrderModal(updated);
+  } catch(e) { toast('خطأ: '+e.message,'err'); btn.disabled=false; btn.innerHTML='<i class="fas fa-check"></i> تأكيد الدفع'; }
 };
 
 window.modalTogglePrepare = async function(orderId, prepare){
@@ -500,7 +557,7 @@ window.openScanner = function(){
     qrScanner.start(
       {facingMode:'environment'},
       {fps:10, qrbox:{width:230,height:230}},
-      (text) => {
+      async (text) => {
         let id = text.trim();
         const m = text.match(/[?&]id=([^&\s]+)/);
         if (m) id = decodeURIComponent(m[1]);
@@ -513,9 +570,31 @@ window.openScanner = function(){
           closeScanner();
           setTimeout(() => openOrderModal(found), 200);
         } else {
+          /* Fallback: search Firestore directly */
           document.getElementById('scanner-result').innerHTML +=
-            `<br><span style="color:var(--orange)">⚠️ لم يُعثر على الطلب في القائمة</span>
-             <br><a href="invoice.html?id=${encodeURIComponent(id)}" target="_blank" style="color:var(--gold);font-weight:700">فتح الفاتورة مباشرة ←</a>`;
+            `<br><span style="color:var(--text3)">🔍 جاري البحث في قاعدة البيانات...</span>`;
+          try {
+            let docData = null;
+            /* Try by doc ID first */
+            const byId = await db.collection('pos_invoices').doc(id).get();
+            if (byId.exists) { docData = { id: byId.id, ...byId.data() }; }
+            if (!docData) {
+              /* Try by invoiceNumber */
+              const byNum = await db.collection('pos_invoices').where('invoiceNumber','==',id).limit(1).get();
+              if (!byNum.empty) docData = { id: byNum.docs[0].id, ...byNum.docs[0].data() };
+            }
+            if (docData) {
+              closeScanner();
+              setTimeout(() => openOrderModal(docData), 200);
+            } else {
+              document.getElementById('scanner-result').innerHTML =
+                `<span style="color:var(--orange)">⚠️ لم يُعثر على الطلب</span>
+                 <br><a href="invoice.html?id=${encodeURIComponent(id)}" target="_blank" style="color:var(--gold);font-weight:700">فتح الفاتورة مباشرة ←</a>`;
+            }
+          } catch(fe) {
+            document.getElementById('scanner-result').innerHTML =
+              `<span style="color:var(--red)">❌ خطأ: ${fe.message}</span>`;
+          }
         }
       },
       ()=>{}

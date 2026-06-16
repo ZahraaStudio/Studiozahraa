@@ -520,9 +520,19 @@ html,body{overflow:hidden;height:100%}
       </div>
       <div style="text-align:center;font-size:14px;font-weight:900;padding:8px;border-radius:var(--r);background:var(--card)" id="def-status">—</div>
     </div>
-    <div class="modal-footer">
+    <div class="modal-footer" id="def-footer">
       <a id="def-open-btn" href="#" target="_blank" class="btn btn-primary"><i class="fas fa-print"></i> فتح الفاتورة</a>
+      <button id="def-pay-btn" class="btn" style="background:var(--green);color:#fff;font-weight:900;display:none" onclick="showDefPayPanel()"><i class="fas fa-money-bill-wave"></i> تسجيل سداد</button>
       <button class="btn btn-ghost" onclick="closeModal('def-modal')">إغلاق</button>
+    </div>
+    <div id="def-pay-panel" style="display:none;padding:12px 16px;background:rgba(34,197,94,.08);border-top:1px solid var(--green)">
+      <div style="font-size:12px;color:var(--green);font-weight:900;margin-bottom:8px">💰 تسجيل دفع — المتبقي: <span id="def-pay-rem-lbl" style="color:var(--gold)">—</span></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input id="def-pay-inp" type="number" step="0.01" min="0.01" value="0"
+          style="flex:1;min-width:100px;padding:8px;border-radius:var(--r);border:1px solid var(--green);background:var(--bg2);color:var(--text);font-size:13px;font-weight:900;text-align:center">
+        <button onclick="confirmDefPayment()" style="background:var(--green);color:#fff;border:none;border-radius:var(--r);padding:8px 14px;font-weight:900;font-size:12px;cursor:pointer"><i class="fas fa-check"></i> تأكيد</button>
+        <button onclick="document.getElementById('def-pay-panel').style.display='none'" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;font-weight:900;font-size:12px;cursor:pointer">إلغاء</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1189,6 +1199,7 @@ function printReceipt(inv) {
   }).join('');
 
   const html = `<style>
+@page{size:80mm auto;margin:2mm}
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');
 *{margin:0;padding:0;box-sizing:border-box;font-family:'${fFamily}','Cairo',sans-serif;font-weight:900;color:#000}
 .rs{display:block;width:100%;height:3px;background:#000;margin:5px 0;print-color-adjust:exact;-webkit-print-color-adjust:exact}
@@ -1316,30 +1327,91 @@ document.addEventListener('keydown', e => {
 });
 
 // Lookup deferred invoice by barcode / invoice number
+let _defInvId = null, _defInvRem = 0, _defInvTot = 0;
+
 async function lookupDeferredInvoice(val) {
   try {
     let inv = null;
+    /* Try by invoiceNumber */
     const snap = await db.collection('pos_invoices').where('invoiceNumber','==',val).limit(1).get();
     if (!snap.empty) inv = { id: snap.docs[0].id, ...snap.docs[0].data() };
-    if (!inv) { toast('لا يوجد منتج أو فاتورة: ' + val, 'warn'); return; }
-    const rem = parseFloat(inv.remainingAmount) || 0;
-    const tot = parseFloat(inv.totalPrice) || 0;
-    const paid = parseFloat(inv.paidAmount) || 0;
-    const m = document.getElementById('def-modal');
-    document.getElementById('def-invno').textContent  = inv.invoiceNumber || inv.id;
-    document.getElementById('def-cust').textContent   = inv.userName || '—';
-    document.getElementById('def-phone').textContent  = inv.phone || '—';
-    document.getElementById('def-tot').textContent    = fmt(tot);
-    document.getElementById('def-paid').textContent   = fmt(paid);
-    document.getElementById('def-rem').textContent    = fmt(rem);
-    document.getElementById('def-due').textContent    = inv.dueDate || '—';
-    document.getElementById('def-method').textContent = inv.paymentMethod || '—';
-    document.getElementById('def-status').textContent = rem > 0 ? `⏳ متبقي ${fmt(rem)}` : '✅ مسدد';
-    document.getElementById('def-open-btn').href = `invoice.html?id=${inv.id}`;
+    /* Fallback: try by doc id */
+    if (!inv) {
+      try { const d = await db.collection('pos_invoices').doc(val).get(); if (d.exists) inv = { id: d.id, ...d.data() }; } catch(_){}
+    }
+    if (!inv) { toast('لا يوجد منتج أو فاتورة بهذا الكود: ' + val, 'warn'); return; }
+    const rem  = parseFloat(inv.remainingAmount) || 0;
+    const tot  = parseFloat(inv.totalPrice)      || 0;
+    const paid = parseFloat(inv.paidAmount)      || 0;
+    _defInvId  = inv.id;
+    _defInvRem = rem;
+    _defInvTot = tot;
+    document.getElementById('def-invno').textContent   = inv.invoiceNumber || inv.id;
+    document.getElementById('def-cust').textContent    = inv.userName || '—';
+    document.getElementById('def-phone').textContent   = inv.phone || '—';
+    document.getElementById('def-tot').textContent     = fmt(tot);
+    document.getElementById('def-paid').textContent    = fmt(paid);
+    document.getElementById('def-rem').textContent     = fmt(rem);
+    document.getElementById('def-due').textContent     = inv.dueDate || '—';
+    document.getElementById('def-method').textContent  = inv.paymentMethod || '—';
+    document.getElementById('def-status').innerHTML    = rem > 0
+      ? `<span style="color:var(--gold)">⏳ لا يزال هناك مبلغ مستحق: <b>${fmt(rem)}</b></span>`
+      : `<span style="color:var(--green)">✅ تم السداد بالكامل</span>`;
+    document.getElementById('def-open-btn').href       = `invoice.html?id=${inv.id}`;
+    /* Show/hide pay button */
+    const payBtn = document.getElementById('def-pay-btn');
+    payBtn.style.display = rem > 0 ? '' : 'none';
+    /* Reset pay panel */
+    const pp = document.getElementById('def-pay-panel');
+    pp.style.display = 'none';
+    document.getElementById('def-pay-inp').value = rem.toFixed(2);
+    document.getElementById('def-pay-rem-lbl').textContent = fmt(rem);
     openModal('def-modal');
   } catch(e) { toast('خطأ في البحث: '+e.message,'err'); }
 }
 window.lookupDeferredInvoice = lookupDeferredInvoice;
+
+window.showDefPayPanel = function(){
+  const pp = document.getElementById('def-pay-panel');
+  pp.style.display = pp.style.display === 'none' ? '' : 'none';
+};
+
+window.confirmDefPayment = async function(){
+  const inp    = document.getElementById('def-pay-inp');
+  const amount = parseFloat(inp.value);
+  if (!amount || amount <= 0) { toast('أدخل مبلغ صحيح','warn'); return; }
+  if (amount > _defInvRem + 0.01) { toast('المبلغ أكبر من المتبقي','warn'); return; }
+  const btn = inp.nextElementSibling;
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+  try {
+    const newRem  = Math.max(0, parseFloat((_defInvRem - amount).toFixed(2)));
+    const docRef  = db.collection('pos_invoices').doc(_defInvId);
+    const docSnap = await docRef.get();
+    const data    = docSnap.data() || {};
+    const newPaid = parseFloat(((data.paidAmount||0) + amount).toFixed(2));
+    await docRef.update({
+      paidAmount: newPaid,
+      remainingAmount: newRem,
+      status: newRem > 0 ? 'جزئي' : 'مكتمل',
+      ...(newRem === 0 ? { fullyPaidAt: firebase.firestore.FieldValue.serverTimestamp() } : {}),
+    });
+    toast(newRem === 0 ? '✅ تم السداد بالكامل!' : `✅ تم تسجيل ${amount.toFixed(2)} ج`, 'ok');
+    /* Refresh modal display */
+    _defInvRem = newRem;
+    document.getElementById('def-paid').textContent  = fmt(newPaid);
+    document.getElementById('def-rem').textContent   = fmt(newRem);
+    document.getElementById('def-pay-rem-lbl').textContent = fmt(newRem);
+    document.getElementById('def-pay-inp').value     = newRem.toFixed(2);
+    document.getElementById('def-status').innerHTML  = newRem > 0
+      ? `<span style="color:var(--gold)">⏳ لا يزال هناك مبلغ مستحق: <b>${fmt(newRem)}</b></span>`
+      : `<span style="color:var(--green)">✅ تم السداد بالكامل</span>`;
+    if (newRem === 0) {
+      document.getElementById('def-pay-btn').style.display = 'none';
+      document.getElementById('def-pay-panel').style.display = 'none';
+    }
+  } catch(e) { toast('خطأ: '+e.message,'err'); }
+  finally { btn.disabled=false; btn.innerHTML='<i class="fas fa-check"></i> تأكيد'; }
+};
 
 // Close modal on overlay click
 document.querySelectorAll('.overlay').forEach(m => {
