@@ -12,8 +12,7 @@
 .settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 @media(max-width:768px){.settings-grid{grid-template-columns:1fr}}
 .settings-section{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:18px}
-.section-title{font-size:13px;font-weight:900;color:var(--gold);margin-bottom:14px;
-  padding-bottom:10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.section-title{font-size:13px;font-weight:900;color:var(--gold);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
 .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px}
 .toggle-row:last-child{border-bottom:none}
 .toggle{position:relative;display:inline-block;width:44px;height:24px}
@@ -22,6 +21,32 @@
 .slider::before{content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s}
 input:checked+.slider{background:var(--gold)}
 input:checked+.slider::before{transform:translateX(20px)}
+
+/* Logo upload */
+.logo-upload-area{
+  border:2px dashed var(--border);border-radius:var(--r);
+  padding:16px;text-align:center;cursor:pointer;transition:all .2s;
+  background:var(--bg3);
+}
+.logo-upload-area:hover{border-color:var(--gold);background:rgba(212,175,55,.05)}
+.logo-preview{
+  width:100%;max-height:80px;object-fit:contain;
+  border-radius:6px;border:1px solid var(--border);
+  margin-bottom:8px;background:#fff;
+}
+.logo-upload-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:12px}
+
+/* Font size slider */
+.font-slider{width:100%;accent-color:var(--gold);height:6px;margin:8px 0}
+.font-preview-box{
+  background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);
+  padding:10px 14px;margin-top:8px;
+}
+
+/* Swatch */
+.theme-swatches{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+.swatch{width:36px;height:36px;border-radius:6px;cursor:pointer;border:2px solid transparent;transition:all .2s}
+.swatch:hover,.swatch.on{border-color:var(--gold);transform:scale(1.1)}
 </style>
 </head>
 <body>
@@ -35,7 +60,7 @@ input:checked+.slider::before{transform:translateX(20px)}
     <div class="page-body">
       <div class="settings-grid">
 
-        <!-- Store Info -->
+        <!-- ── Store Info ── -->
         <div class="settings-section">
           <div class="section-title"><i class="fas fa-store"></i> بيانات المتجر</div>
           <div class="form-group"><label>اسم المتجر</label><input class="form-control" id="s-store-name" placeholder="استوديو الزهراء"></div>
@@ -46,7 +71,7 @@ input:checked+.slider::before{transform:translateX(20px)}
           <div class="form-group"><label>نص إضافي في الإيصال</label><textarea class="form-control" id="s-receipt-footer" rows="2" placeholder="شكراً لثقتك بنا..."></textarea></div>
         </div>
 
-        <!-- Financial Settings -->
+        <!-- ── Financial ── -->
         <div class="settings-section">
           <div class="section-title"><i class="fas fa-coins"></i> الإعدادات المالية</div>
           <div class="form-group"><label>العملة</label>
@@ -55,8 +80,7 @@ input:checked+.slider::before{transform:translateX(20px)}
               <option value="ر.س">ريال سعودي (ر.س)</option>
               <option value="د.إ">درهم إماراتي (د.إ)</option>
               <option value="د.ك">دينار كويتي (د.ك)</option>
-              <option value="ر.ع">ريال عماني (ر.ع)</option>
-              <option value="USD">دولار أمريكي (USD)</option>
+              <option value="USD">دولار (USD)</option>
             </select>
           </div>
           <div class="form-group"><label>نسبة الضريبة (%)</label><input class="form-control" id="s-tax" type="number" min="0" max="100" step="0.1" placeholder="0"></div>
@@ -68,7 +92,92 @@ input:checked+.slider::before{transform:translateX(20px)}
           <div class="form-group"><label>رسوم التوصيل الافتراضية (ج)</label><input class="form-control" id="s-del-fee" type="number" min="0" placeholder="0"></div>
         </div>
 
-        <!-- Inventory & Products -->
+        <!-- ── Invoice Style ── -->
+        <div class="settings-section" style="grid-column:1/-1">
+          <div class="section-title"><i class="fas fa-receipt"></i> تخصيص الفاتورة والإيصال</div>
+
+          <!-- Logos -->
+          <div style="font-size:12px;color:var(--text3);font-weight:700;margin-bottom:8px"><i class="fas fa-image"></i> الشعارات</div>
+          <div class="logo-upload-row">
+            <div>
+              <div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:700">شعار يمين (اليمين)</div>
+              <div class="logo-upload-area" onclick="triggerLogo('logo-r-file')">
+                <img id="logo-r-preview" class="logo-preview" src="" style="display:none">
+                <div id="logo-r-ph"><i class="fas fa-cloud-upload-alt" style="color:var(--gold);font-size:22px"></i><br><span style="font-size:11px;color:var(--text3)">انقر لرفع الشعار الأيمن</span></div>
+              </div>
+              <input type="file" id="logo-r-file" accept="image/*" style="display:none" onchange="uploadLogo(this,'logo-r')">
+              <div id="logo-r-progress" style="display:none;font-size:11px;color:var(--gold);margin-top:4px;text-align:center"><i class="fas fa-spinner fa-spin"></i> جاري الرفع...</div>
+              <input type="hidden" id="logo-r-url">
+              <button class="small-btn" style="width:100%;justify-content:center;margin-top:6px;font-size:10px" onclick="clearLogo('logo-r')"><i class="fas fa-trash"></i> حذف</button>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:700">شعار يسار (اليسار)</div>
+              <div class="logo-upload-area" onclick="triggerLogo('logo-l-file')">
+                <img id="logo-l-preview" class="logo-preview" src="" style="display:none">
+                <div id="logo-l-ph"><i class="fas fa-cloud-upload-alt" style="color:var(--gold);font-size:22px"></i><br><span style="font-size:11px;color:var(--text3)">انقر لرفع الشعار الأيسر</span></div>
+              </div>
+              <input type="file" id="logo-l-file" accept="image/*" style="display:none" onchange="uploadLogo(this,'logo-l')">
+              <div id="logo-l-progress" style="display:none;font-size:11px;color:var(--gold);margin-top:4px;text-align:center"><i class="fas fa-spinner fa-spin"></i> جاري الرفع...</div>
+              <input type="hidden" id="logo-l-url">
+              <button class="small-btn" style="width:100%;justify-content:center;margin-top:6px;font-size:10px" onclick="clearLogo('logo-l')"><i class="fas fa-trash"></i> حذف</button>
+            </div>
+          </div>
+
+          <!-- Font size -->
+          <div style="font-size:12px;color:var(--text3);font-weight:700;margin:14px 0 8px"><i class="fas fa-text-height"></i> حجم الخط في الإيصال</div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="font-size:10px;color:var(--text3)">صغير (8)</span>
+            <input type="range" class="font-slider" id="s-font-size" min="8" max="14" step="1" value="10" oninput="previewFont(this.value)">
+            <span style="font-size:10px;color:var(--text3)">كبير (14)</span>
+            <span id="font-size-val" style="font-size:11px;color:var(--gold);font-weight:900;min-width:24px">10</span>
+          </div>
+          <div class="font-preview-box">
+            <span id="font-preview-text" style="font-size:10px;font-family:Cairo,sans-serif">معاينة: استوديو الزهراء — فاتورة رقم #INV-001 — الإجمالي: 150.00 ج</span>
+          </div>
+
+          <!-- Font family -->
+          <div style="font-size:12px;color:var(--text3);font-weight:700;margin:14px 0 8px"><i class="fas fa-font"></i> نوع الخط</div>
+          <select class="form-control" id="s-font-family" onchange="previewFontFamily(this.value)" style="max-width:280px">
+            <option value="Cairo">Cairo (القاهرة) — الافتراضي</option>
+            <option value="Tajawal">Tajawal (تجوال)</option>
+            <option value="Amiri">Amiri (أميري) — كلاسيكي</option>
+            <option value="Almarai">Almarai (المراعي)</option>
+            <option value="monospace">Monospace — للأرقام</option>
+          </select>
+
+          <!-- Theme -->
+          <div style="font-size:12px;color:var(--text3);font-weight:700;margin:14px 0 8px"><i class="fas fa-palette"></i> ثيم الإيصال</div>
+          <div class="theme-swatches">
+            <div class="swatch on" style="background:#000" data-theme="classic" onclick="setTheme('classic',this)" title="كلاسيك"></div>
+            <div class="swatch" style="background:#1a1a2e" data-theme="dark" onclick="setTheme('dark',this)" title="غامق"></div>
+            <div class="swatch" style="background:#d4af37" data-theme="gold" onclick="setTheme('gold',this)" title="ذهبي"></div>
+            <div class="swatch" style="background:#166534" data-theme="green" onclick="setTheme('green',this)" title="أخضر"></div>
+            <div class="swatch" style="background:#1e3a5f" data-theme="blue" onclick="setTheme('blue',this)" title="أزرق"></div>
+          </div>
+          <input type="hidden" id="s-invoice-theme" value="classic">
+
+          <!-- Receipt notice text -->
+          <div style="font-size:12px;color:var(--text3);font-weight:700;margin:14px 0 8px"><i class="fas fa-comment-alt"></i> نص التنبيه في الإيصال</div>
+          <textarea class="form-control" id="s-receipt-notice" rows="3" placeholder="عميلنا العزيز 💛 نرجو استلام الطلب خلال 15 يوماً..."></textarea>
+
+          <!-- Toggles -->
+          <div style="margin-top:14px">
+            <div class="toggle-row">
+              <span>إظهار QR الباركود في الإيصال</span>
+              <label class="toggle"><input type="checkbox" id="s-qr" checked><span class="slider"></span></label>
+            </div>
+            <div class="toggle-row">
+              <span>إظهار الشعار في الإيصال</span>
+              <label class="toggle"><input type="checkbox" id="s-show-logo" checked><span class="slider"></span></label>
+            </div>
+            <div class="toggle-row">
+              <span>طباعة الإيصال تلقائياً بعد الفاتورة</span>
+              <label class="toggle"><input type="checkbox" id="s-auto-print"><span class="slider"></span></label>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Inventory ── -->
         <div class="settings-section">
           <div class="section-title"><i class="fas fa-warehouse"></i> إعدادات المخزون</div>
           <div class="toggle-row">
@@ -83,22 +192,14 @@ input:checked+.slider::before{transform:translateX(20px)}
             <span>منع البيع عند انتهاء المخزون</span>
             <label class="toggle"><input type="checkbox" id="s-block-oos"><span class="slider"></span></label>
           </div>
-          <div class="form-group" style="margin-top:12px"><label>حد المخزون الافتراضي للتنبيه</label><input class="form-control" id="s-reorder" type="number" min="1" value="5"></div>
+          <div class="form-group" style="margin-top:12px"><label>حد المخزون للتنبيه</label><input class="form-control" id="s-reorder" type="number" min="1" value="5"></div>
         </div>
 
-        <!-- POS Settings -->
+        <!-- ── POS Settings ── -->
         <div class="settings-section">
           <div class="section-title"><i class="fas fa-cash-register"></i> إعدادات الكاشير</div>
           <div class="toggle-row">
-            <span>طباعة الإيصال تلقائياً</span>
-            <label class="toggle"><input type="checkbox" id="s-auto-print"><span class="slider"></span></label>
-          </div>
-          <div class="toggle-row">
-            <span>تفعيل رمز QR في الإيصال</span>
-            <label class="toggle"><input type="checkbox" id="s-qr"><span class="slider"></span></label>
-          </div>
-          <div class="toggle-row">
-            <span>إظهار صور المنتجات في الكاشير</span>
+            <span>إظهار صور المنتجات</span>
             <label class="toggle"><input type="checkbox" id="s-show-imgs"><span class="slider"></span></label>
           </div>
           <div class="form-group" style="margin-top:12px"><label>عدد المنتجات في الصفحة</label>
@@ -109,28 +210,26 @@ input:checked+.slider::before{transform:translateX(20px)}
           </div>
         </div>
 
-        <!-- Loyalty -->
+        <!-- ── Loyalty ── -->
         <div class="settings-section">
           <div class="section-title"><i class="fas fa-star"></i> نقاط الولاء</div>
           <div class="toggle-row">
             <span>تفعيل نظام نقاط الولاء</span>
             <label class="toggle"><input type="checkbox" id="s-loyalty"><span class="slider"></span></label>
           </div>
-          <div class="form-group" style="margin-top:12px"><label>كل كم جنيه = نقطة واحدة</label><input class="form-control" id="s-pts-per" type="number" min="1" value="100" placeholder="100"></div>
-          <div class="form-group"><label>قيمة النقطة الواحدة (ج)</label><input class="form-control" id="s-pt-val" type="number" min="0" step="0.01" value="0.1" placeholder="0.10"></div>
+          <div class="form-group" style="margin-top:12px"><label>كل كم جنيه = نقطة</label><input class="form-control" id="s-pts-per" type="number" min="1" value="100"></div>
+          <div class="form-group"><label>قيمة النقطة (ج)</label><input class="form-control" id="s-pt-val" type="number" min="0" step="0.01" value="0.1"></div>
         </div>
 
-        <!-- Firebase Config -->
+        <!-- ── Firebase Config ── -->
         <div class="settings-section">
           <div class="section-title"><i class="fab fa-google"></i> إعداد Firebase</div>
-          <div style="font-size:11px;color:var(--text2);margin-bottom:12px">
-            هذه البيانات مخزّنة محلياً فقط على متصفحك ولا تُرسل لأحد.
-          </div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:12px">هذه البيانات مخزّنة محلياً فقط.</div>
           <div class="form-group"><label>API Key</label><input class="form-control" id="fb-api" placeholder="AIzaSy..."></div>
           <div class="form-group"><label>Auth Domain</label><input class="form-control" id="fb-auth"></div>
           <div class="form-group"><label>Project ID</label><input class="form-control" id="fb-proj"></div>
           <div class="form-group"><label>App ID</label><input class="form-control" id="fb-app"></div>
-          <button class="btn btn-ghost" style="width:100%" onclick="saveFbConfig()"><i class="fas fa-cloud"></i> حفظ إعداد Firebase</button>
+          <button class="btn btn-ghost" style="width:100%" onclick="saveFbConfig()"><i class="fas fa-cloud"></i> حفظ Firebase</button>
         </div>
 
       </div>
@@ -150,24 +249,38 @@ input:checked+.slider::before{transform:translateX(20px)}
 <script>
 injectSharedCSS();
 
+/* Add Google Fonts dynamically */
+const fontLink = document.createElement('link');
+fontLink.rel = 'stylesheet';
+fontLink.href = 'https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&family=Amiri:wght@400;700&family=Almarai:wght@400;700;900&display=swap';
+document.head.appendChild(fontLink);
+
+let currentTheme = 'classic';
+
 requireAuth(async () => {
   loadSettings();
-  // Try to load from Firestore too
   try {
-    const snap = await db.collection('settings').doc('pos').get();
+    const snap = await db.collection('settings').doc('general').get();
     if (snap.exists) {
       const data = snap.data();
-      const s = getSettings();
-      Object.assign(s, data);
-      saveSettings(s);
-      loadSettings();
+      applyInvoiceSettings(data);
     }
-  } catch(e) {}
+    const snap2 = await db.collection('settings').doc('pos').get();
+    if (snap2.exists) {
+      const s = getSettings();
+      Object.assign(s, snap2.data());
+      saveSettings(s); loadSettings();
+    }
+  } catch(e){}
 });
 
-function loadSettings() {
+function loadSettings(){
   const s = getSettings();
-  const set = (id, val) => { const el=document.getElementById(id); if(el) { if(el.type==='checkbox') el.checked=!!val; else el.value=val||''; } };
+  const set = (id, val) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (el.type==='checkbox') el.checked=!!val; else el.value=val||'';
+  };
   set('s-store-name', s.storeName);
   set('s-phone1', s.storePhone);
   set('s-phone2', s.storePhone2);
@@ -190,49 +303,132 @@ function loadSettings() {
   set('s-loyalty', s.loyaltyEnabled);
   set('s-pts-per', s.pointsPerAmount||100);
   set('s-pt-val', s.pointValue||0.1);
-
-  // Firebase config
   const cfg = JSON.parse(localStorage.getItem(CFG_KEY)||'{}');
-  set('fb-api', cfg.apiKey);
-  set('fb-auth', cfg.authDomain);
-  set('fb-proj', cfg.projectId);
-  set('fb-app', cfg.appId);
+  set('fb-api', cfg.apiKey); set('fb-auth', cfg.authDomain);
+  set('fb-proj', cfg.projectId); set('fb-app', cfg.appId);
 }
 
+function applyInvoiceSettings(data){
+  if (data.invoiceLogoRight) setLogoPreview('logo-r', data.invoiceLogoRight);
+  if (data.invoiceLogoLeft)  setLogoPreview('logo-l', data.invoiceLogoLeft);
+  if (data.invoiceFontSize){
+    document.getElementById('s-font-size').value = data.invoiceFontSize;
+    previewFont(data.invoiceFontSize);
+  }
+  if (data.invoiceFontFamily){
+    document.getElementById('s-font-family').value = data.invoiceFontFamily;
+    previewFontFamily(data.invoiceFontFamily);
+  }
+  if (data.invoiceTheme){
+    currentTheme = data.invoiceTheme;
+    document.getElementById('s-invoice-theme').value = data.invoiceTheme;
+    document.querySelectorAll('.swatch').forEach(s=>s.classList.toggle('on', s.dataset.theme===data.invoiceTheme));
+  }
+  if (data.receiptNotice) document.getElementById('s-receipt-notice').value = data.receiptNotice;
+  if (data.showLogoOnReceipt!==undefined){
+    const el=document.getElementById('s-show-logo'); if(el) el.checked=data.showLogoOnReceipt;
+  }
+}
+
+/* ── Logo upload (Cloudinary) ── */
+window.triggerLogo = (fileId) => document.getElementById(fileId)?.click();
+
+window.uploadLogo = async function(input, prefix){
+  const file = input.files[0];
+  if (!file) return;
+  const prog = document.getElementById(prefix+'-progress');
+  prog.style.display = 'block';
+  try{
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', 'zahraa_upload');
+    fd.append('folder', 'zahraa/logos');
+    const res = await fetch('https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload', {method:'POST',body:fd});
+    const data = await res.json();
+    if (data.secure_url) setLogoPreview(prefix, data.secure_url);
+    else toast('خطأ في رفع الشعار','err');
+  } catch(e){ toast('خطأ: '+e.message,'err'); }
+  finally{ prog.style.display='none'; }
+};
+
+function setLogoPreview(prefix, url){
+  const img = document.getElementById(prefix+'-preview');
+  const ph  = document.getElementById(prefix+'-ph');
+  const inp = document.getElementById(prefix+'-url');
+  if (img){ img.src=url; img.style.display='block'; }
+  if (ph)  ph.style.display='none';
+  if (inp) inp.value=url;
+}
+
+window.clearLogo = function(prefix){
+  const img=document.getElementById(prefix+'-preview');
+  const ph=document.getElementById(prefix+'-ph');
+  const inp=document.getElementById(prefix+'-url');
+  if(img){ img.src=''; img.style.display='none'; }
+  if(ph)  ph.style.display='block';
+  if(inp) inp.value='';
+};
+
+/* ── Font preview ── */
+window.previewFont = function(v){
+  document.getElementById('font-size-val').textContent = v;
+  document.getElementById('font-preview-text').style.fontSize = v+'px';
+};
+window.previewFontFamily = function(f){
+  document.getElementById('font-preview-text').style.fontFamily = f+',Cairo,sans-serif';
+};
+
+/* ── Theme ── */
+window.setTheme = function(theme, el){
+  currentTheme = theme;
+  document.getElementById('s-invoice-theme').value = theme;
+  document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('on'));
+  el.classList.add('on');
+};
+
+/* ── Save all ── */
 window.saveAll = async () => {
   const get = id => document.getElementById(id)?.value||'';
   const chk = id => document.getElementById(id)?.checked||false;
+
+  /* POS settings */
   const s = {
-    storeName: get('s-store-name'),
-    storePhone: get('s-phone1'),
-    storePhone2: get('s-phone2'),
-    storeAddress: get('s-address'),
-    instagram: get('s-instagram'),
-    receiptFooter: get('s-receipt-footer'),
-    currency: get('s-currency'),
-    taxRate: parseFloat(get('s-tax'))||0,
-    taxIncluded: chk('s-tax-included'),
-    defaultDiscount: parseFloat(get('s-disc'))||0,
-    deliveryFee: parseFloat(get('s-del-fee'))||0,
-    trackStock: chk('s-track-stock'),
-    stockWarning: chk('s-stock-warn'),
-    blockOutOfStock: chk('s-block-oos'),
+    storeName: get('s-store-name'), storePhone: get('s-phone1'), storePhone2: get('s-phone2'),
+    storeAddress: get('s-address'), instagram: get('s-instagram'), receiptFooter: get('s-receipt-footer'),
+    currency: get('s-currency'), taxRate: parseFloat(get('s-tax'))||0, taxIncluded: chk('s-tax-included'),
+    defaultDiscount: parseFloat(get('s-disc'))||0, deliveryFee: parseFloat(get('s-del-fee'))||0,
+    trackStock: chk('s-track-stock'), stockWarning: chk('s-stock-warn'), blockOutOfStock: chk('s-block-oos'),
     defaultReorderLevel: parseInt(get('s-reorder'))||5,
-    autoPrint: chk('s-auto-print'),
-    receiptQR: chk('s-qr'),
-    showProductImages: chk('s-show-imgs'),
-    posPageSize: parseInt(get('s-page-size'))||18,
-    loyaltyEnabled: chk('s-loyalty'),
-    pointsPerAmount: parseInt(get('s-pts-per'))||100,
+    autoPrint: chk('s-auto-print'), receiptQR: chk('s-qr'),
+    showProductImages: chk('s-show-imgs'), posPageSize: parseInt(get('s-page-size'))||18,
+    loyaltyEnabled: chk('s-loyalty'), pointsPerAmount: parseInt(get('s-pts-per'))||100,
     pointValue: parseFloat(get('s-pt-val'))||0.1,
     updatedAt: new Date().toISOString(),
   };
   saveSettings(s);
-  try {
-    await db.collection('settings').doc('pos').set(s, { merge: true });
-    toast('✅ تم حفظ الإعدادات وزامنتها مع Firebase','ok');
-  } catch(e) {
-    toast('✅ تم الحفظ محلياً (خطأ في Firebase: '+e.message+')','warn');
+
+  /* Invoice settings → settings/general */
+  const inv = {
+    storeName: get('s-store-name'), storePhone: get('s-phone1'), storePhone2: get('s-phone2'),
+    storeAddress: get('s-address'), instagram: get('s-instagram'),
+    invoiceLogoRight: get('logo-r-url'),
+    invoiceLogoLeft:  get('logo-l-url'),
+    invoiceFontSize:  parseInt(get('s-font-size'))||10,
+    invoiceFontFamily: get('s-font-family')||'Cairo',
+    invoiceTheme: get('s-invoice-theme')||'classic',
+    receiptNotice: get('s-receipt-notice'),
+    receiptQR: chk('s-qr'),
+    showLogoOnReceipt: chk('s-show-logo'),
+    autoPrint: chk('s-auto-print'),
+    updatedAt: new Date().toISOString(),
+  };
+
+  try{
+    await db.collection('settings').doc('pos').set(s, { merge:true });
+    await db.collection('settings').doc('general').set(inv, { merge:true });
+    toast('✅ تم حفظ جميع الإعدادات بنجاح','ok');
+  } catch(e){
+    toast('✅ تم الحفظ محلياً ('+e.message+')','warn');
   }
 };
 
@@ -243,16 +439,16 @@ window.saveFbConfig = () => {
     projectId: document.getElementById('fb-proj').value.trim(),
     appId: document.getElementById('fb-app').value.trim(),
   };
-  if (!cfg.apiKey||!cfg.projectId) { toast('API Key و Project ID مطلوبان','warn'); return; }
+  if (!cfg.apiKey||!cfg.projectId){ toast('API Key و Project ID مطلوبان','warn'); return; }
   localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
-  toast('✅ تم حفظ إعداد Firebase — أعد تحميل الصفحة','ok');
+  toast('✅ تم حفظ Firebase — أعد تحميل الصفحة','ok');
   setTimeout(()=>location.reload(), 1500);
 };
 
 window.clearLocalData = async () => {
-  if (!await confirm2('سيتم مسح جميع البيانات المحلية (الإعداد والإعدادات). هل تريد المتابعة؟')) return;
+  if (!await confirm2('سيتم مسح جميع البيانات المحلية. هل تريد المتابعة؟')) return;
   localStorage.clear();
-  toast('🗑️ تم المسح — ستنتقل لصفحة الإعداد','warn');
+  toast('🗑️ تم المسح','warn');
   setTimeout(()=>location.href='index.html', 1500);
 };
 </script>
