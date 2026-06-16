@@ -38,16 +38,19 @@ body{background:var(--bg);display:flex;flex-direction:column}
 #splash{
   position:fixed;inset:0;background:linear-gradient(135deg,#08080f 0%,#161635 100%);
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  z-index:9999;transition:opacity .6s
+  z-index:9999;
+  /* CSS-only auto-dismiss: fades out after 2.5s, stays hidden */
+  animation:sp-auto-hide .5s ease-out 2.5s forwards;
 }
-#splash.out{opacity:0;pointer-events:none}
+@keyframes sp-auto-hide{to{opacity:0;pointer-events:none;visibility:hidden}}
+#splash.out{opacity:0;pointer-events:none;visibility:hidden}
 .sp-icon{font-size:70px;margin-bottom:12px;animation:pulse 1.5s infinite}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
 .sp-name{font-size:28px;font-weight:900;color:var(--gold);letter-spacing:3px;margin-bottom:4px}
 .sp-sub{font-size:13px;color:#555;margin-bottom:32px}
 .sp-bar{width:240px;height:5px;background:#1c1c35;border-radius:5px;overflow:hidden}
 .sp-fill{height:100%;background:linear-gradient(90deg,var(--gold3),var(--gold),var(--gold2));
-  border-radius:5px;animation:load 1.6s ease-out forwards}
+  border-radius:5px;animation:load 2s ease-out forwards}
 @keyframes load{from{width:0}to{width:100%}}
 
 /* ── TOP BAR ── */
@@ -678,7 +681,6 @@ body{background:var(--bg);display:flex;flex-direction:column}
      FIREBASE + POS LOGIC
 ══════════════════════════════════════ -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <script>
 firebase.initializeApp({
@@ -690,7 +692,6 @@ firebase.initializeApp({
   appId:"1:885722081307:web:7c91e0f8b0ea9b8b4df0be"
 },'pos');
 const db = firebase.firestore();
-const auth = firebase.auth();
 
 /* ─── STATE ─── */
 let prods=[], fprods=[], cats=[], cart=[], holds=[];
@@ -701,13 +702,8 @@ let payType='cash', npTarget=null, npVal='';
 let todayRev=0, todayInv=0, todayCash=0, todayCard=0, todayDefer=0, todayProfit=0;
 let todayProdMap={};
 
-/* ─── AUTH (optional — updates user label only) ─── */
-auth.onAuthStateChanged(u => {
-  if (u) {
-    user = u;
-    document.getElementById('sb-user').textContent = '👤 ' + (u.displayName||u.email||'الكاشير');
-  }
-});
+/* ─── USER LABEL ─── */
+document.getElementById('sb-user').textContent = '👤 الكاشير';
 
 /* ─── SPLASH DISMISS — always fires after 3s max ─── */
 function dismissSplash() {
