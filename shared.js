@@ -39,6 +39,9 @@ function requireAuth(cb) {
     if (!user) { location.href = 'index.html'; return; }
     currentUser = user;
     renderSidebar();
+    applyTheme();
+    const themeBtn = document.getElementById('theme-toggle-btn');
+    if (themeBtn && document.body.classList.contains('light')) themeBtn.innerHTML = '<i class="fas fa-moon"></i> تبديل المظهر';
     document.getElementById('sb-user') && (document.getElementById('sb-user').textContent = user.email);
     if (cb) cb(user);
   });
@@ -81,6 +84,7 @@ function renderSidebar() {
     </nav>
     <div class="sb-footer">
       <div class="sb-user-info"><i class="fas fa-circle-user"></i> <span id="sb-user"></span></div>
+      <button id="theme-toggle-btn" style="width:100%;padding:7px;border-radius:var(--r);border:1.5px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;transition:all .17s;margin-bottom:5px" onclick="toggleTheme()"><i class="fas fa-circle-half-stroke"></i> تبديل المظهر</button>
       <button class="sb-logout" onclick="doLogout()"><i class="fas fa-right-from-bracket"></i> خروج</button>
     </div>`;
   if (currentUser) document.getElementById('sb-user').textContent = currentUser.email;
@@ -122,6 +126,22 @@ function openModal(id) { document.getElementById(id)?.classList.add('open'); }
 function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
 
 // ─── Common CSS ──────────────────────────
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light');
+  localStorage.setItem('zahraa_theme', isLight ? 'light' : 'dark');
+  const btn = document.getElementById('theme-toggle-btn');
+  if (btn) btn.innerHTML = isLight ? '<i class="fas fa-moon"></i>' : '<i class="fas fa-circle-half-stroke"></i>';
+}
+window.toggleTheme = toggleTheme;
+
+function applyTheme() {
+  const saved = localStorage.getItem('zahraa_theme');
+  if (saved === 'light') {
+    document.body.classList.add('light');
+  }
+}
+window.applyTheme = applyTheme;
+
 function injectSharedCSS() {
   const style = document.createElement('style');
   style.textContent = `
@@ -136,6 +156,13 @@ function injectSharedCSS() {
   --blue:#3b82f6;--purple:#8b5cf6;--cyan:#06b6d4;
   --r:10px;--r2:14px;--sh:0 4px 24px rgba(0,0,0,.5);
   --sw:220px;
+}
+body.light{
+  --bg:#f0f4f8;--bg2:#e8eef5;--bg3:#dde5ef;
+  --card:#ffffff;--card2:#f4f7fa;
+  --border:#c8d5e3;--border2:#a0b4c8;
+  --text:#0f172a;--text2:#334155;--text3:#64748b;
+  --sh:0 4px 24px rgba(0,0,0,.12);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;outline:none}
 html,body{width:100%;height:100%;font-family:'Cairo',sans-serif;color:var(--text);background:var(--bg);direction:rtl}

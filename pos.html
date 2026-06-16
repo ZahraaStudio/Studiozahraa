@@ -210,7 +210,7 @@ html,body{overflow:hidden;height:100%}
     <i class="fas fa-pause-circle"></i> معلّق
     <span id="hold-bdg" style="display:none;background:var(--orange);color:#000;border-radius:10px;padding:0 5px;font-size:9px;margin-right:2px">0</span>
   </button>
-  <button class="tb-btn" onclick="document.body.classList.toggle('light')"><i class="fas fa-circle-half-stroke"></i></button>
+  <button class="tb-btn" id="theme-toggle-btn" onclick="toggleTheme()"><i class="fas fa-circle-half-stroke"></i></button>
   <div id="clock">--:--</div>
   <button class="tb-btn" onclick="location.href='dashboard.html'"><i class="fas fa-th-large"></i></button>
 </div>
@@ -1072,55 +1072,122 @@ window.processReturn = async () => {
 // Print receipt
 function printReceipt(inv) {
   const s = getSettings();
-  const sName = s.storeName || 'استوديو الزهراء';
-  const p1 = s.storePhone || '';
-  const p2 = s.storePhone2 || '';
-  const addr = s.storeAddress || '';
+  const sName   = s.storeName    || 'استوديو الزهراء';
+  const p1      = s.storePhone   || '';
+  const p2      = s.storePhone2  || '';
+  const addr    = s.storeAddress || '';
+  const insta   = s.instagram    || '';
+  const logoR   = s.invoiceLogoRight || '';
+  const logoL   = s.invoiceLogoLeft  || '';
+  const fSize   = s.invoiceFontSize  || 10;
+  const fFamily = s.invoiceFontFamily|| 'Cairo';
+  const theme   = s.invoiceTheme     || 'classic';
+  const notice  = s.receiptNotice    || 'عميلنا العزيز 💛 نرجو استلام الطلب خلال 15 يوماً من تاريخ التجهيز. شكراً لثقتكم 💛';
+  const showQR  = s.receiptQR !== false;
+  const showLogo= s.showLogoOnReceipt !== false;
+
+  const themes = {
+    classic:{ hBg:'#000', hClr:'#fff' },
+    dark:   { hBg:'#1a1a2e', hClr:'#d4af37' },
+    gold:   { hBg:'#d4af37', hClr:'#000' },
+    green:  { hBg:'#166534', hClr:'#fff' },
+    blue:   { hBg:'#1e3a5f', hClr:'#fff' },
+  };
+  const tc = themes[theme] || themes.classic;
+
   const now = inv.createdAt instanceof Date ? inv.createdAt : new Date();
   const pad = n => String(n).padStart(2,'0');
   const dateStr = `${pad(now.getDate())}-${pad(now.getMonth()+1)}-${now.getFullYear()}`;
   const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
   const items = inv.items || [];
+
+  const tot  = parseFloat(inv.totalPrice) || 0;
+  const paid = parseFloat(inv.paidAmount) || 0;
+  const rem  = Math.max(0, parseFloat(inv.remainingAmount) || 0);
+  const disc = parseFloat(inv.discountAmount) || 0;
+  const del  = parseFloat(inv.deliveryFee) || 0;
+
+  const qrSrc = (text, sz) =>
+    `https://api.qrserver.com/v1/create-qr-code/?size=${sz}x${sz}&data=${encodeURIComponent(text)}&qzone=1&format=png`;
+  const q1 = qrSrc(inv.invoiceNumber, 80);
+  const q2 = qrSrc(`${location.origin}/order-status.html?id=${encodeURIComponent(inv.invoiceNumber)}`, 80);
+
+  let logosHTML = '';
+  if (showLogo) {
+    const leftEl  = logoL ? `<img src="${logoL}" style="max-height:70px;max-width:110px;object-fit:contain" alt="logo">` : '<span></span>';
+    const rightEl = logoR ? `<img src="${logoR}" style="max-height:70px;max-width:110px;object-fit:contain" alt="logo">` :
+      `<div style="background:#111;color:#fff;padding:3px 8px;text-align:center;line-height:1.1;print-color-adjust:exact;-webkit-print-color-adjust:exact"><span style="font-size:16px;font-weight:900;display:block">Z</span><span style="font-size:7px;letter-spacing:1.5px;color:#ccc;display:block">ZAHRAA STUDIO</span></div>`;
+    logosHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">${leftEl}${rightEl}</div>`;
+  }
+
+  const rowsHTML = items.map(i => {
+    const q = i.qty || i.quantity || 1;
+    const p = parseFloat(i.finalPrice || i.price || 0);
+    return `<tr><td style="text-align:right;max-width:28mm;word-break:break-word">${i.name||'—'}</td><td>${q}</td><td>${p.toFixed(2)}</td><td>${(p*q).toFixed(2)}</td></tr>`;
+  }).join('');
+
   const html = `<style>
-  *{margin:0;padding:0;box-sizing:border-box;font-family:'Cairo','Segoe UI',sans-serif;font-weight:900;color:#000}
-  .sep{display:block;width:100%;height:3px;background:#000;margin:4px 0}
-  .sep1{display:block;width:100%;height:1px;background:#000;margin:3px 0}
-  table{width:100%;border-collapse:collapse;margin:4px 0;font-size:9px}
-  th,td{border:1.5px solid #000;padding:2px;text-align:center;font-weight:900}
-  th{background:#000;color:#fff;font-size:8px}
-  td:first-child,th:first-child{text-align:right}
-  .tbox{background:#000;color:#fff;padding:5px 8px;margin:4px 0;display:flex;justify-content:space-between;align-items:center}
-  .tbox *{color:#fff}
-  </style>
-  <div style="width:80mm">
-    <div style="text-align:center;border-bottom:3px solid #000;padding-bottom:4px;margin-bottom:4px">
-      <div style="font-size:22px">📸</div>
-      <div style="font-size:16px;font-weight:900">${sName}</div>
-      ${p1?`<div style="font-size:10px">${p1}${p2?' | '+p2:''}</div>`:''}
-      ${addr?`<div style="font-size:10px">${addr}</div>`:''}
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;margin:4px 0;font-size:9px">
-      <div>العميل: <strong>${inv.userName||'عميل'}</strong></div>
-      <div>رقم: <strong>${inv.invoiceNumber}</strong></div>
-      <div>التاريخ: <strong>${dateStr}</strong></div>
-      <div>الوقت: <strong>${timeStr}</strong></div>
-      <div>الدفع: <strong>${inv.paymentMethod||'—'}</strong></div>
-      ${inv.deliveryDate?`<div>الاستلام: <strong>${inv.deliveryDate}</strong></div>`:''}
-    </div>
-    <span class="sep"></span>
-    <table>
-      <thead><tr><th>المنتج</th><th>كم</th><th>سعر</th><th>إجمالي</th></tr></thead>
-      <tbody>${items.map(i => `<tr><td>${i.name}</td><td>${i.qty||1}</td><td>${(i.finalPrice||i.price||0).toFixed(2)}</td><td>${(i.total||0).toFixed(2)}</td></tr>`).join('')}</tbody>
-    </table>
-    ${inv.discountAmount>0?`<div style="font-size:9px;padding:2px 0">خصم: - ${inv.discountAmount.toFixed(2)} ج</div>`:''}
-    ${inv.deliveryFee>0?`<div style="font-size:9px;padding:2px 0">توصيل: + ${inv.deliveryFee.toFixed(2)} ج</div>`:''}
-    <div class="tbox"><span style="font-size:12px">الإجمالي</span><span style="font-size:18px">${inv.totalPrice.toFixed(2)} ج</span></div>
-    ${inv.remainingAmount>0?`<div style="background:#450a0a;color:#fca5a5;padding:4px;text-align:center;font-size:11px">متبقي: ${inv.remainingAmount.toFixed(2)} ج</div>`:''}
-    ${inv.notes?`<div style="border:1px solid #000;padding:3px;margin:3px 0;font-size:9px">📝 ${inv.notes}</div>`:''}
-    <span class="sep1"></span>
-    <div style="text-align:center;font-size:10px;margin:4px 0">عميلنا العزيز: شكراً لثقتك بنا 🌸</div>
-    <span class="sep"></span>
-  </div>`;
+*{margin:0;padding:0;box-sizing:border-box;font-family:'${fFamily}','Cairo',sans-serif;font-weight:900;color:#000}
+.rs{display:block;width:100%;height:3px;background:#000;margin:5px 0;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+.rs1{display:block;width:100%;height:1px;background:#000;margin:3px 0}
+table{width:100%;border-collapse:collapse;margin:4px 0}
+th,td{border:1px solid #000;padding:2px 3px;text-align:center;font-weight:900;font-size:${fSize-1}px}
+th{background:${tc.hBg};color:${tc.hClr};font-size:${fSize-2}px;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+.r-tot{background:${tc.hBg};color:${tc.hClr};display:flex;justify-content:space-between;align-items:center;padding:6px 8px;margin:4px 0 2px;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+.r-rem{display:flex;justify-content:space-between;align-items:center;padding:5px 8px;margin-bottom:4px;border:1.5px solid #a88520;background:#d4af37;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+.r-paid{border:1px solid #000;text-align:center;padding:3px;font-weight:900;margin:3px 0;background:#f0f0f0;font-size:${fSize-1}px}
+.r-cust{font-weight:900;margin:2px 0;display:flex;gap:3px;font-size:${fSize}px}
+.r-cl{white-space:nowrap;color:#444}
+.r-cv{font-weight:700;flex:1;word-break:break-word}
+.qgrid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:5px 0}
+.qcell{border:1px solid #000;padding:3px;text-align:center}
+.qcell img{display:block;margin:0 auto}
+.qlbl{font-size:8px;background:${tc.hBg};color:${tc.hClr};display:block;padding:1px 0;margin-top:2px;font-weight:900;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+</style>
+<div style="width:80mm;font-size:${fSize}px">
+  ${logosHTML}
+  <div style="text-align:center;font-size:${fSize+7}px;font-weight:900;margin:2px 0">${sName}</div>
+  ${p1?`<div style="text-align:center;font-size:${fSize+1}px;direction:ltr">${p1}${p2?' | '+p2:''}</div>`:''}
+  <span class="rs"></span>
+  <div style="text-align:center;font-size:${fSize}px;font-weight:900;margin:3px 0"># ${inv.invoiceNumber} &nbsp; ${dateStr} &nbsp; ${timeStr}</div>
+  <span class="rs1"></span>
+  <div class="r-cust"><span class="r-cl">الاسم:</span><span class="r-cv">${inv.userName||'عميل'}</span></div>
+  ${inv.phone?`<div class="r-cust"><span class="r-cl">الهاتف:</span><span class="r-cv" style="direction:ltr">${inv.phone}</span></div>`:''}
+  <div class="r-cust"><span class="r-cl">طريقة الدفع:</span><span class="r-cv">${inv.paymentMethod||'—'}</span></div>
+  ${inv.dueDate?`<div class="r-cust"><span class="r-cl">📅 تاريخ الاستحقاق:</span><span class="r-cv">${inv.dueDate}</span></div>`:''}
+  ${inv.deliveryDate?`<div class="r-cust"><span class="r-cl">📅 الاستلام:</span><span class="r-cv">${inv.deliveryDate}</span></div>`:''}
+  <span class="rs1"></span>
+  <table>
+    <thead><tr><th style="text-align:right">المنتج</th><th>كم</th><th>سعر</th><th>إجمالي</th></tr></thead>
+    <tbody>${rowsHTML}</tbody>
+  </table>
+  ${disc>0||del>0?`<div style="border-top:1px solid #ccc;padding:2px 0">
+    ${disc>0?`<div style="display:flex;justify-content:space-between;font-size:${fSize-1}px;padding:1px 2px"><span>خصم:</span><span>- ${disc.toFixed(2)} ج</span></div>`:''}
+    ${del>0?`<div style="display:flex;justify-content:space-between;font-size:${fSize-1}px;padding:1px 2px"><span>توصيل:</span><span>+ ${del.toFixed(2)} ج</span></div>`:''}
+  </div>`:''}
+  <div class="r-tot">
+    <span style="font-weight:900;color:${tc.hClr};font-size:${fSize}px">الإجمالي</span>
+    <span style="font-weight:900;color:${tc.hClr};font-size:${fSize+8}px;direction:ltr">${tot.toFixed(2)} ج</span>
+  </div>
+  ${rem>0
+    ? `<div class="r-rem"><span style="font-weight:900;font-size:${fSize}px">المتبقي</span><span style="font-weight:900;font-size:${fSize+4}px;direction:ltr">${rem.toFixed(2)} ج</span></div>
+       <div style="display:flex;justify-content:space-between;font-size:${fSize-1}px;padding:2px 2px"><span>المدفوع:</span><span style="color:#166534;font-weight:900">${paid.toFixed(2)} ج</span></div>`
+    : `<div class="r-paid">✅ تم السداد بالكامل — ${tot.toFixed(2)} ج</div>`
+  }
+  ${inv.notes?`<div style="border:1px dashed #999;padding:3px;font-size:${fSize-1}px;margin:2px 0">📝 ${inv.notes}</div>`:''}
+  <span class="rs1"></span>
+  ${showQR?`<div class="qgrid">
+    <div class="qcell"><img src="${q1}" width="80" height="80" alt="QR"><span class="qlbl">رقم الفاتورة</span></div>
+    <div class="qcell"><img src="${q2}" width="80" height="80" alt="QR"><span class="qlbl">تتبع طلبك</span></div>
+  </div>`:''}
+  <div style="border:1px solid #000;text-align:center;padding:4px 3px;margin:3px 0;font-size:${fSize-2}px;font-weight:700;line-height:1.5">${notice}</div>
+  ${addr||insta?`<div style="border-top:2px solid #000;padding:3px 0;margin:3px 0">
+    ${addr?`<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px;font-size:${fSize-1}px;font-weight:900">📍 <span>${addr}</span></div>`:''}
+    ${insta?`<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px;font-size:${fSize-1}px;font-weight:900">📷 <span>${insta}</span></div>`:''}
+    ${p1?`<div style="display:flex;align-items:center;gap:4px;font-size:${fSize-1}px;font-weight:900">📞 <span>${p1}</span></div>`:''}
+  </div>`:''}
+  <span class="rs" style="margin-top:4px"></span>
+</div>`;
   document.getElementById('rprint').innerHTML = html;
   setTimeout(() => window.print(), 300);
 }
