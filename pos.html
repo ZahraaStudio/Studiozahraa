@@ -701,7 +701,7 @@ let payType='cash', npTarget=null, npVal='';
 let todayRev=0, todayInv=0, todayCash=0, todayCard=0, todayDefer=0, todayProfit=0;
 let todayProdMap={};
 
-/* ─── AUTH (optional — don't block POS on auth) ─── */
+/* ─── AUTH (optional — updates user label only) ─── */
 auth.onAuthStateChanged(u => {
   if (u) {
     user = u;
@@ -709,26 +709,44 @@ auth.onAuthStateChanged(u => {
   }
 });
 
-/* ─── INIT — runs immediately, no auth wait ─── */
-async function initPOS() {
-  holds = JSON.parse(localStorage.getItem('z_holds')||'[]');
-  updHoldBdg();
-  await loadStng();
-  await Promise.all([loadCats(), loadProds()]);
-  loadTodayStats();
-  setInterval(() => {
-    const n=new Date();
-    document.getElementById('clock').textContent =
-      String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
-  }, 1000);
-  // Always dismiss splash after loading
-  const sp=document.getElementById('splash');
+/* ─── SPLASH DISMISS — always fires after 3s max ─── */
+function dismissSplash() {
+  const sp = document.getElementById('splash');
+  if (!sp) return;
   sp.classList.add('out');
-  setTimeout(()=>{ try{sp.remove();}catch(e){} },600);
+  setTimeout(() => { try { sp.remove(); } catch(e) {} }, 600);
+}
+// Hard fallback: splash gone after 3 seconds no matter what
+setTimeout(dismissSplash, 3000);
+
+/* ─── CLOCK ─── */
+setInterval(() => {
+  const n = new Date();
+  const el = document.getElementById('clock');
+  if (el) el.textContent = String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
+}, 1000);
+
+/* ─── INIT ─── */
+async function initPOS() {
+  try {
+    holds = JSON.parse(localStorage.getItem('z_holds')||'[]');
+    updHoldBdg();
+  } catch(e) {}
+
+  // Load everything — each function has its own try/catch
+  await loadStng().catch(()=>{});
+  await Promise.all([
+    loadCats().catch(()=>{}),
+    loadProds().catch(()=>{})
+  ]);
+  loadTodayStats().catch(()=>{});
+
+  // Dismiss splash (earlier than the 3s fallback)
+  dismissSplash();
 }
 
-// Start immediately
-initPOS();
+// Start immediately — no auth dependency
+initPOS().catch(e => { console.warn('initPOS error:', e); dismissSplash(); });
 
 /* ─── SETTINGS ─── */
 async function loadStng() {
