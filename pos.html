@@ -1176,7 +1176,7 @@ function printReceipt(inv) {
 
   const qrSrc = (t,sz) => `https://api.qrserver.com/v1/create-qr-code/?size=${sz}x${sz}&data=${encodeURIComponent(t)}&qzone=1&format=png`;
   const q1 = qrSrc(inv.invoiceNumber, 80);
-  const q2 = qrSrc(`${location.origin/Studiozahraa}/order-status.html?id=${encodeURIComponent(inv.invoiceNumber)}`, 80);
+  const q2 = qrSrc(`${location.origin}/Studiozahraa/order-status.html?id=${encodeURIComponent(inv.invoiceNumber)}`, 80);
 
   let logosHTML = '';
   if (showLg) {
