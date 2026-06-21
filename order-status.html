@@ -1,629 +1,524 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>تتبع طلبك — كاشير الزهراء</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#07090f;
-  --bg2:#0d1018;
-  --card:#111520;
-  --card2:#161b27;
-  --border:#1d2540;
-  --border2:#252e4a;
-  --gold:#d4af37;
-  --gold2:#f2cc50;
-  --green:#22c55e;
-  --orange:#f59e0b;
-  --red:#ef4444;
-  --blue:#3b82f6;
-  --text:#eef0f8;
-  --text2:#8892a8;
-  --text3:#444e66;
-}
-html,body{min-height:100vh;font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);direction:rtl;overflow-x:hidden}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حالة طلبك — Studio Zahraa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 16px 40px;
+        }
 
-/* ══ Animated background ══ */
-.bg-art{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
-.bg-art::before{
-  content:'';position:absolute;
-  top:-20%;right:-15%;width:600px;height:600px;
-  background:radial-gradient(circle,rgba(212,175,55,.09) 0%,transparent 65%);
-  border-radius:50%;animation:drift1 12s ease-in-out infinite alternate;
-}
-.bg-art::after{
-  content:'';position:absolute;
-  bottom:-25%;left:-10%;width:500px;height:500px;
-  background:radial-gradient(circle,rgba(59,130,246,.07) 0%,transparent 60%);
-  border-radius:50%;animation:drift2 15s ease-in-out infinite alternate;
-}
-.bg-art-mid{
-  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  width:800px;height:800px;
-  background:radial-gradient(circle,rgba(212,175,55,.03) 0%,transparent 55%);
-  border-radius:50%;
-}
-@keyframes drift1{0%{transform:translate(0,0) scale(1)}100%{transform:translate(-30px,20px) scale(1.08)}}
-@keyframes drift2{0%{transform:translate(0,0) scale(1)}100%{transform:translate(20px,-25px) scale(1.06)}}
+        .header {
+            text-align: center;
+            padding: 24px 0 16px;
+            width: 100%;
+            max-width: 460px;
+        }
+        .header .store-name {
+            font-size: 22px;
+            font-weight: 900;
+            color: #d4af37;
+            margin-bottom: 4px;
+        }
+        .header .page-title {
+            font-size: 14px;
+            color: #666;
+        }
 
-/* ══ Page ══ */
-.page{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:40px 16px 60px}
+        .card {
+            background: #111;
+            border: 1px solid #222;
+            border-radius: 18px;
+            padding: 20px;
+            width: 100%;
+            max-width: 460px;
+            margin-top: 12px;
+        }
 
-/* ══ Brand header ══ */
-.brand{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:40px}
-.brand-logo-ring{
-  position:relative;width:88px;height:88px;
-  display:flex;align-items:center;justify-content:center;
-}
-.brand-logo-ring::before{
-  content:'';position:absolute;inset:-4px;border-radius:50%;
-  background:conic-gradient(from 0deg,#d4af37,#f0cc55,#a88520,#d4af37);
-  animation:logoSpin 4s linear infinite;
-}
-.brand-logo-ring::after{
-  content:'';position:absolute;inset:-2px;border-radius:50%;background:var(--bg);
-}
-@keyframes logoSpin{to{transform:rotate(360deg)}}
-.brand-logo{
-  position:relative;z-index:1;
-  width:76px;height:76px;border-radius:50%;
-  background:linear-gradient(135deg,#1a1f2e,#252d42);
-  display:flex;align-items:center;justify-content:center;
-  font-size:30px;overflow:hidden;
-  box-shadow:0 0 30px rgba(212,175,55,.25);
-}
-.brand-logo img{width:100%;height:100%;object-fit:cover;border-radius:50%}
-.brand-name{font-size:24px;font-weight:900;color:var(--gold);letter-spacing:.5px;text-align:center}
-.brand-tag{
-  font-size:11px;font-weight:700;color:var(--text3);
-  background:var(--card);border:1px solid var(--border);
-  border-radius:20px;padding:4px 14px;
-  display:flex;align-items:center;gap:5px;
-}
-.brand-tag i{color:var(--gold);font-size:10px}
+        .status-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 18px;
+            border-radius: 14px;
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: 900;
+        }
+        .status-badge.prepared {
+            background: #052e16;
+            border: 2px solid #4ade80;
+            color: #4ade80;
+        }
+        .status-badge.pending {
+            background: #1c1400;
+            border: 2px solid #f59e0b;
+            color: #f59e0b;
+        }
+        .status-badge .icon { font-size: 28px; }
 
-/* ══ Search card ══ */
-.search-card{
-  width:100%;max-width:500px;
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:22px;
-  padding:26px;
-  margin-bottom:24px;
-  box-shadow:0 20px 60px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.04);
-  backdrop-filter:blur(8px);
-}
-.search-tabs{
-  display:grid;grid-template-columns:1fr 1fr;gap:6px;
-  background:var(--bg2);border-radius:12px;padding:4px;
-  margin-bottom:18px;
-}
-.stab{
-  padding:9px;border:none;border-radius:9px;
-  background:transparent;color:var(--text2);
-  font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;
-  cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px;
-}
-.stab.on{background:linear-gradient(135deg,rgba(212,175,55,.18),rgba(212,175,55,.08));color:var(--gold);box-shadow:0 2px 8px rgba(0,0,0,.3)}
-.stab i{font-size:12px}
-.search-lbl{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px;display:flex;align-items:center;gap:7px}
-.search-lbl i{color:var(--gold)}
-.search-row{display:flex;gap:8px;align-items:stretch}
-.search-inp{
-  flex:1;background:var(--bg2);
-  border:2px solid var(--border2);
-  border-radius:13px;color:var(--text);
-  padding:12px 16px;font-family:'Cairo',sans-serif;
-  font-size:14px;font-weight:700;outline:none;
-  transition:border-color .2s, box-shadow .2s;
-}
-.search-inp:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(212,175,55,.12)}
-.search-inp::placeholder{color:var(--text3)}
-.search-inp.shake{animation:shake .4s ease}
-@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
-.search-btn{
-  background:linear-gradient(135deg,#d4af37,#a88520);
-  border:none;border-radius:13px;
-  padding:12px 22px;color:#000;
-  font-family:'Cairo',sans-serif;font-size:13px;font-weight:900;
-  cursor:pointer;display:flex;align-items:center;gap:6px;
-  transition:opacity .2s, transform .15s;white-space:nowrap;
-  box-shadow:0 4px 16px rgba(212,175,55,.3);
-}
-.search-btn:hover{opacity:.88;transform:translateY(-1px)}
-.search-btn:active{transform:scale(.97)}
-.search-btn:disabled{opacity:.45;cursor:default;transform:none}
+        .progress-track {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            position: relative;
+        }
+        .progress-track::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            left: 20px;
+            height: 3px;
+            background: #222;
+            z-index: 0;
+        }
+        .progress-track .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            z-index: 1;
+            flex: 1;
+        }
+        .progress-track .step .dot {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #1a1a1a;
+            border: 2px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.4s;
+        }
+        .progress-track .step .label {
+            font-size: 10px;
+            color: #555;
+            text-align: center;
+        }
+        .progress-track .step.active .dot {
+            background: #d4af37;
+            border-color: #d4af37;
+        }
+        .progress-track .step.active .label { color: #d4af37; }
+        .progress-track .step.done .dot {
+            background: #166534;
+            border-color: #4ade80;
+        }
+        .progress-track .step.done .label { color: #4ade80; }
 
-/* ══ Result card ══ */
-.result-card{
-  width:100%;max-width:500px;
-  background:var(--card);border:1px solid var(--border);border-radius:22px;
-  overflow:hidden;
-  box-shadow:0 24px 70px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.04);
-  animation:slideUp .4s cubic-bezier(.34,1.3,.64,1);
-}
-@keyframes slideUp{from{opacity:0;transform:translateY(24px) scale(.98)}to{opacity:1;transform:none}}
+        .section-title {
+            font-size: 12px;
+            color: #555;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #1e1e1e;
+        }
 
-/* Result header */
-.rh{
-  padding:22px 24px;
-  background:linear-gradient(160deg,var(--card2) 0%,var(--card) 100%);
-  border-bottom:1px solid var(--border);
-  position:relative;overflow:hidden;
-}
-.rh::before{
-  content:'';position:absolute;top:-40%;right:-20%;
-  width:200px;height:200px;border-radius:50%;
-  background:radial-gradient(circle,rgba(212,175,55,.06) 0%,transparent 70%);
-  pointer-events:none;
-}
-.rh-inv{font-size:11px;color:var(--text3);font-weight:700;margin-bottom:5px;display:flex;align-items:center;gap:5px}
-.rh-inv i{color:var(--gold);font-size:10px}
-.rh-num{font-size:22px;font-weight:900;color:var(--text);margin-bottom:4px;font-family:monospace;letter-spacing:.5px}
-.rh-customer{font-size:13px;color:var(--text2);font-weight:700;display:flex;align-items:center;gap:6px;margin-bottom:3px}
-.rh-date{font-size:11px;color:var(--text3);font-weight:600;display:flex;align-items:center;gap:5px}
-.rh-badge{
-  position:absolute;top:20px;left:20px;
-  padding:6px 14px;border-radius:20px;
-  font-size:11px;font-weight:900;letter-spacing:.3px;
-}
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            font-size: 13px;
+            border-bottom: 1px solid #1a1a1a;
+        }
+        .info-row:last-child { border-bottom: none; }
+        .info-row .label { color: #666; }
+        .info-row .value { color: #e2e8f0; font-weight: 700; }
 
-/* ══ Progress bar (top of stepper) ══ */
-.progress-wrap{padding:20px 24px 0}
-.progress-bar-bg{height:6px;background:var(--border);border-radius:4px;overflow:hidden;position:relative}
-.progress-bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#d4af37,#f0cc55);transition:width 1s cubic-bezier(.4,0,.2,1);position:relative}
-.progress-bar-fill::after{
-  content:'';position:absolute;inset:0;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);
-  animation:shimmer 2s ease-in-out infinite;
-}
-@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}
-.progress-pct{text-align:center;font-size:12px;font-weight:900;color:var(--gold);margin-top:6px;margin-bottom:4px}
+        .items-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        .items-table th {
+            background: #1a1a1a;
+            color: #888;
+            font-size: 11px;
+            padding: 8px 10px;
+            text-align: right;
+        }
+        .items-table td {
+            padding: 8px 10px;
+            font-size: 12px;
+            border-bottom: 1px solid #1a1a1a;
+            color: #e2e8f0;
+        }
+        .items-table tr:last-child td { border-bottom: none; }
 
-/* ══ Stepper ══ */
-.stepper{padding:20px 24px}
-.step-row{display:flex;align-items:flex-start;gap:14px;position:relative;margin-bottom:0}
-.step-row:not(:last-child){margin-bottom:0}
-.step-connector-wrap{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
-.step-dot{
-  width:36px;height:36px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  font-size:14px;flex-shrink:0;
-  border:2px solid var(--border);
-  background:var(--bg2);color:var(--text3);
-  transition:all .4s;position:relative;z-index:1;
-}
-.step-dot.done{
-  background:linear-gradient(135deg,#166534,#22c55e);
-  border-color:var(--green);color:#fff;
-  box-shadow:0 0 16px rgba(34,197,94,.35);
-}
-.step-dot.active{
-  background:linear-gradient(135deg,#8b6914,#d4af37);
-  border-color:var(--gold);color:#000;
-  box-shadow:0 0 0 4px rgba(212,175,55,.15), 0 0 20px rgba(212,175,55,.4);
-  animation:dotPulse 2s ease-in-out infinite;
-}
-@keyframes dotPulse{0%,100%{box-shadow:0 0 0 4px rgba(212,175,55,.15),0 0 20px rgba(212,175,55,.4)}50%{box-shadow:0 0 0 8px rgba(212,175,55,.08),0 0 32px rgba(212,175,55,.6)}}
-.step-line{width:2px;flex:1;min-height:28px;margin:2px 0;border-radius:2px;background:var(--border);transition:background .6s}
-.step-line.done{background:linear-gradient(to bottom,var(--green),var(--green))}
-.step-line.active{background:linear-gradient(to bottom,var(--gold),var(--border))}
-.step-body{flex:1;padding:6px 0 28px}
-.step-row:last-child .step-body{padding-bottom:6px}
-.step-title{font-size:13px;font-weight:900;color:var(--text3);transition:color .3s}
-.step-title.done,.step-title.active{color:var(--text)}
-.step-sub{font-size:11px;color:var(--text3);font-weight:600;margin-top:3px}
-.step-sub.done{color:var(--green)}
-.step-sub.active{color:var(--gold)}
-.step-time{display:inline-block;font-size:10px;color:var(--text3);background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:2px 8px;margin-top:5px;font-weight:700}
+        .total-row-final {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 10px;
+            background: #000;
+            border-radius: 8px;
+            margin-top: 12px;
+            font-weight: 900;
+            font-size: 16px;
+            color: #fff;
+        }
 
-/* ══ Items section ══ */
-.sec{padding:0 24px 20px}
-.sec-title{font-size:10.5px;font-weight:900;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
-.sec-title i{color:var(--gold)}
-.item-row{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:10px 14px;
-  background:var(--card2);border:1px solid var(--border);
-  border-radius:12px;margin-bottom:6px;
-}
-.item-left{flex:1;min-width:0}
-.item-name{font-size:12.5px;font-weight:900;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.item-qty{font-size:11px;color:var(--text2);font-weight:700;margin-top:2px}
-.item-price{font-size:13px;font-weight:900;color:var(--gold);white-space:nowrap}
+        .loading { text-align: center; padding: 40px; color: #555; font-size: 14px; }
+        .error-box {
+            background: #1c0000;
+            border: 1px solid #f8717140;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            color: #f87171;
+            font-size: 14px;
+        }
 
-/* ══ Totals ══ */
-.totals-card{margin:0 24px 20px;background:var(--card2);border:1px solid var(--border);border-radius:14px;overflow:hidden}
-.total-row{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px}
-.total-row:last-child{border-bottom:none;padding:12px 14px}
-.total-row .k{color:var(--text2);font-weight:700}
-.total-row .v{font-weight:900;color:var(--text)}
-.total-row.grand{background:rgba(212,175,55,.05)}
-.total-row.grand .k{font-size:13px;font-weight:900;color:var(--gold)}
-.total-row.grand .v{font-size:18px;font-weight:900;color:var(--gold)}
-.paid-row .v{color:var(--green)}
-.rem-row .k,.rem-row .v{color:var(--red)}
+        .refresh-btn {
+            display: block;
+            width: 100%;
+            max-width: 460px;
+            margin: 12px auto 0;
+            padding: 12px;
+            background: #1e3a5f;
+            color: #93c5fd;
+            border: 1px solid #3b82f640;
+            border-radius: 12px;
+            font-family: 'Cairo', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            text-align: center;
+        }
 
-/* ══ Action buttons ══ */
-.actions{display:flex;gap:8px;padding:0 24px 24px;flex-wrap:wrap}
-.act-btn{
-  flex:1;min-width:120px;padding:12px;border-radius:12px;border:none;
-  font-family:'Cairo',sans-serif;font-size:12px;font-weight:900;
-  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;
-  transition:all .2s;
-}
-.act-whatsapp{background:linear-gradient(135deg,#1a5c35,#25D366);color:#fff;box-shadow:0 4px 14px rgba(37,211,102,.25)}
-.act-whatsapp:hover{opacity:.88;transform:translateY(-1px)}
-.act-refresh{background:var(--card2);color:var(--text2);border:1px solid var(--border)}
-.act-refresh:hover{border-color:var(--gold);color:var(--gold)}
-.act-back{background:var(--card2);color:var(--text2);border:1px solid var(--border)}
-.act-back:hover{border-color:var(--blue);color:var(--blue)}
+        .auto-refresh {
+            text-align: center;
+            font-size: 11px;
+            color: #333;
+            margin-top: 8px;
+        }
+        .auto-refresh span { color: #d4af37; }
 
-/* ══ State boxes ══ */
-.state-box{display:flex;flex-direction:column;align-items:center;padding:52px 24px;gap:14px;text-align:center}
-.state-icon{font-size:52px;animation:float 3s ease-in-out infinite}
-@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-.state-title{font-size:17px;font-weight:900;color:var(--text)}
-.state-sub{font-size:12px;color:var(--text2);font-weight:600;max-width:240px;line-height:1.6}
-
-/* ══ Multi-orders list ══ */
-.order-list-item{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:14px 16px;background:var(--card2);border:1px solid var(--border);
-  border-radius:13px;margin-bottom:8px;cursor:pointer;transition:all .2s;
-}
-.order-list-item:hover{border-color:var(--gold);background:rgba(212,175,55,.05)}
-.oli-num{font-size:13px;font-weight:900;color:var(--gold)}
-.oli-date{font-size:11px;color:var(--text3);font-weight:700;margin-top:2px}
-.oli-total{font-size:13px;font-weight:900;color:var(--text);text-align:left}
-.oli-badge{font-size:10px;font-weight:900;padding:3px 10px;border-radius:14px;margin-top:3px;text-align:center}
-
-/* ══ Spinner ══ */
-.loading-box{display:flex;flex-direction:column;align-items:center;gap:18px;padding:52px 24px}
-.spinner-ring{
-  width:48px;height:48px;border-radius:50%;
-  border:4px solid var(--border);
-  border-top:4px solid var(--gold);
-  animation:spin .8s linear infinite;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
-.loading-txt{font-size:13px;color:var(--text2);font-weight:700;animation:pulse 1.5s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
-
-/* ══ Footer ══ */
-.page-foot{margin-top:28px;text-align:center;font-size:11px;color:var(--text3);font-weight:600;display:flex;flex-direction:column;align-items:center;gap:6px}
-.page-foot a{color:var(--gold);text-decoration:none;font-weight:700;display:inline-flex;align-items:center;gap:4px;background:rgba(212,175,55,.07);border:1px solid rgba(212,175,55,.2);border-radius:8px;padding:5px 12px}
-.page-foot a:hover{background:rgba(212,175,55,.14)}
-</style>
+        @media (prefers-color-scheme: light) {
+            body { background: #f5f5f5; color: #111; }
+            .card { background: #fff; border-color: #e5e7eb; }
+            .info-row .value { color: #111; }
+            .items-table td { color: #111; }
+            .items-table th { background: #f9f9f9; color: #555; }
+        }
+    </style>
 </head>
 <body>
 
-<div class="bg-art"><div class="bg-art-mid"></div></div>
+<div class="header">
+    <div class="store-name">🌸 Studio Zahraa</div>
+    <div class="page-title">متابعة حالة طلبك</div>
+</div>
 
-<div class="page">
+<div id="root-content" class="card">
+    <div class="loading">⏳ جاري تحميل بيانات الطلب...</div>
+</div>
 
-  <!-- Brand -->
-  <div class="brand">
-    <div class="brand-logo-ring">
-      <div class="brand-logo" id="brand-logo">⚡</div>
-    </div>
-    <div class="brand-name" id="brand-name">ZAHRAA STUDIO</div>
-    <div class="brand-tag"><i class="fas fa-satellite-dish"></i> تتبع حالة طلبك</div>
-  </div>
+<button class="refresh-btn" onclick="loadOrder()">🔄 تحديث الحالة</button>
+<div class="auto-refresh" id="auto-refresh-label">يتجدد تلقائياً كل <span>30</span> ثانية</div>
 
-  <!-- Search -->
-  <div class="search-card">
-    <div class="search-tabs">
-      <button class="stab on" id="tab-inv" onclick="switchTab('inv')">
-        <i class="fas fa-hashtag"></i> رقم الفاتورة
-      </button>
-      <button class="stab" id="tab-phone" onclick="switchTab('phone')">
-        <i class="fas fa-phone"></i> رقم الهاتف
-      </button>
-    </div>
-    <div class="search-lbl"><i class="fas fa-search"></i> <span id="slbl">أدخل رقم فاتورتك</span></div>
-    <div class="search-row">
-      <input class="search-inp" id="sinp" type="text"
-        placeholder="مثال: INV-00123" autocomplete="off"
-        onkeydown="if(event.key==='Enter') doSearch()">
-      <button class="search-btn" id="sbtn" onclick="doSearch()">
-        <i class="fas fa-search"></i> بحث
-      </button>
-    </div>
-  </div>
+<!-- Firebase -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  <!-- Results -->
-  <div id="result-area" style="width:100%;max-width:500px"></div>
+    // ======= Firebase config (same as admin.html) =======
+    const firebaseConfig = {
+        apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
+        authDomain: "zahraa-store-f4c90.firebaseapp.com",
+        projectId: "zahraa-store-f4c90",
+        storageBucket: "zahraa-store-f4c90.firebasestorage.app",
+        messagingSenderId: "885722081307",
+        appId: "1:885722081307:web:7c91e0f8b0ea9b8b4df0be"
+    };
 
-  <!-- Footer -->
-  <div class="page-foot">
-    <span>مدعوم بنظام كاشير الزهراء</span>
-    <a href="dashboard.html"><i class="fas fa-shield-halved"></i> لوحة الإدارة</a>
-  </div>
+    const app = initializeApp(firebaseConfig, 'order-status');
+    const db = getFirestore(app);
 
-</div><!-- .page -->
+    // Get params from URL
+    const params = new URLSearchParams(window.location.search);
+    const invoiceId = params.get('id');
+    const phoneParam = params.get('phone');
 
-<script>
-const _cfg = {
-  apiKey:"AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
-  authDomain:"zahraa-store-f4c90.firebaseapp.com",
-  projectId:"zahraa-store-f4c90",
-  storageBucket:"zahraa-store-f4c90.firebasestorage.app",
-  messagingSenderId:"885722081307",
-  appId:"1:885722081307:web:7c91e0f8b0ea9b8b4df0be"
-};
-if (!firebase.apps.length) firebase.initializeApp(_cfg);
-const db = firebase.firestore();
+    window._db = db;
 
-/* ── Branding ── */
-(async () => {
-  try {
-    const doc = await db.collection('settings').doc('store').get();
-    if (doc.exists) {
-      const d = doc.data();
-      if (d.storeName) document.getElementById('brand-name').textContent = d.storeName;
-      if (d.logoUrl) {
-        const logo = document.getElementById('brand-logo');
-        logo.innerHTML = `<img src="${d.logoUrl}" alt="logo">`;
-      }
+    window.loadOrder = async function() {
+        const root = document.getElementById('root-content');
+
+        // ── Mode 1: phone → show all active orders for this customer ──
+        if (phoneParam && !invoiceId) {
+            root.innerHTML = '<div class="loading">⏳ جاري تحميل طلباتك...</div>';
+            try {
+                const q = query(
+                    collection(db, 'pos_invoices'),
+                    where('phone', '==', decodeURIComponent(phoneParam)),
+                    limit(20)
+                );
+                const snap = await getDocs(q);
+                if (snap.empty) {
+                    root.innerHTML = `<div class="error-box">❌ لا توجد طلبات مسجلة لهذا الرقم.<br><small>${decodeURIComponent(phoneParam)}</small></div>`;
+                    return;
+                }
+                const orders = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+                    .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+                renderCustomerOrders(orders);
+            } catch(e) {
+                root.innerHTML = `<div class="error-box">❌ خطأ: ${e.message}</div>`;
+            }
+            return;
+        }
+
+        // ── Mode 2: single invoice ──
+        if (!invoiceId) {
+            root.innerHTML = `<div class="error-box">❌ لم يتم تحديد رقم الطلب.<br><small>يرجى مسح الباركود مرة أخرى.</small></div>`;
+            return;
+        }
+
+        root.innerHTML = '<div class="loading">⏳ جاري تحميل بيانات الطلب...</div>';
+
+        try {
+            let inv = null;
+
+            /* 1) try by invoiceNumber field */
+            try {
+                const q = query(
+                    collection(db, 'pos_invoices'),
+                    where('invoiceNumber', '==', invoiceId),
+                    limit(1)
+                );
+                const snap = await getDocs(q);
+                if (!snap.empty) inv = { id: snap.docs[0].id, ...snap.docs[0].data() };
+            } catch(e1) {
+                /* if permission-denied here, re-throw to outer catch */
+                if (e1.code === 'permission-denied') throw e1;
+            }
+
+            /* 2) fallback: try by document ID */
+            if (!inv) {
+                try {
+                    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+                    const d = await getDoc(doc(db, 'pos_invoices', invoiceId));
+                    if (d.exists()) inv = { id: d.id, ...d.data() };
+                } catch(e2) {}
+            }
+
+            if (!inv) {
+                root.innerHTML = `<div class="error-box">❌ لم يتم العثور على طلب برقم <b>${invoiceId}</b>.<br><small>تحقق من الباركود وحاول مجدداً.</small></div>`;
+                return;
+            }
+
+            renderOrder(inv);
+        } catch(e) {
+            const isPermission = e.code === 'permission-denied' || e.message?.includes('Missing or insufficient permissions');
+            if (isPermission) {
+                root.innerHTML = `
+                <div class="error-box">
+                    <div style="font-size:22px;margin-bottom:8px">🔒</div>
+                    <b>يحتاج إذن وصول</b><br>
+                    <small style="line-height:1.8">
+                        يجب تحديث Firestore Security Rules من Firebase Console:<br>
+                        <code style="background:#1a1a1a;padding:2px 8px;border-radius:4px;display:block;margin:8px 0;font-size:11px;text-align:left;direction:ltr">
+                        match /pos_invoices/{id} { allow read: if true; }
+                        </code>
+                        ثم أعد تحميل الصفحة
+                    </small>
+                </div>`;
+            } else {
+                root.innerHTML = `<div class="error-box">❌ خطأ في الاتصال: ${e.message}</div>`;
+            }
+        }
+    };
+
+    function renderCustomerOrders(orders) {
+        const root = document.getElementById('root-content');
+        const customerName = orders[0]?.userName || 'عميلنا العزيز';
+        const active = orders.filter(o => !o.orderPrepared);
+        const done   = orders.filter(o =>  o.orderPrepared);
+
+        const orderRow = (inv) => {
+            const isPrepared = inv.orderPrepared || false;
+            const createdAt = inv.createdAt?.toDate ? inv.createdAt.toDate() : new Date();
+            const rem = inv.remainingAmount || 0;
+            return `
+            <div style="border:1px solid ${isPrepared?'#4ade80':'#333'};border-radius:12px;padding:14px;margin-bottom:10px;background:${isPrepared?'rgba(74,222,128,.07)':'#111'}">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                    <span style="font-weight:900;color:#d4af37;font-family:monospace"># ${inv.invoiceNumber||inv.id.slice(0,8)}</span>
+                    <span style="font-size:12px;background:${isPrepared?'#166534':'#1c1400'};color:${isPrepared?'#4ade80':'#f59e0b'};padding:3px 10px;border-radius:20px;font-weight:700">
+                        ${isPrepared ? '✅ جاهز للاستلام' : '⏳ قيد التجهيز'}
+                    </span>
+                </div>
+                <div class="info-row"><span class="label">التاريخ</span><span class="value">${createdAt.toLocaleDateString('ar-EG',{year:'numeric',month:'long',day:'numeric'})}</span></div>
+                <div class="info-row"><span class="label">الإجمالي</span><span class="value" style="color:#d4af37">${(inv.totalPrice||0).toFixed(2)} ج</span></div>
+                ${rem>0?`<div class="info-row"><span class="label">متبقي</span><span class="value" style="color:#f87171">${rem.toFixed(2)} ج</span></div>`:''}
+                <div class="info-row"><span class="label">الأصناف</span><span class="value">${inv.items?.length||0} صنف</span></div>
+            </div>`;
+        };
+
+        root.innerHTML = `
+            <div style="text-align:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #222">
+                <div style="font-size:18px;font-weight:900;color:#d4af37">🌸 مرحباً ${customerName}</div>
+                <div style="font-size:12px;color:#666;margin-top:4px">متابعة جميع طلباتك</div>
+            </div>
+            ${active.length ? `
+            <div style="margin-bottom:16px">
+                <div style="font-size:12px;color:#f59e0b;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px">
+                    <span>⏳</span> قيد التجهيز (${active.length})
+                </div>
+                ${active.map(orderRow).join('')}
+            </div>` : `
+            <div style="text-align:center;padding:20px;color:#4ade80;font-size:14px;font-weight:700;background:rgba(74,222,128,.07);border-radius:12px;margin-bottom:16px">
+                ✅ جميع طلباتك جاهزة للاستلام!
+            </div>`}
+            ${done.length ? `
+            <div>
+                <div style="font-size:12px;color:#4ade80;font-weight:700;margin-bottom:10px">✅ جاهزة (${done.length})</div>
+                ${done.map(orderRow).join('')}
+            </div>` : ''}
+        `;
     }
-  } catch(e) {}
-})();
 
-/* ── Tab ── */
-let mode = 'inv';
-function switchTab(m) {
-  mode = m;
-  document.getElementById('tab-inv').classList.toggle('on', m==='inv');
-  document.getElementById('tab-phone').classList.toggle('on', m==='phone');
-  const inp = document.getElementById('sinp');
-  if (m==='inv') { inp.placeholder='مثال: INV-00123'; document.getElementById('slbl').textContent='أدخل رقم فاتورتك'; }
-  else           { inp.placeholder='مثال: 05xxxxxxxx'; document.getElementById('slbl').textContent='أدخل رقم هاتفك'; }
-  inp.value='';
-  document.getElementById('result-area').innerHTML='';
-}
+    function renderOrder(inv) {
+        const root = document.getElementById('root-content');
+        const isPrepared = inv.orderPrepared || false;
+        const createdAt = inv.createdAt?.toDate ? inv.createdAt.toDate() : new Date();
+        const preparedAt = inv.orderPreparedAt?.toDate ? inv.orderPreparedAt.toDate() : null;
+        const items = inv.items || [];
+        const rem = inv.remainingAmount || 0;
 
-/* ── Search ── */
-async function doSearch() {
-  const val = document.getElementById('sinp').value.trim();
-  if (!val) {
-    const inp = document.getElementById('sinp');
-    inp.classList.add('shake');
-    inp.style.borderColor='var(--red)';
-    setTimeout(()=>{ inp.classList.remove('shake'); inp.style.borderColor=''; }, 600);
-    return;
-  }
-  const btn = document.getElementById('sbtn');
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> بحث...';
-  const area = document.getElementById('result-area');
-  area.innerHTML = `<div class="result-card"><div class="loading-box">
-    <div class="spinner-ring"></div>
-    <div class="loading-txt">جاري البحث عن طلبك...</div>
-  </div></div>`;
+        // Payment status
+        let payBadge = '';
+        if (rem > 0 && inv.paymentType === 'deferred') {
+            payBadge = `<span style="color:#f87171;font-weight:700;">🔴 آجل (متبقي ${rem.toFixed(2)} ج)</span>`;
+        } else if (rem > 0) {
+            payBadge = `<span style="color:#fb923c;font-weight:700;">🟠 جزئي (متبقي ${rem.toFixed(2)} ج)</span>`;
+        } else {
+            payBadge = `<span style="color:#4ade80;font-weight:700;">🟢 مكتمل</span>`;
+        }
 
-  try {
-    let orders = [];
-    if (mode === 'inv') {
-      const byId = await db.collection('pos_invoices').doc(val).get().catch(()=>null);
-      if (byId && byId.exists) orders = [{ id:byId.id, ...byId.data() }];
-      else {
-        const byNum = await db.collection('pos_invoices').where('invoiceNumber','==',val).limit(5).get();
-        byNum.forEach(d => orders.push({ id:d.id, ...d.data() }));
-      }
-    } else {
-      const byPhone = await db.collection('pos_invoices').where('phone','==',val).orderBy('createdAt','desc').limit(8).get();
-      byPhone.forEach(d => orders.push({ id:d.id, ...d.data() }));
+        // Progress steps: 1=تم الاستلام, 2=قيد التجهيز, 3=جاهز
+        const step1 = 'done', step2 = isPrepared ? 'done' : 'active', step3 = isPrepared ? 'active' : '';
+
+        root.innerHTML = `
+            <div class="status-badge ${isPrepared ? 'prepared' : 'pending'}">
+                <span class="icon">${isPrepared ? '✅' : '⏳'}</span>
+                <span>${isPrepared ? 'طلبك جاهز للاستلام!' : 'طلبك قيد التجهيز...'}</span>
+            </div>
+
+            <div class="progress-track">
+                <div class="step ${step1}">
+                    <div class="dot">📋</div>
+                    <div class="label">تم الاستلام</div>
+                </div>
+                <div class="step ${step2}">
+                    <div class="dot">⚙️</div>
+                    <div class="label">قيد التجهيز</div>
+                </div>
+                <div class="step ${step3}">
+                    <div class="dot">🎁</div>
+                    <div class="label">جاهز</div>
+                </div>
+            </div>
+
+            <div class="section-title">📄 بيانات الطلب</div>
+            <div class="info-row">
+                <span class="label">رقم الطلب</span>
+                <span class="value">${inv.invoiceNumber}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">العميل</span>
+                <span class="value">${inv.userName || '—'}</span>
+            </div>
+            ${inv.phone ? `
+            <div class="info-row">
+                <span class="label">الهاتف</span>
+                <span class="value">${inv.phone}</span>
+            </div>` : ''}
+            <div class="info-row">
+                <span class="label">تاريخ الطلب</span>
+                <span class="value">${createdAt.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">طريقة الدفع</span>
+                <span class="value">${inv.paymentMethod || '—'}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">حالة الدفع</span>
+                <span class="value">${payBadge}</span>
+            </div>
+            ${isPrepared && preparedAt ? `
+            <div class="info-row">
+                <span class="label">وقت التجهيز</span>
+                <span class="value" style="color:#4ade80;">${preparedAt.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+            </div>` : ''}
+            ${inv.deliveryAgentName ? `
+            <div class="info-row">
+                <span class="label">مندوب التوصيل</span>
+                <span class="value" style="color:#818cf8;">🚚 ${inv.deliveryAgentName}</span>
+            </div>` : ''}
+
+            <div class="section-title" style="margin-top:16px;">🛍️ المنتجات (${items.length} صنف)</div>
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th>المنتج</th>
+                        <th style="text-align:center;">الكمية</th>
+                        <th style="text-align:left;">السعر</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${items.map(item => `
+                    <tr>
+                        <td>${item.name || item.productName || '—'}</td>
+                        <td style="text-align:center;">${item.quantity || 1}</td>
+                        <td style="text-align:left;">${((item.price || 0) * (item.quantity || 1)).toFixed(2)} ج</td>
+                    </tr>`).join('')}
+                </tbody>
+            </table>
+            ${inv.discountAmount > 0 ? `
+            <div class="info-row" style="margin-top:8px;">
+                <span class="label">خصم</span>
+                <span class="value" style="color:#f59e0b;">- ${inv.discountAmount.toFixed(2)} ج</span>
+            </div>` : ''}
+            ${inv.deliveryFee > 0 ? `
+            <div class="info-row">
+                <span class="label">رسوم توصيل</span>
+                <span class="value">+ ${inv.deliveryFee.toFixed(2)} ج</span>
+            </div>` : ''}
+            <div class="total-row-final">
+                <span>الإجمالي النهائي</span>
+                <span>${(inv.totalPrice || 0).toFixed(2)} ج</span>
+            </div>
+            ${inv.notes ? `
+            <div style="margin-top:12px;padding:10px;background:#1a1a1a;border-radius:8px;font-size:12px;color:#94a3b8;">
+                📝 <b>ملاحظات:</b> ${inv.notes}
+            </div>` : ''}
+        `;
     }
 
-    if (!orders.length) renderEmpty(area);
-    else if (orders.length === 1) renderOrder(orders[0], area);
-    else renderList(orders, area);
-  } catch(e) {
-    area.innerHTML = `<div class="result-card"><div class="state-box">
-      <div class="state-icon">⚠️</div>
-      <div class="state-title">حدث خطأ</div>
-      <div class="state-sub">${e.message}</div>
-    </div></div>`;
-  }
-  btn.disabled = false;
-  btn.innerHTML = '<i class="fas fa-search"></i> بحث';
-}
-
-/* ── Status ── */
-function getStatus(o) {
-  const st = (o.status||'').toString();
-  if (st==='تم التسليم'||st==='delivered')
-    return { label:'✅ تم التسليم', color:'#22c55e', bg:'rgba(34,197,94,.15)', step:4 };
-  if (o.orderPrepared||st==='جاهز للاستلام')
-    return { label:'📦 جاهز للاستلام', color:'#d4af37', bg:'rgba(212,175,55,.15)', step:3 };
-  if (st==='مكتمل'||st==='قيد التجهيز')
-    return { label:'⏳ قيد التجهيز', color:'#f59e0b', bg:'rgba(245,158,11,.12)', step:2 };
-  return { label:'📋 تم استلام الطلب', color:'#3b82f6', bg:'rgba(59,130,246,.12)', step:1 };
-}
-
-function progressPct(step) {
-  const map = {1:15, 2:40, 3:72, 4:100};
-  return map[step]||0;
-}
-
-/* ── Empty ── */
-function renderEmpty(area) {
-  area.innerHTML = `<div class="result-card"><div class="state-box">
-    <div class="state-icon">🔍</div>
-    <div class="state-title">لم يتم العثور على طلب</div>
-    <div class="state-sub">تأكد من رقم الفاتورة أو رقم الهاتف وحاول مجدداً</div>
-  </div></div>`;
-}
-
-/* ── List ── */
-function renderList(orders, area) {
-  const rows = orders.map((o,idx) => {
-    const status = getStatus(o);
-    const date = o.createdAt ? fmtDate(o.createdAt) : '—';
-    return `<div class="order-list-item" onclick="renderOrder(window._orders[${idx}], document.getElementById('result-area'))">
-      <div>
-        <div class="oli-num"># ${o.invoiceNumber||o.id.slice(0,10)}</div>
-        <div class="oli-date">${date}</div>
-      </div>
-      <div style="text-align:left">
-        <div class="oli-total">${(parseFloat(o.totalPrice)||0).toFixed(2)} ج</div>
-        <div class="oli-badge" style="color:${status.color};background:${status.bg}">${status.label}</div>
-      </div>
-    </div>`;
-  }).join('');
-  window._orders = orders;
-  area.innerHTML = `<div class="result-card">
-    <div class="sec" style="padding-top:20px">
-      <div class="sec-title"><i class="fas fa-list"></i> طلباتك الأخيرة (${orders.length})</div>
-      ${rows}
-    </div>
-  </div>`;
-}
-
-/* ── Single order ── */
-window.renderOrder = function(o, area) {
-  if (typeof area === 'string') area = document.getElementById(area);
-  const status = getStatus(o);
-  const step   = status.step;
-  const pct    = progressPct(step);
-  const date   = o.createdAt ? fmtDateFull(o.createdAt) : '—';
-  const tot    = parseFloat(o.totalPrice)||0;
-  const rem    = parseFloat(o.remainingAmount)||0;
-  const paid   = parseFloat(o.paidAmount)||(tot-rem);
-  const items  = o.items||[];
-  const phone  = (o.phone||'').replace(/[^0-9]/g,'');
-
-  const STEPS = [
-    { icon:'fas fa-receipt',       label:'تم استلام الطلب',    sub_done:'تم تسجيل طلبك بنجاح ✅',         sub_pending:'في انتظار المعالجة' },
-    { icon:'fas fa-box-open',      label:'قيد التجهيز',        sub_done:'جاري تحضير طلبك',                sub_pending:'لم يبدأ التجهيز بعد' },
-    { icon:'fas fa-boxes-stacked', label:'جاهز للاستلام',      sub_done:'طلبك جاهز — يمكن استلامه الآن', sub_pending:'لم يصبح جاهزاً بعد' },
-    { icon:'fas fa-truck-fast',    label:'تم التسليم',         sub_done:'تم تسليم طلبك بنجاح 🎉',         sub_pending:'في انتظار التسليم' },
-  ];
-
-  const stepsHTML = STEPS.map((s, i) => {
-    const thisStep = i + 1;
-    const isDone   = thisStep < step;
-    const isActive = thisStep === step;
-    const dotCls   = isDone ? 'done' : isActive ? 'active' : '';
-    const lineCls  = isDone ? 'done' : isActive ? 'active' : '';
-    const titleCls = isDone||isActive ? (isDone?'done':'active') : '';
-    const subCls   = isDone ? 'done' : isActive ? 'active' : '';
-    const subTxt   = isDone||isActive ? s.sub_done : s.sub_pending;
-    const isLast   = i === STEPS.length - 1;
-
-    return `<div class="step-row">
-      <div class="step-connector-wrap">
-        <div class="step-dot ${dotCls}">
-          ${isDone
-            ? '<i class="fas fa-check" style="font-size:12px"></i>'
-            : `<i class="${s.icon}" style="font-size:12px"></i>`}
-        </div>
-        ${!isLast ? `<div class="step-line ${lineCls}"></div>` : ''}
-      </div>
-      <div class="step-body">
-        <div class="step-title ${titleCls}">${s.label}</div>
-        <div class="step-sub ${subCls}">${subTxt}</div>
-      </div>
-    </div>`;
-  }).join('');
-
-  const itemsHTML = items.slice(0,8).map(i => `
-    <div class="item-row">
-      <div class="item-left">
-        <div class="item-name">${i.name||'—'}</div>
-        <div class="item-qty">× ${i.qty||1}</div>
-      </div>
-      <div class="item-price">${((parseFloat(i.price)||0)*(parseInt(i.qty)||1)).toFixed(2)} ج</div>
-    </div>`).join('') +
-    (items.length>8?`<div style="text-align:center;font-size:11px;color:var(--text3);padding:6px">+${items.length-8} منتجات أخرى</div>`:'');
-
-  area.innerHTML = `<div class="result-card">
-
-    <!-- Header -->
-    <div class="rh">
-      <div class="rh-inv"><i class="fas fa-hashtag"></i> رقم الفاتورة</div>
-      <div class="rh-num">${o.invoiceNumber||o.id?.slice(0,12)||'—'}</div>
-      ${o.userName&&o.userName!=='عميل نقدي'?`<div class="rh-customer"><i class="fas fa-user"></i> ${o.userName}</div>`:''}
-      <div class="rh-date"><i class="fas fa-calendar-alt"></i> ${date}</div>
-      <div class="rh-badge" style="color:${status.color};background:${status.bg}">${status.label}</div>
-    </div>
-
-    <!-- Progress bar -->
-    <div class="progress-wrap">
-      <div class="progress-bar-bg">
-        <div class="progress-bar-fill" id="_pfill" style="width:0%"></div>
-      </div>
-      <div class="progress-pct">${pct}% مكتمل</div>
-    </div>
-
-    <!-- Stepper -->
-    <div class="stepper">${stepsHTML}</div>
-
-    <!-- Items -->
-    ${items.length?`
-    <div class="sec">
-      <div class="sec-title"><i class="fas fa-shopping-bag"></i> المنتجات (${items.length})</div>
-      ${itemsHTML}
-    </div>`:''}
-
-    <!-- Totals -->
-    <div class="totals-card">
-      <div class="total-row"><span class="k">إجمالي الطلب</span><span class="v">${tot.toFixed(2)} ج</span></div>
-      ${rem>0?`
-      <div class="total-row paid-row"><span class="k">المدفوع</span><span class="v">${paid.toFixed(2)} ج</span></div>
-      <div class="total-row rem-row grand"><span class="k">المتبقي</span><span class="v">${rem.toFixed(2)} ج</span></div>
-      `:`<div class="total-row grand"><span class="k">✅ تم السداد بالكامل</span><span class="v">${tot.toFixed(2)} ج</span></div>`}
-    </div>
-
-    <!-- Actions -->
-    <div class="actions">
-      ${phone?`<button class="act-btn act-whatsapp" onclick="window.open('https://wa.me/${phone}','_blank')">
-        <i class="fab fa-whatsapp"></i> تواصل عبر واتساب
-      </button>`:''}
-      <button class="act-btn act-refresh" onclick="doSearch()">
-        <i class="fas fa-rotate-right"></i> تحديث
-      </button>
-      <button class="act-btn act-back" onclick="document.getElementById('result-area').innerHTML='';document.getElementById('sinp').value=''">
-        <i class="fas fa-arrow-right"></i> رجوع
-      </button>
-    </div>
-
-  </div>`;
-
-  /* Animate progress bar after render */
-  setTimeout(() => {
-    const pf = document.getElementById('_pfill');
-    if (pf) pf.style.width = pct + '%';
-  }, 100);
-};
-
-/* ── Helpers ── */
-function fmtDate(ts) {
-  const d = ts.toDate ? ts.toDate() : new Date(ts);
-  return d.toLocaleDateString('ar-EG', { year:'numeric', month:'short', day:'numeric' });
-}
-function fmtDateFull(ts) {
-  const d = ts.toDate ? ts.toDate() : new Date(ts);
-  return d.toLocaleDateString('ar-EG', { year:'numeric', month:'long', day:'numeric' })
-       + ' — ' + d.toLocaleTimeString('ar-EG', { hour:'2-digit', minute:'2-digit' });
-}
-
-/* Auto-load from URL */
-window.addEventListener('DOMContentLoaded', () => {
-  const p = new URLSearchParams(location.search);
-  const id = p.get('id') || p.get('inv');
-  if (id) {
-    document.getElementById('sinp').value = id;
-    doSearch();
-  }
-});
+    // Auto-refresh every 30 seconds
+    let countdown = 30;
+    window.loadOrder();
+    setInterval(() => {
+        countdown--;
+        const label = document.getElementById('auto-refresh-label');
+        if (label) label.innerHTML = `يتجدد تلقائياً كل <span>${countdown}</span> ثانية`;
+        if (countdown <= 0) {
+            countdown = 30;
+            window.loadOrder();
+        }
+    }, 1000);
 </script>
 </body>
 </html>

@@ -392,10 +392,6 @@ function openOrderModal(o){
       ? `<button class="unprepare-btn" onclick="modalTogglePrepare('${o.id}',false)"><i class="fas fa-times-circle"></i> إلغاء التجهيز</button>`
       : `<button class="prepare-btn"  onclick="modalTogglePrepare('${o.id}',true)"><i class="fas fa-check-double"></i> تم التجهيز ✓</button>`
     }
-    ${o.status !== 'تم التسليم'
-      ? `<button onclick="markDelivered('${o.id}')" style="background:linear-gradient(135deg,#0f4c75,#1b6ca8);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-family:Cairo,sans-serif;font-weight:900;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:5px"><i class="fas fa-truck-fast"></i> تم التسليم</button>`
-      : `<span style="font-size:11px;color:#22c55e;font-weight:900;padding:4px 10px;background:rgba(34,197,94,.1);border-radius:8px">✅ تم التسليم</span>`
-    }
     ${rem>0
       ? `<button class="btn" style="background:var(--green);color:#fff;font-size:12px;padding:8px 12px;border-radius:var(--r);font-weight:900;border:none;cursor:pointer" onclick="showPayPanel('${o.id}',${rem},${tot})"><i class="fas fa-money-bill-wave"></i> تسجيل دفع</button>`
       : ''
@@ -572,44 +568,35 @@ window.openScanner = function(){
         let id = text.trim();
         const m = text.match(/[?&]id=([^&\s]+)/);
         if (m) id = decodeURIComponent(m[1]);
+        document.getElementById('scanner-result').innerHTML =
+          `<span style="color:var(--green)">✅ تم المسح: <b>${id}</b></span>`;
         qrScanner.stop().catch(()=>{});
-
-        /* Helper: show result + open-invoice button (no popup blocker) */
-        function showScanResult(docId, label) {
-          document.getElementById('scanner-result').innerHTML =
-            `<div style="display:flex;flex-direction:column;gap:8px">
-               <span style="color:var(--green);font-weight:900">✅ تم المسح: <b>${label}</b></span>
-               <a href="invoice.html?id=${docId}"
-                  style="display:inline-block;background:linear-gradient(135deg,#d4af37,#a88520);color:#000;padding:9px 18px;border-radius:8px;font-weight:900;font-size:13px;text-decoration:none;text-align:center;font-family:Cairo,sans-serif">
-                 🧾 فتح الفاتورة
-               </a>
-             </div>`;
-        }
-
-        /* Find order in memory first */
+        /* Find order → open modal */
         const found = allOrders.find(o => o.invoiceNumber===id || o.id===id);
-        if (found) {
-          showScanResult(found.id, found.invoiceNumber || found.id);
+        if (found){
+          closeScanner();
           setTimeout(() => openOrderModal(found), 200);
         } else {
-          document.getElementById('scanner-result').innerHTML =
-            `<span style="color:var(--text3)">🔍 جاري البحث...</span>`;
+          /* Fallback: search Firestore directly */
+          document.getElementById('scanner-result').innerHTML +=
+            `<br><span style="color:var(--text3)">🔍 جاري البحث في قاعدة البيانات...</span>`;
           try {
             let docData = null;
+            /* Try by doc ID first */
             const byId = await db.collection('pos_invoices').doc(id).get();
             if (byId.exists) { docData = { id: byId.id, ...byId.data() }; }
             if (!docData) {
+              /* Try by invoiceNumber */
               const byNum = await db.collection('pos_invoices').where('invoiceNumber','==',id).limit(1).get();
               if (!byNum.empty) docData = { id: byNum.docs[0].id, ...byNum.docs[0].data() };
             }
             if (docData) {
-              showScanResult(docData.id, docData.invoiceNumber || docData.id);
+              closeScanner();
               setTimeout(() => openOrderModal(docData), 200);
             } else {
               document.getElementById('scanner-result').innerHTML =
                 `<span style="color:var(--orange)">⚠️ لم يُعثر على الطلب</span>
-                 <br><a href="invoice.html?id=${encodeURIComponent(id)}"
-                    style="color:var(--gold);font-weight:700;text-decoration:none">فتح الفاتورة مباشرة ←</a>`;
+                 <br><a href="invoice.html?id=${encodeURIComponent(id)}" target="_blank" style="color:var(--gold);font-weight:700">فتح الفاتورة مباشرة ←</a>`;
             }
           } catch(fe) {
             document.getElementById('scanner-result').innerHTML =
@@ -691,26 +678,6 @@ async function searchAndOpenOrder(rawVal) {
     else { toast('⚠️ لم يُعثر على طلب بهذا الكود', 'warn'); }
   } catch(e) { toast('❌ خطأ: ' + e.message, 'err'); }
 }
-
-window.markDelivered = async function(orderId){
-  if (!confirm('تأكيد: هل تم تسليم الطلب للعميل؟')) return;
-  try {
-    await db.collection('pos_invoices').doc(orderId).update({
-      status: 'تم التسليم',
-      orderDelivered: true,
-      deliveredAt: firebase.firestore.FieldValue.serverTimestamp(),
-    });
-    toast('✅ تم تسجيل التسليم بنجاح!', 'ok');
-    const idx = allOrders.findIndex(o => o.id === orderId);
-    if (idx >= 0) {
-      allOrders[idx].status = 'تم التسليم';
-      allOrders[idx].orderDelivered = true;
-      openOrderModal(allOrders[idx]);
-    }
-    renderStats(); filterOrders();
-  } catch(e) { toast('خطأ: ' + e.message, 'err'); }
-};
-
 </script>
 </body>
 </html>

@@ -1,264 +1,344 @@
-/* ═══════════════════════════════════════════
-   shared.js — Zahraa POS Shared Foundation
-   Firebase config, CSS injection, utilities
-═══════════════════════════════════════════ */
+// ═══════════════════════════════════════════
+//  ZAHRAA POS — Shared Core (Firebase + Auth + UI)
+// ═══════════════════════════════════════════
 
-const firebaseConfig = {
+const CFG_KEY = 'zahraa_pos_firebase_config';
+const SETTINGS_KEY = 'zahraa_pos_settings';
+let db, auth, currentUser = null;
+
+// ─── Firebase Config (مدمج مباشرة) ──────
+const FIREBASE_CONFIG = {
   apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
   authDomain: "zahraa-store-f4c90.firebaseapp.com",
-  databaseURL: "https://zahraa-store-f4c90-default-rtdb.firebaseio.com",
-  projectId: "zahraa-store-f4c90",
-  storageBucket: "zahraa-store-f4c90.firebasestorage.app",
-  messagingSenderId: "885722081307",
-  appId: "1:885722081307:web:7c91e0f8b0ea9b8b4df0be"
+  projectId: "zahraa-store-f4c90"
 };
 
-if (!firebase.apps || !firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
-
-const db   = firebase.firestore();
-const auth = firebase.auth();
-
-/* ── Formatting helpers ── */
-function fmt(n) {
-  const v = parseFloat(n) || 0;
-  return v.toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ج';
-}
-function fmtDate(ts) {
-  if (!ts) return '—';
-  const d = ts.toDate ? ts.toDate() : new Date(ts);
-  return d.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
-}
-function fmtDateTime(ts) {
-  if (!ts) return '—';
-  const d = ts.toDate ? ts.toDate() : new Date(ts);
-  return d.toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })
-       + ' ' + d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-}
-
-/* ── Toast notification ── */
-let _toastTimer = null;
-function toast(msg, type) {
-  let el = document.getElementById('_shared_toast');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = '_shared_toast';
-    el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(120%);z-index:99999;padding:10px 22px;border-radius:30px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;transition:transform .3s;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.4)';
-    document.body.appendChild(el);
+// ─── Firebase Init ───────────────────────
+function initFirebase() {
+  if (!firebase.apps.length) {
+    firebase.initializeApp(FIREBASE_CONFIG);
   }
-  const colors = {
-    ok:   { bg:'#22c55e', color:'#000' },
-    warn: { bg:'#f59e0b', color:'#000' },
-    err:  { bg:'#ef4444', color:'#fff' },
-    info: { bg:'#d4af37', color:'#000' },
-  };
-  const c = colors[type] || colors.info;
-  el.style.background = c.bg;
-  el.style.color       = c.color;
-  el.textContent       = msg;
-  el.style.transform   = 'translateX(-50%) translateY(0)';
-  clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(() => {
-    el.style.transform = 'translateX(-50%) translateY(120%)';
-  }, 3200);
+  db = firebase.firestore();
+  auth = firebase.auth();
+  db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+  return true;
 }
 
-/* ── Auth guard ── */
-function requireAuth(callback) {
+// ─── Settings ────────────────────────────
+function getSettings() {
+  return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+}
+function saveSettings(s) {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+}
+
+// ─── Auth Guard ───────────────────────────
+function requireAuth(cb) {
+  if (!initFirebase()) { location.href = 'index.html'; return; }
   auth.onAuthStateChanged(user => {
-    if (user) {
-      callback(user);
-    } else {
-      /* Show login prompt or redirect */
-      document.body.innerHTML = `
-        <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0a0a0a;font-family:Cairo,sans-serif">
-          <div style="background:#141414;border:1px solid #d4af37;border-radius:16px;padding:36px 40px;width:340px;text-align:center">
-            <div style="font-size:38px;margin-bottom:12px">🔐</div>
-            <h2 style="color:#d4af37;font-size:18px;font-weight:900;margin-bottom:4px">تسجيل الدخول مطلوب</h2>
-            <p style="color:#888;font-size:12px;margin-bottom:24px">يجب تسجيل الدخول للوصول إلى هذه الصفحة</p>
-            <input id="_auth_email" type="email" placeholder="البريد الإلكتروني"
-              style="width:100%;padding:10px 14px;background:#0a0a0a;border:1.5px solid #333;border-radius:8px;color:#fff;font-family:Cairo,sans-serif;font-size:13px;outline:none;box-sizing:border-box;margin-bottom:10px">
-            <input id="_auth_pass" type="password" placeholder="كلمة المرور"
-              style="width:100%;padding:10px 14px;background:#0a0a0a;border:1.5px solid #333;border-radius:8px;color:#fff;font-family:Cairo,sans-serif;font-size:13px;outline:none;box-sizing:border-box;margin-bottom:16px">
-            <button id="_auth_btn" onclick="_doLogin()"
-              style="width:100%;padding:11px;background:#d4af37;color:#000;border:none;border-radius:8px;font-family:Cairo,sans-serif;font-weight:900;font-size:14px;cursor:pointer">دخول</button>
-            <p id="_auth_err" style="color:#ef4444;font-size:11px;margin-top:10px;display:none"></p>
-          </div>
-        </div>`;
-      window._doLogin = async () => {
-        const btn = document.getElementById('_auth_btn');
-        btn.textContent = '...'; btn.disabled = true;
-        try {
-          await auth.signInWithEmailAndPassword(
-            document.getElementById('_auth_email').value.trim(),
-            document.getElementById('_auth_pass').value
-          );
-          location.reload();
-        } catch(e) {
-          const errEl = document.getElementById('_auth_err');
-          errEl.style.display = 'block';
-          errEl.textContent = 'بيانات الدخول غير صحيحة';
-          btn.textContent = 'دخول'; btn.disabled = false;
-        }
-      };
-      document.getElementById('_auth_pass')?.addEventListener('keydown', e => {
-        if (e.key === 'Enter') window._doLogin();
-      });
-    }
+    if (!user) { location.href = 'index.html'; return; }
+    currentUser = user;
+    renderSidebar();
+    applyTheme();
+    const themeBtn = document.getElementById('theme-toggle-btn');
+    if (themeBtn && document.body.classList.contains('light')) themeBtn.innerHTML = '<i class="fas fa-moon"></i> تبديل المظهر';
+    document.getElementById('sb-user') && (document.getElementById('sb-user').textContent = user.email);
+    if (cb) cb(user);
   });
 }
 
-/* ── CSS injection ── */
-function injectSharedCSS() {
-  /* Google Font */
-  if (!document.querySelector('link[data-zpos-font]')) {
-    const lnk = document.createElement('link');
-    lnk.rel = 'stylesheet';
-    lnk.dataset.zposFont = '1';
-    lnk.href = 'https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap';
-    document.head.appendChild(lnk);
+// ─── Sidebar ─────────────────────────────
+const NAV = [
+  { href:'dashboard.html', icon:'fa-gauge',      label:'لوحة التحكم' },
+  { href:'pos.html',       icon:'fa-cash-register', label:'الكاشير' },
+  { href:'products.html',  icon:'fa-box',         label:'المنتجات' },
+  { href:'inventory.html', icon:'fa-warehouse',   label:'المخزون' },
+  { href:'customers.html', icon:'fa-users',       label:'العملاء' },
+  { href:'active-orders.html', icon:'fa-hourglass-half', label:'الطلبات النشطة' },
+  { href:'suppliers.html', icon:'fa-truck',       label:'الموردون' },
+  { href:'purchases.html', icon:'fa-cart-arrow-down', label:'المشتريات' },
+  { href:'expenses.html',  icon:'fa-money-bill-wave', label:'المصروفات' },
+  { href:'reports.html',   icon:'fa-chart-line',  label:'التقارير' },
+  { href:'users.html',     icon:'fa-user-shield', label:'المستخدمون' },
+  { href:'settings.html',  icon:'fa-gear',        label:'الإعدادات' },
+];
+
+function renderSidebar() {
+  const el = document.getElementById('sidebar');
+  if (!el) return;
+  const cur = location.pathname.split('/').pop() || 'dashboard.html';
+  const s = getSettings();
+  el.innerHTML = `
+    <div class="sb-logo">
+      <span style="font-size:26px">📸</span>
+      <div>
+        <div class="sb-name">${s.storeName || 'استوديو الزهراء'}</div>
+        <div class="sb-sub">نظام الكاشير</div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      ${NAV.map(n => `
+        <a class="sb-link${cur===n.href?' active':''}" href="${n.href}">
+          <i class="fas ${n.icon}"></i> ${n.label}
+        </a>`).join('')}
+    </nav>
+    <div class="sb-footer">
+      <div class="sb-user-info"><i class="fas fa-circle-user"></i> <span id="sb-user"></span></div>
+      <button id="theme-toggle-btn" style="width:100%;padding:7px;border-radius:var(--r);border:1.5px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;transition:all .17s;margin-bottom:5px" onclick="toggleTheme()"><i class="fas fa-circle-half-stroke"></i> تبديل المظهر</button>
+      <button class="sb-logout" onclick="doLogout()"><i class="fas fa-right-from-bracket"></i> خروج</button>
+    </div>`;
+  if (currentUser) document.getElementById('sb-user').textContent = currentUser.email;
+}
+
+async function doLogout() {
+  await auth.signOut();
+  location.href = 'index.html';
+}
+
+// ─── Toast ───────────────────────────────
+function toast(msg, type = 'info', ms = 2800) {
+  let wrap = document.getElementById('toasts');
+  if (!wrap) { wrap = document.createElement('div'); wrap.id='toasts'; document.body.appendChild(wrap); }
+  const el = document.createElement('div');
+  const cls = { ok:'t-ok', err:'t-err', info:'t-info', warn:'t-warn' };
+  el.className = 'toast ' + (cls[type] || 't-info');
+  el.innerHTML = msg;
+  wrap.appendChild(el);
+  setTimeout(() => el.remove(), ms);
+}
+
+// ─── Currency ────────────────────────────
+function fmt(n, unit = null) {
+  const s = getSettings();
+  const u = unit ?? (s.currency || 'ج');
+  return (parseFloat(n) || 0).toFixed(2) + ' ' + u;
+}
+
+// ─── Date ────────────────────────────────
+function fmtDate(ts) {
+  if (!ts) return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleDateString('ar-EG') + ' ' + d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+}
+
+// ─── Modal helpers ────────────────────────
+function openModal(id) { document.getElementById(id)?.classList.add('open'); }
+function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
+
+// ─── Common CSS ──────────────────────────
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light');
+  localStorage.setItem('zahraa_theme', isLight ? 'light' : 'dark');
+  const btn = document.getElementById('theme-toggle-btn');
+  if (btn) btn.innerHTML = isLight ? '<i class="fas fa-moon"></i>' : '<i class="fas fa-circle-half-stroke"></i>';
+}
+window.toggleTheme = toggleTheme;
+
+function applyTheme() {
+  const saved = localStorage.getItem('zahraa_theme');
+  if (saved === 'light') {
+    document.body.classList.add('light');
   }
+}
+window.applyTheme = applyTheme;
 
-  /* Global styles */
+function injectSharedCSS() {
   const style = document.createElement('style');
-  style.dataset.zposShared = '1';
   style.textContent = `
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap');
 :root{
-  --bg:#0d0d0d; --bg2:#141414; --bg3:#1c1c1c;
-  --card:#1a1a1a; --card2:#202020; --card3:#252525;
-  --text:#f0f0f0; --text2:#aaa; --text3:#666;
-  --border:#2a2a2a; --border2:#383838;
-  --gold:#d4af37; --gold2:#f0cc55; --gold-dim:rgba(212,175,55,.12);
-  --green:#22c55e; --red:#ef4444; --orange:#f59e0b;
-  --blue:#3b82f6; --purple:#a855f7; --cyan:#06b6d4;
-  --r:8px; --r2:12px; --r3:18px;
+  --bg:#0c0c15;--bg2:#13132a;--bg3:#1a1a30;
+  --card:#20203a;--card2:#27274a;
+  --border:#2d2d5a;--border2:#3d3d6a;
+  --gold:#d4af37;--gold2:#f0d060;--gold3:#a88520;
+  --text:#f1f5f9;--text2:#94a3b8;--text3:#4a5568;
+  --green:#22c55e;--red:#ef4444;--orange:#f59e0b;
+  --blue:#3b82f6;--purple:#8b5cf6;--cyan:#06b6d4;
+  --r:10px;--r2:14px;--sh:0 4px 24px rgba(0,0,0,.5);
+  --sw:220px;
 }
-html,body{height:100%;font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);font-size:14px;direction:rtl}
-a{color:inherit;text-decoration:none}
-button{font-family:'Cairo',sans-serif}
-
-/* ═══ App Shell ═══ */
-.app-shell{display:flex;min-height:100vh}
+body.light{
+  --bg:#f0f4f8;--bg2:#e8eef5;--bg3:#dde5ef;
+  --card:#ffffff;--card2:#f4f7fa;
+  --border:#c8d5e3;--border2:#a0b4c8;
+  --text:#0f172a;--text2:#334155;--text3:#64748b;
+  --sh:0 4px 24px rgba(0,0,0,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;outline:none}
+html,body{width:100%;height:100%;font-family:'Cairo',sans-serif;color:var(--text);background:var(--bg);direction:rtl}
+/* Layout */
+.app-shell{display:flex;height:100vh;overflow:hidden}
+/* Sidebar */
+#sidebar{width:var(--sw);background:var(--bg2);border-left:1px solid var(--border);
+  display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.sb-logo{display:flex;align-items:center;gap:10px;padding:16px 14px;
+  border-bottom:1px solid var(--border)}
+.sb-name{font-size:13px;font-weight:900;color:var(--gold)}
+.sb-sub{font-size:10px;color:var(--text3)}
+.sb-nav{flex:1;padding:10px 8px;display:flex;flex-direction:column;gap:2px}
+.sb-link{display:flex;align-items:center;gap:9px;padding:9px 12px;
+  border-radius:var(--r);color:var(--text2);text-decoration:none;
+  font-size:12px;font-weight:700;transition:all .17s}
+.sb-link i{width:16px;text-align:center;font-size:13px}
+.sb-link:hover{background:var(--bg3);color:var(--text)}
+.sb-link.active{background:rgba(212,175,55,.15);color:var(--gold);border-right:3px solid var(--gold)}
+.sb-footer{padding:12px 8px;border-top:1px solid var(--border)}
+.sb-user-info{font-size:10px;color:var(--text3);margin-bottom:7px;padding:0 4px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-logout{width:100%;padding:8px;border-radius:var(--r);border:1.5px solid var(--border);
+  background:transparent;color:var(--text2);cursor:pointer;
+  font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;transition:all .17s}
+.sb-logout:hover{border-color:var(--red);color:var(--red)}
+/* Page content */
 .page-content{flex:1;display:flex;flex-direction:column;overflow:hidden}
-.page-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--bg2);flex-wrap:wrap;gap:10px;flex-shrink:0}
-.page-header h1{font-size:16px;font-weight:900;color:var(--gold);display:flex;align-items:center;gap:8px}
-.page-body{flex:1;overflow-y:auto;padding:20px}
-
-/* ═══ Sidebar ═══ */
-.zp-sidebar{width:220px;flex-shrink:0;background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;height:100vh;position:sticky;top:0;overflow-y:auto}
-.zp-sidebar::-webkit-scrollbar{width:3px}
-.zp-sidebar::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
-.zp-sb-head{padding:16px 14px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:4px}
-.zp-sb-logo{font-size:15px;font-weight:900;color:var(--gold)}
-.zp-sb-sub{font-size:10px;color:var(--text3)}
-.zp-sb-nav{flex:1;padding:10px 8px;display:flex;flex-direction:column;gap:2px}
-.zp-sb-link{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r);color:var(--text2);font-size:12px;font-weight:700;transition:all .15s;cursor:pointer;border:none;background:none;width:100%;text-align:right}
-.zp-sb-link:hover{background:var(--card2);color:var(--text)}
-.zp-sb-link.active{background:rgba(212,175,55,.12);color:var(--gold)}
-.zp-sb-link i{width:16px;text-align:center;font-size:13px;flex-shrink:0}
-.zp-sb-sep{height:1px;background:var(--border);margin:6px 8px}
-.zp-sb-section{font-size:9.5px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;padding:8px 12px 4px}
-.zp-sb-foot{padding:12px 10px;border-top:1px solid var(--border)}
-.zp-sb-user{font-size:11px;color:var(--text3);font-weight:700;padding:6px 8px;display:flex;align-items:center;gap:8px}
-.zp-sb-logout{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--r);color:var(--red);font-size:11px;font-weight:700;background:rgba(239,68,68,.08);border:none;cursor:pointer;width:100%;margin-top:6px;font-family:Cairo,sans-serif}
-.zp-sb-logout:hover{background:rgba(239,68,68,.18)}
-
-/* Mobile sidebar toggle */
-.zp-menu-toggle{display:none;background:none;border:none;color:var(--text);font-size:20px;cursor:pointer;padding:4px;margin-left:8px}
-@media(max-width:768px){
-  .zp-sidebar{position:fixed;top:0;right:-260px;width:250px;height:100vh;z-index:9000;transition:right .28s cubic-bezier(.4,0,.2,1);box-shadow:-4px 0 24px rgba(0,0,0,.5)}
-  .zp-sidebar.open{right:0}
-  .zp-menu-toggle{display:block}
-  .zp-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:8999}
-  .zp-overlay.show{display:block}
-}
-
-/* ═══ Common UI ═══ */
+.page-header{display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;border-bottom:1px solid var(--border);
+  background:var(--bg2);flex-shrink:0}
+.page-header h1{font-size:16px;font-weight:900;color:var(--gold)}
+.page-body{flex:1;overflow-y:auto;padding:20px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+/* Cards */
 .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:16px}
-.card-title{font-size:11px;color:var(--text3);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px}
+.card-title{font-size:12px;color:var(--text3);font-weight:700;margin-bottom:4px}
 .card-value{font-size:24px;font-weight:900;color:var(--gold)}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r);border:none;font-family:Cairo,sans-serif;font-weight:700;font-size:12px;cursor:pointer;transition:all .18s}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;
+  border-radius:var(--r);border:none;cursor:pointer;
+  font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;transition:all .17s}
 .btn-primary{background:var(--gold);color:#000}
 .btn-primary:hover{background:var(--gold2)}
-.btn-ghost{background:var(--bg3);color:var(--text2);border:1.5px solid var(--border)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-danger:hover{opacity:.85}
+.btn-ghost{background:transparent;border:1.5px solid var(--border);color:var(--text2)}
 .btn-ghost:hover{border-color:var(--gold);color:var(--gold)}
-.btn-sm{padding:6px 12px;font-size:11px}
-.btn-danger{background:rgba(239,68,68,.12);color:var(--red);border:1px solid var(--red)}
-.btn-danger:hover{background:var(--red);color:#fff}
-.btn-success{background:linear-gradient(135deg,#166534,#22c55e);color:#fff}
-.search-input{background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--r);color:var(--text);padding:8px 14px;font-family:Cairo,sans-serif;font-size:12px;font-weight:600;outline:none;transition:border-color .18s;width:100%;max-width:300px}
-.search-input:focus{border-color:var(--gold)}
-
-/* Spinner */
-.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;margin:24px auto}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-/* Empty state */
-.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 16px;color:var(--text3);text-align:center;gap:12px}
-.empty-state i{font-size:36px;opacity:.4}
-.empty-state p{font-size:13px;font-weight:700}
-
+.btn-success{background:#052e16;border:1.5px solid var(--green);color:var(--green)}
+/* Table */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:var(--bg2);color:var(--text3);font-weight:700;
+  padding:10px 12px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg3)}
+/* Forms */
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:11px;color:var(--text2);font-weight:700;margin-bottom:5px}
+.form-control{width:100%;padding:9px 12px;background:var(--bg3);
+  border:1.5px solid var(--border);border-radius:var(--r);
+  color:var(--text);font-family:'Cairo',sans-serif;font-size:13px;transition:border-color .2s}
+.form-control:focus{border-color:var(--gold)}
+select.form-control option{background:var(--bg3)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:800;
+  display:flex;align-items:center;justify-content:center;padding:16px;
+  opacity:0;pointer-events:none;transition:opacity .2s}
+.overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);
+  width:100%;max-width:560px;max-height:90vh;overflow-y:auto;
+  transform:scale(.95);transition:transform .2s}
+.overlay.open .modal{transform:scale(1)}
+.modal-lg{max-width:800px}
+.modal-header{display:flex;align-items:center;justify-content:space-between;
+  padding:14px 18px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg2);z-index:1}
+.modal-header h3{font-size:15px;font-weight:900;color:var(--gold)}
+.modal-body{padding:18px}
+.modal-footer{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-start}
+.close-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;line-height:1}
+.close-btn:hover{color:var(--red)}
+/* Badges */
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700}
+.badge-green{background:#052e16;color:var(--green)}
+.badge-red{background:#450a0a;color:#fca5a5}
+.badge-orange{background:#451a03;color:#fcd34d}
+.badge-blue{background:#1e3a5f;color:#93c5fd}
+.badge-gray{background:var(--bg3);color:var(--text3)}
+/* Search bar */
+.search-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.search-input{flex:1;min-width:200px;padding:9px 14px;
+  background:var(--bg3);border:1.5px solid var(--border);
+  border-radius:var(--r);color:var(--text);font-family:'Cairo',sans-serif;font-size:13px}
+.search-input:focus{border-color:var(--gold);outline:none}
+/* Toast */
+#toasts{position:fixed;bottom:20px;left:20px;z-index:9999;display:flex;flex-direction:column;gap:6px}
+.toast{padding:10px 16px;border-radius:10px;font-size:12px;font-weight:700;
+  box-shadow:0 4px 20px rgba(0,0,0,.4);animation:tup .25s;color:#fff;max-width:280px}
+@keyframes tup{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.t-ok{background:#14532d}.t-err{background:#450a0a}.t-info{background:#1e3a5f}.t-warn{background:#451a03}
 /* Scrollbar */
 ::-webkit-scrollbar{width:5px;height:5px}
-::-webkit-scrollbar-track{background:var(--bg)}
-::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
-::-webkit-scrollbar-thumb:hover{background:var(--text3)}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+/* Empty state */
+.empty-state{text-align:center;padding:60px 20px;color:var(--text3)}
+.empty-state i{font-size:48px;margin-bottom:16px;display:block;opacity:.3}
+/* Spinner */
+.spinner{width:36px;height:36px;border:4px solid var(--border);
+  border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin:40px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* Mobile */
+@media(max-width:768px){
+  #sidebar{position:fixed;right:-220px;top:0;height:100%;z-index:500;transition:right .28s}
+  #sidebar.open{right:0}
+  .mob-menu-btn{display:flex}
+}
 `;
   document.head.appendChild(style);
+}
 
-  /* Build sidebar */
-  const sidebarEl = document.getElementById('sidebar');
-  if (sidebarEl) {
-    const currentPage = location.pathname.split('/').pop() || 'dashboard.html';
-    const links = [
-      { href:'dashboard.html',     icon:'fas fa-gauge',            label:'لوحة التحكم' },
-      { href:'active-orders.html', icon:'fas fa-hourglass-half',   label:'الطلبات النشطة' },
-      { href:'pos.html',           icon:'fas fa-cash-register',    label:'الكاشير' },
-      { sep: true, label: 'إدارة' },
-      { href:'customers.html',     icon:'fas fa-users',            label:'العملاء' },
-      { href:'inventory.html',     icon:'fas fa-boxes-stacked',    label:'المخزون' },
-      { href:'expenses.html',      icon:'fas fa-money-bill-wave',  label:'المصروفات' },
-      { sep: true, label: 'النظام' },
-      { href:'admin.html',         icon:'fas fa-sliders',          label:'الإدارة' },
-    ];
-
-    const navHTML = links.map(l => {
-      if (l.sep) return `<div class="zp-sb-sep"></div><div class="zp-sb-section">${l.label}</div>`;
-      const isActive = currentPage === l.href;
-      return `<a href="${l.href}" class="zp-sb-link ${isActive ? 'active' : ''}"><i class="${l.icon}"></i> ${l.label}</a>`;
-    }).join('');
-
-    sidebarEl.innerHTML = `
-      <nav class="zp-sidebar" id="zp-sidebar-nav">
-        <div class="zp-sb-head">
-          <div class="zp-sb-logo">⚡ كاشير الزهراء</div>
-          <div class="zp-sb-sub">ZAHRAA STUDIO POS</div>
+// ─── Confirm dialog ───────────────────────
+function confirm2(msg) {
+  return new Promise(resolve => {
+    const d = document.createElement('div');
+    d.className = 'overlay open';
+    d.innerHTML = `<div class="modal" style="max-width:360px">
+      <div class="modal-body" style="text-align:center;padding:30px 20px">
+        <i class="fas fa-triangle-exclamation" style="font-size:36px;color:var(--orange);margin-bottom:12px;display:block"></i>
+        <p style="font-size:14px;font-weight:700;margin-bottom:20px">${msg}</p>
+        <div style="display:flex;gap:10px;justify-content:center">
+          <button class="btn btn-danger" id="cf-yes">تأكيد</button>
+          <button class="btn btn-ghost" id="cf-no">إلغاء</button>
         </div>
-        <div class="zp-sb-nav">${navHTML}</div>
-        <div class="zp-sb-foot">
-          <div class="zp-sb-user" id="zp-user-email"><i class="fas fa-circle-user"></i> <span>تحميل...</span></div>
-          <button class="zp-sb-logout" onclick="firebase.auth().signOut().then(()=>location.href='dashboard.html')">
-            <i class="fas fa-right-from-bracket"></i> تسجيل الخروج
-          </button>
-        </div>
-      </nav>
-      <div class="zp-overlay" id="zp-overlay" onclick="closeSidebar()"></div>`;
+      </div>
+    </div>`;
+    document.body.appendChild(d);
+    d.querySelector('#cf-yes').onclick = () => { d.remove(); resolve(true); };
+    d.querySelector('#cf-no').onclick = () => { d.remove(); resolve(false); };
+  });
+}
 
-    auth.onAuthStateChanged(u => {
-      const el = document.getElementById('zp-user-email');
-      if (el && u) el.querySelector('span').textContent = u.email?.split('@')[0] || u.email;
-    });
-  }
-
-  /* Mobile sidebar helpers */
-  window.openSidebar = () => {
-    document.getElementById('zp-sidebar-nav')?.classList.add('open');
-    document.getElementById('zp-overlay')?.classList.add('show');
-  };
-  window.closeSidebar = () => {
-    document.getElementById('zp-sidebar-nav')?.classList.remove('open');
-    document.getElementById('zp-overlay')?.classList.remove('show');
+// ─── Pagination ───────────────────────────
+function paginate(arr, page, size = 20) {
+  const total = Math.ceil(arr.length / size);
+  return {
+    items: arr.slice((page - 1) * size, page * size),
+    total,
+    page,
+    hasPrev: page > 1,
+    hasNext: page < total,
   };
 }
+
+// ─── Number formatter ─────────────────────
+function numFmt(n) {
+  return Number(parseFloat(n) || 0).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+window.initFirebase = initFirebase;
+window.requireAuth = requireAuth;
+window.getSettings = getSettings;
+window.saveSettings = saveSettings;
+window.renderSidebar = renderSidebar;
+window.doLogout = doLogout;
+window.toast = toast;
+window.fmt = fmt;
+window.fmtDate = fmtDate;
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.injectSharedCSS = injectSharedCSS;
+window.confirm2 = confirm2;
+window.paginate = paginate;
+window.numFmt = numFmt;
+window.CFG_KEY = CFG_KEY;
+window.SETTINGS_KEY = SETTINGS_KEY;
