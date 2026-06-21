@@ -8,44 +8,109 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="shared.js"></script>
 <style>
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:22px}
-.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:16px;position:relative;overflow:hidden}
-.kpi::before{content:'';position:absolute;top:0;right:0;width:4px;height:100%;background:var(--gold)}
-.kpi.green::before{background:var(--green)}
-.kpi.blue::before{background:var(--blue)}
-.kpi.orange::before{background:var(--orange)}
-.kpi.red::before{background:var(--red)}
-.kpi.purple::before{background:var(--purple)}
-.kpi-icon{font-size:22px;margin-bottom:10px;opacity:.7}
+/* KPI Cards */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-bottom:20px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:16px 14px;
+  position:relative;overflow:hidden;transition:transform .18s,box-shadow .18s;cursor:default}
+.kpi:hover{transform:translateY(-2px);box-shadow:var(--sh)}
+.kpi::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--gold)}
+.kpi.green::after{background:var(--green)}
+.kpi.blue::after{background:var(--blue)}
+.kpi.orange::after{background:var(--orange)}
+.kpi.red::after{background:var(--red)}
+.kpi.purple::after{background:var(--purple)}
+.kpi.cyan::after{background:var(--cyan)}
+.kpi-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.kpi-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;
+  background:rgba(212,175,55,.12);flex-shrink:0}
+.kpi.green .kpi-icon{background:rgba(34,197,94,.12)}
+.kpi.blue .kpi-icon{background:rgba(59,130,246,.12)}
+.kpi.orange .kpi-icon{background:rgba(245,158,11,.12)}
+.kpi.red .kpi-icon{background:rgba(239,68,68,.12)}
+.kpi.purple .kpi-icon{background:rgba(139,92,246,.12)}
+.kpi.cyan .kpi-icon{background:rgba(6,182,212,.12)}
+.kpi-trend{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px}
+.kpi-trend.up{background:rgba(34,197,94,.15);color:var(--green)}
+.kpi-trend.down{background:rgba(239,68,68,.15);color:var(--red)}
 .kpi-lbl{font-size:10px;color:var(--text3);font-weight:700;margin-bottom:3px}
-.kpi-val{font-size:22px;font-weight:900;color:var(--gold)}
+.kpi-val{font-size:20px;font-weight:900;color:var(--gold);line-height:1.2}
 .kpi.green .kpi-val{color:var(--green)}
 .kpi.blue .kpi-val{color:var(--blue)}
 .kpi.orange .kpi-val{color:var(--orange)}
 .kpi.red .kpi-val{color:var(--red)}
 .kpi.purple .kpi-val{color:var(--purple)}
+.kpi.cyan .kpi-val{color:var(--cyan)}
 .kpi-sub{font-size:10px;color:var(--text3);margin-top:3px}
-.dash-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px}
-@media(max-width:900px){.dash-grid{grid-template-columns:1fr}}
-.panel{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:16px}
+
+/* Layout */
+.dash-grid{display:grid;grid-template-columns:1fr 340px;gap:16px}
+@media(max-width:1000px){.dash-grid{grid-template-columns:1fr}}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:16px;margin-bottom:16px}
+.panel:last-child{margin-bottom:0}
 .panel-title{font-size:13px;font-weight:900;color:var(--gold);margin-bottom:14px;
-  display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);padding-bottom:10px}
-.alert-item{display:flex;align-items:center;gap:10px;padding:8px 0;
-  border-bottom:1px solid var(--border);font-size:12px}
-.alert-item:last-child{border-bottom:none}
-.alert-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  border-bottom:1px solid var(--border);padding-bottom:10px}
+.panel-title .left{display:flex;align-items:center;gap:8px}
+
+/* Chart containers */
+.chart-wrap{position:relative;height:220px}
+.chart-wrap-sm{position:relative;height:160px}
+
+/* Quick links */
 .quick-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.qbtn{display:flex;flex-direction:column;align-items:center;gap:5px;
-  padding:16px;border-radius:var(--r);border:1.5px solid var(--border);
+.qbtn{display:flex;flex-direction:column;align-items:center;gap:6px;
+  padding:14px 8px;border-radius:var(--r);border:1.5px solid var(--border);
   background:var(--bg3);cursor:pointer;transition:all .17s;text-decoration:none;color:var(--text)}
-.qbtn:hover{border-color:var(--gold);background:var(--card2)}
-.qbtn i{font-size:22px;color:var(--gold)}
+.qbtn:hover{border-color:var(--gold);background:var(--card2);transform:translateY(-1px)}
+.qbtn i{font-size:20px;color:var(--gold)}
 .qbtn span{font-size:11px;font-weight:700}
-.recent-item{display:flex;align-items:center;justify-content:space-between;
+
+/* Recent invoices */
+.recent-item{display:flex;align-items:center;gap:10px;
   padding:8px 0;border-bottom:1px solid var(--border);font-size:12px}
 .recent-item:last-child{border-bottom:none}
+.ri-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;font-size:14px}
+.ri-info{flex:1;min-width:0}
+.ri-no{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ri-sub{font-size:10px;color:var(--text3)}
+.ri-amt{font-weight:900;color:var(--gold);font-size:13px;text-align:left;white-space:nowrap}
+
+/* Top products */
+.prod-bar{margin-bottom:9px}
+.prod-bar-hd{display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;font-weight:700}
+.prod-bar-track{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.prod-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--gold),var(--gold2));transition:width .6s}
+
+/* Alerts */
+.alert-item{display:flex;align-items:center;gap:9px;padding:8px 0;
+  border-bottom:1px solid var(--border);font-size:12px}
+.alert-item:last-child{border-bottom:none}
+.ai-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* Pay method breakdown */
+.pay-row{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:12px}
+.pay-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.pay-label{flex:1;font-weight:700}
+.pay-amt{font-weight:900;direction:ltr}
+.pay-bar{height:4px;border-radius:2px;margin-top:3px;transition:width .5s}
+
+/* Date filter */
+.date-filter{display:flex;gap:5px;flex-wrap:wrap}
+.df-btn{padding:4px 10px;border-radius:20px;border:1.5px solid var(--border);
+  background:var(--bg3);color:var(--text2);cursor:pointer;
+  font-family:'Cairo',sans-serif;font-size:10px;font-weight:700;transition:all .15s}
+.df-btn.on{background:var(--gold);border-color:var(--gold);color:#000}
+
+/* Close report btn */
+.btn-wa-report{padding:7px 14px;border-radius:var(--r);border:1.5px solid #25D366;
+  background:rgba(37,211,102,.1);color:#25D366;cursor:pointer;
+  font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;transition:all .17s;
+  display:flex;align-items:center;gap:5px}
+.btn-wa-report:hover{background:#25D366;color:#fff}
 </style>
 </head>
 <body>
@@ -54,48 +119,115 @@
   <div class="page-content">
     <div class="page-header">
       <h1><i class="fas fa-gauge"></i> لوحة التحكم</h1>
-      <span id="dash-date" style="font-size:12px;color:var(--text3)"></span>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span id="dash-date" style="font-size:11px;color:var(--text3)"></span>
+        <button class="btn-wa-report" onclick="shareWhatsApp()"><i class="fab fa-whatsapp"></i> مشاركة التقرير</button>
+      </div>
     </div>
     <div class="page-body">
 
+      <!-- Period filter -->
+      <div style="display:flex;gap:6px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+        <span style="font-size:11px;color:var(--text3);font-weight:700">الفترة:</span>
+        <div class="date-filter">
+          <button class="df-btn on" onclick="setPeriod('today',this)">اليوم</button>
+          <button class="df-btn" onclick="setPeriod('week',this)">الأسبوع</button>
+          <button class="df-btn" onclick="setPeriod('month',this)">الشهر</button>
+        </div>
+      </div>
+
       <!-- KPIs -->
       <div class="kpi-grid" id="kpi-grid">
-        <div class="kpi"><div class="kpi-icon">💰</div><div class="kpi-lbl">مبيعات اليوم</div><div class="kpi-val" id="k-rev">—</div></div>
-        <div class="kpi green"><div class="kpi-icon">📈</div><div class="kpi-lbl">ربح اليوم</div><div class="kpi-val" id="k-profit">—</div></div>
-        <div class="kpi blue"><div class="kpi-icon">🧾</div><div class="kpi-lbl">فواتير اليوم</div><div class="kpi-val" id="k-inv">—</div></div>
-        <div class="kpi orange"><div class="kpi-icon">📦</div><div class="kpi-lbl">تنبيهات المخزون</div><div class="kpi-val" id="k-stock">—</div></div>
-        <div class="kpi purple"><div class="kpi-icon">👥</div><div class="kpi-lbl">العملاء</div><div class="kpi-val" id="k-cust">—</div></div>
-        <div class="kpi red"><div class="kpi-icon">⏳</div><div class="kpi-lbl">آجل متبقي</div><div class="kpi-val" id="k-deferred">—</div></div>
+        <div class="kpi">
+          <div class="kpi-top"><div class="kpi-icon">💰</div><span class="kpi-trend up" id="tr-rev">—</span></div>
+          <div class="kpi-lbl">إجمالي المبيعات</div>
+          <div class="kpi-val" id="k-rev">—</div>
+          <div class="kpi-sub" id="ks-rev">جاري التحميل...</div>
+        </div>
+        <div class="kpi green">
+          <div class="kpi-top"><div class="kpi-icon" style="background:rgba(34,197,94,.12)">📈</div><span class="kpi-trend up" id="tr-profit">—</span></div>
+          <div class="kpi-lbl">الربح التقريبي</div>
+          <div class="kpi-val" id="k-profit">—</div>
+          <div class="kpi-sub" id="ks-profit"></div>
+        </div>
+        <div class="kpi blue">
+          <div class="kpi-top"><div class="kpi-icon">🧾</div><span class="kpi-trend up" id="tr-inv">—</span></div>
+          <div class="kpi-lbl">عدد الفواتير</div>
+          <div class="kpi-val" id="k-inv">—</div>
+          <div class="kpi-sub" id="ks-inv"></div>
+        </div>
+        <div class="kpi orange">
+          <div class="kpi-top"><div class="kpi-icon">⏳</div></div>
+          <div class="kpi-lbl">مبالغ آجلة متبقية</div>
+          <div class="kpi-val" id="k-deferred">—</div>
+          <div class="kpi-sub" id="ks-deferred"></div>
+        </div>
+        <div class="kpi purple">
+          <div class="kpi-top"><div class="kpi-icon">👥</div></div>
+          <div class="kpi-lbl">العملاء الكل</div>
+          <div class="kpi-val" id="k-cust">—</div>
+          <div class="kpi-sub">عميل مسجل</div>
+        </div>
+        <div class="kpi red">
+          <div class="kpi-top"><div class="kpi-icon">📦</div></div>
+          <div class="kpi-lbl">تنبيهات المخزون</div>
+          <div class="kpi-val" id="k-stock">—</div>
+          <div class="kpi-sub">منتج منخفض</div>
+        </div>
       </div>
 
       <div class="dash-grid">
-        <!-- Left: Recent invoices + Top products -->
-        <div style="display:flex;flex-direction:column;gap:16px">
+        <!-- Left column -->
+        <div>
+          <!-- Weekly chart -->
           <div class="panel">
-            <div class="panel-title"><i class="fas fa-receipt"></i> آخر الفواتير</div>
+            <div class="panel-title">
+              <div class="left"><i class="fas fa-chart-bar"></i> مبيعات آخر 7 أيام</div>
+            </div>
+            <div class="chart-wrap"><canvas id="chart-week"></canvas></div>
+          </div>
+
+          <!-- Recent invoices -->
+          <div class="panel">
+            <div class="panel-title">
+              <div class="left"><i class="fas fa-receipt"></i> آخر الفواتير</div>
+              <a href="active-orders.html" style="font-size:10px;color:var(--text3);text-decoration:none">عرض الكل ←</a>
+            </div>
             <div id="recent-inv"><div class="spinner"></div></div>
           </div>
+
+          <!-- Top products bar chart -->
           <div class="panel">
-            <div class="panel-title"><i class="fas fa-trophy"></i> أكثر المنتجات مبيعاً اليوم</div>
+            <div class="panel-title"><div class="left"><i class="fas fa-trophy"></i> أكثر المنتجات مبيعاً</div></div>
             <div id="top-prods"><div class="spinner"></div></div>
           </div>
         </div>
 
-        <!-- Right: Quick actions + Alerts -->
-        <div style="display:flex;flex-direction:column;gap:16px">
+        <!-- Right column -->
+        <div>
+          <!-- Quick links -->
           <div class="panel">
-            <div class="panel-title"><i class="fas fa-bolt"></i> روابط سريعة</div>
+            <div class="panel-title"><div class="left"><i class="fas fa-bolt"></i> روابط سريعة</div></div>
             <div class="quick-btns">
               <a class="qbtn" href="pos.html"><i class="fas fa-cash-register"></i><span>الكاشير</span></a>
               <a class="qbtn" href="products.html"><i class="fas fa-plus-circle"></i><span>إضافة منتج</span></a>
-              <a class="qbtn" href="customers.html"><i class="fas fa-user-plus"></i><span>إضافة عميل</span></a>
-              <a class="qbtn" href="reports.html"><i class="fas fa-chart-bar"></i><span>التقارير</span></a>
+              <a class="qbtn" href="customers.html"><i class="fas fa-user-plus"></i><span>العملاء</span></a>
               <a class="qbtn" href="expenses.html"><i class="fas fa-money-bill-wave"></i><span>مصروف</span></a>
-              <a class="qbtn" href="purchases.html"><i class="fas fa-cart-arrow-down"></i><span>مشتريات</span></a>
+              <a class="qbtn" href="inventory.html"><i class="fas fa-warehouse"></i><span>المخزون</span></a>
+              <a class="qbtn" href="reports.html"><i class="fas fa-chart-bar"></i><span>التقارير</span></a>
             </div>
           </div>
+
+          <!-- Payment method breakdown -->
           <div class="panel">
-            <div class="panel-title"><i class="fas fa-bell"></i> تنبيهات المخزون</div>
+            <div class="panel-title"><div class="left"><i class="fas fa-wallet"></i> طرق الدفع</div></div>
+            <div class="chart-wrap-sm" style="margin-bottom:12px"><canvas id="chart-pay"></canvas></div>
+            <div id="pay-breakdown"></div>
+          </div>
+
+          <!-- Stock alerts -->
+          <div class="panel">
+            <div class="panel-title"><div class="left"><i class="fas fa-bell"></i> تنبيهات المخزون</div></div>
             <div id="stock-alerts"><div class="spinner"></div></div>
           </div>
         </div>
@@ -108,91 +240,246 @@
 <script>
 injectSharedCSS();
 
+let _period = 'today';
+let _chartWeek = null, _chartPay = null;
+let _data = { rev:0, profit:0, inv:0, deferred:0, cash:0, card:0, transfer:0, dfr:0, prodMap:{}, recent:[], defCount:0 };
+
+const DAY_NAMES = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+
+function setPeriod(p, btn) {
+  _period = p;
+  document.querySelectorAll('.df-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  loadData();
+}
+
 requireAuth(async () => {
-  // Date
   document.getElementById('dash-date').textContent = new Date().toLocaleDateString('ar-EG', {
     weekday:'long', year:'numeric', month:'long', day:'numeric'
   });
+  initCharts();
+  loadData();
+  loadSideData();
+});
 
-  const s = new Date(); s.setHours(0, 0, 0, 0);
+function getRange() {
+  const now = new Date();
+  const start = new Date();
+  if (_period === 'today') { start.setHours(0,0,0,0); }
+  else if (_period === 'week') { start.setDate(now.getDate() - 6); start.setHours(0,0,0,0); }
+  else { start.setDate(1); start.setHours(0,0,0,0); }
+  return start;
+}
 
-  // Today invoices
-  let rev = 0, profit = 0, invCount = 0, deferred = 0, prodMap = {};
-  try {
-    const snap = await db.collection('pos_invoices').where('createdAt', '>=', s).orderBy('createdAt', 'desc').get();
-    const recent = [];
-    snap.forEach(d => {
-      const data = d.data();
-      rev += data.totalPrice || 0;
-      profit += data.estimatedProfit || 0;
-      invCount++;
-      deferred += data.remainingAmount || 0;
-      (data.items || []).forEach(i => { prodMap[i.name] = (prodMap[i.name] || 0) + (i.qty || 1); });
-      if (recent.length < 8) recent.push({ id: d.id, ...data });
-    });
+async function loadData() {
+  const start = getRange();
+  let rev=0,profit=0,invCnt=0,deferred=0,cash=0,card=0,transfer=0,dfr=0,defCount=0;
+  let prodMap={}, recent=[], weekMap={};
 
-    document.getElementById('k-rev').textContent = fmt(rev);
-    document.getElementById('k-profit').textContent = fmt(profit);
-    document.getElementById('k-inv').textContent = invCount;
-    document.getElementById('k-deferred').textContent = fmt(deferred);
-
-    // Recent invoices
-    document.getElementById('recent-inv').innerHTML = recent.length ? recent.map(inv => `
-      <div class="recent-item">
-        <div>
-          <div style="font-weight:700">${inv.invoiceNumber || inv.id.slice(0,8)}</div>
-          <div style="font-size:10px;color:var(--text3)">${inv.userName || 'عميل'} · ${fmtDate(inv.createdAt)}</div>
-        </div>
-        <div style="text-align:left">
-          <div style="font-weight:900;color:var(--gold)">${fmt(inv.totalPrice)}</div>
-          <span class="badge badge-${inv.status==='مكتمل'?'green':'orange'}">${inv.status || 'مكتمل'}</span>
-        </div>
-      </div>`).join('') : '<div class="empty-state"><i class="fas fa-receipt"></i><p>لا توجد فواتير اليوم</p></div>';
-
-    // Top products
-    const top = Object.entries(prodMap).sort((a, b) => b[1] - a[1]).slice(0, 6);
-    document.getElementById('top-prods').innerHTML = top.length ? top.map(([n, q], i) => `
-      <div class="recent-item">
-        <span>${i + 1}. ${n}</span>
-        <span style="color:var(--gold);font-weight:900">${q} قطعة</span>
-      </div>`).join('') : '<p style="color:var(--text3);font-size:12px;text-align:center;padding:10px">لا بيانات بعد</p>';
-  } catch(e) {
-    console.error(e);
+  // init weekMap for last 7 days
+  for(let i=6;i>=0;i--){
+    const d=new Date(); d.setDate(d.getDate()-i); d.setHours(0,0,0,0);
+    const key=d.toLocaleDateString('ar-EG',{weekday:'short'});
+    weekMap[key]=0;
   }
 
-  // Stock alerts
   try {
-    const pSnap = await db.collection('products').where('trackStock', '==', true).get();
-    let alerts = [];
-    let lowCount = 0;
-    pSnap.forEach(d => {
-      const p = d.data();
-      const reorder = p.reorderLevel || 5;
-      if ((p.stock || 0) <= reorder) {
-        alerts.push(p);
-        lowCount++;
+    const snap = await db.collection('pos_invoices')
+      .where('createdAt','>=',start)
+      .orderBy('createdAt','desc').get();
+
+    snap.forEach(doc => {
+      const d = doc.data();
+      const amount = d.totalPrice || 0;
+      rev += amount; profit += d.estimatedProfit||0; invCnt++;
+      deferred += d.remainingAmount||0;
+      if(d.remainingAmount>0) defCount++;
+
+      const pm = (d.paymentMethod||d.paymentType||'').toLowerCase();
+      if(pm.includes('نقدي')||pm==='cash') cash+=amount;
+      else if(pm.includes('بطاقة')||pm==='card') card+=amount;
+      else if(pm.includes('تحويل')||pm==='transfer') transfer+=amount;
+      else if(pm.includes('آجل')||pm==='deferred'||pm.includes('defer')) dfr+=amount;
+      else cash+=amount;
+
+      (d.items||[]).forEach(i => { prodMap[i.name]=(prodMap[i.name]||0)+(i.qty||1); });
+      if(recent.length<8) recent.push({id:doc.id,...d});
+
+      // week bars
+      if(d.createdAt && d.createdAt.toDate){
+        const dd=d.createdAt.toDate();
+        const key=dd.toLocaleDateString('ar-EG',{weekday:'short'});
+        if(weekMap[key]!==undefined) weekMap[key]+=amount;
       }
     });
-    document.getElementById('k-stock').textContent = lowCount;
-    document.getElementById('stock-alerts').innerHTML = alerts.length ? alerts.slice(0, 6).map(p => `
-      <div class="alert-item">
-        <div class="alert-icon" style="background:#451a03"><i class="fas fa-triangle-exclamation" style="color:var(--orange)"></i></div>
-        <div>
-          <div style="font-weight:700;font-size:12px">${p.name}</div>
-          <div style="font-size:10px;color:var(--text3)">المخزون: ${p.stock || 0} | حد الطلب: ${p.reorderLevel || 5}</div>
-        </div>
-      </div>`).join('') : '<p style="color:var(--text3);font-size:12px;text-align:center;padding:16px">✅ المخزون بخير</p>';
-  } catch(e) {
-    document.getElementById('k-stock').textContent = '—';
-    document.getElementById('stock-alerts').innerHTML = '<p style="color:var(--text3);font-size:12px;padding:10px">تأكد من إعداد المخزون</p>';
-  }
+  } catch(e) {}
 
-  // Customers count
+  _data = {rev,profit,invCnt,deferred,cash,card,transfer,dfr,prodMap,recent,defCount,weekMap};
+
+  // KPIs
+  const s = getSettings();
+  document.getElementById('k-rev').textContent = fmt(rev);
+  document.getElementById('k-profit').textContent = fmt(profit);
+  document.getElementById('k-inv').textContent = invCnt;
+  document.getElementById('k-deferred').textContent = fmt(deferred);
+  document.getElementById('ks-deferred').textContent = defCount + ' عميل لديه رصيد مستحق';
+  document.getElementById('ks-inv').textContent = 'متوسط ' + fmt(invCnt ? rev/invCnt : 0) + ' / فاتورة';
+  const margin = rev>0 ? ((profit/rev)*100).toFixed(1) : 0;
+  document.getElementById('ks-profit').textContent = 'هامش الربح: ' + margin + '%';
+  document.getElementById('ks-rev').textContent = _period==='today'?'مبيعات اليوم':_period==='week'?'مبيعات الأسبوع':'مبيعات الشهر';
+
+  // trends (placeholder arrows)
+  document.getElementById('tr-rev').textContent = '↑';
+  document.getElementById('tr-profit').textContent = margin + '%';
+  document.getElementById('tr-inv').textContent = invCnt + ' فاتورة';
+
+  // charts
+  updateWeekChart(weekMap);
+  updatePayChart(cash, card, transfer, dfr);
+
+  // recent invoices
+  const payColors = {نقدي:'green',cash:'green',بطاقة:'blue',card:'blue',تحويل:'purple',transfer:'purple',آجل:'orange',deferred:'orange'};
+  document.getElementById('recent-inv').innerHTML = recent.length ? recent.map(inv => {
+    const pm = (inv.paymentMethod||inv.paymentType||'نقدي').toLowerCase();
+    const col = payColors[pm] || 'blue';
+    return `<div class="recent-item">
+      <div class="ri-icon" style="background:rgba(212,175,55,.1)">🧾</div>
+      <div class="ri-info">
+        <div class="ri-no">${inv.invoiceNumber||inv.id.slice(0,10)}</div>
+        <div class="ri-sub">${inv.userName||'عميل'} · ${fmtDate(inv.createdAt)}</div>
+      </div>
+      <div style="text-align:left">
+        <div class="ri-amt">${fmt(inv.totalPrice)}</div>
+        <span class="badge badge-${inv.status==='مكتمل'||!inv.remainingAmount?'green':'orange'}">${inv.status||'مكتمل'}</span>
+      </div>
+    </div>`;
+  }).join('') : '<div class="empty-state"><i class="fas fa-receipt"></i><p>لا فواتير في هذه الفترة</p></div>';
+
+  // top products bars
+  const top = Object.entries(prodMap).sort((a,b)=>b[1]-a[1]).slice(0,7);
+  const maxQ = top[0] ? top[0][1] : 1;
+  document.getElementById('top-prods').innerHTML = top.length ? top.map(([n,q],i)=>`
+    <div class="prod-bar">
+      <div class="prod-bar-hd"><span>${i+1}. ${n}</span><span style="color:var(--gold)">${q} قطعة</span></div>
+      <div class="prod-bar-track"><div class="prod-bar-fill" style="width:${(q/maxQ*100).toFixed(0)}%"></div></div>
+    </div>`).join('') : '<p style="color:var(--text3);font-size:12px;text-align:center;padding:16px">لا بيانات بعد</p>';
+
+  // payment breakdown text
+  const total = cash+card+transfer+dfr||1;
+  const methods = [
+    {label:'نقدي 💵', amt:cash, color:'#22c55e'},
+    {label:'بطاقة 💳', amt:card, color:'#3b82f6'},
+    {label:'تحويل 📲', amt:transfer, color:'#8b5cf6'},
+    {label:'آجل ⏳', amt:dfr, color:'#f59e0b'},
+  ];
+  document.getElementById('pay-breakdown').innerHTML = methods.filter(m=>m.amt>0).map(m=>`
+    <div class="pay-row">
+      <div class="pay-dot" style="background:${m.color}"></div>
+      <span class="pay-label">${m.label}</span>
+      <span class="pay-amt" style="color:${m.color}">${fmt(m.amt)}</span>
+    </div>
+    <div class="pay-bar" style="background:${m.color}22;margin-bottom:4px">
+      <div style="height:4px;border-radius:2px;background:${m.color};width:${(m.amt/total*100).toFixed(0)}%;transition:width .5s"></div>
+    </div>`).join('') || '<p style="color:var(--text3);font-size:12px;text-align:center">لا بيانات</p>';
+}
+
+function initCharts() {
+  Chart.defaults.color = getComputedStyle(document.body).getPropertyValue('--text2') || '#94a3b8';
+  Chart.defaults.font.family = "'Cairo', sans-serif";
+
+  _chartWeek = new Chart(document.getElementById('chart-week'), {
+    type: 'bar',
+    data: { labels: [], datasets: [{
+      label: 'المبيعات (ج)',
+      data: [],
+      backgroundColor: 'rgba(212,175,55,0.25)',
+      borderColor: '#d4af37',
+      borderWidth: 2,
+      borderRadius: 6,
+      borderSkipped: false,
+    }]},
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: {
+        callbacks: { label: ctx => fmt(ctx.raw) }
+      }},
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,.04)' }, ticks: { font: { size: 11 } } },
+        y: { grid: { color: 'rgba(255,255,255,.04)' }, ticks: { font: { size: 11 },
+          callback: v => (v >= 1000 ? (v/1000).toFixed(1)+'k' : v) + ' ج' }
+        }
+      }
+    }
+  });
+
+  _chartPay = new Chart(document.getElementById('chart-pay'), {
+    type: 'doughnut',
+    data: { labels: ['نقدي','بطاقة','تحويل','آجل'], datasets: [{
+      data: [0,0,0,0],
+      backgroundColor: ['rgba(34,197,94,.7)','rgba(59,130,246,.7)','rgba(139,92,246,.7)','rgba(245,158,11,.7)'],
+      borderColor: ['#22c55e','#3b82f6','#8b5cf6','#f59e0b'],
+      borderWidth: 2,
+      hoverOffset: 8,
+    }]},
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 10 } },
+        tooltip: { callbacks: { label: ctx => `${ctx.label}: ${fmt(ctx.raw)}` } }
+      }
+    }
+  });
+}
+
+function updateWeekChart(weekMap) {
+  if (!_chartWeek) return;
+  const labels = Object.keys(weekMap);
+  const data = Object.values(weekMap);
+  _chartWeek.data.labels = labels;
+  _chartWeek.data.datasets[0].data = data;
+  _chartWeek.update();
+}
+
+function updatePayChart(cash, card, transfer, dfr) {
+  if (!_chartPay) return;
+  _chartPay.data.datasets[0].data = [cash, card, transfer, dfr];
+  _chartPay.update();
+}
+
+async function loadSideData() {
+  // Stock alerts
+  try {
+    const snap = await db.collection('products').where('trackStock','==',true).get();
+    let alerts=[],low=0;
+    snap.forEach(d=>{const p=d.data();const lvl=p.reorderLevel||5;if((p.stock||0)<=lvl){alerts.push(p);low++;}});
+    document.getElementById('k-stock').textContent = low;
+    document.getElementById('stock-alerts').innerHTML = alerts.length ? alerts.slice(0,7).map(p=>{
+      const pct = p.reorderLevel>0?(p.stock||0)/p.reorderLevel:0;
+      const col = (p.stock||0)===0?'var(--red)':'var(--orange)';
+      return `<div class="alert-item">
+        <div class="ai-dot" style="background:${col}"></div>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:12px">${p.name}</div>
+          <div style="font-size:10px;color:var(--text3)">المخزون: <b style="color:${col}">${p.stock||0}</b> | حد الطلب: ${p.reorderLevel||5}</div>
+        </div>
+        <a href="inventory.html" style="font-size:10px;color:var(--text3);text-decoration:none">تعديل →</a>
+      </div>`;
+    }).join('') : '<p style="color:var(--green);font-size:12px;text-align:center;padding:16px">✅ المخزون بخير</p>';
+  } catch(e) { document.getElementById('k-stock').textContent='—'; document.getElementById('stock-alerts').innerHTML='<p style="color:var(--text3);font-size:12px;padding:10px">خطأ في تحميل المخزون</p>';}
+
+  // Customers
   try {
     const cSnap = await db.collection('pos_customers').get();
     document.getElementById('k-cust').textContent = cSnap.size;
-  } catch(e) { document.getElementById('k-cust').textContent = '—'; }
-});
+  } catch(e) { document.getElementById('k-cust').textContent='—'; }
+}
+
+function shareWhatsApp() {
+  const {rev,profit,invCnt,deferred} = _data;
+  const date = new Date().toLocaleDateString('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const msg = `📊 تقرير استوديو الزهراء\n📅 ${date}\n\n💰 إجمالي المبيعات: ${fmt(rev)}\n📈 الربح التقريبي: ${fmt(profit)}\n🧾 عدد الفواتير: ${invCnt}\n⏳ مبالغ آجلة: ${fmt(deferred)}\n\nتم إنشاء التقرير تلقائياً من نظام الكاشير 📸`;
+  window.open('https://wa.me/?text='+encodeURIComponent(msg));
+}
 </script>
 </body>
 </html>

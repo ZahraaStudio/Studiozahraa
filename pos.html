@@ -352,6 +352,15 @@ html,body{overflow:hidden;height:100%}
           <label>المبلغ المستلم (ج)</label>
           <input class="form-control" id="cash-recv" type="number" min="0" placeholder="0.00" oninput="calcChange()">
         </div>
+        <!-- Quick cash buttons -->
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px">
+          <button onclick="setExact()" style="flex:1;padding:6px 4px;border-radius:8px;border:1.5px solid var(--gold);background:rgba(212,175,55,.12);color:var(--gold);cursor:pointer;font-family:'Cairo',sans-serif;font-size:11px;font-weight:900">⚡ المبلغ بالضبط</button>
+          <button onclick="setCash(50)"  style="flex:1;padding:6px 4px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;font-family:'Cairo',sans-serif;font-size:11px;font-weight:900">50 ج</button>
+          <button onclick="setCash(100)" style="flex:1;padding:6px 4px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;font-family:'Cairo',sans-serif;font-size:11px;font-weight:900">100 ج</button>
+          <button onclick="setCash(200)" style="flex:1;padding:6px 4px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;font-family:'Cairo',sans-serif;font-size:11px;font-weight:900">200 ج</button>
+          <button onclick="setCash(500)" style="flex:1;padding:6px 4px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;font-family:'Cairo',sans-serif;font-size:11px;font-weight:900">500 ج</button>
+          <button onclick="setCash(1000)" style="flex:1;padding:6px 4px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;font-family:'Cairo',sans-serif;font-size:11px;font-weight:900">1000 ج</button>
+        </div>
         <div id="chg-box" class="chg-box" style="display:none">
           <div style="font-size:10px;margin-bottom:2px" id="chg-lbl">الباقي</div>
           <div style="font-size:22px;font-weight:900" id="chg-val">0.00 ج</div>
@@ -1304,6 +1313,17 @@ function printReceipt(inv) {
   document.getElementById('rprint').innerHTML = html;
   setTimeout(() => window.print(), 300);
 }
+
+// Quick cash helpers
+window.setCash = function(amount) {
+  document.getElementById('cash-recv').value = amount;
+  calcChange();
+};
+window.setExact = function() {
+  const { fin } = calcTots();
+  document.getElementById('cash-recv').value = fin.toFixed(2);
+  calcChange();
+};
 
 // Keyboard shortcuts
 document.addEventListener('keydown', e => {

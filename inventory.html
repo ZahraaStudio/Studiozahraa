@@ -8,6 +8,54 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
 <script src="shared.js"></script>
+<style>
+/* KPI row */
+.inv-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:18px}
+.ik{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:14px 12px}
+.ik-val{font-size:22px;font-weight:900;color:var(--gold)}
+.ik-val.orange{color:var(--orange)} .ik-val.red{color:var(--red)} .ik-val.green{color:var(--green)}
+.ik-lbl{font-size:10px;color:var(--text3);font-weight:700;margin-top:3px}
+
+/* View toggle */
+.view-toggle{display:flex;gap:4px}
+.vt-btn{padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);
+  color:var(--text2);cursor:pointer;transition:all .15s}
+.vt-btn.on{background:var(--gold);border-color:var(--gold);color:#000}
+
+/* Product GRID cards */
+.prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.prod-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);
+  overflow:hidden;transition:all .18s;position:relative}
+.prod-card:hover{border-color:var(--gold);box-shadow:var(--sh);transform:translateY(-2px)}
+.prod-img{width:100%;height:130px;object-fit:cover;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:40px}
+.prod-img img{width:100%;height:100%;object-fit:cover}
+.prod-body{padding:10px}
+.prod-name{font-size:12px;font-weight:900;margin-bottom:4px;line-height:1.3}
+.prod-price{font-size:14px;font-weight:900;color:var(--gold)}
+.prod-cost{font-size:10px;color:var(--text3)}
+.prod-stock-bar{height:4px;background:var(--bg3);border-radius:2px;margin:6px 0;overflow:hidden}
+.prod-stock-fill{height:100%;border-radius:2px;transition:width .5s}
+.prod-stock-row{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:6px}
+.prod-actions{display:flex;gap:5px;margin-top:6px}
+.pa-btn{flex:1;padding:5px 0;border-radius:6px;border:1.5px solid var(--border);background:transparent;
+  color:var(--text2);cursor:pointer;font-family:'Cairo',sans-serif;font-size:10px;font-weight:700;
+  transition:all .15s;display:flex;align-items:center;justify-content:center;gap:3px}
+.pa-btn:hover{border-color:var(--gold);color:var(--gold)}
+.pa-btn.danger:hover{border-color:var(--red);color:var(--red)}
+.stock-badge{position:absolute;top:8px;right:8px;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:900}
+
+/* Status badges */
+.sb-good{background:rgba(34,197,94,.2);color:var(--green)}
+.sb-low{background:rgba(245,158,11,.2);color:var(--orange)}
+.sb-out{background:rgba(239,68,68,.2);color:var(--red)}
+
+/* Upload zone */
+.img-upload-zone{border:2px dashed var(--border);border-radius:var(--r);padding:20px;text-align:center;
+  cursor:pointer;transition:all .17s;margin-bottom:8px}
+.img-upload-zone:hover{border-color:var(--gold)}
+.img-preview{width:100%;max-height:180px;object-fit:contain;border-radius:var(--r);margin-bottom:8px}
+.upload-spinner{display:none;text-align:center;padding:10px;color:var(--text3);font-size:12px}
+</style>
 </head>
 <body>
 <div class="app-shell">
@@ -15,29 +63,96 @@
   <div class="page-content">
     <div class="page-header">
       <h1><i class="fas fa-warehouse"></i> إدارة المخزون</h1>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-ghost" onclick="openAdjust()"><i class="fas fa-sliders"></i> تسوية مخزون</button>
-        <button class="btn btn-ghost" onclick="openWaste()"><i class="fas fa-trash-alt"></i> تسجيل هالك</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div class="view-toggle">
+          <button class="vt-btn on" id="vt-grid" onclick="setView('grid')"><i class="fas fa-th-large"></i></button>
+          <button class="vt-btn" id="vt-list" onclick="setView('list')"><i class="fas fa-list"></i></button>
+        </div>
+        <button class="btn btn-ghost" onclick="openAdjust()"><i class="fas fa-sliders"></i> تسوية</button>
+        <button class="btn btn-ghost" onclick="openWaste()"><i class="fas fa-trash-alt"></i> هالك</button>
+        <button class="btn btn-primary" onclick="openAdd()"><i class="fas fa-plus"></i> منتج جديد</button>
       </div>
     </div>
     <div class="page-body">
+
       <!-- KPIs -->
-      <div class="stat-grid">
-        <div class="card"><div class="card-title">إجمالي المنتجات</div><div class="card-value" id="k-total">—</div></div>
-        <div class="card"><div class="card-title">قيمة المخزون</div><div class="card-value" id="k-value">—</div></div>
-        <div class="card"><div class="card-title" style="color:var(--orange)">تحت حد الطلب</div><div class="card-value" id="k-low" style="color:var(--orange)">—</div></div>
-        <div class="card"><div class="card-title" style="color:var(--red)">نفد المخزون</div><div class="card-value" id="k-out" style="color:var(--red)">—</div></div>
+      <div class="inv-kpis">
+        <div class="ik"><div class="ik-val" id="k-total">—</div><div class="ik-lbl">📦 إجمالي المنتجات</div></div>
+        <div class="ik"><div class="ik-val" id="k-value">—</div><div class="ik-lbl">💰 قيمة المخزون</div></div>
+        <div class="ik"><div class="ik-val orange" id="k-low">—</div><div class="ik-lbl">⚠️ منخفض المخزون</div></div>
+        <div class="ik"><div class="ik-val red" id="k-out">—</div><div class="ik-lbl">🚫 نفد المخزون</div></div>
       </div>
-      <div class="search-bar">
-        <input class="search-input" id="q" placeholder="🔍 بحث بالاسم..." oninput="filter()">
-        <select class="search-input" style="flex:unset;width:140px" id="filter-type" onchange="filter()">
+
+      <!-- Search + Filters -->
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <input class="search-input" id="q" placeholder="🔍 بحث بالاسم أو SKU..." oninput="filter()" style="flex:1;min-width:200px">
+        <select class="search-input" style="flex:unset;width:160px" id="filter-type" onchange="filter()">
           <option value="">كل المنتجات</option>
-          <option value="low">منخفض المخزون</option>
-          <option value="out">نفد المخزون</option>
+          <option value="low">⚠️ منخفض المخزون</option>
+          <option value="out">🚫 نفد المخزون</option>
           <option value="tracked">يتتبع المخزون</option>
         </select>
       </div>
-      <div id="inv-table"><div class="spinner"></div></div>
+
+      <div id="inv-container"><div class="spinner"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Product Modal -->
+<div class="overlay" id="prod-modal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <h3 id="prod-modal-title">إضافة منتج جديد</h3>
+      <button class="close-btn" onclick="closeModal('prod-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- Image upload -->
+      <div class="form-group">
+        <label>صورة المنتج</label>
+        <div class="img-upload-zone" onclick="document.getElementById('img-file').click()">
+          <div id="img-placeholder"><i class="fas fa-image" style="font-size:28px;color:var(--text3)"></i><br><span style="font-size:11px;color:var(--text3)">اضغط لرفع صورة أو اسحب هنا</span></div>
+          <img id="img-preview" class="img-preview" style="display:none">
+        </div>
+        <div class="upload-spinner" id="upload-spin"><i class="fas fa-spinner fa-spin"></i> جاري رفع الصورة...</div>
+        <input type="file" id="img-file" accept="image/*" style="display:none" onchange="handleImgUpload(this)">
+        <input type="hidden" id="prod-img-url">
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>اسم المنتج *</label><input class="form-control" id="p-name" placeholder="اسم المنتج"></div>
+        <div class="form-group"><label>أيقونة (إيموجي)</label><input class="form-control" id="p-icon" placeholder="📷" maxlength="4" style="font-size:20px;text-align:center"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>سعر البيع (ج) *</label><input class="form-control" id="p-price" type="number" min="0" placeholder="0.00"></div>
+        <div class="form-group"><label>سعر التكلفة (ج)</label><input class="form-control" id="p-cost" type="number" min="0" placeholder="0.00"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>SKU / الباركود</label><input class="form-control" id="p-sku" placeholder="رمز المنتج"></div>
+        <div class="form-group"><label>الوحدة</label>
+          <select class="form-control" id="p-unit">
+            <option>قطعة</option><option>كيلو</option><option>لتر</option><option>متر</option><option>باكت</option><option>علبة</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>الفئة</label><input class="form-control" id="p-cat" placeholder="تصوير / طباعة / ..."></div>
+        <div class="form-group"><label>الترتيب</label><input class="form-control" id="p-sort" type="number" min="0" value="0" placeholder="0"></div>
+      </div>
+      <div class="form-row" id="stock-fields">
+        <div class="form-group"><label>المخزون الحالي</label><input class="form-control" id="p-stock" type="number" min="0" value="0"></div>
+        <div class="form-group"><label>حد الطلب</label><input class="form-control" id="p-reorder" type="number" min="0" value="5"></div>
+      </div>
+      <div class="form-group">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="p-track" style="accent-color:var(--gold);width:16px;height:16px" onchange="toggleStockFields()">
+          <span>تتبع المخزون لهذا المنتج</span>
+        </label>
+      </div>
+      <div class="form-group"><label>الوصف</label><textarea class="form-control" id="p-desc" rows="2" placeholder="وصف اختياري..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="saveProd()"><i class="fas fa-save"></i> حفظ المنتج</button>
+      <button class="btn btn-ghost" onclick="closeModal('prod-modal')">إلغاء</button>
     </div>
   </div>
 </div>
@@ -48,18 +163,18 @@
     <div class="modal-header"><h3>تسوية مخزون</h3><button class="close-btn" onclick="closeModal('adj-modal')">✕</button></div>
     <div class="modal-body">
       <div class="form-group"><label>المنتج</label>
-        <select class="form-control" id="adj-prod"><option value="">اختر...</option></select></div>
+        <select class="form-control" id="adj-prod"><option value="">اختر منتجاً...</option></select></div>
       <div class="form-row">
-        <div class="form-group"><label>الكمية الفعلية</label><input class="form-control" id="adj-qty" type="number" min="0"></div>
+        <div class="form-group"><label>الكمية الفعلية الجديدة</label><input class="form-control" id="adj-qty" type="number" min="0"></div>
         <div class="form-group"><label>سبب التسوية</label>
           <select class="form-control" id="adj-reason">
-            <option>جرد يدوي</option><option>تالف</option><option>فقدان</option><option>إضافة</option><option>آخر</option>
+            <option>جرد يدوي</option><option>تالف</option><option>فقدان</option><option>إضافة مخزون</option><option>آخر</option>
           </select></div>
       </div>
       <div class="form-group"><label>ملاحظة</label><input class="form-control" id="adj-note" placeholder="ملاحظة (اختياري)"></div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-primary" onclick="saveAdjust()">تطبيق التسوية</button>
+      <button class="btn btn-primary" onclick="saveAdjust()">✅ تطبيق التسوية</button>
       <button class="btn btn-ghost" onclick="closeModal('adj-modal')">إلغاء</button>
     </div>
   </div>
@@ -68,10 +183,10 @@
 <!-- Waste Modal -->
 <div class="overlay" id="waste-modal">
   <div class="modal" style="max-width:420px">
-    <div class="modal-header"><h3>تسجيل هالك / تالف</h3><button class="close-btn" onclick="closeModal('waste-modal')">✕</button></div>
+    <div class="modal-header"><h3>🗑️ تسجيل هالك / تالف</h3><button class="close-btn" onclick="closeModal('waste-modal')">✕</button></div>
     <div class="modal-body">
       <div class="form-group"><label>المنتج</label>
-        <select class="form-control" id="waste-prod"><option value="">اختر...</option></select></div>
+        <select class="form-control" id="waste-prod"><option value="">اختر منتجاً...</option></select></div>
       <div class="form-row">
         <div class="form-group"><label>الكمية التالفة</label><input class="form-control" id="waste-qty" type="number" min="1" value="1"></div>
         <div class="form-group"><label>سبب الهالك</label>
@@ -89,121 +204,312 @@
 <script>
 injectSharedCSS();
 let prods = [];
+let viewMode = 'grid';
+let editProdId = null;
 
 requireAuth(async () => { await load(); });
 
+function setView(v) {
+  viewMode = v;
+  document.getElementById('vt-grid').classList.toggle('on', v === 'grid');
+  document.getElementById('vt-list').classList.toggle('on', v === 'list');
+  filter();
+}
+
 async function load() {
   try {
-    const snap = await db.collection('products').orderBy('name').get();
-    prods = [];
-    snap.forEach(d => prods.push({ id:d.id, ...d.data() }));
-    // Update KPIs
-    const tracked = prods.filter(p=>p.trackStock);
-    const value = tracked.reduce((s,p)=>s+(p.stock||0)*(p.cost||0),0);
-    const low = tracked.filter(p=>(p.stock||0)<=(p.reorderLevel||5)&&(p.stock||0)>0);
-    const out = tracked.filter(p=>(p.stock||0)<=0);
+    const snap = await db.collection('products').orderBy('sortOrder').orderBy('name').get().catch(() =>
+      db.collection('products').orderBy('name').get()
+    );
+    prods = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const tracked = prods.filter(p => p.trackStock);
+    const value = tracked.reduce((s, p) => s + (p.stock || 0) * (p.cost || 0), 0);
+    const low = tracked.filter(p => (p.stock || 0) <= (p.reorderLevel || 5) && (p.stock || 0) > 0);
+    const out = tracked.filter(p => (p.stock || 0) <= 0);
     document.getElementById('k-total').textContent = prods.length;
     document.getElementById('k-value').textContent = fmt(value);
     document.getElementById('k-low').textContent = low.length;
     document.getElementById('k-out').textContent = out.length;
-    // Populate product selects
-    const opts = prods.map(p=>`<option value="${p.id}" data-stock="${p.stock||0}">${p.name} (${p.stock||0} ${p.unit||'قطعة'})</option>`).join('');
-    ['adj-prod','waste-prod'].forEach(id => {
-      document.getElementById(id).innerHTML = '<option value="">اختر...</option>' + opts;
+    const opts = prods.map(p => `<option value="${p.id}">${p.name} (${p.stock || 0})</option>`).join('');
+    ['adj-prod', 'waste-prod'].forEach(id => {
+      document.getElementById(id).innerHTML = '<option value="">اختر منتجاً...</option>' + opts;
     });
     filter();
   } catch(e) {
-    document.getElementById('inv-table').innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>${e.message}</p></div>`;
+    document.getElementById('inv-container').innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>${e.message}</p></div>`;
   }
 }
 
 function filter() {
-  const q = document.getElementById('q').value.toLowerCase();
+  const q = (document.getElementById('q').value || '').toLowerCase();
   const ft = document.getElementById('filter-type').value;
-  let list = prods;
-  if (q) list = list.filter(p=>(p.name||'').toLowerCase().includes(q));
-  if (ft==='low') list = list.filter(p=>p.trackStock&&(p.stock||0)<=(p.reorderLevel||5)&&(p.stock||0)>0);
-  else if (ft==='out') list = list.filter(p=>p.trackStock&&(p.stock||0)<=0);
-  else if (ft==='tracked') list = list.filter(p=>p.trackStock);
+  let list = prods.filter(p => {
+    const match = !q || (p.name || '').toLowerCase().includes(q) || (p.sku || '').toLowerCase().includes(q);
+    if (!match) return false;
+    if (ft === 'low') return p.trackStock && (p.stock || 0) <= (p.reorderLevel || 5) && (p.stock || 0) > 0;
+    if (ft === 'out') return p.trackStock && (p.stock || 0) <= 0;
+    if (ft === 'tracked') return p.trackStock;
+    return true;
+  });
   render(list);
 }
 
 function render(list) {
-  const el = document.getElementById('inv-table');
+  const el = document.getElementById('inv-container');
   if (!list.length) { el.innerHTML = `<div class="empty-state"><i class="fas fa-warehouse"></i><p>لا توجد منتجات</p></div>`; return; }
-  el.innerHTML = `<div class="tbl-wrap"><table>
-    <thead><tr><th>المنتج</th><th>المخزون الحالي</th><th>حد الطلب</th><th>قيمة المخزون</th><th>تتبع</th><th>الحالة</th><th>تسوية</th></tr></thead>
-    <tbody>${list.map(p=>{
-      const stockVal = (p.stock||0)*(p.cost||0);
-      const isOut = p.trackStock&&(p.stock||0)<=0;
-      const isLow = p.trackStock&&(p.stock||0)<=(p.reorderLevel||5)&&!isOut;
-      return `<tr>
-        <td><div style="font-weight:700">${p.icon||'📦'} ${p.name}</div><div style="font-size:10px;color:var(--text3)">${p.sku||''}</div></td>
-        <td><span style="font-size:16px;font-weight:900;color:${isOut?'var(--red)':isLow?'var(--orange)':'var(--green)'}">${p.stock||0}</span> ${p.unit||'قطعة'}</td>
-        <td>${p.trackStock?p.reorderLevel||5:'—'}</td>
-        <td style="color:var(--gold)">${p.trackStock?fmt(stockVal):'—'}</td>
-        <td><span class="badge ${p.trackStock?'badge-green':'badge-gray'}">${p.trackStock?'نعم':'لا'}</span></td>
-        <td>${isOut?'<span class="badge badge-red">نفد</span>':isLow?'<span class="badge badge-orange">منخفض</span>':'<span class="badge badge-green">جيد</span>'}</td>
-        <td><button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" onclick="quickAdj('${p.id}')"><i class="fas fa-sliders"></i></button></td>
-      </tr>`;
-    }).join('')}</tbody>
-  </table></div>`;
+
+  if (viewMode === 'grid') {
+    el.innerHTML = `<div class="prod-grid">${list.map(p => {
+      const isOut = p.trackStock && (p.stock || 0) <= 0;
+      const isLow = p.trackStock && (p.stock || 0) <= (p.reorderLevel || 5) && !isOut;
+      const stockClass = isOut ? 'sb-out' : isLow ? 'sb-low' : 'sb-good';
+      const stockLabel = isOut ? '🚫 نفد' : isLow ? '⚠️ منخفض' : '✅ جيد';
+      const stockPct = p.trackStock && (p.reorderLevel || 5) > 0
+        ? Math.min(100, ((p.stock || 0) / Math.max(p.reorderLevel || 5, p.stock || 1)) * 100)
+        : 100;
+      const barColor = isOut ? 'var(--red)' : isLow ? 'var(--orange)' : 'var(--green)';
+      const imgContent = p.imageUrl
+        ? `<img src="${p.imageUrl}" alt="${p.name}" onerror="this.style.display='none'">`
+        : `<span>${p.icon || '📦'}</span>`;
+      return `<div class="prod-card">
+        ${p.trackStock ? `<span class="stock-badge ${stockClass}">${stockLabel}</span>` : ''}
+        <div class="prod-img">${imgContent}</div>
+        <div class="prod-body">
+          <div class="prod-name">${p.name}</div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="prod-price">${fmt(p.price || 0)}</div>
+            <div class="prod-cost">تكلفة: ${fmt(p.cost || 0)}</div>
+          </div>
+          ${p.trackStock ? `
+          <div class="prod-stock-bar"><div class="prod-stock-fill" style="width:${stockPct}%;background:${barColor}"></div></div>
+          <div class="prod-stock-row"><span>المخزون: <b style="color:${barColor}">${p.stock || 0}</b> ${p.unit || 'قطعة'}</span><span>حد: ${p.reorderLevel || 5}</span></div>` : ''}
+          <div class="prod-actions">
+            <button class="pa-btn" onclick="quickAdj('${p.id}')"><i class="fas fa-sliders"></i> تسوية</button>
+            <button class="pa-btn" onclick="openEditProd('${p.id}')"><i class="fas fa-edit"></i></button>
+            <button class="pa-btn danger" onclick="deleteProd('${p.id}')"><i class="fas fa-trash"></i></button>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}</div>`;
+  } else {
+    el.innerHTML = `<div class="tbl-wrap"><table>
+      <thead><tr><th>المنتج</th><th>المخزون</th><th>حد الطلب</th><th>سعر البيع</th><th>قيمة المخزون</th><th>الحالة</th><th>إجراء</th></tr></thead>
+      <tbody>${list.map(p => {
+        const isOut = p.trackStock && (p.stock || 0) <= 0;
+        const isLow = p.trackStock && (p.stock || 0) <= (p.reorderLevel || 5) && !isOut;
+        const col = isOut ? 'var(--red)' : isLow ? 'var(--orange)' : 'var(--green)';
+        return `<tr>
+          <td><div style="display:flex;align-items:center;gap:6px">
+            ${p.imageUrl ? `<img src="${p.imageUrl}" style="width:30px;height:30px;object-fit:cover;border-radius:6px">` : `<span style="font-size:20px">${p.icon||'📦'}</span>`}
+            <div><div style="font-weight:700">${p.name}</div><div style="font-size:10px;color:var(--text3)">${p.sku||''}</div></div>
+          </div></td>
+          <td style="font-weight:900;color:${col}">${p.trackStock?(p.stock||0)+' '+(p.unit||'قطعة'):'—'}</td>
+          <td>${p.trackStock?p.reorderLevel||5:'—'}</td>
+          <td style="color:var(--gold)">${fmt(p.price||0)}</td>
+          <td>${p.trackStock?fmt((p.stock||0)*(p.cost||0)):'—'}</td>
+          <td>${isOut?'<span class="badge badge-red">نفد</span>':isLow?'<span class="badge badge-orange">منخفض</span>':p.trackStock?'<span class="badge badge-green">جيد</span>':'<span class="badge badge-gray">بدون تتبع</span>'}</td>
+          <td style="display:flex;gap:4px">
+            <button class="btn btn-ghost" style="padding:4px 8px;font-size:11px" onclick="quickAdj('${p.id}')"><i class="fas fa-sliders"></i></button>
+            <button class="btn btn-ghost" style="padding:4px 8px;font-size:11px" onclick="openEditProd('${p.id}')"><i class="fas fa-edit"></i></button>
+            <button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;color:var(--red)" onclick="deleteProd('${p.id}')"><i class="fas fa-trash"></i></button>
+          </td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>`;
+  }
+}
+
+function toggleStockFields() {
+  document.getElementById('stock-fields').style.display =
+    document.getElementById('p-track').checked ? 'grid' : 'none';
+}
+
+async function handleImgUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  // Show preview immediately
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('img-placeholder').style.display = 'none';
+    document.getElementById('img-preview').src = e.target.result;
+    document.getElementById('img-preview').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+
+  // Upload to Cloudinary
+  document.getElementById('upload-spin').style.display = 'block';
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', 'zahraa_upload');
+    const res = await fetch('https://api.cloudinary.com/v1_1/dxlxwe55b/image/upload', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.secure_url) {
+      document.getElementById('prod-img-url').value = data.secure_url;
+      toast('✅ تم رفع الصورة', 'ok');
+    } else {
+      toast('تحذير: سيتم حفظ الصورة محلياً فقط', 'warn');
+      document.getElementById('prod-img-url').value = document.getElementById('img-preview').src;
+    }
+  } catch(e) {
+    toast('سيتم حفظ الصورة محلياً', 'warn');
+    document.getElementById('prod-img-url').value = document.getElementById('img-preview').src;
+  }
+  document.getElementById('upload-spin').style.display = 'none';
+}
+
+function openAdd() {
+  editProdId = null;
+  document.getElementById('prod-modal-title').textContent = 'إضافة منتج جديد';
+  ['p-name','p-sku','p-cat','p-desc'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('p-price').value = '0';
+  document.getElementById('p-cost').value = '0';
+  document.getElementById('p-stock').value = '0';
+  document.getElementById('p-reorder').value = '5';
+  document.getElementById('p-sort').value = '0';
+  document.getElementById('p-icon').value = '📦';
+  document.getElementById('p-unit').value = 'قطعة';
+  document.getElementById('p-track').checked = true;
+  document.getElementById('stock-fields').style.display = 'grid';
+  document.getElementById('prod-img-url').value = '';
+  document.getElementById('img-preview').style.display = 'none';
+  document.getElementById('img-placeholder').style.display = 'block';
+  openModal('prod-modal');
+}
+
+function openEditProd(id) {
+  const p = prods.find(x => x.id === id);
+  if (!p) return;
+  editProdId = id;
+  document.getElementById('prod-modal-title').textContent = 'تعديل المنتج';
+  document.getElementById('p-name').value = p.name || '';
+  document.getElementById('p-price').value = p.price || 0;
+  document.getElementById('p-cost').value = p.cost || 0;
+  document.getElementById('p-sku').value = p.sku || '';
+  document.getElementById('p-cat').value = p.category || '';
+  document.getElementById('p-icon').value = p.icon || '📦';
+  document.getElementById('p-unit').value = p.unit || 'قطعة';
+  document.getElementById('p-sort').value = p.sortOrder || 0;
+  document.getElementById('p-stock').value = p.stock || 0;
+  document.getElementById('p-reorder').value = p.reorderLevel || 5;
+  document.getElementById('p-track').checked = !!p.trackStock;
+  document.getElementById('p-desc').value = p.description || '';
+  document.getElementById('stock-fields').style.display = p.trackStock ? 'grid' : 'none';
+  document.getElementById('prod-img-url').value = p.imageUrl || '';
+  if (p.imageUrl) {
+    document.getElementById('img-preview').src = p.imageUrl;
+    document.getElementById('img-preview').style.display = 'block';
+    document.getElementById('img-placeholder').style.display = 'none';
+  } else {
+    document.getElementById('img-preview').style.display = 'none';
+    document.getElementById('img-placeholder').style.display = 'block';
+  }
+  openModal('prod-modal');
+}
+
+async function saveProd() {
+  const name = document.getElementById('p-name').value.trim();
+  if (!name) { toast('اسم المنتج مطلوب', 'warn'); return; }
+  const trackStock = document.getElementById('p-track').checked;
+  const data = {
+    name,
+    price: parseFloat(document.getElementById('p-price').value) || 0,
+    cost: parseFloat(document.getElementById('p-cost').value) || 0,
+    sku: document.getElementById('p-sku').value.trim(),
+    category: document.getElementById('p-cat').value.trim(),
+    icon: document.getElementById('p-icon').value.trim() || '📦',
+    unit: document.getElementById('p-unit').value,
+    sortOrder: parseInt(document.getElementById('p-sort').value) || 0,
+    trackStock,
+    stock: trackStock ? (parseInt(document.getElementById('p-stock').value) || 0) : 0,
+    reorderLevel: trackStock ? (parseInt(document.getElementById('p-reorder').value) || 5) : 0,
+    description: document.getElementById('p-desc').value.trim(),
+    imageUrl: document.getElementById('prod-img-url').value,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  };
+  try {
+    if (editProdId) {
+      await db.collection('products').doc(editProdId).update(data);
+      toast('✅ تم تحديث المنتج', 'ok');
+    } else {
+      data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      await db.collection('products').add(data);
+      toast('✅ تم إضافة المنتج', 'ok');
+    }
+    closeModal('prod-modal');
+    await load();
+  } catch(e) { toast('خطأ: ' + e.message, 'err'); }
+}
+
+async function deleteProd(id) {
+  const ok = await confirm2('هل أنت متأكد من حذف هذا المنتج نهائياً؟');
+  if (!ok) return;
+  try {
+    await db.collection('products').doc(id).delete();
+    toast('✅ تم حذف المنتج', 'ok');
+    await load();
+  } catch(e) { toast('خطأ: ' + e.message, 'err'); }
 }
 
 window.quickAdj = id => {
+  const p = prods.find(x => x.id === id);
+  if (!p) return;
   document.getElementById('adj-prod').value = id;
-  const p = prods.find(x=>x.id===id);
-  document.getElementById('adj-qty').value = p?.stock||0;
+  document.getElementById('adj-qty').value = p.stock || 0;
+  document.getElementById('adj-note').value = '';
   openModal('adj-modal');
 };
-window.openAdjust = () => { document.getElementById('adj-prod').value=''; document.getElementById('adj-qty').value=''; document.getElementById('adj-note').value=''; openModal('adj-modal'); };
-window.openWaste = () => { document.getElementById('waste-prod').value=''; document.getElementById('waste-qty').value='1'; document.getElementById('waste-note').value=''; openModal('waste-modal'); };
+window.openAdjust = () => { document.getElementById('adj-prod').value = ''; document.getElementById('adj-qty').value = ''; document.getElementById('adj-note').value = ''; openModal('adj-modal'); };
+window.openWaste = () => { document.getElementById('waste-prod').value = ''; document.getElementById('waste-qty').value = '1'; document.getElementById('waste-note').value = ''; openModal('waste-modal'); };
+window.openAdd = openAdd;
+window.openEditProd = openEditProd;
+window.deleteProd = deleteProd;
 
 window.saveAdjust = async () => {
   const prodId = document.getElementById('adj-prod').value;
-  if (!prodId) { toast('اختر منتجاً','warn'); return; }
-  const newQty = parseInt(document.getElementById('adj-qty').value)||0;
+  if (!prodId) { toast('اختر منتجاً', 'warn'); return; }
+  const newQty = parseInt(document.getElementById('adj-qty').value) || 0;
   const reason = document.getElementById('adj-reason').value;
   const note = document.getElementById('adj-note').value;
-  const prod = prods.find(p=>p.id===prodId);
-  const oldQty = prod?.stock||0;
+  const prod = prods.find(p => p.id === prodId);
+  const oldQty = prod?.stock || 0;
   try {
-    await db.collection('products').doc(prodId).update({ stock:newQty, updatedAt:firebase.firestore.FieldValue.serverTimestamp() });
+    await db.collection('products').doc(prodId).update({ stock: newQty, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
     await db.collection('pos_inventory_log').add({
-      productId:prodId, productName:prod?.name||'',
-      oldQty, newQty, diff:newQty-oldQty,
-      reason, note, type:'adjustment',
-      createdAt:firebase.firestore.FieldValue.serverTimestamp(),
-      cashierId:currentUser?.uid
+      productId: prodId, productName: prod?.name || '',
+      oldQty, newQty, diff: newQty - oldQty,
+      reason, note, type: 'adjustment',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      cashierId: currentUser?.uid
     });
-    toast('✅ تم تحديث المخزون','ok');
+    toast('✅ تم تحديث المخزون', 'ok');
     closeModal('adj-modal');
-    load();
-  } catch(e) { toast('خطأ: '+e.message,'err'); }
+    await load();
+  } catch(e) { toast('خطأ: ' + e.message, 'err'); }
 };
 
 window.saveWaste = async () => {
   const prodId = document.getElementById('waste-prod').value;
-  if (!prodId) { toast('اختر منتجاً','warn'); return; }
-  const qty = parseInt(document.getElementById('waste-qty').value)||1;
+  if (!prodId) { toast('اختر منتجاً', 'warn'); return; }
+  const qty = parseInt(document.getElementById('waste-qty').value) || 1;
   const reason = document.getElementById('waste-reason').value;
   const note = document.getElementById('waste-note').value;
-  const prod = prods.find(p=>p.id===prodId);
+  const prod = prods.find(p => p.id === prodId);
   try {
-    await db.collection('products').doc(prodId).update({ stock:firebase.firestore.FieldValue.increment(-qty) });
+    await db.collection('products').doc(prodId).update({ stock: firebase.firestore.FieldValue.increment(-qty) });
     await db.collection('pos_inventory_log').add({
-      productId:prodId, productName:prod?.name||'',
-      qty, reason, note, type:'waste',
-      createdAt:firebase.firestore.FieldValue.serverTimestamp(),
-      cashierId:currentUser?.uid
+      productId: prodId, productName: prod?.name || '',
+      qty, reason, note, type: 'waste',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      cashierId: currentUser?.uid
     });
-    toast('✅ تم تسجيل الهالك','ok');
+    toast('✅ تم تسجيل الهالك', 'ok');
     closeModal('waste-modal');
-    load();
-  } catch(e) { toast('خطأ: '+e.message,'err'); }
+    await load();
+  } catch(e) { toast('خطأ: ' + e.message, 'err'); }
 };
 
-document.querySelectorAll('.overlay').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});});
+document.querySelectorAll('.overlay').forEach(m => { m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }); });
 </script>
 </body>
 </html>
