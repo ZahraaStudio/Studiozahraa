@@ -1503,7 +1503,7 @@ window.filterProducts = function() {
                     window.onload = function() {
                         try {
                             JsBarcode('#barcode', '${code.replace(/'/g,"\\'")}', {
-                                format: 'CODE128', width: 1.5, height: 38,
+                                format: 'CODE128', width: 3, height: 45,
                                 displayValue: false, margin: 2
                             });
                         } catch(e) {}
@@ -1549,7 +1549,7 @@ window.filterProducts = function() {
                 <script>
                     window.onload = function() {
                         document.querySelectorAll('.bc').forEach(function(svg) {
-                            try { JsBarcode(svg, svg.dataset.code, {format:'CODE128',width:2,height:50,displayValue:false,margin:5}); } catch(e){}
+                            try { JsBarcode(svg, svg.dataset.code, {format:'CODE128',width:3,height:55,displayValue:false,margin:5}); } catch(e){}
                         });
                         setTimeout(function(){ window.print(); }, 700);
                     };
@@ -7034,7 +7034,7 @@ function _renderPOSReceipt(inv) {
                 try {
                     JsBarcode(barcodeEl, inv.invoiceNumber, {
                         format: 'CODE128',
-                        width: 1.5,
+                        width: 3,
                         height: 45,
                         displayValue: true,
                         fontSize: 10,
@@ -7468,7 +7468,7 @@ window.showInvoiceDetail = function(invId) {
                 try {
                     JsBarcode(barcodeEl, inv.invoiceNumber, {
                         format: 'CODE128',
-                        width: 1.5,
+                        width: 3,
                         height: 35,
                         displayValue: true,
                         fontSize: 10,

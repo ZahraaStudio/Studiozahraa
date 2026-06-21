@@ -4,453 +4,411 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>فاتورة — كاشير الزهراء</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&family=Tajawal:wght@400;700;900&family=Amiri:wght@400;700&family=Almarai:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
-<script src="shared.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 <style>
-/* ────────────────────────────────
-   SCREEN  (normal view)
-──────────────────────────────── */
-*{margin:0;padding:0;box-sizing:border-box}
-html,body{font-family:'Cairo',sans-serif;background:#bebebe;min-height:100vh}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#f0f0f0;font-family:'Cairo',sans-serif;direction:rtl;min-height:100vh}
 
-.actions{
-  display:flex;gap:10px;padding:10px 18px;
-  background:#1a1a2e;border-bottom:2px solid #d4af37;
-  flex-wrap:wrap;align-items:center;
-  position:sticky;top:0;z-index:100;
-}
-.actions .title{font-size:14px;font-weight:900;color:#d4af37;margin-right:auto;font-family:monospace}
-.btn-act{padding:8px 16px;border:none;border-radius:8px;font-size:12px;font-family:'Cairo',sans-serif;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:6px;transition:opacity .2s}
-.btn-act:hover{opacity:.82}
-.btn-print{background:#111;color:#fff}
-.btn-wa{background:#25D366;color:#fff;display:none}
-.btn-back{background:#475569;color:#fff}
-
-/* Two-column layout on screen */
-.sw{display:flex;gap:18px;padding:18px;max-width:1080px;margin:0 auto;align-items:flex-start}
-.sw-left{flex:1;min-width:0;display:flex;flex-direction:column;gap:14px}
-.sw-right{width:300px;flex-shrink:0}
-
-/* Info card */
-.ic{background:#fff;border-radius:12px;padding:18px;box-shadow:0 3px 16px rgba(0,0,0,.1);border:1px solid #e5e7eb}
-.ic h3{font-size:12px;font-weight:900;color:#6b7280;letter-spacing:.4px;text-transform:uppercase;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;gap:5px}
-.ir{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f9fafb;font-size:13px}
-.ir:last-child{border-bottom:none}
-.ik{color:#6b7280;font-weight:700}
-.iv{font-weight:900;color:#111}
-.iv.gold{color:#a88520}
-.iv.red{color:#dc2626}
-.iv.green{color:#15803d}
-
-/* Products table */
-.pt{width:100%;border-collapse:collapse;font-size:13px}
-.pt th{background:#f9fafb;color:#374151;font-weight:900;font-size:12px;padding:9px 12px;text-align:right;border-bottom:2px solid #e5e7eb}
-.pt td{padding:9px 12px;border-bottom:1px solid #f3f4f6;color:#111;font-weight:700}
-.pt tr:last-child td{border-bottom:none}
-.pt .tc{text-align:center;font-weight:900}
-.pt .tl{text-align:left;direction:ltr;font-family:monospace;font-weight:900}
-
-/* Totals */
-.tot-blk{background:#1a1a2e;color:#fff;border-radius:8px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin:6px 0}
-.tot-blk *{color:#fff}
-.tot-blk .l{font-size:14px;font-weight:900}
-.tot-blk .a{font-size:22px;font-weight:900;direction:ltr;font-family:monospace}
-.rem-blk{background:#d4af37;border-radius:8px;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;margin:4px 0;border:2px solid #a88520}
-.rem-blk .l{font-size:13px;font-weight:900;color:#1a0f00}
-.rem-blk .a{font-size:18px;font-weight:900;color:#1a0f00;direction:ltr;font-family:monospace}
-.paid-blk{background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;padding:8px;text-align:center;font-size:13px;font-weight:900;color:#15803d;margin:4px 0}
-
-/* Status badge */
-.st-badge{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;font-size:14px;font-weight:900}
-.st-badge.prep{background:#f0fdf4;border:1.5px solid #86efac;color:#15803d}
-.st-badge.pend{background:#fffbeb;border:1.5px solid #fcd34d;color:#92400e}
-
-/* loader */
-.load-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:12px}
-.sp{width:44px;height:44px;border:4px solid #e5e7eb;border-top-color:#d4af37;border-radius:50%;animation:spin .8s linear infinite}
+/* ══ Toolbar (screen only) ══ */
+.toolbar{background:#1a1a1a;padding:10px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:sticky;top:0;z-index:100}
+.toolbar h1{font-size:14px;font-weight:900;color:#d4af37;flex:1}
+.tool-btn{padding:7px 16px;border-radius:8px;border:none;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:opacity .18s}
+.tool-btn:hover{opacity:.85}
+.btn-print{background:#d4af37;color:#000}
+.btn-close{background:#2a2a2a;color:#aaa;border:1px solid #333}
+.loading-overlay{position:fixed;inset:0;background:#f0f0f0;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px}
+.spinner{width:40px;height:40px;border:4px solid #e0e0e0;border-top-color:#d4af37;border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.err-box{background:#fff;border:2px solid #dc2626;border-radius:12px;padding:24px;text-align:center;color:#dc2626;max-width:400px;margin:40px auto;font-size:14px;font-family:'Cairo',sans-serif}
+.loading-txt{font-size:13px;color:#666;font-weight:700}
 
-/* ════════════════════════════════
-   THERMAL RECEIPT  (right column)
-════════════════════════════════ */
-.receipt-wrap{position:relative}
-.receipt-label{font-size:11px;font-weight:700;color:#6b7280;text-align:center;margin-bottom:6px}
-.receipt{
-  background:#fff;border-radius:8px;padding:6px 8px 10px;
-  box-shadow:0 4px 20px rgba(0,0,0,.15);border:1px solid #ddd;
-  color:#000;
-}
-.receipt *{color:#000}
+/* ══ Invoice page ══ */
+.invoice-wrap{max-width:780px;margin:24px auto;background:#fff;border-radius:4px;box-shadow:0 2px 20px rgba(0,0,0,.12);overflow:hidden}
 
-/* separators */
-.rs {display:block;width:100%;height:3px;background:#000;margin:5px 0;print-color-adjust:exact;-webkit-print-color-adjust:exact}
-.rs1{display:block;width:100%;height:1px;background:#000;margin:3px 0}
+/* ── Invoice header ── */
+.inv-header{display:flex;justify-content:space-between;align-items:flex-start;padding:28px 32px 20px;border-bottom:3px solid #1a1a1a;background:#fff}
+.inv-brand{display:flex;flex-direction:column;gap:4px}
+.inv-logo{max-height:72px;max-width:180px;object-fit:contain;display:block;margin-bottom:8px}
+.inv-logo-placeholder{width:80px;height:80px;background:#1a1a1a;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:30px;color:#d4af37;margin-bottom:8px}
+.inv-store-name{font-size:22px;font-weight:900;color:#1a1a1a;line-height:1.2}
+.inv-store-sub{font-size:11px;color:#888;font-weight:700;letter-spacing:.3px}
+.inv-meta{text-align:left;display:flex;flex-direction:column;gap:4px;align-items:flex-end}
+.inv-number{font-size:20px;font-weight:900;color:#1a1a1a;font-family:monospace;direction:ltr}
+.inv-meta-row{font-size:12px;color:#555;font-weight:700;direction:ltr;text-align:right}
+.inv-title-stamp{margin-top:8px;padding:5px 16px;background:#1a1a1a;color:#d4af37;border-radius:4px;font-size:13px;font-weight:900;letter-spacing:.5px}
 
-/* header logos row */
-.r-logos{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
-.r-logo-img{max-height:70px;max-width:110px;object-fit:contain}
-.r-logo-box{background:#111;color:#fff;padding:3px 8px;text-align:center;line-height:1.1;print-color-adjust:exact;-webkit-print-color-adjust:exact}
-.r-logo-box .z{font-size:16px;font-weight:900;color:#fff;display:block}
-.r-logo-box .s{font-size:7px;letter-spacing:1.5px;color:#ccc;display:block}
+/* ── Customer info ── */
+.inv-customer{display:grid;grid-template-columns:1fr 1fr;gap:0;padding:0 32px}
+.inv-cust-block{padding:16px 0;border-bottom:1.5px solid #e8e8e8}
+.inv-cust-block:first-child{border-left:1.5px solid #e8e8e8;padding-left:20px;margin-left:20px}
+.inv-section-label{font-size:9.5px;font-weight:900;color:#888;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.inv-cust-name{font-size:16px;font-weight:900;color:#1a1a1a;margin-bottom:2px}
+.inv-cust-detail{font-size:11.5px;color:#555;font-weight:700;margin-top:3px;display:flex;align-items:center;gap:6px}
+.inv-cust-detail i{color:#888}
 
-.r-store{text-align:center;font-weight:900;margin:2px 0}
-.r-phone{text-align:center;direction:ltr;margin-bottom:2px;letter-spacing:.3px}
-.r-invline{text-align:center;font-weight:900;margin:3px 0}
-.r-cust{font-weight:900;margin:2px 0;display:flex;gap:3px}
-.r-cl{white-space:nowrap;color:#444}
-.r-cv{font-weight:700;flex:1;word-break:break-word}
+/* ── Items table ── */
+.inv-items{padding:20px 32px}
+.inv-items-title{font-size:11px;font-weight:900;color:#888;text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.inv-table{width:100%;border-collapse:collapse;font-size:13px}
+.inv-table thead tr{background:#1a1a1a;color:#fff}
+.inv-table th{padding:10px 12px;text-align:right;font-weight:900;font-size:12px;letter-spacing:.3px}
+.inv-table th:last-child,.inv-table td:last-child{text-align:left}
+.inv-table tbody tr{border-bottom:1px solid #f0f0f0;transition:background .15s}
+.inv-table tbody tr:hover{background:#fafafa}
+.inv-table td{padding:11px 12px;font-weight:900;font-size:13px;color:#1a1a1a}
+.inv-table .td-name{font-weight:900;font-size:14px;color:#111}
+.inv-table .td-date{font-size:10.5px;color:#888;font-weight:700;direction:ltr}
+.inv-table .td-qty{font-size:14px;font-weight:900;color:#1a1a1a;text-align:center}
+.inv-table .td-price{font-size:14px;font-weight:900;color:#1a1a1a;direction:ltr}
+.inv-table .td-total{font-size:14px;font-weight:900;color:#1a1a1a;direction:ltr}
+.inv-table tbody tr:last-child{border-bottom:none}
+.inv-table .unit-badge{display:inline-block;font-size:10px;color:#888;font-weight:700;margin-top:1px}
 
-.r-table{width:100%;border-collapse:collapse;margin:4px 0}
-.r-table th,.r-table td{border:1px solid #000;padding:2px 3px;text-align:center;font-weight:900}
-.r-table th{background:#000;color:#fff;print-color-adjust:exact;-webkit-print-color-adjust:exact}
-.r-table td:first-child,.r-table th:first-child{text-align:right;max-width:28mm;word-break:break-word}
+/* ── Totals ── */
+.inv-totals{display:flex;justify-content:flex-end;padding:4px 32px 20px}
+.inv-totals-box{width:280px;display:flex;flex-direction:column;gap:0}
+.tot-row{display:flex;justify-content:space-between;align-items:center;padding:7px 12px;border-bottom:1px solid #f0f0f0;font-size:12.5px}
+.tot-row .k{color:#666;font-weight:700}
+.tot-row .v{color:#1a1a1a;font-weight:900;direction:ltr}
+.tot-row.grand{background:#1a1a1a;border-radius:6px;margin-top:4px;padding:10px 12px;border-bottom:none}
+.tot-row.grand .k,.tot-row.grand .v{color:#fff;font-size:14px;font-weight:900}
+.tot-row.grand .v{color:#d4af37}
+.tot-row.remaining{background:rgba(212,175,55,.12);border:1.5px solid #d4af37;border-radius:6px;margin-top:4px;padding:8px 12px;border-bottom:none}
+.tot-row.remaining .k,.tot-row.remaining .v{color:#a88520;font-weight:900}
+.tot-paid-badge{background:rgba(34,197,94,.1);border:1.5px solid #22c55e;border-radius:6px;padding:7px 12px;margin-top:4px;text-align:center;font-size:12px;font-weight:900;color:#166534}
 
-.r-tot{background:#000;color:#fff;display:flex;justify-content:space-between;align-items:center;padding:6px 8px;margin:4px 0 2px;print-color-adjust:exact;-webkit-print-color-adjust:exact}
-.r-tot *{color:#fff}
-.r-tot .l{font-weight:900}
-.r-tot .a{font-weight:900;direction:ltr}
-.r-rem{display:flex;justify-content:space-between;align-items:center;padding:5px 8px;margin-bottom:4px;border:1.5px solid #a88520;background:#d4af37;print-color-adjust:exact;-webkit-print-color-adjust:exact}
-.r-rem .l{font-weight:900}
-.r-rem .a{font-weight:900;direction:ltr}
-.r-paid{border:1px solid #000;text-align:center;padding:3px;font-weight:900;margin:3px 0;background:#f0f0f0}
+/* ── Barcode section ── */
+.inv-barcode{display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 32px 20px;border-top:1.5px solid #e8e8e8}
+.bc-label{font-size:10px;color:#888;font-weight:700;letter-spacing:.4px;text-transform:uppercase}
+#inv-barcode-svg{max-width:240px}
 
-.r-qr-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:5px 0}
-.r-qr-cell{border:1px solid #000;padding:3px;text-align:center}
-.r-qr-cell img{display:block;margin:0 auto;border:1px solid #eee}
-.r-qr-lbl{font-size:8px;background:#000;color:#fff;display:block;padding:1px 0;margin-top:2px;font-weight:900;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+/* ── Payment info ── */
+.inv-payment-row{display:flex;gap:10px;padding:0 32px 20px;flex-wrap:wrap}
+.pay-badge{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:20px;font-size:11.5px;font-weight:900;background:#f5f5f5;color:#333;border:1px solid #e0e0e0}
+.pay-badge.cash{background:#f0fdf4;color:#166534;border-color:#bbf7d0}
+.pay-badge.card{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}
+.pay-badge.transfer{background:#fefce8;color:#854d0e;border-color:#fde68a}
 
-.r-notice{border:1px solid #000;text-align:center;padding:4px 3px;margin:3px 0;line-height:1.5;font-weight:700}
-.r-ftr{border-top:2px solid #000;padding:3px 0;margin:3px 0}
-.r-ftr-row{display:flex;align-items:center;gap:4px;margin-bottom:2px;font-weight:900}
-.r-ftr-row:last-child{margin-bottom:0}
+/* ── Notes ── */
+.inv-notes{margin:0 32px 20px;padding:12px 14px;background:#fafafa;border-right:4px solid #d4af37;border-radius:4px;font-size:12px;font-weight:700;color:#444}
 
-/* ════════════════════════════════
-   PRINT  → only thermal receipt
-════════════════════════════════ */
-@media print{
-  html,body{background:#fff!important;padding:0!important;margin:0!important}
-  .actions,.sw-left,.receipt-label{display:none!important}
-  .sw{padding:0!important;display:block!important}
-  .sw-right{width:100%!important}
-  .receipt{
-    width:80mm!important;max-width:80mm!important;
-    box-shadow:none!important;border:none!important;
-    padding:2px 4px 4px!important;border-radius:0!important;
-  }
-  @page{size:80mm auto;margin:0}
-  .rs,.r-tot,.r-rem,.r-table th,.r-qr-lbl,.r-logo-box,.r-paid{
-    print-color-adjust:exact;-webkit-print-color-adjust:exact
-  }
+/* ── Footer (editable) ── */
+.inv-footer{background:#1a1a1a;padding:18px 32px;text-align:center;margin-top:auto}
+.inv-footer-text{font-size:12px;color:#d4af37;font-weight:700;line-height:1.8;outline:none;border-radius:4px;display:block;width:100%;background:transparent;border:none;color:#d4af37;font-family:'Cairo',sans-serif;text-align:center;cursor:text}
+.inv-footer-text:focus{background:rgba(255,255,255,.05);outline:2px solid rgba(212,175,55,.3)}
+.inv-footer-hint{font-size:10px;color:#555;margin-top:4px;display:none}
+.inv-footer:hover .inv-footer-hint{display:block}
+
+/* ══ PRINT styles ══ */
+@media print {
+  @page{ margin:8mm; size:A4 portrait; }
+  .toolbar,.loading-overlay,.inv-footer-hint,.edit-hint{ display:none !important; }
+  html,body{ background:#fff; }
+  .invoice-wrap{ box-shadow:none; margin:0; }
+  .inv-footer-text:focus{ background:transparent; outline:none; }
+  .inv-table td,.inv-table th{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .inv-header{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .tot-row.grand{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .inv-footer{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
 }
 </style>
 </head>
 <body>
 
-<div class="actions" id="action-bar">
-  <span class="title" id="inv-title">⏳ جاري التحميل...</span>
-  <button class="btn-act btn-print" onclick="window.print()"><i class="fas fa-print"></i> طباعة</button>
-  <button class="btn-act btn-wa" id="wa-btn" onclick="shareWA()"><i class="fab fa-whatsapp"></i> واتساب</button>
-  <button class="btn-act btn-back" onclick="history.back()"><i class="fas fa-arrow-right"></i> رجوع</button>
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <div class="loading-txt">جاري تحميل الفاتورة...</div>
 </div>
 
-<div id="root">
-  <div class="load-wrap"><div class="sp"></div><span style="color:#555;font-family:Cairo,sans-serif">جاري تحميل الفاتورة...</span></div>
+<!-- Toolbar (screen only) -->
+<div class="toolbar">
+  <h1>🧾 فاتورة — كاشير الزهراء</h1>
+  <button class="tool-btn btn-print" onclick="window.print()">🖨️ طباعة / PDF</button>
+  <button class="tool-btn btn-close" onclick="window.close()">✕ إغلاق</button>
 </div>
 
+<!-- Invoice -->
+<div class="invoice-wrap" id="invoice-root" style="display:none">
+
+  <!-- Header -->
+  <div class="inv-header">
+    <div class="inv-brand">
+      <div id="logo-area"></div>
+      <div class="inv-store-name" id="store-name">ZAHRAA STUDIO</div>
+      <div class="inv-store-sub" id="store-sub">نقطة البيع الاحترافية</div>
+    </div>
+    <div class="inv-meta">
+      <div class="inv-number" id="inv-num">—</div>
+      <div class="inv-meta-row" id="inv-date">—</div>
+      <div class="inv-meta-row" id="inv-time">—</div>
+      <div class="inv-title-stamp">فاتورة ضريبية</div>
+    </div>
+  </div>
+
+  <!-- Customer + Order info -->
+  <div class="inv-customer">
+    <div class="inv-cust-block">
+      <div class="inv-section-label"><i class="fas fa-user" style="color:#888"></i> بيانات العميل</div>
+      <div class="inv-cust-name" id="cust-name">—</div>
+      <div class="inv-cust-detail" id="cust-phone"></div>
+      <div class="inv-cust-detail" id="cust-address"></div>
+    </div>
+    <div class="inv-cust-block" style="border-left:none">
+      <div class="inv-section-label"><i class="fas fa-info-circle" style="color:#888"></i> تفاصيل الطلب</div>
+      <div class="inv-cust-detail" id="order-status"></div>
+      <div class="inv-cust-detail" id="order-agent"></div>
+      <div class="inv-cust-detail" id="order-notes-row"></div>
+    </div>
+  </div>
+
+  <!-- Items table -->
+  <div class="inv-items">
+    <div class="inv-items-title">📦 المنتجات والخدمات</div>
+    <table class="inv-table" id="items-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>المنتج</th>
+          <th style="text-align:center">الكمية</th>
+          <th>سعر الوحدة</th>
+          <th style="text-align:left">الإجمالي</th>
+          <th style="text-align:center">التاريخ</th>
+        </tr>
+      </thead>
+      <tbody id="items-tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- Payment method -->
+  <div class="inv-payment-row" id="payment-row"></div>
+
+  <!-- Totals -->
+  <div class="inv-totals">
+    <div class="inv-totals-box" id="totals-box"></div>
+  </div>
+
+  <!-- Notes -->
+  <div class="inv-notes" id="notes-box" style="display:none"></div>
+
+  <!-- Barcode -->
+  <div class="inv-barcode" id="barcode-area" style="display:none">
+    <div class="bc-label">رمز الفاتورة</div>
+    <svg id="inv-barcode-svg"></svg>
+    <div style="font-size:10px;color:#888;font-weight:700;direction:ltr;letter-spacing:1px" id="bc-text"></div>
+  </div>
+
+  <!-- Footer (editable) -->
+  <div class="inv-footer">
+    <div
+      id="footer-text"
+      class="inv-footer-text"
+      contenteditable="true"
+      spellcheck="false"
+      title="انقر للتعديل"
+    >شكراً لتسوقك معنا 💛 — نسعد بخدمتكم دائماً
+نتمنى لكم تجربة تسوق ممتازة</div>
+    <div class="inv-footer-hint" style="color:#888;font-size:9.5px;margin-top:4px">📝 انقر على النص للتعديل</div>
+  </div>
+
+</div>
+
+<script src="shared.js"></script>
 <script>
-injectSharedCSS();
+const firebaseConfig = {
+  apiKey: "AIzaSyCG6Yc0iH-rt-PaiRqL_V9Re1z49ZF3OMM",
+  authDomain: "zahraa-store-f4c90.firebaseapp.com",
+  projectId: "zahraa-store-f4c90",
+  storageBucket: "zahraa-store-f4c90.firebasestorage.app",
+  messagingSenderId: "885722081307",
+  appId: "1:885722081307:web:7c91e0f8b0ea9b8b4df0be"
+};
+if (!firebase.apps || !firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db   = firebase.firestore();
+const auth = firebase.auth();
 
-const params  = new URLSearchParams(location.search);
-const orderId = params.get('id');
-const invNum  = params.get('inv');
-
-function pad(n){ return String(n).padStart(2,'0'); }
-function fmtAr(d){ return d.toLocaleDateString('ar-EG',{year:'numeric',month:'numeric',day:'numeric'}); }
-function fmtTime(d){ return `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
-function money(n){ return Number(n||0).toFixed(2); }
-function qrSrc(text, sz){
-  return `https://api.qrserver.com/v1/create-qr-code/?size=${sz}x${sz}&data=${encodeURIComponent(text)}&qzone=1&format=png`;
+function fmt2(n){ return parseFloat(n||0).toFixed(2); }
+function fmtDate2(ts){
+  if (!ts) return null;
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return { date: d.toLocaleDateString('ar-EG',{year:'numeric',month:'long',day:'numeric'}), time: d.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'}) };
 }
 
-/* ── Load ── */
-function loadInvoice(){
-  requireAuth(async () => {
-    try{
-      let inv = null;
+async function loadInvoice() {
+  const params = new URLSearchParams(location.search);
+  const id = params.get('id');
+  if (!id) { showError('لم يتم تحديد معرّف الفاتورة في الرابط'); return; }
 
-      /* 1. by doc ID */
-      if (orderId){
-        try{
-          const d = await db.collection('pos_invoices').doc(orderId).get();
-          if (d.exists) inv = { id:d.id, ...d.data() };
-        } catch(e){}
-      }
-
-      /* 2. by invoiceNumber field */
-      if (!inv){
-        const lookup = invNum || orderId;
-        if (lookup){
-          try{
-            const sn = await db.collection('pos_invoices').where('invoiceNumber','==',lookup).limit(1).get();
-            if (!sn.empty) inv = { id:sn.docs[0].id, ...sn.docs[0].data() };
-          } catch(e){}
-        }
-      }
-
-      /* 3. online orders fallback */
-      if (!inv && orderId){
-        try{
-          const d = await db.collection('orders').doc(orderId).get();
-          if (d.exists) inv = { id:d.id, ...d.data() };
-        } catch(e){}
-      }
-
-      if (!inv){
-        document.getElementById('root').innerHTML =
-          `<div class="err-box">❌ لم يتم العثور على الفاتورة<br><small>${orderId||invNum||'—'}</small></div>`;
-        return;
-      }
-
-      /* Load store/invoice settings */
-      let store = {};
-      try{
-        const sd = await db.collection('settings').doc('general').get();
-        if (sd.exists) store = sd.data();
-      } catch(e){}
-
-      render(inv, store);
-    } catch(e){
-      document.getElementById('root').innerHTML =
-        `<div class="err-box">❌ خطأ: ${e.message}</div>`;
+  try {
+    /* Try pos_invoices first, then orders collection */
+    let docSnap = await db.collection('pos_invoices').doc(id).get();
+    if (!docSnap.exists) {
+      const byNum = await db.collection('pos_invoices').where('invoiceNumber','==',id).limit(1).get();
+      if (!byNum.empty) docSnap = byNum.docs[0];
     }
-  });
+    if (!docSnap || !docSnap.exists) { showError('لم يتم العثور على الفاتورة'); return; }
+
+    const o = docSnap.data ? { id: docSnap.id, ...docSnap.data() } : docSnap;
+    renderInvoice(o);
+
+    /* Load store settings for branding */
+    try {
+      const settings = await db.collection('settings').doc('store').get();
+      if (settings.exists) {
+        const s = settings.data();
+        if (s.storeName) document.getElementById('store-name').textContent = s.storeName;
+        if (s.storeSubtitle) document.getElementById('store-sub').textContent = s.storeSubtitle;
+        if (s.logoUrl) {
+          document.getElementById('logo-area').innerHTML = `<img src="${s.logoUrl}" class="inv-logo" alt="logo">`;
+        } else {
+          document.getElementById('logo-area').innerHTML = '<div class="inv-logo-placeholder">⚡</div>';
+        }
+        if (s.invoiceFooter) document.getElementById('footer-text').textContent = s.invoiceFooter;
+      } else {
+        document.getElementById('logo-area').innerHTML = '<div class="inv-logo-placeholder">⚡</div>';
+      }
+    } catch(e) {
+      document.getElementById('logo-area').innerHTML = '<div class="inv-logo-placeholder">⚡</div>';
+    }
+
+  } catch(e) {
+    showError('خطأ أثناء تحميل الفاتورة: ' + e.message);
+  }
 }
 
-/* ── Render ── */
-function render(inv, cfg){
-  const items = inv.items || inv.products || [];
-  const raw   = inv.createdAt;
-  const dt    = raw && raw.toDate ? raw.toDate() : (raw ? new Date(raw) : new Date());
-
-  const sub  = typeof inv.subtotal       ==='number' ? inv.subtotal       : items.reduce((s,i)=>s+(parseFloat(i.price)||0)*(i.qty||i.quantity||1),0);
-  const disc = typeof inv.discountAmount  ==='number' ? inv.discountAmount  : 0;
-  const del  = typeof inv.deliveryFee    ==='number' ? inv.deliveryFee    : 0;
-  const tot  = typeof inv.totalPrice     ==='number' ? inv.totalPrice     : (sub-disc+del);
-  const paid = typeof inv.paidAmount     ==='number' ? inv.paidAmount     : tot;
-  const rem  = Math.max(0, tot - paid);
-
-  const cust   = inv.userName   || inv.customerName || inv.name || '—';
-  const phone  = inv.phone      || inv.customerPhone || '';
-  const invNo  = inv.invoiceNumber || inv.id || '—';
-  const payLbl = inv.paymentMethod || inv.paymentType || 'نقدي';
-  const notes  = inv.notes || '';
-  const dlvDate= inv.deliveryDate || inv.dueDate || '';
-  const isPrepared = inv.orderPrepared || false;
-
-  /* Store / style settings */
-  const sName  = cfg.storeName   || 'استوديو الزهراء';
-  const sPhone = cfg.storePhone  || '';
-  const sPhone2= cfg.storePhone2 || '';
-  const sAddr  = cfg.storeAddress|| '';
-  const sInsta = cfg.instagram   || '';
-  const logoR  = cfg.invoiceLogoRight || '';
-  const logoL  = cfg.invoiceLogoLeft  || '';
-  const fSize  = cfg.invoiceFontSize  || 10;
-  const fFamily= cfg.invoiceFontFamily|| 'Cairo';
-  const theme  = cfg.invoiceTheme     || 'classic';
-  const notice = cfg.receiptNotice    || 'عميلنا العزيز 💛 نرجو استلام الطلب خلال 15 يوماً من تاريخ التجهيز، وقد تتعرض الطلبات غير المستلمة للتلف. شكراً لثقتكم 💛';
-  const showQR = cfg.receiptQR !== false;
-  const showLogo = cfg.showLogoOnReceipt !== false;
-
-  /* Theme colors */
-  const themes = {
-    classic:{ headerBg:'#000', headerClr:'#fff' },
-    dark:   { headerBg:'#1a1a2e', headerClr:'#d4af37' },
-    gold:   { headerBg:'#d4af37', headerClr:'#000' },
-    green:  { headerBg:'#166534', headerClr:'#fff' },
-    blue:   { headerBg:'#1e3a5f', headerClr:'#fff' },
-  };
-  const tc = themes[theme] || themes.classic;
-
-  /* action bar */
-  document.getElementById('inv-title').textContent = `# ${invNo}`;
-  if (phone){ document.getElementById('wa-btn').style.display='flex'; window._wa={phone,invNo,cust,tot}; }
-
-  const trackURL = `${location.origin}/Studiozahraa/order-status.html?id=${encodeURIComponent(invNo)}`;
-  const q1 = qrSrc(invNo, 80);
-  const q2 = qrSrc(trackURL, 80);
-
-  const itemsHTML = items.map(i=>{
-    const q=i.qty||i.quantity||1, p=parseFloat(i.price)||0;
-    return `<tr>
-      <td>${i.name||i.productName||'—'}</td>
-      <td class="tc">${q}</td>
-      <td class="tl">${money(p)}</td>
-      <td class="tl">${money(p*q)}</td>
-    </tr>`;
-  }).join('');
-
-  const rItemsHTML = items.map(i=>{
-    const q=i.qty||i.quantity||1, p=parseFloat(i.price)||0;
-    return `<tr>
-      <td>${i.name||i.productName||'—'}</td>
-      <td>${q}</td>
-      <td>${money(p)}</td>
-      <td>${money(p*q)}</td>
-    </tr>`;
-  }).join('');
-
-  /* Build logo row for receipt */
-  let logosHTML = '';
-  if (showLogo){
-    const leftEl  = logoL ? `<img src="${logoL}" class="r-logo-img" alt="logo">` : '<span></span>';
-    const rightEl = logoR ? `<img src="${logoR}" class="r-logo-img" alt="logo">` :
-      `<div class="r-logo-box"><span class="z">Z</span><span class="s">ZAHRAA STUDIO</span></div>`;
-    logosHTML = `<div class="r-logos">${leftEl}${rightEl}</div>`;
+function renderInvoice(o) {
+  /* Invoice number + date */
+  document.getElementById('inv-num').textContent = '# ' + (o.invoiceNumber || o.id?.slice(0,10) || '—');
+  const dtObj = fmtDate2(o.createdAt);
+  if (dtObj) {
+    document.getElementById('inv-date').textContent = dtObj.date;
+    document.getElementById('inv-time').textContent = dtObj.time;
   }
 
-  document.getElementById('root').innerHTML = `
-  <div class="sw">
+  /* Customer */
+  document.getElementById('cust-name').textContent = o.userName || o.customerName || 'عميل';
+  if (o.phone) document.getElementById('cust-phone').innerHTML = '<i class="fas fa-phone"></i> ' + o.phone;
+  if (o.address || o.customerAddress) document.getElementById('cust-address').innerHTML = '<i class="fas fa-map-marker-alt"></i> ' + (o.address||o.customerAddress);
 
-    <!-- ═══ LEFT SCREEN VIEW ═══ -->
-    <div class="sw-left">
+  /* Order details */
+  const statusEl = document.getElementById('order-status');
+  const st = o.status || 'مكتمل';
+  const stColor = st==='تم التسليم'?'#22c55e': o.orderPrepared?'#3b82f6':'#f59e0b';
+  statusEl.innerHTML = `<span style="font-weight:900;color:${stColor}">● ${st}</span>`;
+  if (o.deliveryAgentName) document.getElementById('order-agent').innerHTML = `<i class="fas fa-person-walking-luggage"></i> المندوب: <b>${o.deliveryAgentName}</b>`;
+  if (o.notes) document.getElementById('order-notes-row').innerHTML = `<i class="fas fa-comment"></i> ملاحظات الطلب`;
 
-      <div class="st-badge ${isPrepared?'prep':'pend'}">
-        ${isPrepared?'✅ جاهز للاستلام':'⏳ قيد التجهيز'}
-      </div>
+  /* Items table */
+  const items = o.items || [];
+  const tbody = document.getElementById('items-tbody');
+  tbody.innerHTML = items.map((item, i) => {
+    const unitP = parseFloat(item.price)||0;
+    const qty   = parseFloat(item.qty)||1;
+    const total = unitP * qty;
+    /* Per-item custom date */
+    const itemDate = item.itemDate
+      ? `<div class="td-date">${item.itemDate}</div>`
+      : (item.date ? `<div class="td-date">${item.date}</div>` : '<div class="td-date" style="color:#ddd">—</div>');
 
-      <div class="ic">
-        <h3><i class="fas fa-user"></i> بيانات العميل</h3>
-        <div class="ir"><span class="ik">الاسم</span><span class="iv">${cust}</span></div>
-        ${phone?`<div class="ir"><span class="ik">الهاتف</span><span class="iv" style="direction:ltr">${phone}</span></div>`:''}
-        <div class="ir"><span class="ik">رقم الفاتورة</span><span class="iv gold">${invNo}</span></div>
-        <div class="ir"><span class="ik">التاريخ والوقت</span><span class="iv">${fmtAr(dt)} — ${fmtTime(dt)}</span></div>
-        <div class="ir"><span class="ik">طريقة الدفع</span><span class="iv">${payLbl}</span></div>
-        ${dlvDate?`<div class="ir"><span class="ik">📅 موعد الاستلام</span><span class="iv red">${dlvDate}</span></div>`:''}
-        ${notes?`<div class="ir"><span class="ik">📝 ملاحظات</span><span class="iv">${notes}</span></div>`:''}
-      </div>
+    return `<tr>
+      <td style="color:#888;font-weight:900;font-size:12px">${i+1}</td>
+      <td>
+        <div class="td-name">${item.name||'—'}</div>
+        ${item.sku||item.barcode?`<div class="unit-badge">${item.sku||item.barcode}</div>`:''}
+      </td>
+      <td class="td-qty" style="text-align:center">${qty}</td>
+      <td class="td-price">${fmt2(unitP)} ج</td>
+      <td class="td-total" style="text-align:left">${fmt2(total)} ج</td>
+      <td style="text-align:center">${itemDate}</td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="6" style="text-align:center;color:#888;padding:16px">لا توجد منتجات</td></tr>`;
 
-      <div class="ic">
-        <h3><i class="fas fa-shopping-bag"></i> المنتجات (${items.length} صنف)</h3>
-        <table class="pt">
-          <thead><tr><th>المنتج</th><th style="text-align:center">الكمية</th><th style="text-align:left">السعر</th><th style="text-align:left">الإجمالي</th></tr></thead>
-          <tbody>${itemsHTML}</tbody>
-        </table>
-      </div>
+  /* Payment method badge */
+  const pm = (o.paymentMethod || o.paymentType || 'نقدي').toLowerCase();
+  let pmClass = pm.includes('بطاق')||pm.includes('card')?'card':pm.includes('تحويل')||pm.includes('transfer')?'transfer':'cash';
+  const pmIcon = pmClass==='card'?'💳':pmClass==='transfer'?'📲':'💵';
+  document.getElementById('payment-row').innerHTML = `
+    <span class="pay-badge ${pmClass}">${pmIcon} ${o.paymentMethod||o.paymentType||'نقدي'}</span>
+    ${o.dueDate?`<span class="pay-badge">📅 استحقاق: ${o.dueDate}</span>`:''}`;
 
-      <div class="ic">
-        <h3><i class="fas fa-calculator"></i> الملخص المالي</h3>
-        ${disc>0||del>0?`
-          <div class="ir"><span class="ik">المجموع الفرعي</span><span class="iv">${money(sub)} ج</span></div>
-          ${disc>0?`<div class="ir"><span class="ik">خصم</span><span class="iv red">- ${money(disc)} ج</span></div>`:''}
-          ${del>0?`<div class="ir"><span class="ik">توصيل</span><span class="iv">+ ${money(del)} ج</span></div>`:''}
-        `:''}
-        <div class="tot-blk"><span class="l">الإجمالي</span><span class="a">${money(tot)} ج</span></div>
-        ${rem>0
-          ? `<div class="rem-blk"><span class="l">المتبقي</span><span class="a">${money(rem)} ج</span></div>
-             <div class="ir" style="margin-top:4px"><span class="ik">المدفوع</span><span class="iv green">${money(paid)} ج</span></div>`
-          : `<div class="paid-blk">✅ تم السداد بالكامل — ${money(tot)} ج</div>`
-        }
-      </div>
+  /* Totals */
+  const tot  = parseFloat(o.totalPrice)||0;
+  const sub  = parseFloat(o.subtotal)||tot;
+  const disc = parseFloat(o.discountAmount)||0;
+  const del  = parseFloat(o.deliveryFee)||0;
+  const rem  = parseFloat(o.remainingAmount)||0;
+  const paid = parseFloat(o.paidAmount)||tot-rem;
 
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        ${phone?`<a href="customer-profile.html?id=__phone__${encodeURIComponent(phone)}" style="background:#d4af37;color:#000;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:900;font-size:12px;display:flex;align-items:center;gap:6px"><i class="fas fa-user-circle"></i> ملف العميل</a>`:''}
-        <a href="active-orders.html" style="background:#1a1a2e;color:#d4af37;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:900;font-size:12px;display:flex;align-items:center;gap:6px"><i class="fas fa-list"></i> الطلبات النشطة</a>
-      </div>
-    </div>
+  let totHTML = '';
+  if (sub !== tot) totHTML += `<div class="tot-row"><span class="k">المجموع الفرعي</span><span class="v">${fmt2(sub)} ج</span></div>`;
+  if (disc > 0)    totHTML += `<div class="tot-row"><span class="k" style="color:#ef4444">الخصم</span><span class="v" style="color:#ef4444">- ${fmt2(disc)} ج</span></div>`;
+  if (del > 0)     totHTML += `<div class="tot-row"><span class="k">رسوم التوصيل</span><span class="v">${fmt2(del)} ج</span></div>`;
+  totHTML += `<div class="tot-row grand"><span class="k">الإجمالي النهائي</span><span class="v">${fmt2(tot)} ج</span></div>`;
+  if (rem > 0) {
+    totHTML += `<div class="tot-row"><span class="k" style="color:#22c55e">المدفوع</span><span class="v" style="color:#22c55e">${fmt2(paid)} ج</span></div>`;
+    totHTML += `<div class="tot-row remaining"><span class="k">المتبقي (آجل)</span><span class="v">${fmt2(rem)} ج</span></div>`;
+  } else {
+    totHTML += `<div class="tot-paid-badge">✅ تم السداد بالكامل — ${fmt2(tot)} ج</div>`;
+  }
+  document.getElementById('totals-box').innerHTML = totHTML;
 
-    <!-- ═══ RIGHT: THERMAL RECEIPT ═══ -->
-    <div class="sw-right">
-      <div class="receipt-label"><i class="fas fa-receipt"></i> معاينة الإيصال — يُطبع بهذا الشكل تماماً</div>
-      <div class="receipt" id="rcp" style="font-size:${fSize}px;font-family:'${fFamily}',Cairo,sans-serif">
+  /* Notes */
+  if (o.notes) {
+    const notesEl = document.getElementById('notes-box');
+    notesEl.style.display = 'block';
+    notesEl.innerHTML = `<strong>📝 ملاحظات:</strong> ${o.notes}`;
+  }
 
-        ${logosHTML}
+  /* Barcode — original size but thicker lines */
+  const bcCode = o.invoiceNumber || o.id;
+  if (bcCode && typeof JsBarcode !== 'undefined') {
+    try {
+      JsBarcode('#inv-barcode-svg', bcCode, {
+        format: 'CODE128',
+        width: 3,
+        height: 60,
+        displayValue: false,
+        margin: 8,
+        background: '#ffffff',
+        lineColor: '#000000',
+      });
+      document.getElementById('barcode-area').style.display = 'flex';
+      document.getElementById('bc-text').textContent = bcCode;
+    } catch(e) {}
+  }
 
-        <div class="r-store" style="font-size:${fSize+7}px">${sName}</div>
-        ${sPhone?`<div class="r-phone" style="font-size:${fSize+1}px">${sPhone}${sPhone2?' | '+sPhone2:''}</div>`:''}
-        <span class="rs"></span>
+  /* Show invoice */
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('invoice-root').style.display = 'block';
 
-        <div class="r-invline" style="font-size:${fSize}px"># ${invNo} &nbsp; ${fmtAr(dt)} &nbsp; ${fmtTime(dt)}</div>
-        <span class="rs1"></span>
-
-        <div class="r-cust" style="font-size:${fSize}px"><span class="r-cl">الاسم:</span><span class="r-cv">${cust}</span></div>
-        ${phone?`<div class="r-cust" style="font-size:${fSize}px"><span class="r-cl">الهاتف:</span><span class="r-cv" style="direction:ltr">${phone}</span></div>`:''}
-        <div class="r-cust" style="font-size:${fSize}px"><span class="r-cl">طريقة الدفع:</span><span class="r-cv">${payLbl}</span></div>
-        ${dlvDate?`<div class="r-cust" style="font-size:${fSize}px"><span class="r-cl">📅 الاستلام:</span><span class="r-cv">${dlvDate}</span></div>`:''}
-        <span class="rs1"></span>
-
-        <table class="r-table" style="font-size:${fSize-1}px">
-          <thead><tr>
-            <th style="background:${tc.headerBg};color:${tc.headerClr}">المنتج</th>
-            <th style="background:${tc.headerBg};color:${tc.headerClr}">كم</th>
-            <th style="background:${tc.headerBg};color:${tc.headerClr}">سعر</th>
-            <th style="background:${tc.headerBg};color:${tc.headerClr}">إجمالي</th>
-          </tr></thead>
-          <tbody>${rItemsHTML}</tbody>
-        </table>
-
-        ${disc>0||del>0?`
-        <div style="border-top:1px solid #ccc;padding:2px 0">
-          ${disc>0?`<div style="display:flex;justify-content:space-between;font-size:${fSize-1}px;padding:1px 2px"><span>خصم:</span><span>- ${money(disc)} ج</span></div>`:''}
-          ${del>0?`<div style="display:flex;justify-content:space-between;font-size:${fSize-1}px;padding:1px 2px"><span>توصيل:</span><span>+ ${money(del)} ج</span></div>`:''}
-        </div>`:''}
-
-        <div class="r-tot" style="background:${tc.headerBg};font-size:${fSize}px">
-          <span class="l" style="color:${tc.headerClr}">الإجمالي</span>
-          <span class="a" style="font-size:${fSize+8}px;color:${tc.headerClr}">${money(tot)} ج</span>
-        </div>
-
-        ${rem>0
-          ? `<div class="r-rem" style="font-size:${fSize}px"><span class="l">المتبقي</span><span class="a" style="font-size:${fSize+4}px">${money(rem)} ج</span></div>`
-          : `<div class="r-paid" style="font-size:${fSize-1}px">✅ تم السداد بالكامل</div>`
-        }
-
-        ${notes?`<div style="border:1px dashed #999;padding:3px;font-size:${fSize-1}px;margin:2px 0">📝 ${notes}</div>`:''}
-        <span class="rs1"></span>
-
-        ${showQR?`
-        <div class="r-qr-grid">
-          <div class="r-qr-cell">
-            <img src="${q1}" width="80" height="80" alt="QR" loading="lazy" onerror="this.style.display='none'">
-            <span class="r-qr-lbl" style="background:${tc.headerBg};color:${tc.headerClr}">رقم الفاتورة</span>
-          </div>
-          <div class="r-qr-cell">
-            <img src="${q2}" width="80" height="80" alt="QR" loading="lazy" onerror="this.style.display='none'">
-            <span class="r-qr-lbl" style="background:${tc.headerBg};color:${tc.headerClr}">تتبع طلبك</span>
-          </div>
-        </div>`:'' }
-
-        <div class="r-notice" style="font-size:${fSize-2}px">${notice}</div>
-
-        ${sAddr||sInsta?`
-        <div class="r-ftr">
-          ${sAddr?`<div class="r-ftr-row" style="font-size:${fSize-1}px">📍 <span>${sAddr}</span></div>`:''}
-          ${sInsta?`<div class="r-ftr-row" style="font-size:${fSize-1}px"><i class="fab fa-instagram"></i> <span>${sInsta}</span></div>`:''}
-          ${sPhone?`<div class="r-ftr-row" style="font-size:${fSize-1}px"><i class="fas fa-phone-alt"></i> <span>${sPhone}</span></div>`:''}
-        </div>`:''}
-
-        <span class="rs" style="margin-top:4px"></span>
-      </div>
-    </div>
-
-  </div>`;
+  /* Save footer on input */
+  document.getElementById('footer-text').addEventListener('input', () => {
+    const txt = document.getElementById('footer-text').textContent;
+    localStorage.setItem('zp_inv_footer', txt);
+  });
+  /* Restore saved footer if any */
+  const savedFooter = localStorage.getItem('zp_inv_footer');
+  if (savedFooter) document.getElementById('footer-text').textContent = savedFooter;
 }
 
-/* ── WhatsApp ── */
-window.shareWA = function(){
-  const { phone, invNo, cust, tot } = window._wa || {};
-  const msg = `فاتورة رقم ${invNo}\nالعميل: ${cust}\nالإجمالي: ${money(tot)} ج\nتتبع طلبك: ${location.origin}/Studiozahraa/order-status.html?id=${encodeURIComponent(invNo)}`;
-  const num = (phone||'').replace(/\D/g,'');
-  const e = num.startsWith('0') ? '2'+num : num;
-  window.open(`https://wa.me/${e}?text=${encodeURIComponent(msg)}`);
-};
+function showError(msg) {
+  document.getElementById('loading').style.display = 'none';
+  document.body.insertAdjacentHTML('beforeend', `
+    <div style="min-height:60vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;padding:32px">
+      <div style="font-size:48px">❌</div>
+      <h2 style="font-size:16px;color:#333;font-weight:900">${msg}</h2>
+      <button onclick="window.close()" style="padding:9px 20px;background:#1a1a1a;color:#d4af37;border:none;border-radius:8px;font-family:Cairo,sans-serif;font-weight:700;font-size:13px;cursor:pointer">إغلاق</button>
+    </div>`);
+}
 
+/* Load invoice when page ready */
 loadInvoice();
 </script>
+<!-- FontAwesome (screen only) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </body>
 </html>

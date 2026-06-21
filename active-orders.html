@@ -392,6 +392,10 @@ function openOrderModal(o){
       ? `<button class="unprepare-btn" onclick="modalTogglePrepare('${o.id}',false)"><i class="fas fa-times-circle"></i> إلغاء التجهيز</button>`
       : `<button class="prepare-btn"  onclick="modalTogglePrepare('${o.id}',true)"><i class="fas fa-check-double"></i> تم التجهيز ✓</button>`
     }
+    ${o.status !== 'تم التسليم'
+      ? `<button onclick="markDelivered('${o.id}')" style="background:linear-gradient(135deg,#0f4c75,#1b6ca8);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-family:Cairo,sans-serif;font-weight:900;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:5px"><i class="fas fa-truck-fast"></i> تم التسليم</button>`
+      : `<span style="font-size:11px;color:#22c55e;font-weight:900;padding:4px 10px;background:rgba(34,197,94,.1);border-radius:8px">✅ تم التسليم</span>`
+    }
     ${rem>0
       ? `<button class="btn" style="background:var(--green);color:#fff;font-size:12px;padding:8px 12px;border-radius:var(--r);font-weight:900;border:none;cursor:pointer" onclick="showPayPanel('${o.id}',${rem},${tot})"><i class="fas fa-money-bill-wave"></i> تسجيل دفع</button>`
       : ''
@@ -575,7 +579,10 @@ window.openScanner = function(){
         const found = allOrders.find(o => o.invoiceNumber===id || o.id===id);
         if (found){
           closeScanner();
-          setTimeout(() => openOrderModal(found), 200);
+          setTimeout(() => {
+            openOrderModal(found);
+            window.open('invoice.html?id=' + found.id, '_blank');
+          }, 200);
         } else {
           /* Fallback: search Firestore directly */
           document.getElementById('scanner-result').innerHTML +=
@@ -592,7 +599,10 @@ window.openScanner = function(){
             }
             if (docData) {
               closeScanner();
-              setTimeout(() => openOrderModal(docData), 200);
+              setTimeout(() => {
+                openOrderModal(docData);
+                window.open('invoice.html?id=' + docData.id, '_blank');
+              }, 200);
             } else {
               document.getElementById('scanner-result').innerHTML =
                 `<span style="color:var(--orange)">⚠️ لم يُعثر على الطلب</span>
@@ -678,6 +688,26 @@ async function searchAndOpenOrder(rawVal) {
     else { toast('⚠️ لم يُعثر على طلب بهذا الكود', 'warn'); }
   } catch(e) { toast('❌ خطأ: ' + e.message, 'err'); }
 }
+
+window.markDelivered = async function(orderId){
+  if (!confirm('تأكيد: هل تم تسليم الطلب للعميل؟')) return;
+  try {
+    await db.collection('pos_invoices').doc(orderId).update({
+      status: 'تم التسليم',
+      orderDelivered: true,
+      deliveredAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    toast('✅ تم تسجيل التسليم بنجاح!', 'ok');
+    const idx = allOrders.findIndex(o => o.id === orderId);
+    if (idx >= 0) {
+      allOrders[idx].status = 'تم التسليم';
+      allOrders[idx].orderDelivered = true;
+      openOrderModal(allOrders[idx]);
+    }
+    renderStats(); filterOrders();
+  } catch(e) { toast('خطأ: ' + e.message, 'err'); }
+};
+
 </script>
 </body>
 </html>
