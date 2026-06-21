@@ -192,10 +192,12 @@ html,body{overflow:hidden;height:100%}
 <!-- TOP BAR -->
 <div class="pos-shell">
 <div class="pos-top">
-  <div class="logo-pos">
-    <span>📸</span>
+  <div class="logo-pos" style="cursor:pointer" onclick="location.href='dashboard.html'">
+    <img id="pos-logo-img" src="" alt="" style="height:38px;max-width:56px;object-fit:contain;display:none;border-radius:6px">
+    <span id="pos-logo-emoji" style="font-size:26px">📸</span>
     <div><div class="logo-pos-txt" id="tb-name">استوديو الزهراء</div><div class="logo-pos-sub">نقطة البيع</div></div>
   </div>
+  <button class="tb-btn" onclick="openEditInvoiceModal()" title="تعديل / إضافة لفاتورة موجودة" style="font-size:11px;padding:4px 8px;border-color:var(--cyan);color:var(--cyan)"><i class="fas fa-pen-to-square"></i> تعديل فاتورة</button>
   <div id="srch-wrap">
     <i class="fas fa-barcode" id="srch-icon" title="مسح باركود (F2)"></i>
     <input id="srch" type="text" placeholder="ابحث بالاسم أو الباركود... (F2)" autocomplete="off" oninput="onSrch(this.value)">
@@ -244,7 +246,7 @@ html,body{overflow:hidden;height:100%}
     <div class="cust-row">
       <i class="fas fa-phone" style="color:var(--text3);font-size:14px"></i>
       <input class="cinput" id="cust-phone" placeholder="رقم الهاتف" autocomplete="off">
-      <input class="cinput" id="dlv-date" placeholder="📅 موعد الاستلام" autocomplete="off" style="max-width:130px">
+      <input class="cinput" id="dlv-date" type="date" title="موعد الاستلام" style="max-width:140px;cursor:pointer">
     </div>
     <div id="cust-sugg"></div>
   </div>
@@ -537,6 +539,27 @@ html,body{overflow:hidden;height:100%}
   </div>
 </div>
 
+<!-- Edit Invoice Modal -->
+<div class="overlay" id="edit-inv-modal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <h3><i class="fas fa-pen-to-square"></i> تعديل / إضافة لفاتورة موجودة</h3>
+      <button class="close-btn" onclick="closeModal('edit-inv-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <input class="form-control" id="edit-inv-no" placeholder="رقم الفاتورة..." style="flex:1">
+        <button class="btn btn-primary" onclick="searchEditInv()" style="white-space:nowrap"><i class="fas fa-search"></i> بحث</button>
+      </div>
+      <div id="edit-inv-details"></div>
+    </div>
+    <div class="modal-footer">
+      <button id="edit-inv-load-btn" class="btn btn-primary" style="display:none" onclick="loadInvoiceIntoCart()"><i class="fas fa-cart-plus"></i> تحميل في السلة وتعديل</button>
+      <button class="btn btn-ghost" onclick="closeModal('edit-inv-modal')">إغلاق</button>
+    </div>
+  </div>
+</div>
+
 <!-- Print area -->
 <div id="rprint"></div>
 
@@ -678,9 +701,27 @@ function addProd(id) {
       finalPrice: price + taxAmt,
       qty: 1, total: price + taxAmt,
       unit: p.unit || 'قطعة',
+      deliveryDays: p.deliveryDays || 0,
     });
   }
+  /* Auto-set delivery date based on max deliveryDays across cart items */
+  autoSetDeliveryDate();
   renderCart(); calcTots(); renderGrid();
+}
+
+function autoSetDeliveryDate() {
+  const maxDays = cart.reduce((m, c) => Math.max(m, c.deliveryDays || 0), 0);
+  if (maxDays > 0) {
+    const dt = new Date();
+    dt.setDate(dt.getDate() + maxDays);
+    const y = dt.getFullYear();
+    const mo = String(dt.getMonth()+1).padStart(2,'0');
+    const day = String(dt.getDate()).padStart(2,'0');
+    const inp = document.getElementById('dlv-date');
+    /* Only auto-set if user hasn't manually picked a later date */
+    const cur = inp.value ? new Date(inp.value) : null;
+    if (!cur || dt > cur) inp.value = `${y}-${mo}-${day}`;
+  }
 }
 
 function renderCart() {
@@ -787,8 +828,15 @@ async function loadStoreSettings() {
     if (d.exists) {
       window.storeSettings = d.data();
       saveSettings({ ...getSettings(), ...d.data() });
-      const n = window.storeSettings.storeName;
-      if (n) document.getElementById('tb-name').textContent = n;
+      const s = window.storeSettings;
+      if (s.storeName) document.getElementById('tb-name').textContent = s.storeName;
+      /* Show logo in POS header */
+      const logo = s.invoiceLogoRight || s.invoiceLogoLeft;
+      if (logo) {
+        document.getElementById('pos-logo-img').src = logo;
+        document.getElementById('pos-logo-img').style.display = 'block';
+        document.getElementById('pos-logo-emoji').style.display = 'none';
+      }
     }
   } catch(e) {}
 }
@@ -898,11 +946,27 @@ window.doPay = async () => {
       status: rem > 0 ? 'آجل' : 'مكتمل',
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     };
-    const ref2 = await db.collection('pos_invoices').add(data);
+    /* ══ EDIT MODE: update existing invoice instead of creating new ══ */
+    const editingId = window._editingInvoiceId;
+    let ref2;
+    if (editingId) {
+      const updateData = { ...data };
+      delete updateData.createdAt;
+      updateData.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+      updateData.invoiceNumber = window._editingInvoiceNo || invNo;
+      await db.collection('pos_invoices').doc(editingId).update(updateData);
+      ref2 = { id: editingId };
+      data.invoiceNumber = updateData.invoiceNumber;
+      toast('✅ تم تحديث الفاتورة ' + data.invoiceNumber, 'ok');
+      window._editingInvoiceId = null;
+      window._editingInvoiceNo = null;
+    } else {
+      ref2 = await db.collection('pos_invoices').add(data);
+    }
 
     // Update stock
     const s = getSettings();
-    if (s.trackStock !== false) {
+    if (s.trackStock !== false && !editingId) {
       for (const item of cart) {
         const prod = allProds.find(p => p.id === item.id);
         if (prod && prod.trackStock) {
@@ -915,7 +979,7 @@ window.doPay = async () => {
     }
 
     // Update customer points
-    if (selectedCust && s.loyaltyEnabled) {
+    if (selectedCust && s.loyaltyEnabled && !editingId) {
       const pts = Math.floor(fin / (s.pointsPerAmount || 100));
       if (pts > 0) {
         await db.collection('pos_customers').doc(selectedCust.id).update({
@@ -933,7 +997,7 @@ window.doPay = async () => {
     cart.forEach(i => { todayProdMap[i.name] = (todayProdMap[i.name]||0) + i.qty; });
     updStats();
     closeModal('pay-modal');
-    toast('✅ فاتورة ' + invNo + ' تمت', 'ok');
+    if (!editingId) toast('✅ فاتورة ' + data.invoiceNumber + ' تمت', 'ok');
     printReceipt({ ...data, id: ref2.id, createdAt: now });
     clrCart();
     loadProds(); // Refresh stock
@@ -1175,8 +1239,8 @@ function printReceipt(inv) {
   const del  = parseFloat(inv.deliveryFee)   || 0;
 
   const qrSrc = (t,sz) => `https://api.qrserver.com/v1/create-qr-code/?size=${sz}x${sz}&data=${encodeURIComponent(t)}&qzone=1&format=png`;
-  const q1 = qrSrc(inv.invoiceNumber, 80);
-  const q2 = qrSrc(`${location.origin}/Studiozahraa/order-status.html?id=${encodeURIComponent(inv.invoiceNumber)}`, 80);
+  const q1 = qrSrc(inv.invoiceNumber, 120);
+  const q2 = qrSrc(`${location.origin}/order-status.html?id=${encodeURIComponent(inv.invoiceNumber)}`, 150);
 
   let logosHTML = '';
   if (showLg) {
@@ -1282,12 +1346,12 @@ function printReceipt(inv) {
 
   ${showQR?`<div class="r-qr-grid">
     <div class="r-qr-cell">
-      <img src="${q1}" width="80" height="80" alt="QR" loading="lazy" onerror="this.style.display='none'">
+      <img src="${q1}" width="120" height="120" alt="QR" loading="lazy" onerror="this.style.display='none'">
       <span class="r-qr-lbl">رقم الفاتورة</span>
     </div>
     <div class="r-qr-cell">
-      <img src="${q2}" width="80" height="80" alt="QR" loading="lazy" onerror="this.style.display='none'">
-      <span class="r-qr-lbl">تتبع طلبك</span>
+      <img src="${q2}" width="150" height="150" alt="QR" loading="lazy" onerror="this.style.display='none'">
+      <span class="r-qr-lbl">📱 تتبع طلبك</span>
     </div>
   </div>`:''}
 
@@ -1326,11 +1390,82 @@ document.addEventListener('keydown', e => {
   }
 });
 
+/* ══ EDIT INVOICE ══ */
+let _editInvDoc = null;
+window.openEditInvoiceModal = () => {
+  _editInvDoc = null;
+  document.getElementById('edit-inv-no').value = '';
+  document.getElementById('edit-inv-details').innerHTML = '';
+  document.getElementById('edit-inv-load-btn').style.display = 'none';
+  openModal('edit-inv-modal');
+};
+window.searchEditInv = async () => {
+  const no = document.getElementById('edit-inv-no').value.trim();
+  if (!no) { toast('أدخل رقم الفاتورة','warn'); return; }
+  try {
+    let doc = null;
+    const snap = await db.collection('pos_invoices').where('invoiceNumber','==',no).limit(1).get();
+    if (!snap.empty) doc = { id: snap.docs[0].id, ...snap.docs[0].data() };
+    if (!doc) {
+      const d = await db.collection('pos_invoices').doc(no).get().catch(()=>null);
+      if (d && d.exists) doc = { id: d.id, ...d.data() };
+    }
+    if (!doc) { toast('الفاتورة غير موجودة','err'); return; }
+    _editInvDoc = doc;
+    const rem = parseFloat(doc.remainingAmount)||0;
+    document.getElementById('edit-inv-details').innerHTML = `
+      <div style="background:var(--card);border-radius:var(--r);padding:12px;font-size:12px;display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">رقم الفاتورة</span><span style="color:var(--gold);font-weight:900">${doc.invoiceNumber||doc.id}</span></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">العميل</span><span style="font-weight:700">${doc.userName||'—'}</span></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">الإجمالي</span><span style="font-weight:900">${fmt(doc.totalPrice||0)}</span></div>
+        ${rem>0?`<div style="display:flex;justify-content:space-between"><span style="color:var(--gold)">متبقي</span><span style="color:var(--gold);font-weight:900">${fmt(rem)}</span></div>`:''}
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">الأصناف</span><span>${doc.items?.length||0} صنف</span></div>
+        ${doc.deliveryDate?`<div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">الاستلام</span><span style="color:var(--orange)">${doc.deliveryDate}</span></div>`:''}
+      </div>
+      <div style="margin-top:10px;padding:8px;background:rgba(212,175,55,.08);border:1px solid var(--gold);border-radius:var(--r);font-size:11px;color:var(--gold)">
+        ⚡ سيتم تحميل بيانات الفاتورة في السلة. بعد التعديل اضغط أي طريقة دفع لحفظ الفاتورة المُحدَّثة.
+      </div>`;
+    document.getElementById('edit-inv-load-btn').style.display = '';
+    toast('✅ تم العثور على الفاتورة','ok');
+  } catch(e) { toast('خطأ: '+e.message,'err'); }
+};
+window.loadInvoiceIntoCart = () => {
+  if (!_editInvDoc) return;
+  const doc = _editInvDoc;
+  /* Load customer */
+  document.getElementById('cust-name').value = doc.userName || '';
+  document.getElementById('cust-phone').value = doc.phone || '';
+  if (doc.deliveryDate) document.getElementById('dlv-date').value = doc.deliveryDate;
+  document.getElementById('disc-v').value = doc.discountAmount || '';
+  document.getElementById('del-v').value  = doc.deliveryFee   || '';
+  document.getElementById('inv-note').value = doc.notes || '';
+  /* Load items into cart */
+  cart = (doc.items || []).map(i => ({
+    id: i.id || i.productId || Math.random().toString(36).slice(2),
+    name: i.name || i.productName || '—',
+    icon: i.icon || '📦', image: i.image || null,
+    price: parseFloat(i.price) || 0,
+    cost: parseFloat(i.cost) || 0,
+    taxAmt: 0,
+    finalPrice: parseFloat(i.price) || 0,
+    qty: parseInt(i.qty || i.quantity) || 1,
+    total: (parseFloat(i.price)||0) * (parseInt(i.qty||i.quantity)||1),
+    unit: i.unit || 'قطعة',
+    deliveryDays: i.deliveryDays || 0,
+  }));
+  /* Store editing state */
+  window._editingInvoiceId = doc.id;
+  window._editingInvoiceNo = doc.invoiceNumber;
+  renderCart(); calcTots();
+  closeModal('edit-inv-modal');
+  toast(`✅ تم تحميل الفاتورة ${doc.invoiceNumber} — عدّل واضغط دفع لحفظ`, 'ok');
+};
+
 // Lookup deferred invoice by barcode / invoice number
 let _defInvId = null, _defInvRem = 0, _defInvTot = 0;
 
 async function lookupDeferredInvoice(rawVal) {
-  /* Extract id from URL if QR contains full URL e.g. /Studiozahraa/order-status.html?id=INV-001 */
+  /* Extract id from URL if QR contains full URL e.g. /order-status.html?id=INV-001 */
   let val = rawVal;
   const urlMatch = rawVal.match(/[?&]id=([^&\s]+)/);
   if (urlMatch) val = decodeURIComponent(urlMatch[1]);

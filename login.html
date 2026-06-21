@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تسجيل الدخول — كاشير استوديو الزهراء</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<script src="shared.js"></script>
+<style>
+body{background:var(--bg);display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px}
+.login-box{width:100%;max-width:420px}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo span{font-size:56px;display:block;margin-bottom:8px}
+.login-logo h1{font-size:22px;font-weight:900;color:var(--gold)}
+.login-logo p{font-size:12px;color:var(--text3)}
+.login-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:28px}
+.tab-btns{display:flex;gap:0;margin-bottom:20px;border-radius:var(--r);overflow:hidden;border:1.5px solid var(--border)}
+.tab-btn{flex:1;padding:9px;background:transparent;border:none;color:var(--text3);
+  font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .17s}
+.tab-btn.active{background:var(--gold);color:#000}
+.setup-info{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);
+  padding:12px;margin-bottom:16px;font-size:11px;color:var(--text2);line-height:1.7}
+.setup-info strong{color:var(--gold)}
+.login-btn{width:100%;padding:12px;border-radius:var(--r);border:none;
+  background:var(--gold);color:#000;font-family:'Cairo',sans-serif;
+  font-size:14px;font-weight:900;cursor:pointer;margin-top:4px;transition:all .17s}
+.login-btn:hover{background:var(--gold2)}
+.login-btn:disabled{opacity:.5;cursor:default}
+</style>
+</head>
+<body>
+<div class="login-box">
+  <div class="login-logo">
+    <span>📸</span>
+    <h1>استوديو الزهراء</h1>
+    <p>نظام الكاشير الاحترافي</p>
+  </div>
+  <div class="login-card">
+    <div class="tab-btns">
+      <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">تسجيل الدخول</button>
+      <button class="tab-btn" id="tab-setup" onclick="switchTab('setup')">إعداد Firebase</button>
+    </div>
+
+    <!-- Login -->
+    <div id="pane-login">
+      <div class="form-group">
+        <label>البريد الإلكتروني</label>
+        <input class="form-control" id="l-email" type="email" placeholder="admin@example.com">
+      </div>
+      <div class="form-group">
+        <label>كلمة المرور</label>
+        <input class="form-control" id="l-pass" type="password" placeholder="••••••••">
+      </div>
+      <button class="login-btn" id="l-btn" onclick="doLogin()">دخول <i class="fas fa-arrow-left"></i></button>
+    </div>
+
+    <!-- Setup -->
+    <div id="pane-setup" style="display:none">
+      <div class="setup-info">
+        <strong>كيف تجد هذه البيانات؟</strong><br>
+        Firebase Console → Project Settings → Your apps → SDK setup → Config
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>API Key *</label>
+          <input class="form-control" id="s-apiKey" placeholder="AIzaSy...">
+        </div>
+        <div class="form-group">
+          <label>Auth Domain *</label>
+          <input class="form-control" id="s-authDomain" placeholder="app.firebaseapp.com">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Project ID *</label>
+          <input class="form-control" id="s-projectId" placeholder="my-project">
+        </div>
+        <div class="form-group">
+          <label>Storage Bucket</label>
+          <input class="form-control" id="s-storageBucket" placeholder="app.appspot.com">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Messaging Sender ID</label>
+          <input class="form-control" id="s-messagingSenderId" placeholder="123456789">
+        </div>
+        <div class="form-group">
+          <label>App ID</label>
+          <input class="form-control" id="s-appId" placeholder="1:123:web:abc">
+        </div>
+      </div>
+      <button class="login-btn" onclick="saveConfig()"><i class="fas fa-save"></i> حفظ الإعداد</button>
+    </div>
+  </div>
+</div>
+
+<script>
+injectSharedCSS();
+
+// Firebase config مدمج — فتح تسجيل الدخول مباشرة
+window.onload = () => {
+  initFirebase();
+  switchTab('login');
+  // إذا كان المستخدم مسجلاً دخوله، انتقل للداشبورد
+  auth.onAuthStateChanged(u => {
+    if (u) location.href = 'dashboard.html';
+  });
+  // إخفاء تبويب الإعداد — الكونفيج مدمج
+  const setupTab = document.getElementById('tab-setup');
+  if (setupTab) setupTab.style.display = 'none';
+};
+
+function loadConfig(cfg) {}
+
+function switchTab(t) {
+  document.getElementById('pane-login').style.display = t==='login'?'':'none';
+  document.getElementById('pane-setup').style.display = t==='setup'?'':'none';
+  document.getElementById('tab-login').classList.toggle('active', t==='login');
+  document.getElementById('tab-setup').classList.toggle('active', t==='setup');
+}
+
+function saveConfig() {
+  const cfg = {
+    apiKey: document.getElementById('s-apiKey').value.trim(),
+    authDomain: document.getElementById('s-authDomain').value.trim(),
+    projectId: document.getElementById('s-projectId').value.trim(),
+    storageBucket: document.getElementById('s-storageBucket').value.trim(),
+    messagingSenderId: document.getElementById('s-messagingSenderId').value.trim(),
+    appId: document.getElementById('s-appId').value.trim(),
+  };
+  if (!cfg.apiKey || !cfg.projectId) { toast('الحقول المطلوبة: API Key, Project ID','err'); return; }
+  localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
+  toast('✅ تم حفظ إعداد Firebase','ok');
+  setTimeout(() => switchTab('login'), 600);
+}
+
+async function doLogin() {
+  const email = document.getElementById('l-email').value.trim();
+  const pass = document.getElementById('l-pass').value;
+  if (!email || !pass) { toast('أدخل البريد وكلمة المرور','warn'); return; }
+  if (!initFirebase()) { toast('خطأ في الاتصال بـ Firebase','err'); return; }
+  const btn = document.getElementById('l-btn');
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الدخول...';
+  try {
+    await auth.signInWithEmailAndPassword(email, pass);
+    location.href = 'dashboard.html';
+  } catch(e) {
+    const msgs = {
+      'auth/invalid-credential': 'بريد أو كلمة مرور خاطئة',
+      'auth/user-not-found': 'المستخدم غير موجود',
+      'auth/wrong-password': 'كلمة المرور خاطئة',
+      'auth/too-many-requests': 'محاولات كثيرة، انتظر قليلاً',
+    };
+    toast(msgs[e.code] || 'خطأ: ' + e.message, 'err');
+    btn.disabled = false; btn.innerHTML = 'دخول <i class="fas fa-arrow-left"></i>';
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+</script>
+</body>
+</html>

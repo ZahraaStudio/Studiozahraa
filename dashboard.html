@@ -10,42 +10,129 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
 <script src="shared.js"></script>
 <style>
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:22px}
-.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:16px;position:relative;overflow:hidden}
-.kpi::before{content:'';position:absolute;top:0;right:0;width:4px;height:100%;background:var(--gold)}
+/* ══ Dashboard-specific overrides ══ */
+.db-welcome{display:flex;align-items:center;gap:12px;margin-bottom:24px;
+  padding:18px 20px;background:linear-gradient(135deg,var(--card2),var(--card));
+  border:1px solid var(--border);border-radius:var(--r2);position:relative;overflow:hidden}
+.db-welcome::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 10% 50%,rgba(212,175,55,.08),transparent 70%)}
+.db-welcome-icon{font-size:34px;line-height:1}
+.db-welcome-text h2{font-size:16px;font-weight:900;color:var(--gold);margin:0 0 2px}
+.db-welcome-text p{font-size:11px;color:var(--text3);margin:0}
+.db-welcome-date{margin-right:auto;text-align:left;font-size:11px;color:var(--text3)}
+
+/* KPI section */
+.kpi-section{margin-bottom:24px}
+.kpi-section-title{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.5px;
+  text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.kpi-section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);
+  padding:14px 16px;position:relative;overflow:hidden;cursor:default;
+  transition:transform .15s,box-shadow .15s}
+.kpi:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,.4)}
+.kpi::before{content:'';position:absolute;top:0;right:0;width:3px;height:100%;background:var(--gold)}
 .kpi.green::before{background:var(--green)}
 .kpi.blue::before{background:var(--blue)}
 .kpi.orange::before{background:var(--orange)}
 .kpi.red::before{background:var(--red)}
 .kpi.purple::before{background:var(--purple)}
-.kpi-icon{font-size:22px;margin-bottom:10px;opacity:.7}
-.kpi-lbl{font-size:10px;color:var(--text3);font-weight:700;margin-bottom:3px}
-.kpi-val{font-size:22px;font-weight:900;color:var(--gold)}
+.kpi.cyan::before{background:var(--cyan)}
+.kpi-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.kpi-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;
+  background:rgba(255,255,255,.04);flex-shrink:0}
+.kpi-trend{font-size:9px;padding:2px 6px;border-radius:20px;font-weight:700}
+.kpi-trend.up{background:rgba(74,222,128,.12);color:var(--green)}
+.kpi-trend.dw{background:rgba(248,113,113,.12);color:var(--red)}
+.kpi-trend.nt{background:rgba(148,163,184,.1);color:var(--text3)}
+.kpi-lbl{font-size:9.5px;color:var(--text3);font-weight:700;margin-bottom:2px;letter-spacing:.3px}
+.kpi-val{font-size:20px;font-weight:900;color:var(--gold)}
 .kpi.green .kpi-val{color:var(--green)}
 .kpi.blue .kpi-val{color:var(--blue)}
 .kpi.orange .kpi-val{color:var(--orange)}
 .kpi.red .kpi-val{color:var(--red)}
 .kpi.purple .kpi-val{color:var(--purple)}
-.kpi-sub{font-size:10px;color:var(--text3);margin-top:3px}
-.dash-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px}
-@media(max-width:900px){.dash-grid{grid-template-columns:1fr}}
-.panel{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:16px}
-.panel-title{font-size:13px;font-weight:900;color:var(--gold);margin-bottom:14px;
-  display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);padding-bottom:10px}
-.alert-item{display:flex;align-items:center;gap:10px;padding:8px 0;
-  border-bottom:1px solid var(--border);font-size:12px}
-.alert-item:last-child{border-bottom:none}
-.alert-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.quick-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.qbtn{display:flex;flex-direction:column;align-items:center;gap:5px;
-  padding:16px;border-radius:var(--r);border:1.5px solid var(--border);
-  background:var(--bg3);cursor:pointer;transition:all .17s;text-decoration:none;color:var(--text)}
-.qbtn:hover{border-color:var(--gold);background:var(--card2)}
-.qbtn i{font-size:22px;color:var(--gold)}
+.kpi.cyan .kpi-val{color:var(--cyan)}
+.kpi-sub{font-size:9px;color:var(--text3);margin-top:2px}
+
+/* Dashboard grid */
+.dash-grid{display:grid;grid-template-columns:3fr 2fr;gap:16px}
+@media(max-width:980px){.dash-grid{grid-template-columns:1fr}}
+.dash-col{display:flex;flex-direction:column;gap:16px}
+
+/* Panel */
+.panel{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden}
+.panel-hdr{display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg3)}
+.panel-title{font-size:12px;font-weight:900;color:var(--gold);display:flex;align-items:center;gap:8px}
+.panel-title i{opacity:.7}
+.panel-body{padding:12px 16px}
+.panel-more{font-size:10px;color:var(--text3);cursor:pointer;text-decoration:none;
+  padding:2px 8px;border-radius:20px;border:1px solid var(--border);
+  background:var(--bg3);transition:all .15s}
+.panel-more:hover{border-color:var(--gold);color:var(--gold)}
+
+/* Recent invoices */
+.inv-row{display:flex;align-items:center;gap:10px;padding:8px 0;
+  border-bottom:1px solid rgba(255,255,255,.04);font-size:12px;cursor:pointer;
+  transition:background .12s;border-radius:4px;padding:7px 4px}
+.inv-row:last-child{border-bottom:none}
+.inv-row:hover{background:rgba(255,255,255,.03)}
+.inv-no{font-weight:900;color:var(--gold);font-size:11px;min-width:80px;font-family:monospace}
+.inv-cust{flex:1;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.inv-meta{font-size:9.5px;color:var(--text3)}
+.inv-amt{font-weight:900;color:var(--text);text-align:left;white-space:nowrap}
+
+/* Top products */
+.prod-bar{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:12px}
+.prod-rank{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:900;flex-shrink:0}
+.prod-rank.r1{background:var(--gold);color:#000}
+.prod-rank.r2{background:var(--text3);color:#000}
+.prod-rank.r3{background:#cd7f32;color:#fff}
+.prod-rank.rn{background:var(--border);color:var(--text3)}
+.prod-name{flex:1;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prod-qty{font-weight:900;color:var(--gold);white-space:nowrap}
+.prod-bar-track{position:relative;height:3px;background:var(--border);border-radius:2px;margin-top:3px}
+.prod-bar-fill{position:absolute;top:0;right:0;height:100%;border-radius:2px;background:var(--gold);transition:width .6s}
+
+/* Quick links */
+.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.qbtn{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:var(--r);
+  border:1.5px solid var(--border);background:var(--bg3);cursor:pointer;
+  transition:all .17s;text-decoration:none;color:var(--text)}
+.qbtn:hover{border-color:var(--gold);background:var(--card2);transform:translateY(-1px)}
+.qbtn i{font-size:16px;color:var(--gold);width:18px;text-align:center}
 .qbtn span{font-size:11px;font-weight:700}
-.recent-item{display:flex;align-items:center;justify-content:space-between;
-  padding:8px 0;border-bottom:1px solid var(--border);font-size:12px}
-.recent-item:last-child{border-bottom:none}
+
+/* Alerts */
+.alert-row{display:flex;align-items:center;gap:10px;padding:7px 0;
+  border-bottom:1px solid rgba(255,255,255,.04);font-size:12px}
+.alert-row:last-child{border-bottom:none}
+.alert-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.alert-name{flex:1;font-weight:600}
+.alert-stock{font-size:10px;color:var(--orange);font-weight:700}
+
+/* Payment breakdown mini-bars */
+.pay-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:12px}
+.pay-lbl{width:48px;color:var(--text3);font-size:10px;flex-shrink:0}
+.pay-bar-wrap{flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.pay-bar-inner{height:100%;border-radius:3px;transition:width .6s}
+.pay-amount{width:70px;text-align:left;font-weight:700;font-size:11px}
+
+/* Today summary mini table */
+.sum-row{display:flex;justify-content:space-between;padding:6px 0;
+  border-bottom:1px solid rgba(255,255,255,.04);font-size:12px}
+.sum-row:last-child{border-bottom:none}
+.sum-row.total{border-top:1px solid var(--border);font-weight:900;font-size:13px;
+  color:var(--gold);margin-top:4px;padding-top:8px}
+
+/* Deferred due-soon */
+.due-row{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:11px;
+  border-bottom:1px solid rgba(255,255,255,.04)}
+.due-row:last-child{border-bottom:none}
+.due-name{flex:1;font-weight:600}
+.due-amt{color:var(--red);font-weight:900}
+.due-badge{font-size:9px;padding:1px 6px;border-radius:20px;background:rgba(248,113,113,.12);color:var(--red);white-space:nowrap}
 </style>
 </head>
 <body>
@@ -54,50 +141,139 @@
   <div class="page-content">
     <div class="page-header">
       <h1><i class="fas fa-gauge"></i> لوحة التحكم</h1>
-      <span id="dash-date" style="font-size:12px;color:var(--text3)"></span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-ghost btn-sm" onclick="location.reload()"><i class="fas fa-rotate-right"></i></button>
+      </div>
     </div>
     <div class="page-body">
 
-      <!-- KPIs -->
-      <div class="kpi-grid" id="kpi-grid">
-        <div class="kpi"><div class="kpi-icon">💰</div><div class="kpi-lbl">مبيعات اليوم</div><div class="kpi-val" id="k-rev">—</div></div>
-        <div class="kpi green"><div class="kpi-icon">📈</div><div class="kpi-lbl">ربح اليوم</div><div class="kpi-val" id="k-profit">—</div></div>
-        <div class="kpi blue"><div class="kpi-icon">🧾</div><div class="kpi-lbl">فواتير اليوم</div><div class="kpi-val" id="k-inv">—</div></div>
-        <div class="kpi orange"><div class="kpi-icon">📦</div><div class="kpi-lbl">تنبيهات المخزون</div><div class="kpi-val" id="k-stock">—</div></div>
-        <div class="kpi purple"><div class="kpi-icon">👥</div><div class="kpi-lbl">العملاء</div><div class="kpi-val" id="k-cust">—</div></div>
-        <div class="kpi red"><div class="kpi-icon">⏳</div><div class="kpi-lbl">آجل متبقي</div><div class="kpi-val" id="k-deferred">—</div></div>
+      <!-- Welcome bar -->
+      <div class="db-welcome">
+        <div class="db-welcome-icon" id="wlc-icon">📊</div>
+        <div class="db-welcome-text">
+          <h2 id="wlc-title">مرحباً بك</h2>
+          <p id="wlc-sub">نقطة البيع جاهزة — صباح النجاح</p>
+        </div>
+        <div class="db-welcome-date">
+          <div style="font-weight:900;color:var(--text);font-size:13px" id="dash-date"></div>
+          <div id="dash-clock" style="font-size:18px;font-weight:900;color:var(--gold);letter-spacing:2px;margin-top:2px;font-family:monospace"></div>
+        </div>
+      </div>
+
+      <!-- Section: اليوم -->
+      <div class="kpi-section">
+        <div class="kpi-section-title"><i class="fas fa-sun" style="color:var(--gold)"></i> إحصائيات اليوم</div>
+        <div class="kpi-grid">
+          <div class="kpi">
+            <div class="kpi-hdr"><div class="kpi-icon">💰</div><span class="kpi-trend nt" id="k-inv-trend">—</span></div>
+            <div class="kpi-lbl">مبيعات اليوم</div>
+            <div class="kpi-val" id="k-rev">—</div>
+            <div class="kpi-sub" id="k-rev-sub"></div>
+          </div>
+          <div class="kpi green">
+            <div class="kpi-hdr"><div class="kpi-icon" style="color:var(--green)">📈</div></div>
+            <div class="kpi-lbl">الربح المتوقع</div>
+            <div class="kpi-val" id="k-profit">—</div>
+            <div class="kpi-sub" id="k-profit-sub"></div>
+          </div>
+          <div class="kpi blue">
+            <div class="kpi-hdr"><div class="kpi-icon">🧾</div></div>
+            <div class="kpi-lbl">عدد الفواتير</div>
+            <div class="kpi-val" id="k-inv">—</div>
+            <div class="kpi-sub" id="k-avg-inv">متوسط —</div>
+          </div>
+          <div class="kpi orange">
+            <div class="kpi-hdr"><div class="kpi-icon">⏳</div></div>
+            <div class="kpi-lbl">آجل متبقي</div>
+            <div class="kpi-val" id="k-deferred">—</div>
+            <div class="kpi-sub" id="k-deferred-count"></div>
+          </div>
+          <div class="kpi purple">
+            <div class="kpi-hdr"><div class="kpi-icon">👥</div></div>
+            <div class="kpi-lbl">إجمالي العملاء</div>
+            <div class="kpi-val" id="k-cust">—</div>
+            <div class="kpi-sub" id="k-cust-sub"></div>
+          </div>
+          <div class="kpi red">
+            <div class="kpi-hdr"><div class="kpi-icon">📦</div></div>
+            <div class="kpi-lbl">تنبيهات المخزون</div>
+            <div class="kpi-val" id="k-stock">—</div>
+            <div class="kpi-sub" id="k-stock-sub">منتج تحت الحد</div>
+          </div>
+        </div>
       </div>
 
       <div class="dash-grid">
-        <!-- Left: Recent invoices + Top products -->
-        <div style="display:flex;flex-direction:column;gap:16px">
+        <!-- LEFT COLUMN -->
+        <div class="dash-col">
+
+          <!-- Recent Invoices -->
           <div class="panel">
-            <div class="panel-title"><i class="fas fa-receipt"></i> آخر الفواتير</div>
-            <div id="recent-inv"><div class="spinner"></div></div>
+            <div class="panel-hdr">
+              <div class="panel-title"><i class="fas fa-receipt"></i> آخر الفواتير</div>
+              <a class="panel-more" href="invoices.html">عرض الكل</a>
+            </div>
+            <div class="panel-body" id="recent-inv"><div class="spinner"></div></div>
           </div>
+
+          <!-- Top Products -->
           <div class="panel">
-            <div class="panel-title"><i class="fas fa-trophy"></i> أكثر المنتجات مبيعاً اليوم</div>
-            <div id="top-prods"><div class="spinner"></div></div>
+            <div class="panel-hdr">
+              <div class="panel-title"><i class="fas fa-trophy"></i> أكثر المنتجات مبيعاً اليوم</div>
+            </div>
+            <div class="panel-body" id="top-prods"><div class="spinner"></div></div>
           </div>
+
+          <!-- Payment breakdown -->
+          <div class="panel">
+            <div class="panel-hdr">
+              <div class="panel-title"><i class="fas fa-chart-pie"></i> توزيع طرق الدفع</div>
+            </div>
+            <div class="panel-body" id="pay-breakdown"><div class="spinner"></div></div>
+          </div>
+
         </div>
 
-        <!-- Right: Quick actions + Alerts -->
-        <div style="display:flex;flex-direction:column;gap:16px">
+        <!-- RIGHT COLUMN -->
+        <div class="dash-col">
+
+          <!-- Quick Links -->
           <div class="panel">
-            <div class="panel-title"><i class="fas fa-bolt"></i> روابط سريعة</div>
-            <div class="quick-btns">
-              <a class="qbtn" href="pos.html"><i class="fas fa-cash-register"></i><span>الكاشير</span></a>
-              <a class="qbtn" href="products.html"><i class="fas fa-plus-circle"></i><span>إضافة منتج</span></a>
-              <a class="qbtn" href="customers.html"><i class="fas fa-user-plus"></i><span>إضافة عميل</span></a>
-              <a class="qbtn" href="reports.html"><i class="fas fa-chart-bar"></i><span>التقارير</span></a>
-              <a class="qbtn" href="expenses.html"><i class="fas fa-money-bill-wave"></i><span>مصروف</span></a>
-              <a class="qbtn" href="purchases.html"><i class="fas fa-cart-arrow-down"></i><span>مشتريات</span></a>
+            <div class="panel-hdr">
+              <div class="panel-title"><i class="fas fa-bolt"></i> الروابط السريعة</div>
+            </div>
+            <div class="panel-body">
+              <div class="quick-grid">
+                <a class="qbtn" href="pos.html"><i class="fas fa-cash-register"></i><span>الكاشير</span></a>
+                <a class="qbtn" href="active-orders.html"><i class="fas fa-tasks"></i><span>الطلبات النشطة</span></a>
+                <a class="qbtn" href="products.html"><i class="fas fa-box"></i><span>المنتجات</span></a>
+                <a class="qbtn" href="customers.html"><i class="fas fa-users"></i><span>العملاء</span></a>
+                <a class="qbtn" href="reports.html"><i class="fas fa-chart-bar"></i><span>التقارير</span></a>
+                <a class="qbtn" href="expenses.html"><i class="fas fa-money-bill-wave"></i><span>المصروفات</span></a>
+                <a class="qbtn" href="purchases.html"><i class="fas fa-cart-arrow-down"></i><span>المشتريات</span></a>
+                <a class="qbtn" href="settings.html"><i class="fas fa-gear"></i><span>الإعدادات</span></a>
+              </div>
             </div>
           </div>
+
+          <!-- Stock Alerts -->
           <div class="panel">
-            <div class="panel-title"><i class="fas fa-bell"></i> تنبيهات المخزون</div>
-            <div id="stock-alerts"><div class="spinner"></div></div>
+            <div class="panel-hdr">
+              <div class="panel-title"><i class="fas fa-triangle-exclamation" style="color:var(--orange)"></i> تنبيهات المخزون</div>
+              <a class="panel-more" href="products.html">إدارة</a>
+            </div>
+            <div class="panel-body" id="stock-alerts"><div class="spinner"></div></div>
           </div>
+
+          <!-- Deferred (due soon) -->
+          <div class="panel">
+            <div class="panel-hdr">
+              <div class="panel-title"><i class="fas fa-clock" style="color:var(--red)"></i> الآجل المستحق</div>
+              <a class="panel-more" href="invoices.html">الكل</a>
+            </div>
+            <div class="panel-body" id="due-panel"><div class="spinner"></div></div>
+          </div>
+
         </div>
       </div>
 
@@ -108,90 +284,189 @@
 <script>
 injectSharedCSS();
 
-requireAuth(async () => {
-  // Date
+requireAuth(async user => {
+  /* Welcome message based on time */
+  const hr = new Date().getHours();
+  const greet = hr < 12 ? 'صباح الخير' : hr < 18 ? 'مساء الخير' : 'مساء النور';
+  const icon  = hr < 12 ? '🌤️' : hr < 18 ? '☀️' : '🌙';
+  document.getElementById('wlc-icon').textContent = icon;
+  document.getElementById('wlc-title').textContent = greet + '، ' + (user.email?.split('@')[0] || 'مستخدم');
+
+  /* Date + clock */
   document.getElementById('dash-date').textContent = new Date().toLocaleDateString('ar-EG', {
     weekday:'long', year:'numeric', month:'long', day:'numeric'
   });
+  const tickClock = () => {
+    document.getElementById('dash-clock').textContent = new Date().toLocaleTimeString('ar-EG', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  };
+  tickClock(); setInterval(tickClock, 1000);
 
-  const s = new Date(); s.setHours(0, 0, 0, 0);
+  /* ══ Today invoices ══ */
+  const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
+  let rev = 0, profit = 0, invCount = 0, deferredAmt = 0, deferredCnt = 0;
+  let cashAmt = 0, cardAmt = 0, transferAmt = 0;
+  let prodMap = {}, recent = [];
 
-  // Today invoices
-  let rev = 0, profit = 0, invCount = 0, deferred = 0, prodMap = {};
   try {
-    const snap = await db.collection('pos_invoices').where('createdAt', '>=', s).orderBy('createdAt', 'desc').get();
-    const recent = [];
+    const snap = await db.collection('pos_invoices')
+      .where('createdAt', '>=', dayStart)
+      .orderBy('createdAt', 'desc').get();
+
     snap.forEach(d => {
-      const data = d.data();
-      rev += data.totalPrice || 0;
-      profit += data.estimatedProfit || 0;
+      const v = d.data();
+      const tot = parseFloat(v.totalPrice) || 0;
+      const prof = parseFloat(v.estimatedProfit) || 0;
+      const rem = parseFloat(v.remainingAmount) || 0;
+      rev += tot;
+      profit += prof;
       invCount++;
-      deferred += data.remainingAmount || 0;
-      (data.items || []).forEach(i => { prodMap[i.name] = (prodMap[i.name] || 0) + (i.qty || 1); });
-      if (recent.length < 8) recent.push({ id: d.id, ...data });
+      if (rem > 0) { deferredAmt += rem; deferredCnt++; }
+      const pm = (v.paymentType || v.paymentMethod || '').toLowerCase();
+      if (pm.includes('نقد') || pm.includes('cash')) cashAmt += parseFloat(v.paidAmount)||tot;
+      else if (pm.includes('بطاق') || pm.includes('card')) cardAmt += parseFloat(v.paidAmount)||tot;
+      else if (pm.includes('تحويل') || pm.includes('transfer')) transferAmt += parseFloat(v.paidAmount)||tot;
+      (v.items || []).forEach(i => { prodMap[i.name] = (prodMap[i.name] || 0) + (i.qty || 1); });
+      if (recent.length < 10) recent.push({ id: d.id, ...v });
     });
 
+    const avg = invCount ? rev / invCount : 0;
     document.getElementById('k-rev').textContent = fmt(rev);
+    document.getElementById('k-rev-sub').textContent = invCount + ' فاتورة';
     document.getElementById('k-profit').textContent = fmt(profit);
+    document.getElementById('k-profit-sub').textContent = rev > 0 ? 'هامش ' + (profit/rev*100).toFixed(1) + '%' : '';
     document.getElementById('k-inv').textContent = invCount;
-    document.getElementById('k-deferred').textContent = fmt(deferred);
+    document.getElementById('k-avg-inv').textContent = 'متوسط ' + fmt(avg);
+    document.getElementById('k-deferred').textContent = fmt(deferredAmt);
+    document.getElementById('k-deferred-count').textContent = deferredCnt + ' فاتورة آجل';
 
-    // Recent invoices
-    document.getElementById('recent-inv').innerHTML = recent.length ? recent.map(inv => `
-      <div class="recent-item">
-        <div>
-          <div style="font-weight:700">${inv.invoiceNumber || inv.id.slice(0,8)}</div>
-          <div style="font-size:10px;color:var(--text3)">${inv.userName || 'عميل'} · ${fmtDate(inv.createdAt)}</div>
-        </div>
-        <div style="text-align:left">
-          <div style="font-weight:900;color:var(--gold)">${fmt(inv.totalPrice)}</div>
-          <span class="badge badge-${inv.status==='مكتمل'?'green':'orange'}">${inv.status || 'مكتمل'}</span>
-        </div>
-      </div>`).join('') : '<div class="empty-state"><i class="fas fa-receipt"></i><p>لا توجد فواتير اليوم</p></div>';
+    /* Recent invoices */
+    document.getElementById('recent-inv').innerHTML = recent.length
+      ? recent.map(inv => {
+          const rem = parseFloat(inv.remainingAmount) || 0;
+          const statusColor = rem > 0 ? 'var(--orange)' : inv.status === 'مسترجع' ? 'var(--red)' : 'var(--green)';
+          return `<div class="inv-row" onclick="location.href='invoices.html'">
+            <div>
+              <div class="inv-no">${inv.invoiceNumber || inv.id?.slice(0,8) || '—'}</div>
+              <div class="inv-meta">${fmtDate(inv.createdAt)}</div>
+            </div>
+            <div class="inv-cust">${inv.userName || 'عميل'}</div>
+            <div class="inv-amt">
+              <div style="font-weight:900;font-size:13px">${fmt(inv.totalPrice || 0)}</div>
+              <div style="font-size:9px;color:${statusColor};font-weight:700">${rem>0?'آجل ':''} ${inv.status||'مكتمل'}</div>
+            </div>
+          </div>`;
+        }).join('')
+      : '<div class="empty-state"><i class="fas fa-receipt"></i><p>لا توجد فواتير اليوم</p></div>';
 
-    // Top products
-    const top = Object.entries(prodMap).sort((a, b) => b[1] - a[1]).slice(0, 6);
-    document.getElementById('top-prods').innerHTML = top.length ? top.map(([n, q], i) => `
-      <div class="recent-item">
-        <span>${i + 1}. ${n}</span>
-        <span style="color:var(--gold);font-weight:900">${q} قطعة</span>
-      </div>`).join('') : '<p style="color:var(--text3);font-size:12px;text-align:center;padding:10px">لا بيانات بعد</p>';
+    /* Top products */
+    const top = Object.entries(prodMap).sort((a,b) => b[1]-a[1]).slice(0, 7);
+    const maxQty = top[0]?.[1] || 1;
+    document.getElementById('top-prods').innerHTML = top.length
+      ? `<div>${top.map(([n, q], i) => {
+          const pct = (q / maxQty * 100).toFixed(0);
+          const rankCls = i===0?'r1':i===1?'r2':i===2?'r3':'rn';
+          return `<div class="prod-bar">
+            <div class="prod-rank ${rankCls}">${i+1}</div>
+            <div style="flex:1">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span class="prod-name">${n}</span>
+                <span class="prod-qty">${q} قطعة</span>
+              </div>
+              <div class="prod-bar-track"><div class="prod-bar-fill" style="width:${pct}%"></div></div>
+            </div>
+          </div>`;
+        }).join('')}</div>`
+      : '<p style="color:var(--text3);font-size:12px;text-align:center;padding:12px">لا بيانات بعد</p>';
+
+    /* Payment breakdown */
+    const pmTotal = cashAmt + cardAmt + transferAmt || 1;
+    const payRows = [
+      { lbl: 'نقدي', amt: cashAmt, color: 'var(--green)' },
+      { lbl: 'بطاقة', amt: cardAmt, color: 'var(--blue)' },
+      { lbl: 'تحويل', amt: transferAmt, color: 'var(--purple)' },
+    ];
+    document.getElementById('pay-breakdown').innerHTML = payRows.map(r => `
+      <div class="pay-row">
+        <span class="pay-lbl">${r.lbl}</span>
+        <div class="pay-bar-wrap"><div class="pay-bar-inner" style="width:${(r.amt/pmTotal*100).toFixed(0)}%;background:${r.color}"></div></div>
+        <span class="pay-amount" style="color:${r.color}">${fmt(r.amt)}</span>
+      </div>`).join('') + `
+      <div class="sum-row total" style="margin-top:10px"><span>الإجمالي المحصّل</span><span>${fmt(cashAmt+cardAmt+transferAmt)}</span></div>`;
+
   } catch(e) {
-    console.error(e);
+    console.error('Today invoices:', e.message);
+    document.getElementById('recent-inv').innerHTML = `<p style="color:var(--red);font-size:11px;padding:8px">${e.message}</p>`;
   }
 
-  // Stock alerts
+  /* ══ Stock alerts ══ */
   try {
     const pSnap = await db.collection('products').where('trackStock', '==', true).get();
-    let alerts = [];
-    let lowCount = 0;
+    let alerts = [], lowCount = 0;
     pSnap.forEach(d => {
       const p = d.data();
-      const reorder = p.reorderLevel || 5;
-      if ((p.stock || 0) <= reorder) {
-        alerts.push(p);
-        lowCount++;
-      }
+      const reorder = parseFloat(p.reorderLevel) || 5;
+      if ((parseFloat(p.stock) || 0) <= reorder) { alerts.push(p); lowCount++; }
     });
     document.getElementById('k-stock').textContent = lowCount;
-    document.getElementById('stock-alerts').innerHTML = alerts.length ? alerts.slice(0, 6).map(p => `
-      <div class="alert-item">
-        <div class="alert-icon" style="background:#451a03"><i class="fas fa-triangle-exclamation" style="color:var(--orange)"></i></div>
-        <div>
-          <div style="font-weight:700;font-size:12px">${p.name}</div>
-          <div style="font-size:10px;color:var(--text3)">المخزون: ${p.stock || 0} | حد الطلب: ${p.reorderLevel || 5}</div>
-        </div>
-      </div>`).join('') : '<p style="color:var(--text3);font-size:12px;text-align:center;padding:16px">✅ المخزون بخير</p>';
+    document.getElementById('stock-alerts').innerHTML = alerts.length
+      ? alerts.slice(0, 8).map(p => {
+          const pct = Math.min(100, ((p.stock||0) / (p.reorderLevel||5)) * 100);
+          const col = pct < 25 ? 'var(--red)' : 'var(--orange)';
+          return `<div class="alert-row">
+            <div class="alert-dot" style="background:${col}"></div>
+            <div style="flex:1">
+              <div class="alert-name">${p.name}</div>
+              <div class="prod-bar-track" style="margin-top:3px;width:100px">
+                <div class="prod-bar-fill" style="width:${pct}%;background:${col}"></div>
+              </div>
+            </div>
+            <span class="alert-stock">${p.stock || 0} / ${p.reorderLevel || 5}</span>
+          </div>`;
+        }).join('')
+      : '<p style="color:var(--text3);font-size:12px;text-align:center;padding:16px">✅ جميع المنتجات بخير</p>';
   } catch(e) {
     document.getElementById('k-stock').textContent = '—';
     document.getElementById('stock-alerts').innerHTML = '<p style="color:var(--text3);font-size:12px;padding:10px">تأكد من إعداد المخزون</p>';
   }
 
-  // Customers count
+  /* ══ Customers ══ */
   try {
     const cSnap = await db.collection('pos_customers').get();
     document.getElementById('k-cust').textContent = cSnap.size;
+    document.getElementById('k-cust-sub').textContent = 'عميل مسجّل';
   } catch(e) { document.getElementById('k-cust').textContent = '—'; }
+
+  /* ══ Deferred due soon (next 7 days) ══ */
+  try {
+    const snap = await db.collection('pos_invoices')
+      .where('remainingAmount', '>', 0).orderBy('remainingAmount').limit(20).get();
+    const due = [];
+    const today = new Date(); today.setHours(0,0,0,0);
+    const next7 = new Date(today); next7.setDate(next7.getDate()+7);
+    snap.forEach(d => {
+      const v = d.data();
+      if (v.remainingAmount > 0) due.push({ id: d.id, ...v });
+    });
+    document.getElementById('due-panel').innerHTML = due.length
+      ? due.slice(0, 7).map(inv => {
+          const rem = parseFloat(inv.remainingAmount) || 0;
+          const dd = inv.dueDate ? new Date(inv.dueDate) : null;
+          const overdue = dd && dd < today;
+          const soonBadge = overdue
+            ? `<span class="due-badge" style="background:rgba(248,113,113,.2)">متأخر!</span>`
+            : dd ? `<span class="due-badge">${dd.toLocaleDateString('ar-EG',{month:'short',day:'numeric'})}</span>` : '';
+          return `<div class="due-row">
+            <div class="due-name" style="${overdue?'color:var(--red)':''}">
+              ${inv.invoiceNumber||inv.id?.slice(0,8)} · ${inv.userName||'—'}
+            </div>
+            ${soonBadge}
+            <span class="due-amt">${fmt(rem)}</span>
+          </div>`;
+        }).join('')
+      : '<p style="color:var(--text3);font-size:12px;text-align:center;padding:16px">✅ لا توجد آجل مستحق</p>';
+  } catch(e) {
+    document.getElementById('due-panel').textContent = '—';
+  }
 });
 </script>
 </body>

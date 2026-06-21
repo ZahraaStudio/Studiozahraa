@@ -281,7 +281,7 @@ function render(inv, cfg){
   document.getElementById('inv-title').textContent = `# ${invNo}`;
   if (phone){ document.getElementById('wa-btn').style.display='flex'; window._wa={phone,invNo,cust,tot}; }
 
-  const trackURL = `${location.origin}/Studiozahraa/order-status.html?id=${encodeURIComponent(invNo)}`;
+  const trackURL = `${location.origin}/order-status.html?id=${encodeURIComponent(invNo)}`;
   const q1 = qrSrc(invNo, 80);
   const q2 = qrSrc(trackURL, 80);
 
@@ -444,7 +444,7 @@ function render(inv, cfg){
 /* ── WhatsApp ── */
 window.shareWA = function(){
   const { phone, invNo, cust, tot } = window._wa || {};
-  const msg = `فاتورة رقم ${invNo}\nالعميل: ${cust}\nالإجمالي: ${money(tot)} ج\nتتبع طلبك: ${location.origin}/Studiozahraa/order-status.html?id=${encodeURIComponent(invNo)}`;
+  const msg = `فاتورة رقم ${invNo}\nالعميل: ${cust}\nالإجمالي: ${money(tot)} ج\nتتبع طلبك: ${location.origin}/order-status.html?id=${encodeURIComponent(invNo)}`;
   const num = (phone||'').replace(/\D/g,'');
   const e = num.startsWith('0') ? '2'+num : num;
   window.open(`https://wa.me/${e}?text=${encodeURIComponent(msg)}`);

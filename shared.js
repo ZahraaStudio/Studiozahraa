@@ -34,9 +34,9 @@ function saveSettings(s) {
 
 // ─── Auth Guard ───────────────────────────
 function requireAuth(cb) {
-  if (!initFirebase()) { location.href = 'index.html'; return; }
+  if (!initFirebase()) { location.href = 'login.html'; return; }
   auth.onAuthStateChanged(user => {
-    if (!user) { location.href = 'index.html'; return; }
+    if (!user) { location.href = 'login.html'; return; }
     currentUser = user;
     renderSidebar();
     applyTheme();
@@ -92,7 +92,7 @@ function renderSidebar() {
 
 async function doLogout() {
   await auth.signOut();
-  location.href = 'index.html';
+  location.href = 'login.html';
 }
 
 // ─── Toast ───────────────────────────────
