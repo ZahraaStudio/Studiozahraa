@@ -572,41 +572,44 @@ window.openScanner = function(){
         let id = text.trim();
         const m = text.match(/[?&]id=([^&\s]+)/);
         if (m) id = decodeURIComponent(m[1]);
-        document.getElementById('scanner-result').innerHTML =
-          `<span style="color:var(--green)">✅ تم المسح: <b>${id}</b></span>`;
         qrScanner.stop().catch(()=>{});
-        /* Find order → open modal */
+
+        /* Helper: show result + open-invoice button (no popup blocker) */
+        function showScanResult(docId, label) {
+          document.getElementById('scanner-result').innerHTML =
+            `<div style="display:flex;flex-direction:column;gap:8px">
+               <span style="color:var(--green);font-weight:900">✅ تم المسح: <b>${label}</b></span>
+               <a href="invoice.html?id=${docId}"
+                  style="display:inline-block;background:linear-gradient(135deg,#d4af37,#a88520);color:#000;padding:9px 18px;border-radius:8px;font-weight:900;font-size:13px;text-decoration:none;text-align:center;font-family:Cairo,sans-serif">
+                 🧾 فتح الفاتورة
+               </a>
+             </div>`;
+        }
+
+        /* Find order in memory first */
         const found = allOrders.find(o => o.invoiceNumber===id || o.id===id);
-        if (found){
-          closeScanner();
-          setTimeout(() => {
-            openOrderModal(found);
-            window.open('invoice.html?id=' + found.id, '_blank');
-          }, 200);
+        if (found) {
+          showScanResult(found.id, found.invoiceNumber || found.id);
+          setTimeout(() => openOrderModal(found), 200);
         } else {
-          /* Fallback: search Firestore directly */
-          document.getElementById('scanner-result').innerHTML +=
-            `<br><span style="color:var(--text3)">🔍 جاري البحث في قاعدة البيانات...</span>`;
+          document.getElementById('scanner-result').innerHTML =
+            `<span style="color:var(--text3)">🔍 جاري البحث...</span>`;
           try {
             let docData = null;
-            /* Try by doc ID first */
             const byId = await db.collection('pos_invoices').doc(id).get();
             if (byId.exists) { docData = { id: byId.id, ...byId.data() }; }
             if (!docData) {
-              /* Try by invoiceNumber */
               const byNum = await db.collection('pos_invoices').where('invoiceNumber','==',id).limit(1).get();
               if (!byNum.empty) docData = { id: byNum.docs[0].id, ...byNum.docs[0].data() };
             }
             if (docData) {
-              closeScanner();
-              setTimeout(() => {
-                openOrderModal(docData);
-                window.open('invoice.html?id=' + docData.id, '_blank');
-              }, 200);
+              showScanResult(docData.id, docData.invoiceNumber || docData.id);
+              setTimeout(() => openOrderModal(docData), 200);
             } else {
               document.getElementById('scanner-result').innerHTML =
                 `<span style="color:var(--orange)">⚠️ لم يُعثر على الطلب</span>
-                 <br><a href="invoice.html?id=${encodeURIComponent(id)}" target="_blank" style="color:var(--gold);font-weight:700">فتح الفاتورة مباشرة ←</a>`;
+                 <br><a href="invoice.html?id=${encodeURIComponent(id)}"
+                    style="color:var(--gold);font-weight:700;text-decoration:none">فتح الفاتورة مباشرة ←</a>`;
             }
           } catch(fe) {
             document.getElementById('scanner-result').innerHTML =
